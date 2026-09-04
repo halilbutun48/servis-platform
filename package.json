@@ -65,6 +65,7 @@
     "check:projectwideturkishterminology01": "node backend/scripts/project_wide_turkish_language_terminology_audit_01_check.js",
     "check:seferabipremiumcharactercorrective01": "node backend/scripts/sefer_abi_premium_character_corrective_01_check.js",
     "smoke:seferabipremiumcharactercorrective01": "node backend/scripts/sefer_abi_premium_character_corrective_01_browser.mjs",
+    "smoke:seferabicharactersafesnappolish01": "node backend/scripts/sefer_abi_character_animation_safe_snap_polish_01_browser.mjs",
     "check:projectdocumentationarchitectureandcodebaseindex01": "node backend/scripts/project_documentation_architecture_and_codebase_index_01_check.js",
     "accept:projectgapreadiness01": "node backend/scripts/project_wide_gap_and_release_readiness_audit_01_acceptance.mjs",
     "smoke:projectgapreadiness01": "node backend/scripts/project_wide_gap_and_release_readiness_audit_01_browser.mjs",

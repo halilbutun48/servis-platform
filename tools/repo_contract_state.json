@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  20,
-    "currentWarningHotFileCount":  14,
+    "currentWarningHotFileCount":  15,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -273,6 +273,10 @@
                                                                                                       "class":  "acceptance-sensitive / later",
                                                                                                       "note":  "premium smoke manual entrypoint; acceptance evidence only"
                                                                                                   },
+                                                        "web/src/components/copilot/FloatingCopilotDrawer.jsx":  {
+                                                                                                                     "class":  "safe-candidate-review",
+                                                                                                                     "note":  "Sefer Abi canli widget ve guvenli launcher konumlandirmasi; acceptance sonrasi kontrollu cleanup adayi"
+                                                                                                                 },
                                                          "backend/indexes/documentation_registry_v1.json":  {
                                                                                                                "class":  "safe-candidate-review",
                                                                                                                "note":  "documentation registry index; controlled cleanup adayi"

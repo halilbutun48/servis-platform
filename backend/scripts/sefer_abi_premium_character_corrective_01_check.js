@@ -24,6 +24,7 @@ const doc = read("docs/SEFER_ABI_PREMIUM_CHARACTER_CORRECTIVE_01.md");
 console.log("=== SEFER ABI PREMIUM CHARACTER CORRECTIVE-01 CHECK ===");
 must(pkg.scripts["check:seferabipremiumcharactercorrective01"] === "node backend/scripts/sefer_abi_premium_character_corrective_01_check.js", "package exposes the static corrective guard");
 must(pkg.scripts["smoke:seferabipremiumcharactercorrective01"] === "node backend/scripts/sefer_abi_premium_character_corrective_01_browser.mjs", "package exposes the real browser corrective smoke");
+must(pkg.scripts["smoke:seferabicharactersafesnappolish01"] === "node backend/scripts/sefer_abi_character_animation_safe_snap_polish_01_browser.mjs", "package exposes the baseline safe-snap browser smoke");
 assertProductExtensionsIncludes("check:seferabipremiumcharactercorrective01", "product extensions registry includes premium character corrective", productExtensionsChecks.map((step) => step.script));
 
 must(fs.existsSync(avatarAssetPath), "premium character asset exists in the product workspace");
@@ -31,6 +32,9 @@ const avatarAssetBytes = fs.readFileSync(avatarAssetPath);
 must(avatarAssetBytes.length > 0 && avatarAssetBytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])), "premium character asset is a valid PNG");
 must(avatarAssetBytes[25] === 6, "premium character asset preserves an RGBA alpha channel");
 must(avatar.includes("premiumAvatarAsset") && avatar.includes("seferAbiAvatar__image"), "character uses the canonical premium raster asset");
+must(!avatar.includes("seferAbiAvatar__portrait") && !avatar.includes("seferAbiAvatar__gaze") && !avatar.includes("seferAbiAvatar__blink") && !avatar.includes("seferAbiAvatar__expression"), "character has no detached eye or face overlay nodes");
+must(!css.includes("seferAbiAvatar__gaze") && !css.includes("seferAbiAvatar__blink") && !css.includes("seferAbiAvatar__expression"), "character stylesheet has no detached eye or face overlay layer");
+must(!css.includes("seferAbiRest") && !css.includes("seferAbiThinking") && !css.includes("seferAbiResponding"), "static portrait transform substitution is not declared as character animation");
 must(!/from ["'](?:lottie|rive|@rive|@lottiefiles)/i.test(avatar), "no new mascot runtime dependency is introduced");
 for (const state of ["idle", "hover-focus", "listening", "thinking", "responding", "result-ready", "attention", "approval-required"]) {
   must(widgetState.includes(`\"${state}\"`), `controlled avatar state exists: ${state}`);
@@ -49,6 +53,11 @@ must(css.includes(".seferAbiAvatar--hover-focus") && css.includes(".seferAbiAvat
 must(css.includes("@media (prefers-reduced-motion: reduce)") && css.includes("animation: none !important"), "reduced-motion styling disables non-essential motion");
 must(!/animation\s*:[^;]*(?:bounce|pulse)/i.test(css), "no intrusive bounce/pulse animation is present");
 must(css.includes(".copilotFab--map-safe") && css.includes("env(safe-area-inset-bottom)"), "launcher retains safe-area and map positioning hooks");
+must(!fs.existsSync(path.join(root, "web/src/components/copilot/SeferAbiAvatar.css")), "experimental detached portrait motion stylesheet is not present");
+must(doc.includes("SEFER_ABI_TEMPORARY_BASELINE_VISUAL_MODE = CANONICAL_STATIC_PORTRAIT_WITH_STATE_UI"), "temporary baseline is explicitly static portrait with state UI");
+must(doc.includes("SEFER_ABI_REAL_LIVE2D_ANIMATION_STATUS = DEFERRED_BY_ASSET_PRODUCTION"), "real Live2D animation is explicitly deferred by asset production");
+must(doc.includes("SEFER_ABI_REAL_LIVE2D_REQUIRED_BEFORE_FINAL_COMMERCIAL_ACCEPTANCE = YES"), "real Live2D remains a required pre-commercial acceptance gate");
+must(doc.includes("smoke:seferabicharactersafesnappolish01"), "owner document records the bounded safe-snap browser smoke");
 must(doc.includes("REAL_PLAYWRIGHT_RENDERED_BROWSER") && doc.includes("PENDING_HUMAN_REVIEW") && doc.includes("ephemeral"), "owner document records live state evidence and pending human review");
 
 console.log("=== SEFER ABI PREMIUM CHARACTER CORRECTIVE-01 CHECK PASS ===");

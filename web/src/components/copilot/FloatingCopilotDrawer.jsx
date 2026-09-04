@@ -18,6 +18,54 @@ const HISTORY_KEY = "psv1:copilot:drawer:history:v4";
 const SIZE_PRESETS = { S: { width: 440, height: 560 }, M: { width: 560, height: 700 }, L: { width: 700, height: 860 } };
 const DEFAULT_DRAWER_SIZE = "S";
 const RESULT_READY_DISPLAY_MS = 1400;
+const LAUNCHER_PLACEMENT_KEY = "psv1:copilot:launcher-placement:v1";
+const LAUNCHER_PLACEMENT_VERSION = 1;
+const LAUNCHER_DRAG_THRESHOLD_PX = 7;
+
+function normalizeLauncherPlacement(value) {
+  if (!value || Number(value.version) !== LAUNCHER_PLACEMENT_VERSION) return null;
+  const side = value.side === "left" ? "left" : value.side === "right" ? "right" : "";
+  if (!side) return null;
+  const topRatio = Number(value.topRatio);
+  if (!Number.isFinite(topRatio)) return null;
+  return { version: LAUNCHER_PLACEMENT_VERSION, side, topRatio: Math.min(1, Math.max(0, topRatio)) };
+}
+
+function readLauncherPlacement() {
+  try {
+    if (typeof window === "undefined") return null;
+    return normalizeLauncherPlacement(JSON.parse(window.localStorage.getItem(LAUNCHER_PLACEMENT_KEY) || "null"));
+  } catch {
+    return null;
+  }
+}
+
+function writeLauncherPlacement(value) {
+  try {
+    if (typeof window === "undefined") return;
+    if (!value) window.localStorage.removeItem(LAUNCHER_PLACEMENT_KEY);
+    else window.localStorage.setItem(LAUNCHER_PLACEMENT_KEY, JSON.stringify(value));
+  } catch { /* no-op: local preference is best effort */ }
+}
+
+function launcherInsets(width) {
+  return width <= 720 ? { top: 14, bottom: 24, side: 14 } : { top: 18, bottom: 18, side: 18 };
+}
+
+function placementKey(value) {
+  return value ? `${value.side}:${Number(value.topRatio).toFixed(4)}` : "";
+}
+
+function rectIntersects(a, b) {
+  return Boolean(a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
+}
+
+function launcherProtectedRects() {
+  if (typeof document === "undefined") return [];
+  return [...document.querySelectorAll(
+    '[data-primary-cta="true"], [role="alert"], [role="status"], [role="dialog"], #shell-nav-dock, .roleSignalAction, .roleTaskSummaryCard--next .btn, .shellTopLogout, [data-details="task-workspace"] > summary, [data-details="task-workspace"][open] .roleTaskDetailsBody, [data-map-surface="primary"] .leaflet-marker-icon, [data-map-surface="primary"] .leaflet-control',
+  )].filter((element) => !(element.id === "shell-nav-dock" && window.innerWidth <= 720 && element.classList.contains("navDock--mobileClosed"))).map((element) => element.getBoundingClientRect()).filter((box) => box.width > 0 && box.height > 0);
+}
 
 function loadDrawerState() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {}; } catch { return {}; }
@@ -249,6 +297,13 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const [readingIndex, setReadingIndex] = useState(-1);
   const [inputFocused, setInputFocused] = useState(false);
   const [launcherInteraction, setLauncherInteraction] = useState("idle");
+  const [launcherPlacement, setLauncherPlacement] = useState(() => readLauncherPlacement());
+  const [dragPreview, setDragPreview] = useState(null);
+  const [viewportSize, setViewportSize] = useState(() => ({
+    width: typeof window === "undefined" ? 1280 : window.innerWidth,
+    height: typeof window === "undefined" ? 720 : window.innerHeight,
+  }));
+  const [panelSide, setPanelSide] = useState("right");
   // Presentation-only phase derived from the existing request lifecycle; shared context remains the sole state owner.
   const [responsePhase, setResponsePhase] = useState("idle");
   const [attentionBubbleVisible, setAttentionBubbleVisible] = useState(false);
@@ -257,6 +312,8 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const scrollRef = useRef(null);
   const mascotRef = useRef(null);
   const mapAnchorRef = useRef("");
+  const dragRef = useRef(null);
+  const suppressLauncherClickRef = useRef(false);
   const responseTimerRef = useRef(null);
   const attentionBubbleTimerRef = useRef(null);
   const attentionBubbleKeyRef = useRef("");
@@ -284,6 +341,21 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     interaction: launcherInteraction,
   });
   const drawerAvatarStateLabel = SEFER_ABI_WIDGET_STATE_LABELS[drawerAvatarState] || "Hazır";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const updateViewport = () => {
+      const next = { width: window.innerWidth, height: window.innerHeight };
+      setViewportSize((previous) => previous.width === next.width && previous.height === next.height ? previous : next);
+    };
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    window.visualViewport?.addEventListener("resize", updateViewport);
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      window.visualViewport?.removeEventListener("resize", updateViewport);
+    };
+  }, []);
 
   const clearResponseTimer = useCallback(() => {
     if (responseTimerRef.current && typeof window !== "undefined") window.clearTimeout(responseTimerRef.current);
@@ -394,6 +466,41 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       window.removeEventListener("scroll", placeDrawer, true);
     };
   }, [currentPath, isRoleTaskHome, open]);
+  const resolveSafeLauncherPlacement = useCallback((preferredSide, preferredRatio) => {
+    const width = typeof window === "undefined" ? viewportSize.width : window.innerWidth;
+    const height = typeof window === "undefined" ? viewportSize.height : window.innerHeight;
+    const box = mascotRef.current?.getBoundingClientRect?.();
+    const buttonWidth = box?.width || (width <= 720 ? 58 : 68);
+    const buttonHeight = box?.height || (width <= 720 ? 58 : 68);
+    const inset = launcherInsets(width);
+    const maxTop = Math.max(inset.top, height - buttonHeight - inset.bottom);
+    const ratio = Math.min(1, Math.max(0, Number(preferredRatio) || 0));
+    const desiredTop = inset.top + (maxTop - inset.top) * ratio;
+    const desiredRatio = maxTop === inset.top ? 0 : (desiredTop - inset.top) / (maxTop - inset.top);
+    const sides = preferredSide === "left" ? ["left", "right"] : ["right", "left"];
+    const ratios = [desiredRatio, 0.5, 0.14, 0.86, 0.04, 0.96];
+    const obstacles = launcherProtectedRects();
+    for (const side of sides) {
+      for (const candidateRatio of ratios) {
+        const top = inset.top + (maxTop - inset.top) * candidateRatio;
+        const left = side === "left" ? inset.side : width - buttonWidth - inset.side;
+        const candidate = { left, top, right: left + buttonWidth, bottom: top + buttonHeight };
+        if (candidate.left >= 0 && candidate.top >= 0 && candidate.right <= width && candidate.bottom <= height && !obstacles.some((obstacle) => rectIntersects(candidate, obstacle))) {
+          return { version: LAUNCHER_PLACEMENT_VERSION, side, topRatio: Math.round(candidateRatio * 1000) / 1000 };
+        }
+      }
+    }
+    return { version: LAUNCHER_PLACEMENT_VERSION, side: sides[0], topRatio: Math.round(desiredRatio * 1000) / 1000 };
+  }, [viewportSize.height, viewportSize.width]);
+
+  useEffect(() => {
+    if (!launcherPlacement || open || dragPreview || !mascotRef.current) return;
+    const safe = resolveSafeLauncherPlacement(launcherPlacement.side, launcherPlacement.topRatio);
+    if (placementKey(safe) === placementKey(launcherPlacement)) return;
+    setLauncherPlacement(safe);
+    writeLauncherPlacement(safe);
+  }, [dragPreview, launcherPlacement, open, resolveSafeLauncherPlacement]);
+
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
     function onLayerChange(event) {
@@ -417,7 +524,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   }, [currentPath]);
 
   useEffect(() => {
-    if (!isSmartPlacementSurface || open || typeof window === "undefined") {
+    if (!isSmartPlacementSurface || open || launcherPlacement || dragPreview || typeof window === "undefined") {
       mapAnchorRef.current = "";
       setMapSafePosition(null);
       return undefined;
@@ -523,7 +630,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       window.removeEventListener("resize", schedulePlace);
       window.removeEventListener("scroll", schedulePlace, true);
     };
-  }, [attentionBubbleVisible, isMapSurface, isSmartPlacementSurface, open]);
+  }, [attentionBubbleVisible, dragPreview, isMapSurface, isSmartPlacementSurface, launcherPlacement, open]);
 
   useEffect(() => {
     if (!open || !token || isCopilotPage) return;
@@ -736,17 +843,114 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     setPlanCenterOverlayLayer("copilot");
   }
 
+  const launcherSide = dragPreview?.side || launcherPlacement?.side || (mapSafePosition && mapSafePosition.left < viewportSize.width / 2 ? "left" : "right");
+  const launcherButtonSize = viewportSize.width <= 720 ? 58 : 68;
+  const launcherInset = launcherInsets(viewportSize.width);
+  const launcherMaxTop = Math.max(launcherInset.top, viewportSize.height - launcherButtonSize - launcherInset.bottom);
+  const launcherTop = launcherInset.top + (launcherMaxTop - launcherInset.top) * (launcherPlacement?.topRatio || 0.84);
+  const launcherPositionStyle = { zIndex: 9135 };
+  if (dragPreview) {
+    launcherPositionStyle.left = dragPreview.left;
+    launcherPositionStyle.top = dragPreview.top;
+    launcherPositionStyle.right = "auto";
+    launcherPositionStyle.bottom = "auto";
+  } else if (launcherPlacement) {
+    launcherPositionStyle.left = launcherPlacement.side === "left" ? launcherInset.side : "auto";
+    launcherPositionStyle.right = launcherPlacement.side === "right" ? launcherInset.side : "auto";
+    launcherPositionStyle.top = launcherTop;
+    launcherPositionStyle.bottom = "auto";
+  } else if (isSmartPlacementSurface && mapSafePosition) {
+    launcherPositionStyle.left = mapSafePosition.left;
+    launcherPositionStyle.top = mapSafePosition.top;
+    launcherPositionStyle.right = "auto";
+    launcherPositionStyle.bottom = "auto";
+  }
+
+  function openFromLauncher() {
+    setPanelSide(launcherSide);
+    setLauncherInteraction("idle");
+    setOpen(true);
+  }
+
+  function resetLauncherPosition() {
+    setLauncherPlacement(null);
+    setDragPreview(null);
+    writeLauncherPlacement(null);
+    mapAnchorRef.current = "";
+    setMapSafePosition(null);
+  }
+
+  function startLauncherDrag(event) {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const box = event.currentTarget.getBoundingClientRect();
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originLeft: box.left,
+      originTop: box.top,
+      width: box.width,
+      height: box.height,
+      moved: false,
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    activateCopilotLayer();
+  }
+
+  function moveLauncherDrag(event) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const deltaX = event.clientX - drag.startX;
+    const deltaY = event.clientY - drag.startY;
+    if (!drag.moved && Math.hypot(deltaX, deltaY) < LAUNCHER_DRAG_THRESHOLD_PX) return;
+    drag.moved = true;
+    const width = typeof window === "undefined" ? viewportSize.width : window.innerWidth;
+    const height = typeof window === "undefined" ? viewportSize.height : window.innerHeight;
+    const left = Math.min(Math.max(0, drag.originLeft + deltaX), Math.max(0, width - drag.width));
+    const top = Math.min(Math.max(0, drag.originTop + deltaY), Math.max(0, height - drag.height));
+    setDragPreview({ left, top, side: left + drag.width / 2 < width / 2 ? "left" : "right" });
+    event.preventDefault();
+  }
+
+  function finishLauncherDrag(event, cancelled = false) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    try { event.currentTarget.releasePointerCapture?.(event.pointerId); } catch { /* no-op: pointer capture may already be released */ }
+    if (drag.moved) {
+      if (!cancelled) {
+        const width = typeof window === "undefined" ? viewportSize.width : window.innerWidth;
+        const height = typeof window === "undefined" ? viewportSize.height : window.innerHeight;
+        const inset = launcherInsets(width);
+        const maxTop = Math.max(inset.top, height - drag.height - inset.bottom);
+        const currentLeft = Math.min(Math.max(0, drag.originLeft + (event.clientX - drag.startX)), Math.max(0, width - drag.width));
+        const currentTop = Math.min(Math.max(0, drag.originTop + (event.clientY - drag.startY)), Math.max(0, height - drag.height));
+        const preferredSide = currentLeft + drag.width / 2 < width / 2 ? "left" : "right";
+        const preferredRatio = maxTop === inset.top ? 0 : Math.min(1, Math.max(0, (currentTop - inset.top) / (maxTop - inset.top)));
+        const safe = resolveSafeLauncherPlacement(preferredSide, preferredRatio);
+        setLauncherPlacement(safe);
+        writeLauncherPlacement(safe);
+      }
+      suppressLauncherClickRef.current = true;
+      setDragPreview(null);
+    }
+    dragRef.current = null;
+  }
+
   return !open ? (
     <div
-      className={`copilotLauncherStack${isSmartPlacementSurface ? " copilotLauncherStack--smart-safe" : ""}`}
-      style={{ zIndex: 9135, ...(isSmartPlacementSurface && mapSafePosition ? { left: mapSafePosition.left, top: mapSafePosition.top, right: "auto", bottom: "auto" } : {}) }}
+      className={`copilotLauncherStack${isSmartPlacementSurface ? " copilotLauncherStack--smart-safe" : ""}${launcherSide === "left" ? " copilotLauncherStack--left" : ""}`}
+      style={launcherPositionStyle}
     >
       <button
         type="button"
         ref={mascotRef}
-        className={`copilotFab copilotFab--mascot${isSmartPlacementSurface ? " copilotFab--map-safe copilotFab--smart-safe" : ""}`}
+        className={`copilotFab copilotFab--mascot${isSmartPlacementSurface ? " copilotFab--map-safe copilotFab--smart-safe" : ""}${dragPreview ? " copilotFab--dragging" : ""}`}
         data-map-safe-placement={isSmartPlacementSurface ? (mapSafePosition?.anchor || "pending") : undefined}
         style={{ zIndex: 1 }}
+        onPointerDown={startLauncherDrag}
+        onPointerMove={moveLauncherDrag}
+        onPointerUp={finishLauncherDrag}
+        onPointerCancel={(event) => finishLauncherDrag(event, true)}
         onPointerDownCapture={activateCopilotLayer}
         onMouseDownCapture={activateCopilotLayer}
         onFocusCapture={activateCopilotLayer}
@@ -754,13 +958,15 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           if (event.key !== "Enter" && event.key !== " ") return;
           event.preventDefault();
           activateCopilotLayer();
-          setLauncherInteraction("idle");
-          setOpen(true);
+          openFromLauncher();
         }}
         onClick={() => {
+          if (suppressLauncherClickRef.current) {
+            suppressLauncherClickRef.current = false;
+            return;
+          }
           activateCopilotLayer();
-          setLauncherInteraction("idle");
-          setOpen(true);
+          openFromLauncher();
         }}
         onMouseEnter={() => setLauncherInteraction("hover-focus")}
         onMouseLeave={() => setLauncherInteraction("idle")}
@@ -782,8 +988,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           onClick={() => {
             setAttentionBubbleVisible(false);
             activateCopilotLayer();
-            setLauncherInteraction("idle");
-            setOpen(true);
+            openFromLauncher();
           }}
           aria-label="Uyarıyı aç ve Sefer Abi ile konuş"
         >
@@ -794,7 +999,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     </div>
   ) : (
     <aside
-      className={`copilotDrawer${mobileDrawerPlacement === "top" ? " copilotDrawer--task-home-top" : ""}`}
+      className={`copilotDrawer${mobileDrawerPlacement === "top" ? " copilotDrawer--task-home-top" : ""}${panelSide === "left" ? " copilotDrawer--from-left" : ""}`}
       style={{ width: dims.width, height: dims.height, zIndex: activeOverlayLayer === "copilot" ? 9130 : 4210 }}
       onPointerDownCapture={activateCopilotLayer}
       onMouseDownCapture={activateCopilotLayer}
@@ -839,6 +1044,9 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
             title="Büyük"
           >
             <span className="copilotToolIcon" aria-hidden="true">＋</span><span>Büyük</span>
+          </button>
+          <button type="button" className="btn sm copilotToolBtn" onClick={resetLauncherPosition} title="Varsayılan konuma getir">
+            Varsayılan konuma getir
           </button>
           <button type="button" className="btn sm copilotToolBtn copilotToolBtn--close" onClick={() => setOpen(false)} title="Kapat">
             Kapat

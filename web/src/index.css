@@ -3048,7 +3048,11 @@ button, input, select, textarea, .btn, .secondary {
   border: 2px solid rgba(227, 183, 91, .82);
   box-shadow: 0 12px 28px rgba(2, 6, 23, .34), 0 0 0 4px rgba(227, 183, 91, .12);
   transition: transform .16s ease, box-shadow .16s ease;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
+.copilotFab--mascot.copilotFab--dragging { cursor: grabbing; box-shadow: 0 18px 34px rgba(2, 6, 23, .42), 0 0 0 6px rgba(227, 183, 91, .22); }
 .copilotFab--mascot:hover, .copilotFab--mascot:focus-visible { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(2, 6, 23, .38), 0 0 0 5px rgba(227, 183, 91, .2); }
 .copilotMascotLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .copilotMascotAvatar { display: grid; place-items: center; width: 54px; height: 54px; }
@@ -3063,6 +3067,9 @@ button, input, select, textarea, .btn, .secondary {
   gap: 10px;
 }
 .copilotLauncherStack .copilotFab--mascot { position: relative; right: auto; bottom: auto; }
+.copilotLauncherStack--left { justify-items: start; }
+.copilotLauncherStack--left .copilotAttentionBubble { left: 0; right: auto; }
+.copilotLauncherStack--left .copilotAttentionBubble::after { left: 21px; right: auto; }
 .copilotAttentionBubble {
   position: absolute;
   right: 0;
@@ -3099,6 +3106,7 @@ button, input, select, textarea, .btn, .secondary {
 .copilotAttentionBubble--below::after { top: -6px; bottom: auto; transform: rotate(225deg); }
 .copilotAttentionBubbleTitle { color: #fbbf24; font-weight: 900; }
 .copilotDrawer { bottom: max(96px, calc(env(safe-area-inset-bottom) + 78px)); max-width: calc(100vw - 24px); }
+.copilotDrawer--from-left { left: 18px; right: auto; }
 .copilotDrawerIdentity, .copilotWorkspaceIdentity { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .copilotDrawerIdentity > div:last-child, .copilotWorkspaceIdentity > div:last-child { min-width: 0; }
 .copilotWorkspaceIdentity { align-items: center; }
@@ -3162,17 +3170,13 @@ button, input, select, textarea, .btn, .secondary {
   box-shadow: 0 1px 5px rgba(2, 6, 23, .3);
   pointer-events: none;
 }
-.seferAbiAvatar--idle .seferAbiAvatar__image { animation: seferAbiRest 9s ease-in-out infinite; }
 .seferAbiAvatar--hover-focus { filter: drop-shadow(0 5px 10px rgba(227, 183, 91, .34)); transform: translateZ(0) scale(1.03); }
 .seferAbiAvatar--hover-focus::before { background: linear-gradient(145deg, rgba(255,255,255,.18), transparent 46%, rgba(0,0,0,.16)); }
 .seferAbiAvatar--listening { border-color: rgba(45, 212, 191, .9); box-shadow: 0 0 0 3px rgba(45, 212, 191, .14), 0 4px 10px rgba(4, 12, 30, .24); animation: seferAbiListeningHalo 1.8s ease-out infinite; }
-.seferAbiAvatar--listening .seferAbiAvatar__image { transform: translate(-.4px, .5px) rotate(-1.4deg) scale(1.06); }
 .seferAbiAvatar--thinking { border-color: rgba(227, 183, 91, .95); }
 .seferAbiAvatar--thinking::after { opacity: .95; border: 2px solid rgba(227, 183, 91, .92); border-left-color: transparent; border-bottom-color: rgba(227, 183, 91, .35); animation: seferAbiRingSweep 1.7s linear infinite; }
-.seferAbiAvatar--thinking .seferAbiAvatar__image { animation: seferAbiThinking 2.6s ease-in-out infinite; }
 .seferAbiAvatar--responding { border-color: rgba(96, 165, 250, .95); box-shadow: 0 0 0 3px rgba(96, 165, 250, .13), 0 4px 10px rgba(4, 12, 30, .24); }
 .seferAbiAvatar--responding::after { opacity: .9; border: 2px solid rgba(96, 165, 250, .9); border-right-color: transparent; animation: seferAbiResponseRing 1.25s ease-in-out infinite; }
-.seferAbiAvatar--responding .seferAbiAvatar__image { animation: seferAbiResponding 2.1s ease-in-out infinite; }
 .seferAbiAvatar--result-ready { border-color: rgba(74, 222, 128, .9); box-shadow: 0 0 0 3px rgba(74, 222, 128, .14), 0 4px 10px rgba(4, 12, 30, .24); animation: seferAbiResultAck 1.4s ease-out both; }
 .seferAbiAvatar--result-ready::after { opacity: .95; border: 2px solid rgba(74, 222, 128, .88); animation: seferAbiReadyRing 1.4s ease-out both; }
 .seferAbiAvatar--result-ready .seferAbiAvatar__stateMark { background: #4ade80; }
@@ -3187,23 +3191,9 @@ button, input, select, textarea, .btn, .secondary {
 .seferAbiAvatar--thinking .seferAbiAvatar__stateMark { background: #e3b75b; }
 .seferAbiAvatar--responding .seferAbiAvatar__stateMark { background: #60a5fa; }
 
-@keyframes seferAbiRest {
-  0%, 100% { transform: translateY(0); }
-  48% { transform: translateY(-.35px); }
-}
 @keyframes seferAbiListeningHalo {
   0%, 100% { box-shadow: 0 0 0 3px rgba(45, 212, 191, .14), 0 4px 10px rgba(4, 12, 30, .24); }
   48% { box-shadow: 0 0 0 7px rgba(45, 212, 191, .08), 0 5px 14px rgba(4, 12, 30, .22); }
-}
-@keyframes seferAbiThinking {
-  0%, 100% { transform: rotate(0) translateY(0); }
-  45% { transform: rotate(-1.4deg) translateY(-.45px); }
-  72% { transform: rotate(1deg) translateY(0); }
-}
-@keyframes seferAbiResponding {
-  0%, 100% { transform: translateY(0); }
-  20% { transform: translateY(-.5px); }
-  36% { transform: translateY(0); }
 }
 @keyframes seferAbiRingSweep {
   0% { transform: rotate(0deg); opacity: .35; }
@@ -3255,6 +3245,7 @@ button, input, select, textarea, .btn, .secondary {
   .copilotFab--mascot { right: max(14px, env(safe-area-inset-right)); bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px)); width: 58px; height: 58px; min-width: 58px; min-height: 58px; }
   .copilotFab--mascot .copilotMascotAvatar, .copilotFab--mascot .seferAbiAvatar { width: 44px !important; height: 44px !important; }
   .copilotDrawer { top: auto; right: 12px; left: 12px; bottom: max(88px, calc(env(safe-area-inset-bottom) + 78px)); width: auto !important; max-width: none; }
+  .copilotDrawer--from-left { left: 12px; right: 12px; }
   .copilotDrawer--task-home-top { top: 12px; bottom: auto; }
   .copilotDrawerHeader { flex: 0 0 auto; }
   .copilotDrawerContext--secondary { display: none; }

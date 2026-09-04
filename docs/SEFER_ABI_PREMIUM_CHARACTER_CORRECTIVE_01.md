@@ -26,11 +26,33 @@ Bu bounded corrective, #15 ve #17 kapandıktan sonra Sefer Abi’nin görsel kim
 
 `responsePhase`, yalnızca mevcut isteğin `responding` → `result-ready` sunum geçişini kısa süreli göstermek için kullanılan ephemeral bir UI projection’dır. Kalıcı konuşma, ekran, kayıt ve görev bağlamı hâlâ mevcut `copilotSharedState` sahibindedir. Proaktif olay, sahte bildirim veya üretim debug kontrolü eklenmez.
 
-Idle, dinleme, düşünme, yanıt ve sonuç-hazır hareketleri aynı raster yüz üzerinde düşük genlikli CSS dönüşümleridir; dikkat/onay durumları yalnızca ölçülü çerçeve vurgusu kullanır. Sürekli zıplama, yanıp sönme, dans etme veya proaktif davranış yoktur. `prefers-reduced-motion` altında hareket kapanır; durum işareti ve karakter kimliği korunur.
+## Geçici baseline ve Live2D handoff kararı
+
+Gerçek karakter içi blink, gaze, nefes, baş ve yüz mikro-hareketleri için mevcut tek PNG asset yeterli değildir. Bu nedenle bugünkü ürün baseline’ı dürüstçe şu moddur:
+
+`SEFER_ABI_TEMPORARY_BASELINE_VISUAL_MODE = CANONICAL_STATIC_PORTRAIT_WITH_STATE_UI`
+
+Canonical PNG sakin/statik portre olarak kalır; lifecycle anlamı yalnızca mevcut durum halkası, renk, ışık ve durum işareti gibi UI sinyalleriyle gösterilir. Bu geçici görünüm gerçek karakter animasyonu olarak sunulmaz. Detached eye/mouth/face katmanı, whole-PNG bobbing veya CSS ile gerçek Live2D taklidi production’da kullanılmaz.
+
+`SEFER_ABI_REAL_LIVE2D_ANIMATION_STATUS = DEFERRED_BY_ASSET_PRODUCTION`
+
+`SEFER_ABI_REAL_LIVE2D_REQUIRED_BEFORE_FINAL_COMMERCIAL_ACCEPTANCE = YES`
+
+Live2D asset üretimi tamamlandığında aynı `resolveSeferAbiWidgetState` ve ortak Sefer Abi state sahibi; `idle`, `listening`, `thinking`, `responding`, `result-ready`, `attention` ve `approval-required` durumlarında gerçek karakter içi hareketleri beslemelidir. Gelecek paket layered PSD, Cubism model (`.moc3`/`.model3.json`), texture, motion ve expression verilerini içerebilir; bu handoff bunları üretmez ve ikinci bir state machine oluşturmaz.
+
+Bu deferred asset, mevcut roadmap’te PRE-#18 Premium UI Polish, #18, #19 veya #20’yi bloklamaz. Gerçek Live2D kabulü pre-final-commercial/E6 gate’inde zorunludur.
 
 ## Harita ve mobil güvenlik
 
 Harita ekranında launcher; gerçek marker, Leaflet kontrolü, ana CTA, uyarı/dialog ve NavDock kutularına karşı boş bir hücre arar. Responsive görünümde 44 px ve üzeri görünür/dokunulabilir kutu korunur, güvenli alan inset’leri kullanılır.
+
+## Draggable / safe-snap baseline kabulü
+
+Launcher’ın ekran kenarı ve dikey konumu kullanıcı sürüklemesiyle değişebilir; kullanıcı müdahalesi yokken durum, bubble, panel ölçümü veya scroll launcher’ı sol ve sağ kenarlar arasında taşımaz. Konum tercihi güvenli kenara yaslanarak saklanır, viewport değişiminde en fazla deterministik bir yeniden hizalama yapılır.
+
+`smoke:seferabicharactersafesnappolish01`
+
+Bu gerçek browser kabulü drag, safe-edge snap, persistence, panelin içe açılması, attention bubble, map güvenliği, reduced-motion ve 15 saniyelik sabit idle konumunu video kanıtıyla kontrol eder. Rapor gerçek karakter animasyonu iddiası taşımaz; Live2D üretimi tamamlanana kadar geçici baseline’ın statik portre + durum UI olduğunu açıkça belirtir.
 
 ## Gerçek kabul
 
