@@ -113,7 +113,7 @@ function inferLabels(pathname) {
   if (pathname === "/room/shifts") return { menu: "Vardiyalar", registry: "Vardiyalar", catalog: "Vardiyalar", title: "Room / Vardiyalar" };
   if (pathname === "/room/agreements") return { menu: "Sözleşmeler", registry: "Sözleşmeler", catalog: "Sözleşmeler", title: "Sözleşmeler (Room)" };
   if (pathname === "/room/offers") return { menu: "Teklifler", registry: "Teklifler", catalog: "Teklifler", title: "Teklifler" };
-  if (pathname === "/room/commercial-flow") return { menu: "Ticari Akışım", registry: "Ticari Akışım", catalog: "Ticari Akışım", title: "Ticari Akışım" };
+  if (pathname === "/room/commercial-flow") return { menu: "Ticari Çalışma Alanı", registry: "Ticari Akışım", catalog: "Ticari Akışım", title: "Ticari Akışım" };
   if (pathname === "/room/hub") return { menu: "Taşımacılık Firması Konumu", registry: "Taşımacılık Firması Konumu", catalog: "Taşımacılık Firması Konumu", title: "Taşımacılık Firması Konumu" };
   if (pathname === "/room/checkin") return { menu: "Biniş kayıtları", registry: "Biniş kayıtları", catalog: "Check-in", title: "Biniş kayıtları" };
   if (pathname === "/room/operation-health") return { menu: "Operasyon Sağlığı", registry: "Operasyon Sağlığı", catalog: "Operasyon Sağlığı", title: "Oda Operasyon Paneli" };
@@ -158,7 +158,7 @@ function inferLabels(pathname) {
   }
   if (pathname.endsWith("/service-evaluation")) return { menu: "Hizmet Değerlendirme", registry: "Hizmet Değerlendirme", catalog: "Hizmet Değerlendirme", title: "Hizmet Değerlendirme" };
   if (pathname.endsWith("/commercial-flow")) {
-    if (pathname.startsWith("/room/")) return { menu: "Ticari Akışım", registry: "Ticari Akışım", catalog: "Ticari Akışım", title: "Ticari Akışım" };
+    if (pathname.startsWith("/room/")) return { menu: "Ticari Çalışma Alanı", registry: "Ticari Akışım", catalog: "Ticari Akışım", title: "Ticari Akışım" };
     return { menu: "Ticari Akış", registry: "Ticari Akışım", catalog: "Ticari Akışım", title: "Ticari Akış" };
   }
   if (pathname.endsWith("/copilot")) return { menu: "Sefer Abi Terminali", registry: "Sefer Abi’ye Sor", catalog: "Sefer Abi Terminali", title: "Sefer Abi" };

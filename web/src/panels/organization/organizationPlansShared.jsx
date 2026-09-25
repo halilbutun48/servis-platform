@@ -30,9 +30,17 @@ export function hmToMin(v, fallback = 0) {
 
 function statusLabel(status) {
   const s = String(status || "DRAFT").toUpperCase();
-  if (s === "SHIFT_PUBLISHED") return "TEKLİF/VARDİYA AÇILDI";
-  if (s === "AGREEMENT_REQUESTED") return "SÖZLEŞME TALEBİ";
-  return s;
+  const labels = {
+    DRAFT: "Taslak",
+    ACTIVE: "Aktif",
+    ARCHIVED: "Arşivlendi",
+    PUBLISHED: "Yayınlandı",
+    CANCELLED: "İptal edildi",
+    COMPLETED: "Tamamlandı",
+  };
+  if (s === "SHIFT_PUBLISHED") return "Teklif/vardiya açıldı";
+  if (s === "AGREEMENT_REQUESTED") return "Sözleşme talebi";
+  return labels[s] || "Durum bekleniyor";
 }
 
 function Pill({ children }) {
@@ -49,7 +57,7 @@ function Pill({ children }) {
 export function SummaryCard({ current, summary, onGoPlanning }) {
   return (
     <div className="card" style={{ minWidth: 0 }}>
-      <div className="title">Özet ve Aksiyonlar</div>
+      <h2 className="title">Özet ve Aksiyonlar</h2>
       <div className="muted" style={{ marginBottom: 10 }}>
         Yeni üretim akışı artık <b>Planlama Merkezi</b> içinden yürür. Bu ekran eski
         organizasyon planlarını incelemek için tutulur; yeni plan açma, teklif gönderme ve
@@ -118,7 +126,7 @@ function buildPlanMapModel(stops = []) {
     markers,
     legendItems,
     footerText: total
-      ? `Konum sırası çizgisel önizleme. Başlangıç: ${first} • Bitiş: ${last} • Duraklar tile arka plan üzerinde görünür.`
+      ? `Konum sırası çizgisel önizleme. Başlangıç: ${first} • Bitiş: ${last} • Duraklar harita üzerinde görünür.`
       : "",
   };
 }
@@ -129,12 +137,12 @@ export function MiniMapPreview({ stops, shiftId = null }) {
   return (
     <ReadableMiniRouteMap
       title="Mini Harita Önizleme"
-      subtitle="Organizasyon planı durakları gerçek Leaflet tile arka planında gösterilir."
+      subtitle="Organizasyon planı durakları gerçek harita üzerinde gösterilir."
       linePoints={model.linePoints}
       markers={model.markers}
       legendItems={model.legendItems}
       fallbackText="Koordinatlı konum ekleyin."
-      footerText={model.footerText || "Koordinat ekleyince burada tile arka planlı mini harita görünür."}
+      footerText={model.footerText || "Koordinat ekleyince burada mini harita görünür."}
       height={230}
       routePreviewShiftId={shiftId}
       routeModeLabel={shiftId ? "Yol ağına yakın rota" : "Yaklaşık / kuş uçuşu önizleme"}

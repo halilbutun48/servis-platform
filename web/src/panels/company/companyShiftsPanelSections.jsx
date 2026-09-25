@@ -50,6 +50,7 @@ export function CompanyOffersDecisionModal({
           roomScores={roomScores}
           summaryParams={{ role: "COMPANY", shiftId: offersModal.shiftId, scopeLabel: "Hizmet Alan Firma teklif karşılaştırması" }}
           maxRows={4}
+          compact
           style={{ padding: 14 }}
         />
       </div>
@@ -212,7 +213,7 @@ export function CompanyOfferSendModal({ offerModal, rooms, roomScores, busy, onC
             checked={offerModal.onlyHub}
             onChange={(e) => onChange({ onlyHub: e.target.checked })}
           />
-          Sadece konumlu
+          Merkez konumu kayıtlı olanlar
         </label>
       </div>
 

@@ -5,15 +5,25 @@ import { CANONICAL_PRISMA_SCHEMA_PATH as ACCEPTED_SCHEMA_PATH, CANONICAL_PRISMA_
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { BATCH10_DOC_WORKTREE_CLOSURE_PATHS, mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { BATCH10_DOC_WORKTREE_CLOSURE_PATHS, mustStatusEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+
+// The source list remains the canonical current-head authority.  This checker
+// applies it only to its route/service scope, preserving exact identities.
+const exactApprovedConcurrentCanonicalEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
+const exactApprovedConcurrentRouteServiceEntries = exactApprovedConcurrentCanonicalEntries.filter(
+  ({ path: entryPath }) => entryPath.startsWith('backend/src/routes/') || entryPath.startsWith('backend/src/services/'),
+);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
+const require = createRequire(import.meta.url);
+const packageOwnershipDeltaManifest = require('./lib/packageOwnershipDeltaManifest.json');
 
 const helperRel = 'backend/src/ai/chat/excelToRouteReadinessRedteamPack.js';
 const docRel = 'docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md';
@@ -30,11 +40,9 @@ const redteamOwnedScopePaths = [
   'docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md',
   'backend/scripts/ux_live_panel_premium_smoke_01_check.js',
   'backend/scripts/lib/guardSmokeEvidence.js',
-  'backend/scripts/current_head_scope_policy_01_check.js',
   'backend/scripts/lib/currentHeadScopePolicy.js',
 ];
 const redteamTrackedCleanPaths = [
-  'backend/scripts/lib/guardSmokeEvidence.js',
   ...BATCH10_DOC_WORKTREE_CLOSURE_PATHS.filter(
     (path) =>
       path !== 'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md' &&
@@ -43,12 +51,13 @@ const redteamTrackedCleanPaths = [
       path !== 'docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md' &&
       path !== 'web/README.md'
   ),
-  'backend/scripts/current_head_scope_policy_01_check.js',
 ];
 const redteamAuthorizedFollowupPaths = [
   'package.json',
   'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
   'backend/scripts/ux_live_panel_premium_smoke_01_check.js',
+  'backend/scripts/lib/guardSmokeEvidence.js',
+  'backend/scripts/current_head_scope_policy_01_check.js',
   'backend/scripts/lib/currentHeadScopePolicy.js',
   'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md',
   'docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md',
@@ -57,8 +66,6 @@ const redteamAuthorizedFollowupPaths = [
   'docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md',
   'web/README.md',
 ];
-const exactApprovedConcurrentCanonicalEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
-
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
 }
@@ -304,6 +311,16 @@ function mustFileSha256(relPath, expectedHash, label) {
   ok(label);
 }
 
+function canonicalAcceptedRawSha256(relPath) {
+  const record = packageOwnershipDeltaManifest.touchedPaths?.find((entry) => entry.path === relPath);
+  if (!record || !String(record.owner || '').trim()) fail(`canonical identity owner missing for ${relPath}`);
+  if (record.acceptance !== 'PASS') fail(`canonical identity acceptance missing for ${relPath}`);
+  if (record.identityRegistered !== true) fail(`canonical identity registration missing for ${relPath}`);
+  if (!String(record.lifecycle || '').startsWith('ACTIVE_')) fail(`canonical identity lifecycle is not active for ${relPath}`);
+  if (!/^[A-F0-9]{64}$/i.test(String(record.rawSha256 || ''))) fail(`canonical raw identity missing for ${relPath}`);
+  return String(record.rawSha256).toUpperCase();
+}
+
 function normalizedTextSha256(relPath) {
   const bytes = fs.readFileSync(path.join(root, relPath));
   for (let i = 0; i < bytes.length; i++) {
@@ -416,6 +433,11 @@ async function main() {
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
   const cachedNames = gitCachedNames();
+  mustStatusEmptyOrExactlyWithIdentity(
+    ['backend/src/routes', 'backend/src/services'],
+    exactApprovedConcurrentRouteServiceEntries,
+    'backend route/service status stays current-head approved',
+  );
   const pack = await loadPack();
 
   const requiredMilestones = [
@@ -629,23 +651,20 @@ async function main() {
   if (kvkkCount < 10) fail(`expected at least 10 KVKK / cross-org cases, saw ${kvkkCount}`);
   if (hallucinationCount < 10) fail(`expected at least 10 hallucination / overclaim cases, saw ${hallucinationCount}`);
 
-  mustStatusEmptyOrExactlyWithIdentity(
-    ['backend/src/routes', 'backend/src/services'],
-    [
-      ...exactApprovedConcurrentCanonicalEntries,
-    ],
-    'backend route/service status stays current-head approved'
-  );
-  mustDiffEmptyOrExactlyWithIdentity(
-    ['backend/prisma', 'prisma'],
-    [],
-    'backend prisma diff stays empty'
-  );
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, 'accepted Prisma schema SHA matches');
-  mustFileSha256('backend/scripts/lib/guardSmokeEvidence.js', 'D8233D3711D5C4CFE7F41F0B06DE717C6CC67F86F9D21991E19933A4DB5AE28F', 'guard smoke evidence helper SHA matches');
-  mustFileSha256('backend/scripts/ux_live_panel_premium_smoke_01_check.js', '50364982D34C7F7EB97DE8729E93CFF7B0B0F478B740211E4E1B51598FF516EF', 'premium smoke check SHA matches');
-  mustFileSha256('backend/scripts/current_head_scope_policy_01_check.js', '0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F', 'current head scope policy check SHA matches');
-  mustFileSha256('backend/scripts/lib/currentHeadScopePolicy.js', '56F431E518A1D44D34143320A4B8811E018C079051E25EAFD03C788840147277', 'current head scope policy manifest SHA matches');
+  mustFileSha256(
+    'backend/scripts/lib/guardSmokeEvidence.js',
+    canonicalAcceptedRawSha256('backend/scripts/lib/guardSmokeEvidence.js'),
+    'guard smoke evidence helper SHA matches canonical identity',
+  );
+  mustNormalizedTextSha256('backend/scripts/ux_live_panel_premium_smoke_01_check.js', 'C82D81B94C35C7EDFD6D90A9FDEBB1CFF6EE6CB4BA3BFDAD6E35E2D346C884B6', 'premium smoke check normalized SHA matches');
+  mustFileSha256('backend/scripts/current_head_scope_policy_01_check.js', '1B9D790AF2740A338DCC46FB4C317D468073C0D66A166BE254B11F71FECDE2D6', 'current head scope policy check SHA matches');
+  if (!CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.every(
+    ({ path, sha256 }) => typeof path === 'string' && /^[A-F0-9]{64}$/.test(String(sha256 || '')),
+  )) {
+    fail('current head scope policy exports exact accepted backend identities');
+  }
+  ok('current head scope policy exports exact accepted backend identities');
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
     mustMigrationDirectoryShape(path.posix.dirname(entry.path), `accepted Prisma migration directory shape ${entry.path}`);

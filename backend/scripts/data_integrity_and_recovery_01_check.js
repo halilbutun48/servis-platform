@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { assertProductExtensionsIncludes, productExtensionsCheckIndex } from "./lib/productExtensionsRegistry.js";
 import { mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,12 +39,12 @@ const paths = {
 
 const dataIntegrityScript = "check:dataintegrityandrecovery01";
 
-const approvedDataIntegrityRouteDiffs = [
+const historicalDataIntegrityRouteDiffs = [
   { path: "backend/src/routes/companyOverview.js", sha256: "EB2E7956FD7C02891687815D389AB9E9C5374CAB2FD684E2ADE7CE42C83F8528" },
   { path: "backend/src/routes/commercialCoreRoomRoutes.js", sha256: "CA2B42085F02A2DFEB03ED3992FE47583152EE424FF39DDF73C9699B99D6D2FF" },
   { path: "backend/src/routes/commercialCore.js", sha256: "14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F" },
   { path: "backend/src/routes/operationProof.js", sha256: "E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0" },
-  { path: "backend/src/routes/trustQuality.js", sha256: "FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD" },
+  { path: "backend/src/routes/trustQuality.js", sha256: "0E2358DAA468D205DAC92CFF6E01BA4CE3FD3E89350505BE6DF704882C6A8FBD" },
   { path: "backend/src/routes/admin.js", sha256: "61A3D7CF98653E6E413E787BCBFD9D8DD9AECE77A7663DCA78E9CE446D2C5DA4" },
   { path: "backend/src/routes/agreements.js", sha256: "90CED5678F26B47AE69CE985D6D436B70DF8886B523ECA8988E51BE53ECD2B9A" },
   { path: "backend/src/routes/auth.js", sha256: "A137B997660215DBD2C5E8AA24593BD96F319CF784322C65D3628B8C9F4AACF3" },
@@ -53,11 +54,32 @@ const approvedDataIntegrityRouteDiffs = [
   { path: "backend/src/routes/shifts/company.js", sha256: "19A7C7C96A86438CDE36345274D8EC8E363C889CABF4C440FE8529DBAA1534A0" },
 ];
 
-const approvedDataIntegrityServiceDiffs = [
+const historicalDataIntegrityServiceDiffs = [
   { path: "backend/src/services/dashboardBulk.js", sha256: "E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E" },
   { path: "backend/src/services/qualityPaymentBridgeService.js", sha256: "935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83" },
   { path: "backend/src/services/companyShiftMutationTail.js", sha256: "FE0F1F30AD2F5BC893FF631F26D19EDDDE2060246ED129087104BFDD69D88C78" },
 ];
+
+// This consumer projects exact current route/service identities from the
+// current-head authority. It does not authorize a path family or retain a
+// competing stale source of truth.
+function mergeExactIdentities(...entryLists) {
+  const entriesByPath = new Map();
+  for (const entries of entryLists) {
+    for (const entry of entries) entriesByPath.set(entry.path, entry);
+  }
+  return Object.freeze([...entriesByPath.values()]);
+}
+
+const approvedDataIntegrityRouteDiffs = mergeExactIdentities(
+  historicalDataIntegrityRouteDiffs,
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => path.startsWith("backend/src/routes/")),
+);
+
+const approvedDataIntegrityServiceDiffs = mergeExactIdentities(
+  historicalDataIntegrityServiceDiffs,
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => path.startsWith("backend/src/services/")),
+);
 
 function readFile(relOrAbsPath) {
   return fs.readFileSync(relOrAbsPath, "utf8");

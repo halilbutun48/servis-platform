@@ -177,10 +177,10 @@ must(factsSource, "Sürücünün telefon GPS’i", 'facts keeps driver phone gps
 mustAny(factsSource, ['Riskli cihazı göster', 'Riskli cihaz', 'Riskli cihazlar var.'], 'facts keeps operation-health chip wording');
 mustAny(factsSource, ['Operasyon kanıtı eksik', 'Eksik / engel', 'Kanıt durumu'], 'facts keeps operations panel wording');
 
-must(copilotPanel, 'selectedSummary', 'copilot panel keeps selected summary bridge');
-must(copilotPanel, 'selectedFields', 'copilot panel keeps selected fields bridge');
-must(copilotPanel, 'selectedBadges', 'copilot panel keeps selected badges bridge');
-must(copilotPanel, 'structuredFacts', 'copilot panel keeps structured facts bridge');
+must(copilotPanel, 'const requestSelection = liveSelection || chatSelection || null;', 'copilot panel resolves the current explicit selection');
+must(copilotPanel, 'const uiSurface = captureCopilotUiSurface();', 'copilot panel captures the current UI surface');
+must(copilotPanel, 'selectedEntityType: requestSelection?.entityType || ""', 'copilot panel forwards the selected entity type');
+must(copilotPanel, 'selectedEntityId: Number(requestSelection?.entityId || 0) || null', 'copilot panel forwards the selected entity id');
 
 must(mapPanel, 'setCopilotSelection({', 'room map panel keeps copilot selection push');
 must(mapPanel, 'label:', 'room map panel keeps selected label bridge');
@@ -301,9 +301,10 @@ const roomMapMismatch = await runCopilotFoundation({
 
 const roomMapMismatchText = String(roomMapMismatch?.plainSummary || roomMapMismatch?.screenExplanation || roomMapMismatch?.jobPurpose || '');
 mustNot(roomMapMismatchText, 'Bunu anlayamadım', 'room map mismatch fallback avoids unknown wording');
-mustAny(roomMapMismatchText, ['34ABC123', 'Seçili araç 34ABC123 görünüyor.'], 'room map mismatch keeps selected vehicle');
-mustAny(roomMapMismatchText, ['Son GPS 47 sn önce', 'Son GPS 47 sn önce gelmiş', 'Son GPS 47 saniye önce gelmiş'], 'room map mismatch keeps last gps');
-mustAny(roomMapMismatchText, ["Sürücünün telefon GPS’i", 'araç bağlantısı', 'görev bağlantısı'], 'room map mismatch keeps gps recommendation');
+must(roomMapMismatchText, 'Seçili kayıt Vardiya #3 görünüyor.', 'room map mismatch preserves only the explicit selected identity');
+mustNot(roomMapMismatchText, '34ABC123', 'room map mismatch does not project an unverified vehicle identity');
+mustNot(roomMapMismatchText, 'Son GPS 47', 'room map mismatch does not project an unverified location signal');
+must(roomMapMismatchText, 'Araç haritada görünmüyorsa önce son GPS zamanı, araç bağlantısı, görev bağlantısı ve Sürücünün telefon GPS’i durumunu kontrol et.', 'room map mismatch keeps the safe verification recommendation');
 
 const roomMapNoSelection = await runCopilotFoundation({
   intent: 'JOB_GUIDE',
@@ -376,7 +377,7 @@ mustAny(roomOperationReply, ['Aktif sürücü 0', 'Aktif sürücü: 0'], 'operat
 mustAny(roomOperationReply, ['riskli cihaz 1', 'Riskli cihaz: 1'], 'operation health reply keeps risky device count');
 mustAny(roomOperationReply, ['konum sinyali güncel değil / çevrim dışı 1', 'konum sinyali güncel değil / çevrim dışı: 1'], 'operation health reply keeps stale offline count');
 mustAny(roomOperationReply, ['açık sorun 2', 'Açık sorun: 2'], 'operation health reply keeps open issue count');
-must(roomOperationReply, 'Riskli cihazı aç, konum sinyali güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.', 'operation health reply keeps natural next step');
+must(roomOperationReply, 'Şimdi: En kritik sorun canlılık ve cihaz riski.', 'operation health reply keeps the current diagnostic lead');
 mustNot(roomOperationReply, 'Yetki sınırını kontrol et', 'operation health reply avoids default role boundary');
 mustNot(roomOperationReply, 'Bu aksiyonu simüle et', 'operation health reply avoids action simulation wording');
 mustAny(roomOperationHelp?.contextualSuggestedChips || roomOperationHelp?.suggestedChips || [], ['Riskli cihazı göster'], 'operation health chips keep risk chip');

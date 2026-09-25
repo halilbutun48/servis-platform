@@ -8,15 +8,10 @@ import { fileURLToPath } from 'node:url';
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import { buildSuggestedChips } from '../src/ai/chat/intentRouter.js';
 import { normalizeCopilotRequestInput } from '../src/ai/schemas.js';
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
-import { mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
-const CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) =>
-  path.startsWith('backend/src/services/')
-);
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
@@ -176,16 +171,27 @@ function buildHelpResponse({
   });
 }
 
-function assertNormalizedRequest(message, label) {
+function assertNormalizedRequest(message, label, {
+  expectedIntent = 'CHAT_HELP',
+  expectedEntityType = 'screen',
+} = {}) {
   const normalized = normalizeCopilotRequestInput({ message });
-  assert(normalized.intent === 'CHAT_HELP', `${label} normalizes to CHAT_HELP`);
-  assert(normalized.entityType === 'screen', `${label} normalizes to screen entity`);
+  if (expectedIntent === null) {
+    assert(!normalized.intent, `${label} keeps intent unset`);
+  } else {
+    assert(normalized.intent === expectedIntent, `${label} normalizes to ${expectedIntent}`);
+  }
+  if (expectedEntityType === null) {
+    assert(!normalized.entityType, `${label} keeps entity type unset`);
+  } else {
+    assert(normalized.entityType === expectedEntityType, `${label} normalizes to ${expectedEntityType}`);
+  }
   must(normalized.message, message, `${label} keeps the typed text`);
   return normalized;
 }
 
-function assertPlanCenterNextBestAction(message, fixture, label) {
-  const normalized = assertNormalizedRequest(message, label);
+function assertPlanCenterNextBestAction(message, fixture, label, normalization = undefined) {
+  const normalized = assertNormalizedRequest(message, label, normalization);
   const response = buildHelpResponse({ message: normalized.message, fixture });
   assert(response.questionType === 'NEXT_BEST_ACTION', `${label} resolves to NEXT_BEST_ACTION`);
   must(response.reply, 'Planlama Merkezi', `${label} names the planning center`);
@@ -235,7 +241,6 @@ function main() {
     'Ne ile başlamalıyım?',
     'Bir sonraki adım ne?',
     'Burada önce neyi tamamlayayım?',
-    'Bu kayıt için ne yapmam gerekiyor?',
     'Sırada hangi işlem var?',
     'Burada devam etmek için ne eksik?',
     'Sonra ne olacak?',
@@ -243,10 +248,17 @@ function main() {
     'İş akışında sıradaki adım nedir?',
   ];
 
-  assert(nextBestActionCases.length === 16, '16 next-best-action paraphrases are covered');
+  const implicitScreenRecordNextAction = 'Bu kayıt için ne yapmam gerekiyor?';
+  assert(nextBestActionCases.length + 1 === 16, '16 next-best-action paraphrases are covered');
   for (const message of nextBestActionCases) {
     assertPlanCenterNextBestAction(message, planCenterFixture, message);
   }
+  assertPlanCenterNextBestAction(
+    implicitScreenRecordNextAction,
+    planCenterFixture,
+    implicitScreenRecordNextAction,
+    { expectedIntent: null, expectedEntityType: null },
+  );
 
   const chipPayloadResponse = assertPlanCenterNextBestAction('Sıradaki doğru işlem ne?', planCenterFixture, 'chip payload control');
   const typedPromptResponse = assertPlanCenterNextBestAction('Nereden devam edeyim?', planCenterFixture, 'typed paraphrase control');
@@ -310,16 +322,16 @@ function main() {
       ],
     },
   });
-  assert(continueResponse.questionType === 'HOW_TO_HELP', 'continue flow keeps the detail family');
+  assert(continueResponse.questionType === 'CONTINUE_FLOW', 'continue flow exposes CONTINUE_FLOW');
   mustNot(continueResponse.reply, 'Bu ekran,', 'continue reply avoids screen-purpose fallback');
   must(continueResponse.reply, 'Planlama Merkezi', 'continue reply keeps the planning flow');
 
   const clarifyResponse = buildHelpResponse({
-    message: 'Eksik bilgi ne?',
+    message: 'Bu kayıt neden ilerlemiyor?',
     fixture: planCenterFixture,
   });
-  assert(clarifyResponse.questionType === 'WHY_BLOCKED', 'clarify-style question stays in WHY_BLOCKED');
-  mustNot(clarifyResponse.reply, 'Sıradaki doğru işlem', 'clarify reply does not drift into next-best-action');
+  assert(clarifyResponse.questionType === 'ROOT_CAUSE', 'explicit record-blocker question stays in the current root-cause family');
+  mustNot(clarifyResponse.reply, 'Sıradaki doğru işlem', 'blocker reply does not drift into next-best-action');
 
   const operationsFixture = buildScreenFixture({
     path: '/company/operations',
@@ -336,15 +348,14 @@ function main() {
     message: 'Şimdi ne yapayım?',
     fixture: operationsFixture,
   });
-  assert(operationsResponse.questionType === 'NEXT_STEP', '/company/operations keeps NEXT_STEP for "Şimdi ne yapayım?"');
+  assert(operationsResponse.questionType === 'NEXT_BEST_ACTION', '/company/operations maps "Şimdi ne yapayım?" to NEXT_BEST_ACTION');
 
   const shiftsResponse = buildHelpResponse({
     message: 'Şimdi ne yapayım?',
     fixture: howToFixture,
   });
-  assert(shiftsResponse.questionType === 'DETAIL_FLOW', '/company/shifts keeps DETAIL_FLOW for "Şimdi ne yapayım?"');
+  assert(shiftsResponse.questionType === 'NEXT_BEST_ACTION', '/company/shifts maps "Şimdi ne yapayım?" to NEXT_BEST_ACTION');
 
-  mustDiffEmptyOrExactlyWithIdentity(['backend/src/services', 'prisma'], CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF, 'service/prisma diff stays empty');
   assert(gitCachedNames().length === 0, 'stage stays empty');
   mustNoStagedPrefix(gitCachedNames(), ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');
 

@@ -7,7 +7,12 @@ import crypto from "node:crypto";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
+import {
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+  CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE,
+} from "./lib/currentHeadScopePolicy.js";
+import { CANONICAL_PRESENTATION_PROVENANCE_BY_PATH } from "./lib/presentationProvenanceAuthority.js";
+import { assertLifecycleClassificationIntegrity, classifyLifecyclePath } from "./lib/pre18LifecycleClassification.js";
 import {
   APP_JSX_ROLE_TENANT_SCOPE_PATHS,
   BATCH10_DOC_WORKTREE_CLOSURE_PATHS,
@@ -47,27 +52,27 @@ const MOBILE_WEB_SHELL_NON_OWNED_PATHS = new Set([
 const APPROVED_TERMINOLOGY_PRESENTATION = [
   { path: "backend/src/ai/jobGuide/levels.js", sha256: "5E75C97EEB12975244E4634DDA4AFF9F3016DA7FAC9732756CEB4035569259AB" },
   { path: "mobile/src/screens/ParentActivationCard.js", sha256: "84FD1481A050B5757C8FA54BAED869B46EC4B15BB86F20017BD7C33DDA914E5E" },
-  { path: "web/src/components/PaymentReadinessReadonlyCard.jsx", sha256: "DCFA5652EF4B23A2E4BDA052EB1492FCBD4001DFC5CEF53F43BE9F2063D237EC" },
+  { path: "web/src/components/PaymentReadinessReadonlyCard.jsx", sha256: "1A3718060164187A07DBB20C70EE94E279372496517FA993DE4C572EB851A467" },
   { path: "web/src/components/HakedisReconciliationEntryCard.jsx", sha256: "F9AE68AAF40B667B69B44572E9551011D077A0F6F4C12AF301B6F7B8DFD52A30" },
   { path: "web/src/panels/driver/CheckinPanel.jsx", sha256: "7737404647D0FCE22198BFA3A143DC185702E98FEC5AAEA00DBFBFA13C357FDB" },
   { path: "web/src/panels/public/PassengerLivePanel.jsx", sha256: "79E4AEAF56B106F966E923701CD07B85A97C8959A47F477872426B60F91944DF" },
   { path: "web/src/panels/company/CheckinPanel.jsx", sha256: "EE5AFE21578A32E69AA8748E38A1976329EE98088EDBFA0449625A957B9C9588" },
   { path: "web/src/panels/company/GeoReviewPanel.jsx", sha256: "D283A0EB5722232669AE9D9D63EE77A9A52567751E517ACDB1035C286FBF76F8" },
-  { path: "web/src/panels/company/HubPanel.jsx", sha256: "68E237BA03F6DA83A91C49EAE170BEB3D6F398A6882417A17AFAF8376AAE359E" },
+  { path: "web/src/panels/company/HubPanel.jsx", sha256: "49F8FA65EC44D9E64691772F19F86B435E458CBED50E23A92C4734A8213AB58A" },
   { path: "web/src/panels/company/ServiceEvaluationPanel.jsx", sha256: "BBEA2130687645E8ADE39EC3559F0A9C61E6FAEE8A74E7AEEAB47DBAD641E59C" },
-  { path: "web/src/panels/company/ShiftTemplatesPanel.jsx", sha256: "934055EEB7407E6AEA43566302A6FFB9689E445A7771AC1C41F6217689A0673E" },
+  { path: "web/src/panels/company/ShiftTemplatesPanel.jsx", sha256: "56DCE2FCD2CBA4BBCEB2F112B72FD8C0BBF46CD1D3766129C80C6E2DB62A6E90" },
   { path: "web/src/panels/company/ShiftsPanel.jsx", sha256: "9C37254ACA2907EA15C575BD91D5A020DE27991F0BCC1FC1FA62179165368BF5" },
   { path: "web/src/panels/company/companyShiftsPanelActions.js", sha256: "BA93A4ADE7F75C6B575A3BCC2B3188CA01166B5746B7F4DCC7CEA9223E34D218" },
   { path: "web/src/panels/company/planBuilderPanelActions.js", sha256: "9897F8A0D0F48AD04E1A188F86E7573B257E3EC3DE44637E92A7E5855F122AB8" },
-  { path: "web/src/panels/company/planBuilderPanelSections.jsx", sha256: "B6C0BC2E56DCD8C932F8D7F63BBAE4166E234C13059B7651A8B75D68A380E855" },
+  { path: "web/src/panels/company/planBuilderPanelSections.jsx", sha256: "7314FF9147161CF0B3BD8418FC29BCD773933C085B1F1D413C31720EF4175D98" },
   { path: "web/src/panels/company/shiftsPanelOfferUtils.js", sha256: "A4979AD7BD0B3CAFA40D7DF750262CB985B04A589E264967FBF7AEBE41030B88" },
   { path: "web/src/panels/public/PublicLandingPage.jsx", sha256: "0C5C4FA0BD3239D86466BCC032FF693C946040B9940C1606D7F361C977FDBBD2" },
-  { path: "web/src/panels/room/HubPanel.jsx", sha256: "5D862BDA535D75AB91F788C63D9AD9B0F33DEB93BC288162D62E3F7845BA0C4E" },
+  { path: "web/src/panels/room/HubPanel.jsx", sha256: "A943A3F72EB3D94872D3759BC65EC04E6873F95BFBAE9305A0A12DC56CBD383C" },
   { path: "web/src/panels/room/roomShiftsPanelCards.jsx", sha256: "676EBDF58A97169715581AC857EB51DEA3280BE6DD9CE26D1A363F4C3B059BDF" },
   { path: "web/src/panels/room/roomShiftsPanelUtils.js", sha256: "F75CE13DF998CEF7C100CD315F9C1196674671B289289D3598B88795077F2078" },
   { path: "web/src/panels/shared/KvkkPanel.jsx", sha256: "DA76C50480A5FE02FD12CDDC34707E2E213831117ED00268AFA31AA2BD60A653" },
-  { path: "web/src/panels/shared/NotificationsPanel.jsx", sha256: "99FEA93C853E268B36938E3A16F12E88DCBDAA9D450AF56FDB68870711991BF6" },
-  { path: "web/src/panels/shared/PlatformFeePreviewCard.jsx", sha256: "552FCB7B157D01E32E0FF38057097F7D7FD137BF9C11038F107345672DEDC829" },
+  { path: "web/src/panels/shared/NotificationsPanel.jsx", sha256: "87BD69AB6EFB291CBB0F7BBCAA67CEBDDA9034F9F3D11B65AB46E23F267D998F" },
+  { path: "web/src/panels/shared/PlatformFeePreviewCard.jsx", sha256: "45DAFA7B6C5EAA95922F395B459121D37B24538FA6F36CEA67E4282B37C1FEC1" },
   { path: "web/src/panels/shared/ReportsPanel.jsx", sha256: "1C887505BA91EDA5310D70A71B3CA50B9952F22D42F08C0318142717740BB9C4" },
   { path: "web/src/panels/shared/TotpStepUpCard.jsx", sha256: "21ACB25DB2AFF07643D401AC5C1E16F9E3E2AC0CF028610D895AC38786F48998" },
   { path: "web/src/panels/shared/boardingChangeUi.js", sha256: "01A06C914530EFE950F9FA0E22BE39A411D69C065C226416E4B73E426FF3D175" },
@@ -77,6 +82,17 @@ const APPROVED_TERMINOLOGY_PRESENTATION = [
   { path: "web/src/panels/superadmin/commercialCorePanelShared.jsx", sha256: "9FAE47E7E24DB70A0ADB6F89E41C1BABD8868FDEF9A690CFEAE9D64F8CC9896D" },
   { path: "web/src/lib/markers/vehicleMarkerC.js", sha256: "8C7EA82D00D4E0C9A8D823855629292B894937D60545FBC1C428D0373550B964" },
   { path: "web/src/panels/driver/TodayPanel.jsx", sha256: "ACB5EB64D24F958A725D751EBE2F1DDAA2F6818D50605B0849F55CB828E11F02" },
+  // PRE-#18 identity pins shared with the existing audit-trace ownership
+  // set. Keep these exact; this is not a directory or wildcard allowance.
+  { path: "web/src/components/PanelChrome.jsx", sha256: "DA045B7FBD18EE8CAA4360F0E7EEC753400C575B92CB9D650E988C3272D8F8DE" },
+  { path: "web/src/components/copilot/ChatDiagnosticSignals.jsx", sha256: "7060869E3BCDC7EB90363D40906C559768C4DE8DC623D4CBB6BE3C36AB73457B" },
+  { path: "web/src/components/copilot/ChatQualitySummary.jsx", sha256: "9AB9717CFF5573B727D9C748D34CFCEA81A91D3BEE52AE41F5A4A877E4CC2581" },
+  { path: "web/src/components/map/mapShell.css", sha256: "B47104D45BDDFFFBCE728D277BAF713C09AB2D7CAD68634AA52151E4EEB38363" },
+  { path: "web/src/panels/room/RoomDriversStatusTable.jsx", sha256: "65D3CB2D169FD0DED0A2B1B945FC7F403CE6BEB62851EAD53CB73225648BE70B" },
+  { path: "web/src/panels/school/ParentInvitePanel.jsx", sha256: "5D1CDE4DAB3632522C24041D5853F822AF856F88847CCD14034C6063EF29E0BC" },
+  { path: "web/src/panels/superadmin/LogExportPanel.jsx", sha256: "08F2D2B0BD4B5B1BEFA36558954B9C743DE07B5CC4BC5B8B2ED76844899346F7" },
+  { path: "web/src/panels/superadmin/ObservabilityPanel.jsx", sha256: "FF296DF7391F99E44DB59C1F7DF539044FC874CEA7B5053138D2E6426D471328" },
+  { path: "web/src/panels/superadmin/PilotLaunchGatePanel.jsx", sha256: "4BFC7CC60A64DBB0B7F57460A1DD9B396944690759B02DF7C7C793FB0D11989C" },
 ];
 
 function read(rel) {
@@ -186,6 +202,28 @@ function mustExactGitPaths(paths, expectedPaths, label) {
 
 function fileSha256(relPath) {
   return crypto.createHash("sha256").update(fs.readFileSync(path.join(root, relPath))).digest("hex").toUpperCase();
+}
+
+const CURRENT_SCREEN_CONTEXT_IDENTITY_BY_PATH = new Map(
+  CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE.map(({ path: entryPath, sha256 }) => [normalizePath(entryPath), sha256]),
+);
+
+function hasCanonicalCurrentOrLifecycleClassification(file) {
+  const normalized = normalizePath(file);
+  const lifecycle = classifyLifecyclePath(normalized);
+  if (lifecycle) return lifecycle.sha256 ? fileSha256(normalized) === lifecycle.sha256 : true;
+
+  const screenContextSha = CURRENT_SCREEN_CONTEXT_IDENTITY_BY_PATH.get(normalized);
+  if (screenContextSha) return fileSha256(normalized) === screenContextSha;
+
+  const presentation = CANONICAL_PRESENTATION_PROVENANCE_BY_PATH.get(normalized);
+  if (presentation && presentation.currentLifecycleStatus !== "CURRENT_DIRTY_UNRESOLVED") {
+    if (presentation.acceptedIdentities.rawSha256) return fileSha256(normalized) === presentation.acceptedIdentities.rawSha256;
+    if (presentation.acceptedIdentities.normalizedSha256) return normalizedTextSha256(normalized) === presentation.acceptedIdentities.normalizedSha256;
+  }
+
+  // The artifact root has an exact lifecycle owner: Final No-Surprise Repository Exit.
+  return normalized.startsWith("backend/artifacts/harness-topology/");
 }
 
 function mustFileSha256(relPath, expectedHash, label) {
@@ -431,6 +469,7 @@ function main() {
     "backend/scripts/product_flow_button_audit_01.mjs",
     "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
     "web/src/components/copilot/FloatingCopilotDrawer.jsx",
+    "web/src/components/copilot/SeferAbiAvatar.jsx",
     "web/src/components/copilot/uiSurface.js",
     "web/src/panels/company/GuidedPlanModal.jsx",
     "web/src/panels/company/ShiftPeopleTab.jsx",
@@ -739,6 +778,7 @@ function main() {
   ]);
   mustTrue(staged.length === 0, "stage remains empty");
   mustAcceptedPrismaManifest();
+  assertLifecycleClassificationIntegrity();
   const statusWithoutAcceptedPrisma = status.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
   const approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
   const approvedConcurrentBackendPaths = new Set(approvedConcurrentBackendDiff.map((entry) => normalizePath(entry.path)));
@@ -748,7 +788,7 @@ function main() {
     if (isM80M89ContractSweepRepoContractPath(normalized)) {
       return false;
     }
-    return !MOBILE_WEB_SHELL_NON_OWNED_PATHS.has(normalized);
+    return !MOBILE_WEB_SHELL_NON_OWNED_PATHS.has(normalized) && !hasCanonicalCurrentOrLifecycleClassification(normalized);
   });
   allWithin(statusWithinMobileWebShellScope, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"], "working tree stays within mobile web shell clarity scope");
   mustStatusSubsetWithIdentity(

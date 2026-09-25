@@ -58,6 +58,14 @@ async function visit(browser, { name, identifier, role, companyKind, route, scop
   await page.addInitScript((value) => localStorage.setItem("token", value), token);
   await page.goto(`${WEB_BASE_URL}${route}`, { waitUntil: "domcontentloaded", timeout: 25000 });
   const workspace = page.getByTestId("cost-scenario-workspace");
+  await workspace.waitFor({ state: "attached", timeout: 20000 });
+  for (let attempt = 0; attempt < 3 && !(await workspace.isVisible()); attempt += 1) {
+    const disclosure = workspace.locator("xpath=ancestor::details[1]");
+    if (await disclosure.count() && !(await disclosure.evaluate((node) => node.open))) {
+      await disclosure.locator(":scope > summary").click({ force: true });
+    }
+    await page.waitForTimeout(500);
+  }
   await workspace.waitFor({ state: "visible", timeout: 20000 });
   await page.getByTestId("scenario-operation-region").waitFor({ state: "visible", timeout: 20000 }).catch(() => {});
   const contextualVisible = contextualHome
@@ -91,17 +99,18 @@ async function visit(browser, { name, identifier, role, companyKind, route, scop
     const exactProvinceScope = referenceText.includes(baseline.regionName || "__missing_region__");
     const explicitApprovedFallbackScope = referenceText.includes("Türkiye geneli") && referenceText.includes("Alternatif kaynak kullanılıyor");
     record(`${name} market reference has exact province or explicit approved fallback scope`, (exactProvinceScope || explicitApprovedFallbackScope) && !referenceText.includes("Türkiye / kapsam belirtilmedi"));
-    if (referenceText.includes("Fuel: AVAILABLE") || referenceText.includes("FRESH") || referenceText.includes("STALE")) {
+    const referenceState = await referenceCard.getAttribute("data-reference-state");
+    if (referenceState === "available" || referenceText.includes("Kaynak:")) {
       const details = referenceCard.getByTestId("external-reference-details");
       await details.locator("summary").click().catch(() => {});
       const detailsText = await details.innerText().catch(() => "");
-      record(`${name} provider source as-of freshness visible`, ["Provider:", "Kaynak:", "As of:", "Güncellik:"].every((label) => detailsText.includes(label)));
-      record(`${name} partial reference layers remain separate`, ["Dış Piyasa Referansı", "SeferPakt Bölgesel Referansı", "Senin Gerçek Verilerin"].every((label) => detailsText.includes(label)) && detailsText.includes("Uygun resmi dış veri yok") ? true : detailsText.includes("Dış Piyasa Referansı"));
+      record(`${name} provider source as-of freshness visible`, ["Kaynak:", "Tarih:", "Güncellik:"].every((label) => detailsText.includes(label)));
+      record(`${name} partial reference layers remain separate`, ["Dış Piyasa Referansı", "SeferPakt Bölgesel Referansı", "Senin Gerçek Verilerin"].every((label) => detailsText.includes(label)) || detailsText.includes("Dış piyasa referansı"));
       await details.locator("summary").click().catch(() => {});
     } else {
       record(`${name} no-data reference still names canonical region`, referenceText.includes(baseline.regionName || "__missing_region__") && referenceText.includes("resmi veri"));
     }
-    record(`${name} component completeness is explicit`, referenceText.includes("Reference completeness:") && referenceText.includes("Driver: MISSING") && referenceText.includes("Maintenance: MISSING") && referenceText.includes("Actual: NOT AVAILABLE"));
+    record(`${name} component completeness is explicit`, referenceText.includes("Kanıt kapsamı:") && referenceText.includes("Yakıt verisi:") && referenceText.includes("Sürücü maliyeti: Mevcut değil") && referenceText.includes("Bakım maliyeti: Mevcut değil") && referenceText.includes("Gerçek maliyet: Mevcut değil"));
   }
   record(`${name} no manual province or required fuel price entry`, !settledPageText.includes("provinceNameInput") && !settledPageText.includes("İl seçiniz") && !(await page.getByTestId("scenario-input-fuelUnitPriceMinor").isVisible().catch(() => false)));
   record(`${name} role identity and baseline source`, initialText.includes(planningOnly ? "Planlama bağlamı" : role === "ROOM" ? "Taşımacılık Firması" : "Önizleme") && Boolean(baseline.source?.label));
@@ -151,7 +160,7 @@ async function visit(browser, { name, identifier, role, companyKind, route, scop
     record(`${name} capacity-derived alternatives after passenger change`, resultAlternativeCount === 3 && resultText.includes("Araç sayısı") && resultText.includes("Kapasiteye göre otomatik"), `alternatives=${resultAlternativeCount}`);
     record(`${name} explainable comparison`, resultText.includes("Tahmini tasarruf") && resultText.includes("Mevcut plan tahmini maliyeti") && resultText.includes("Beklenen") && resultText.includes("En uygun") && resultText.includes("Riskli durum"));
     record(`${name} financial operational risk effects`, ["Finansal Etki", "Operasyonel Etki", "Risk"].every((label) => resultText.includes(label)));
-    record(`${name} master primer comparison evidence`, ["Dönem sonu forecast", "Bütçe sapması", "Planned-vs-actual", "Gecikme etkisi", "Operasyonel risk", "Rota alternatifi", "Dispatch sınırı"].every((label) => resultText.includes(label)));
+    record(`${name} master primer comparison evidence`, ["Dönem sonu öngörüsü", "Bütçe sapması", "Planlanan / gerçekleşen", "Gecikme etkisi", "Operasyonel risk", "Rota alternatifi", "Atama sınırı"].every((label) => resultText.includes(label)));
     record(`${name} preview-only result`, resultText.includes("Sadece önizleme") && resultText.includes("canlı") && !resultText.includes("Uygula"));
     record(`${name} partial optional costs disclosed`, resultText.includes("Sürücü maliyeti") && resultText.includes("Bakım maliyeti") && resultText.includes("Bu karşılaştırma sürücü ve bakım maliyetleri dahil edilmeden hesaplandı."));
 

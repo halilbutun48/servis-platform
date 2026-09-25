@@ -161,6 +161,7 @@ function readableCostText(value, fallback = "Belirtilmedi") {
     OPERATIONAL_COST_MODEL: "Operasyon maliyet hesabı",
     COMPARED: "Karşılaştırıldı",
     NOT_COMPARED: "Karşılaştırılamadı",
+    "SEAM_PROVEN_DEFERRED_TO_#20": "Bu senaryoda atama önerisi sunulmaz",
     NONE: "Yok",
   };
   return labels[raw.toUpperCase()] || humanizeUserFacingText(raw, fallback);
@@ -277,7 +278,7 @@ function VehiclePlanAlternatives({ result, currencyCode, onSelect }) {
 function ComparisonStatus({ title, item, money = false, currencyCode = "TRY" }) {
   if (!item) return null;
   const value = money ? formatMoney(item.varianceAmountMinor, currencyCode) : readableCostText(item.status, "Yetersiz veri");
-  return <div className="muted" style={{ display: "flex", justifyContent: "space-between", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "8px 0" }}><span>{title}</span><b>{value}</b></div>;
+  return <div className="muted" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.4fr)", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "8px 0" }}><span style={{ minWidth: 0 }}>{title}</span><b style={{ minWidth: 0, textAlign: "right", overflowWrap: "anywhere" }}>{value}</b></div>;
 }
 
 function Field({ label, value, onChange, type = "number", placeholder = "", testId = "", readOnly = false }) {
@@ -865,6 +866,6 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
     </div>
   );
 
-  if (embedded) return <section style={{ marginTop: 14 }}><div className="card" style={{ padding: 14 }}><div className="panelSectionTitle">Maliyet Senaryosu</div>{content}</div></section>;
+  if (embedded) return <section style={{ marginTop: 14, minWidth: 0, width: "100%" }}><div className="card" style={{ padding: 14, minWidth: 0 }}><div className="panelSectionTitle">Maliyet Senaryosu</div>{content}</div></section>;
   return <PanelChrome title={title} subtitle={subtitle}>{content}</PanelChrome>;
 }

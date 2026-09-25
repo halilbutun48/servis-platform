@@ -1,8 +1,12 @@
 # NEXT BACKLOG V1
 
-## Current frontier (2026-08-31)
+## Current frontier (2026-09-24)
 
-The current engineering entrypoint is [docs/INDEX.md](INDEX.md). #1–#14 are closed/proven, #16 is the documentation architecture/index milestone, #17 and #15 are not started. The planning notes below are retained as historical compatibility material and do not replace the current frontier.
+### PRE-#18 immutable closure
+
+PRE-#18 combined acceptance, No-Surprise Repository Exit, final terminology / Sefer Abi closure, and the bounded public-runtime recheck are GREEN. `#18` has not started. The next project action is a new chat loading the post-PRE-#18 master primer after the immutable closure SHA/tag is established; proven-closed work is not reopened without concrete newer regression evidence.
+
+The current engineering entrypoint is [docs/INDEX.md](INDEX.md). PRE-#18 foundation acceptance, role/product acceptance and documentation/SSOT reconciliation are green at the current HEAD; `verify:repo` and `verify:final` pass, KVKK is `262/262`, role/data isolation is `216/216`, and active/product unowned is `0`. `PREMIUM_UI` is `72_OF_72_PROVEN`; Foundation Exit is `GREEN PRESERVED`, ROOM/OTHER423 is `PROVEN_CLOSED`, and the No-Surprise Repository Exit classification is green. PRE-#18 is `FINAL CLOSURE READY`; #18 and commit/tag/push have not started. The planning notes below are retained as historical compatibility material and do not replace the current frontier.
 
 Tarih: 2026-04-19
 Timezone: Europe/Istanbul

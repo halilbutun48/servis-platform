@@ -132,14 +132,14 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
   const requestEntryChips = ['Bugün binmeyeceğim talebi oluştur', 'Konumumu al', 'Büyük haritada konum seç', 'Adresten konum bul'];
   const seferScoreChips = ['Bu tedarikçinin SeferPuanı kaç?', 'Kalite puanı neden düşük?', 'Eksik sinyalleri göster', 'SeferPuanı nasıl yükselir?'];
   const marketplaceFreeToOperateChips = [
-    'Lisans ücreti var mı?',
-    'Bu sözleşmeden SeferPakt pay alacak mı?',
-    'Başarı payı neden 0 görünüyor?',
+    'Sözleşme ödeme modeli nedir?',
+    'Ödeme hazırlığı hangi aşamada?',
+    'Bu sözleşmenin kaynak durumu ne?',
     'Bu sözleşme SeferPakt kaynaklı mı?',
     'Kaynak vardiyası var mı?',
     'Organizasyon planı tek başına kaynak kanıtı sayılır mı?',
   ];
-  const commercialPaymentChips = ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç', 'Hakediş eksiklerini sor'];
+  const commercialPaymentChips = ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Ödeme hazırlığı hangi aşamada?', 'Hakediş önizlemesini aç', 'Hakediş eksiklerini sor'];
 
   if (path.includes('/company/commercial-flow') || path.includes('/room/commercial-flow') || path.includes('/superadmin/commercial-core')) {
     if (topic === 'DYNAMIC_SAVINGS_PREVIEW') {

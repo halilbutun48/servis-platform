@@ -10,6 +10,7 @@ export default function SeferAbiAvatar({ state = "idle", size = 52, decorative =
       className={`seferAbiAvatar seferAbiAvatar--${normalizedState}`}
       data-mascot-persona="mature-human"
       data-sefer-abi-state={normalizedState}
+      data-character-motion={normalizedState}
       style={{ width: dimension, height: dimension }}
       aria-hidden={decorative ? "true" : undefined}
     >

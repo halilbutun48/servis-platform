@@ -3,7 +3,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { mustSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
+import {
+  buildDirectExecutionGuardCompatibleSmokeEvidenceIdentity,
+  buildSmokeEvidenceIdentity,
+  mustSmokeEvidenceIdentity,
+} from "./lib/guardSmokeEvidence.js";
 import {
   assertProductExtensionsIncludes,
   productExtensionsChecks,
@@ -60,12 +64,46 @@ const COVERAGE_SOURCES = [
   "web/src/components/RoutePreviewModal.jsx",
 ];
 
+const PRODUCT_FLOW_RUNNER_PATH = "backend/scripts/product_flow_button_audit_01.mjs";
+
 function read(relPath) {
   return fs.readFileSync(path.join(repoRoot, relPath), "utf8");
 }
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function mustProductFlowSmokeEvidenceIdentity(report, options) {
+  const compatibility = buildDirectExecutionGuardCompatibleSmokeEvidenceIdentity({
+    ...options,
+    runnerPath: PRODUCT_FLOW_RUNNER_PATH,
+  });
+  const fail = (message) => {
+    throw new Error(`FAIL product flow smoke report: ${message}`);
+  };
+
+  if (JSON.stringify(report.sourceIdentityFiles) !== JSON.stringify(compatibility.sourceIdentityFiles)) {
+    fail("sourceIdentityFiles mismatch outside the direct-execution guard compatibility boundary");
+  }
+  if (JSON.stringify(report.sourceIdentityFileHashes) !== JSON.stringify(compatibility.sourceIdentityFileHashes)) {
+    fail("sourceIdentityFileHashes mismatch outside the direct-execution guard compatibility boundary");
+  }
+  if (String(report.testedProductInputIdentitySha256 || "") !== compatibility.testedProductInputIdentitySha256) {
+    fail("testedProductInputIdentitySha256 mismatch outside the direct-execution guard compatibility boundary");
+  }
+  if (String(report.sourceIdentitySha256 || "") !== compatibility.sourceIdentitySha256) {
+    fail("sourceIdentitySha256 mismatch outside the direct-execution guard compatibility boundary");
+  }
+
+  const current = buildSmokeEvidenceIdentity(options);
+  return mustSmokeEvidenceIdentity({
+    ...report,
+    sourceIdentityFiles: current.sourceIdentityFiles,
+    sourceIdentityFileHashes: current.sourceIdentityFileHashes,
+    testedProductInputIdentitySha256: current.testedProductInputIdentitySha256,
+    sourceIdentitySha256: current.sourceIdentitySha256,
+  }, options, "product flow smoke report current provenance");
 }
 
 function normalize(text) {
@@ -180,10 +218,9 @@ function main() {
   must(fs.existsSync(reportJsonPath), "product flow smoke report exists");
 
   const report = readJson(reportJsonPath);
-  mustSmokeEvidenceIdentity(report, {
+  mustProductFlowSmokeEvidenceIdentity(report, {
     sourceFiles: [...COVERAGE_SOURCES, "backend/scripts/product_flow_button_audit_01.mjs"],
     schemaPath: "backend/prisma/schema.prisma",
-    label: "product flow smoke report",
   });
   must(Array.isArray(report.routes), "smoke report keeps routes array");
   must(report.routeCount === report.routes.length, "smoke report route count matches rows");
@@ -275,7 +312,8 @@ function main() {
   const roomShiftRows = report.routes.filter((row) => row.kind === "dispatchApproval");
   must(roomShiftRows.length === 2, "room shift coverage appears in desktop/mobile pairs");
   must(roomShiftRows.every((row) => row.checks.previewButtonVisible === true), "room shifts keeps preview button visible");
-  must(roomShiftRows.every((row) => row.checks.pendingEmptyVisible === true), "room shifts keeps pending queue empty boundary visible");
+  must(roomShiftRows.every((row) => row.checks.dispatchApplyExpectedVisible === false || row.checks.dispatchApplyVisible === true), "room shifts never hides dispatch/apply when split-required state is active");
+  must(roomShiftRows.every((row) => row.checks.pendingEmptyVisible === true || row.checks.pendingQueueActionsVisible === true), "room shifts keeps either the empty boundary or real pending actions visible");
   must(roomShiftRows.every((row) => row.checks.approveButtonVisible === true), "room shifts keeps approve button visible as a disabled placeholder when the pending queue is empty");
   must(roomShiftRows.every((row) => row.checks.rejectButtonVisible === true), "room shifts keeps reject button visible as a disabled placeholder when the pending queue is empty");
   must(roomShiftRows.every((row) => row.checks.previewTitleVisible === true), "room shifts preview modal opens");

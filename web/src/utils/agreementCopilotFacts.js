@@ -4,6 +4,13 @@ import {
   buildDiagnosticPriority,
   normalizeCopilotSignal,
 } from "./copilotFacts.js";
+import {
+  userFacingCommercialPreviewText,
+  userFacingLineageSignalLabel,
+  userFacingLineageText,
+  userFacingFactText,
+  userFacingStatusText,
+} from "./terminology.js";
 
 function compactText(value, fallback = "") {
   const text = String(value || "").replace(/\s+/g, " ").trim();
@@ -77,8 +84,8 @@ function routeRefreshStatusLabel(value) {
 function humanizePreviewBoundaryText(value, fallback = "Sadece önizleme — işlem başlatılmaz.") {
   return compactText(value, fallback)
     .replace(/\bReadonly\b/gi, "Sadece önizleme")
-    .replace(/\bfree-to-operate\b/gi, "başarı payı")
-    .replace(/\bbillable\b/gi, "başarı payı")
+    .replace(/\bfree-to-operate\b/gi, "kaynak ve ödeme hazırlığı")
+    .replace(/\bbillable\b/gi, "kaynak zinciri mevcut")
     .replace(/\borganization plan\b/gi, "organizasyon planı")
     .replace(/\bmarket shift\b/gi, "kaynak vardiya")
     .replace(/\bsource lineage\b/gi, "kaynak zinciri");
@@ -99,7 +106,8 @@ function humanizeAgreementSourceType(value) {
   if (key === "SEFERPAKT_NEW") return "SeferPakt kaynaklı yeni sözleşme";
   if (key === "SEFERPAKT_RENEWAL") return "SeferPakt kaynaklı yenilenen sözleşme";
   if (key === "INSUFFICIENT_LINEAGE") return "Kaynak zinciri eksik";
-  if (key === "BILLABLE") return "Başarı payı için uygun görünür";
+  // Legacy source marker: BILLABLE is an internal compatibility value only.
+  if (key === "BILLABLE") return "Kaynak zinciri mevcut";
   return compactText(value, "");
 }
 
@@ -181,16 +189,16 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
   const qualityPaymentBridgePreview = summary.qualityPaymentBridgePreview && typeof summary.qualityPaymentBridgePreview === "object"
     ? summary.qualityPaymentBridgePreview
     : null;
-  const qualityPaymentBridgeSummaryText = compactText(summary.qualityPaymentBridgeSummaryText || qualityPaymentBridgePreview?.summaryText || qualityPaymentBridgePreview?.previewOnlyNote || "");
-  const qualityPaymentBridgeStatus = compactText(summary.qualityPaymentBridgeStatus || qualityPaymentBridgePreview?.qualityStatus || "");
+  const qualityPaymentBridgeSummaryText = userFacingFactText(compactText(summary.qualityPaymentBridgeSummaryText || qualityPaymentBridgePreview?.summaryText || qualityPaymentBridgePreview?.previewOnlyNote || ""));
+  const qualityPaymentBridgeStatus = userFacingStatusText(summary.qualityPaymentBridgeStatus || qualityPaymentBridgePreview?.qualityStatus || "");
   const qualityPaymentBridgeProofCompleteness = Number(summary.qualityPaymentBridgeProofCompleteness ?? qualityPaymentBridgePreview?.proofCompleteness ?? NaN);
-  const qualityPaymentBridgeSettlementReadiness = compactText(summary.qualityPaymentBridgeSettlementReadiness || qualityPaymentBridgePreview?.settlementReadiness || "");
-  const qualityPaymentBridgeImpactStatus = compactText(summary.qualityPaymentBridgeImpactStatus || qualityPaymentBridgePreview?.paymentPreviewImpact?.status || "");
-  const qualityPaymentBridgeImpactReason = compactText(summary.qualityPaymentBridgeImpactReason || qualityPaymentBridgePreview?.paymentPreviewImpact?.reason || "");
-  const qualityPaymentBridgeMissingProofs = compactList(summary.qualityPaymentBridgeMissingProofs || qualityPaymentBridgePreview?.missingProofs || [], 6);
-  const qualityPaymentBridgeRiskReasons = compactList(summary.qualityPaymentBridgeRiskReasons || qualityPaymentBridgePreview?.riskReasons || [], 6);
-  const qualityPaymentBridgeNextAction = compactText(summary.qualityPaymentBridgeNextAction || qualityPaymentBridgePreview?.nextBestAction || "");
-  const qualityPaymentBridgePreviewNote = humanizePreviewBoundaryText(summary.qualityPaymentBridgePreviewNote || qualityPaymentBridgePreview?.previewOnlyNote || "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.");
+  const qualityPaymentBridgeSettlementReadiness = userFacingStatusText(summary.qualityPaymentBridgeSettlementReadiness || qualityPaymentBridgePreview?.settlementReadiness || "");
+  const qualityPaymentBridgeImpactStatus = userFacingStatusText(summary.qualityPaymentBridgeImpactStatus || qualityPaymentBridgePreview?.paymentPreviewImpact?.status || "");
+  const qualityPaymentBridgeImpactReason = userFacingFactText(compactText(summary.qualityPaymentBridgeImpactReason || qualityPaymentBridgePreview?.paymentPreviewImpact?.reason || ""));
+  const qualityPaymentBridgeMissingProofs = compactList(summary.qualityPaymentBridgeMissingProofs || qualityPaymentBridgePreview?.missingProofs || [], 6).map(userFacingFactText);
+  const qualityPaymentBridgeRiskReasons = compactList(summary.qualityPaymentBridgeRiskReasons || qualityPaymentBridgePreview?.riskReasons || [], 6).map(userFacingFactText);
+  const qualityPaymentBridgeNextAction = userFacingFactText(compactText(summary.qualityPaymentBridgeNextAction || qualityPaymentBridgePreview?.nextBestAction || ""));
+  const qualityPaymentBridgePreviewNote = humanizePreviewBoundaryText(userFacingFactText(summary.qualityPaymentBridgePreviewNote || qualityPaymentBridgePreview?.previewOnlyNote || "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz."));
   const seferScorePreview = summary.seferScorePreview && typeof summary.seferScorePreview === "object"
     ? summary.seferScorePreview
     : null;
@@ -209,7 +217,9 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
   const platformFeePreview = summary.platformFeePreview && typeof summary.platformFeePreview === "object"
     ? summary.platformFeePreview
     : null;
-  const platformFeeSummaryText = compactText(summary.platformFeeSummaryText || platformFeePreview?.summaryText || "");
+  const platformFeeSummaryText = (summary.platformFeeSummaryText || platformFeePreview?.summaryText)
+    ? "Kaynak ve ödeme hazırlığı önizlemesi"
+    : "";
   const platformFeeStatus = platformFeePreview?.previewOnly
     ? "Sadece önizleme"
     : humanizeAgreementSourceType(summary.platformFeeStatus || platformFeePreview?.agreementSourceLabel || platformFeePreview?.agreementSource || "");
@@ -217,15 +227,18 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
   const platformFeeSourceConfidence = humanizeSourceConfidence(summary.platformFeeSourceConfidence || platformFeePreview?.sourceConfidence || "");
   const platformFeeLicenseFeeText = compactText(summary.platformFeeLicenseFeeText || platformFeePreview?.licenseFeeText || "0 TL");
   const platformFeeAmountText = compactText(summary.platformFeeAmountText || platformFeePreview?.agreementAmountText || "");
-  const platformFeeRateText = compactText(summary.platformFeeRateText || platformFeePreview?.successShareRateLabel || "");
-  const platformFeeEstimatedShareText = compactText(summary.platformFeeEstimatedShareText || platformFeePreview?.estimatedSuccessShareText || "");
+  const platformFeeRateText = "";
+  const platformFeeEstimatedShareText = "";
   const platformFeePayableNow = Boolean(summary.platformFeePayableNow ?? platformFeePreview?.payableNow ?? false);
   const platformFeeCanInvoice = Boolean(summary.platformFeeCanInvoice ?? platformFeePreview?.canInvoice ?? false);
   const platformFeeCanCollect = Boolean(summary.platformFeeCanCollect ?? platformFeePreview?.canCollect ?? false);
-  const platformFeeLineageSummary = compactText(summary.platformFeeLineageSummary || platformFeePreview?.lineageSummary || "");
-  const platformFeeSafeExplanation = humanizePreviewBoundaryText(summary.platformFeeSafeExplanation || platformFeePreview?.safeExplanation || "Sadece önizleme — tahsilat/fatura oluşturulmaz.");
-  const platformFeeReason = compactText(summary.platformFeeReason || platformFeePreview?.reason || "");
-  const platformFeeSourceEvidence = compactList(summary.platformFeeEvidence || platformFeePreview?.sourceEvidence || [], 6);
+  const platformFeeLineageSummary = userFacingLineageText(compactText(summary.platformFeeLineageSummary || platformFeePreview?.lineageSummary || ""));
+  const platformFeeSafeExplanation = userFacingCommercialPreviewText(humanizePreviewBoundaryText(summary.platformFeeSafeExplanation || platformFeePreview?.safeExplanation || "Kaynak ve ödeme hazırlığı yalnızca salt okunur sinyaldir."));
+  const platformFeeReason = userFacingCommercialPreviewText(compactText(summary.platformFeeReason || platformFeePreview?.reason || ""));
+  const platformFeeSourceEvidence = compactList(
+    (summary.platformFeeEvidence || platformFeePreview?.sourceEvidence || []).map((item) => userFacingCommercialPreviewText(userFacingLineageText(item), "")),
+    6,
+  );
   const platformFeeSourceSignals = platformFeePreview?.sourceSignals && typeof platformFeePreview.sourceSignals === "object"
     ? platformFeePreview.sourceSignals
     : {};
@@ -246,7 +259,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     || platformFeeSourceSignals.missingSignals
     || [],
     6,
-  );
+  ).map(userFacingLineageSignalLabel);
   const platformFeeMarketShiftId = safeInt(summary.platformFeeMarketShiftId || platformFeePreview?.marketShiftId || platformFeeSourceLineage.marketShiftId || 0);
   const platformFeeOrganizationPlanId = safeInt(summary.platformFeeOrganizationPlanId || platformFeePreview?.organizationPlanId || platformFeeSourceLineage.organizationPlanId || 0);
   const platformFeeSelectedOfferId = safeInt(summary.platformFeeSelectedOfferId || platformFeePreview?.selectedOfferId || platformFeeSourceLineage.selectedOfferId || 0);
@@ -269,7 +282,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     routeRefreshSummaryText,
     qualityPaymentBridgeSummaryText ? `Kalite / hakediş: ${qualityPaymentBridgeSummaryText}` : "",
     seferScoreSummaryText ? `SeferPuanı: ${seferScoreSummaryText}` : "",
-    platformFeeSummaryText ? `Başarı payı / lisans: ${platformFeeSummaryText}` : "",
+    platformFeeSummaryText ? `Kaynak / ödeme hazırlığı: ${platformFeeSummaryText}` : "",
   ].filter(Boolean).join(" • "), "");
 
   const sourceShiftId = safeInt(summary.sourceShiftId || summary.sourceShift?.id || item?.sourceShiftId || 0);
@@ -327,19 +340,19 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     } : null,
     platformFeeSummaryText || platformFeeStatus || platformFeeRateText || platformFeeEstimatedShareText ? {
       id: "platform-fee",
-      label: "Başarı payı",
+      label: "Ödeme hazırlığı",
       value: platformFeeStatus || (platformFeePreview?.previewOnly ? "Sadece önizleme" : "Yetersiz veri"),
       note: compactList([
         platformFeeSummaryText,
-        platformFeeRateText ? `Oran: ${platformFeeRateText}` : "",
-        platformFeeEstimatedShareText ? `Tahmini pay: ${platformFeeEstimatedShareText}` : "",
+        platformFeeRateText ? `Hazırlık oranı: ${platformFeeRateText}` : "",
+        platformFeeEstimatedShareText ? `Hazırlık tutarı: ${platformFeeEstimatedShareText}` : "",
         platformFeeSourceConfidence ? `Kaynak güveni: ${platformFeeSourceConfidence}` : "",
       ], 3).join(" • ") || platformFeeSafeExplanation || "Sadece önizleme — tahsilat/fatura oluşturulmaz.",
     } : null,
     platformFeeSourceLineage?.lineageSummary || platformFeeBillableByMarketplacePolicy || platformFeeMissingSignals.length ? {
       id: "platform-lineage",
       label: "Kaynak zinciri",
-      value: platformFeeBillableByMarketplacePolicy ? "Başarı payı için uygun görünür" : humanizeAgreementSourceType(platformFeeSourceLineage?.sourceType || platformFeeStatus || "Kaynak zinciri eksik"),
+      value: platformFeeBillableByMarketplacePolicy ? "Kaynak zinciri mevcut" : humanizeAgreementSourceType(platformFeeSourceLineage?.sourceType || platformFeeStatus || "Kaynak zinciri eksik"),
       note: compactList([
         humanizePreviewBoundaryText(platformFeeSourceLineage?.lineageSummary || platformFeeLineageSummary, platformFeeLineageSummary),
         platformFeeMarketShiftId ? `Kaynak vardiya: #${platformFeeMarketShiftId}` : "",
@@ -439,19 +452,19 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
       })] : []),
       ...(platformFeeSummaryText || platformFeeStatus || platformFeeRateText || platformFeeEstimatedShareText ? [normalizeCopilotSignal({
         id: "platform-fee",
-        label: "Başarı payı",
+        label: "Ödeme hazırlığı",
         value: platformFeeStatus || (platformFeePreview?.previewOnly ? "Sadece önizleme" : "Yetersiz veri"),
         note: compactList([
           platformFeeSummaryText,
-          platformFeeRateText ? `Oran: ${platformFeeRateText}` : "",
-          platformFeeEstimatedShareText ? `Tahmini pay: ${platformFeeEstimatedShareText}` : "",
+          platformFeeRateText ? `Hazırlık oranı: ${platformFeeRateText}` : "",
+          platformFeeEstimatedShareText ? `Hazırlık tutarı: ${platformFeeEstimatedShareText}` : "",
           platformFeeSourceConfidence ? `Kaynak güveni: ${platformFeeSourceConfidence}` : "",
         ], 3).join(" • ") || platformFeeSafeExplanation || "Sadece önizleme — tahsilat/fatura oluşturulmaz.",
       })] : []),
       ...(platformFeeSourceLineage?.lineageSummary || platformFeeBillableByMarketplacePolicy || platformFeeMissingSignals.length ? [normalizeCopilotSignal({
         id: "platform-lineage",
         label: "Kaynak zinciri",
-        value: platformFeeBillableByMarketplacePolicy ? "Başarı payı için uygun görünür" : humanizeAgreementSourceType(platformFeeSourceLineage?.sourceType || platformFeeStatus || "Kaynak zinciri eksik"),
+        value: platformFeeBillableByMarketplacePolicy ? "Kaynak zinciri mevcut" : humanizeAgreementSourceType(platformFeeSourceLineage?.sourceType || platformFeeStatus || "Kaynak zinciri eksik"),
         note: compactList([
           platformFeeSourceLineage?.lineageSummary || platformFeeLineageSummary,
           platformFeeMarketShiftId ? `Kaynak vardiya: #${platformFeeMarketShiftId}` : "",
@@ -538,7 +551,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
       "Sürücünün telefon GPS’i",
       "Araç GPS’i",
       "Hakediş önizlemesi",
-      "Lisans ücreti / başarı payı",
+      "Kaynak ve ödeme hazırlığı",
     ],
     summary: productionSummary,
     vehicleLabel,

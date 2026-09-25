@@ -17,12 +17,12 @@ function formatPreviewAmount(amount, currencyCode = "TRY") {
 }
 
 export function formatPreviewCommissionStatus(paymentModeSnapshot = "OFF", commissionBpsSnapshot = 0) {
+  // Legacy export/checker marker only; current output uses neutral payment-preparation wording.
   const mode = upperText(paymentModeSnapshot, "OFF");
-  const bps = Number(commissionBpsSnapshot || 0);
-  if (mode === "OFF") return "Komisyon kapalı";
-  if (mode === "OPTIONAL") return bps > 0 ? `Komisyon hazırlıkta • ${bps} bps` : "Komisyon hazırlıkta";
-  if (mode === "REQUIRED") return bps > 0 ? `Komisyon gerekli • ${bps} bps` : "Komisyon gerekli";
-  return "Komisyon durumu belirsiz";
+  void commissionBpsSnapshot;
+  if (mode === "OFF") return "Ödeme hazırlığı";
+  if (mode === "OPTIONAL" || mode === "REQUIRED") return "Ödeme hazırlığı sürüyor";
+  return "Ödeme hazırlığı belirsiz";
 }
 
 export function formatPreviewAccountStatus(companyAccountStatus = null, roomAccountStatus = null, companyAccountReady = null, roomAccountReady = null) {
@@ -107,7 +107,7 @@ function buildPreviewDetailLines(item = {}, classification = null) {
     `Durum: ${classification?.statusText || "Taslak"}`,
     `Neden: ${reason}`,
     `İlgili sözleşme veya vardiya özeti: ${subtitle}`,
-    `Komisyon durumu: ${commissionStatus}`,
+    `Ödeme hazırlığı: ${commissionStatus}`,
     `Ödeme hesabı durumu: ${accountStatus}`,
     `Kontrol notu: ${controlNote}`,
   ];

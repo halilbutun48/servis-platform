@@ -150,7 +150,7 @@ export default function SchoolParentInvitePanel() {
 
       {err ? <div className="card err" style={{ marginTop: 12 }}>{err}</div> : null}
 
-      <div className="grid" style={{ gridTemplateColumns: "minmax(320px, 1.1fr) minmax(340px, 1fr)", gap: 12, marginTop: 12 }}>
+      <div className="grid schoolParentInviteLayout" style={{ gridTemplateColumns: "minmax(320px, 1.1fr) minmax(340px, 1fr)", gap: 12, marginTop: 12 }}>
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Yeni veli kodu üret</h3>
           <form onSubmit={onCreateAccess} style={{ display: "grid", gap: 10, maxWidth: 620 }}>
@@ -203,7 +203,7 @@ export default function SchoolParentInvitePanel() {
 
       <div className="card" style={{ overflowX: "auto", marginTop: 12 }}>
         <h3 style={{ marginTop: 0 }}>Erişim geçmişi</h3>
-        <table className="tbl" style={{ whiteSpace: "nowrap" }}>
+        <table className="tbl pre18-mobile-card-table" style={{ whiteSpace: "nowrap" }}>
           <thead>
             <tr>
               <th>Öğrenci</th>
@@ -216,11 +216,11 @@ export default function SchoolParentInvitePanel() {
           <tbody>
             {items.length ? items.map((it) => (
               <tr key={it.id}>
-                <td>{it.child?.fullName || `#${it.childPersonelId}`}</td>
-                <td>{statusPill(it.status)}</td>
-                <td>{fmt(it.createdAt)}</td>
-                <td>{fmt(it.expiresAt)}</td>
-                <td>
+                <td data-label="Öğrenci">{it.child?.fullName || `#${it.childPersonelId}`}</td>
+                <td data-label="Durum">{statusPill(it.status)}</td>
+                <td data-label="Oluşturma">{fmt(it.createdAt)}</td>
+                <td data-label="Bitiş">{fmt(it.expiresAt)}</td>
+                <td data-label="Aksiyon">
                   <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                     {it.status === "ACTIVE" ? <button type="button" className="secondary" onClick={() => revokeAccess(it.id)}>İptal et</button> : null}
                     <button type="button" className="secondary" onClick={() => renewAccess(it)} disabled={busy}>Yenile</button>

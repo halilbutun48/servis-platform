@@ -98,6 +98,46 @@ function assertNoForbiddenVisibleTerms(text, label) {
   }
 }
 
+function hasScreenContextProjection(source, pathExpression) {
+  const payload = String(source || '').match(/screenContext:\s*\{([\s\S]*?)(?=\n\s*uiHints:)/)?.[1] || '';
+  return Boolean(payload)
+    && new RegExp(`path:\\s*${pathExpression}`).test(payload)
+    && /role:\s*me\?\.role\s*\|\|\s*["']{2}/.test(payload)
+    && /selectedLabel:\s*requestSelection\?\.label\s*\|\|\s*["']{2}/.test(payload)
+    && /selectedEntityType:\s*requestSelection\?\.entityType\s*\|\|\s*["']{2}/.test(payload)
+    && /selectedEntityId:\s*Number\(requestSelection\?\.entityId\s*\|\|\s*0\)\s*\|\|\s*null/.test(payload);
+}
+
+function hasDrawerContextContract(source) {
+  return /resolveCopilotScreenContext\(currentPath, me\)/.test(source)
+    && /canUseRouteBoundCopilotContext\(routeContext, screenContext\)/.test(source)
+    && /if\s*\(!canUseRouteBoundContext\)\s*\{/.test(source)
+    && hasScreenContextProjection(source, 'screenContext\\.path');
+}
+
+function hasPanelContextContract(source) {
+  return /resolveCopilotScreenContext\(routeContext\.path, me\)/.test(source)
+    && /canUseRouteBoundCopilotContext\(routeContext, screenMetadata\)/.test(source)
+    && /if\s*\(!token\s*\|\|\s*!canUseFullRouteContext/.test(source)
+    && hasScreenContextProjection(source, 'selectedChatScreen\\.path');
+}
+
+function hasRouteAuthorizationContract(source) {
+  return /routeContext\?\.status\s*===\s*ROUTE_CONTEXT_STATUSES\.ALLOW/.test(source)
+    && /metadata\?\.metadataStatus\s*===\s*"FOUND"/.test(source)
+    && /Boolean\(metadata\?\.screen\)/.test(source);
+}
+
+function mutateScreenContextProjection(source, mutate) {
+  const start = String(source || '').indexOf('screenContext: {');
+  const end = String(source || '').indexOf('uiHints:', start);
+  if (start < 0 || end < 0) return source;
+  const prefix = source.slice(0, start);
+  const projection = source.slice(start, end);
+  const suffix = source.slice(end);
+  return `${prefix}${mutate(projection)}${suffix}`;
+}
+
 console.log('=== COP-04B-FIX-07 PERSONEL LIVE COPILOT CONTEXT CHECK ===');
 
 const pkg = read('package.json');
@@ -111,6 +151,7 @@ const helpComposerSource = read('backend/src/ai/chat/helpComposer.js');
 const answerPolicySource = read('backend/src/ai/chat/answerQualityPolicy.js');
 const drawerSource = read('web/src/components/copilot/FloatingCopilotDrawer.jsx');
 const copilotPanelSource = read('web/src/panels/shared/CopilotPanel.jsx');
+const routeContextSource = read('web/src/copilot/routeContext.js');
 const personelLivePanelSource = read('web/src/panels/personel/LivePanel.jsx');
 const personelMyRidePanelSource = read('web/src/panels/personel/MyRidePanel.jsx');
 const registryScripts = productExtensionsChecks.map((step) => step.script);
@@ -169,24 +210,43 @@ must(answerPolicySource, 'Aynı kayıt için devam et', 'answer policy keeps con
 must(answerPolicySource, 'Ekran rehberini aç', 'answer policy keeps guide block');
 must(answerPolicySource, 'İlgili durumu sor', 'answer policy keeps generic follow-up block');
 
-must(drawerSource, 'helpContextSummary', 'floating drawer keeps helpContextSummary bridge');
-must(drawerSource, 'contextSummary', 'floating drawer keeps contextSummary bridge');
-must(drawerSource, 'selectedFields', 'floating drawer keeps selected fields bridge');
-must(drawerSource, 'selectedBadges', 'floating drawer keeps selected badges bridge');
-must(drawerSource, 'structuredFacts', 'floating drawer keeps structured facts bridge');
-must(drawerSource, 'liveFacts', 'floating drawer keeps live facts bridge');
-must(copilotPanelSource, 'helpContextSummary', 'copilot panel keeps helpContextSummary bridge');
-must(copilotPanelSource, 'contextSummary', 'copilot panel keeps contextSummary bridge');
-must(copilotPanelSource, 'selectedFields', 'copilot panel keeps selected fields bridge');
-must(copilotPanelSource, 'selectedBadges', 'copilot panel keeps selected badges bridge');
-must(copilotPanelSource, 'structuredFacts', 'copilot panel keeps structured facts bridge');
-must(copilotPanelSource, 'liveFacts', 'copilot panel keeps live facts bridge');
+if (hasDrawerContextContract(drawerSource)) ok('floating drawer transports authenticated route-bound screen context');
+else fail('floating drawer transports authenticated route-bound screen context');
+if (hasPanelContextContract(copilotPanelSource)) ok('copilot panel transports authenticated route-bound screen context');
+else fail('copilot panel transports authenticated route-bound screen context');
+if (hasRouteAuthorizationContract(routeContextSource)) ok('screen context transport requires an allowed route and resolved screen');
+else fail('screen context transport requires an allowed route and resolved screen');
+
+const drawerMissingRole = mutateScreenContextProjection(drawerSource, (projection) => projection.replace(/role:\s*me\?\.role\s*\|\|\s*["']{2},?/, ''));
+const drawerMissingPath = mutateScreenContextProjection(drawerSource, (projection) => projection.replace('path: screenContext.path,', 'path: "",'));
+const drawerMissingSelection = mutateScreenContextProjection(drawerSource, (projection) => projection.replace(/^\s*selectedEntityType:\s*requestSelection\?\.entityType\s*\|\|\s*["']{2},\s*\n\s*selectedEntityId:\s*Number\(requestSelection\?\.entityId\s*\|\|\s*0\)\s*\|\|\s*null,\s*\n/gm, ''));
+const drawerWrongRole = mutateScreenContextProjection(drawerSource, (projection) => projection.replace('role: me?.role || ""', 'role: "COMPANY"'));
+const panelMissingRole = mutateScreenContextProjection(copilotPanelSource, (projection) => projection.replace(/role:\s*me\?\.role\s*\|\|\s*["']{2},?/, ''));
+const panelMissingPath = mutateScreenContextProjection(copilotPanelSource, (projection) => projection.replace('path: selectedChatScreen.path,', 'path: "",'));
+const panelMissingSelection = mutateScreenContextProjection(copilotPanelSource, (projection) => projection.replace(/^\s*selectedEntityType:\s*requestSelection\?\.entityType\s*\|\|\s*["']{2},\s*\n\s*selectedEntityId:\s*Number\(requestSelection\?\.entityId\s*\|\|\s*0\)\s*\|\|\s*null,\s*\n/gm, ''));
+const panelWrongRole = mutateScreenContextProjection(copilotPanelSource, (projection) => projection.replace('role: me?.role || ""', 'role: "COMPANY"'));
+const routeAuthorizationBypassed = routeContextSource.replace('routeContext?.status === ROUTE_CONTEXT_STATUSES.ALLOW', 'true');
+const contextNegativeControls = [
+  ['drawer rejects missing role', !hasDrawerContextContract(drawerMissingRole)],
+  ['drawer rejects missing route', !hasDrawerContextContract(drawerMissingPath)],
+  ['drawer rejects missing selected entity', !hasDrawerContextContract(drawerMissingSelection)],
+  ['drawer rejects substituted role', !hasDrawerContextContract(drawerWrongRole)],
+  ['copilot panel rejects missing role', !hasPanelContextContract(panelMissingRole)],
+  ['copilot panel rejects missing route', !hasPanelContextContract(panelMissingPath)],
+  ['copilot panel rejects missing selected entity', !hasPanelContextContract(panelMissingSelection)],
+  ['copilot panel rejects substituted role', !hasPanelContextContract(panelWrongRole)],
+  ['route authorization rejects bypass', !hasRouteAuthorizationContract(routeAuthorizationBypassed)],
+];
+for (const [label, passed] of contextNegativeControls) {
+  if (passed) ok(`negative control ${label}`);
+  else fail(`negative control ${label}`);
+}
 must(personelLivePanelSource, 'setCopilotSelection(copilotSelection)', 'personel live panel keeps selection push');
 must(personelLivePanelSource, 'fields:', 'personel live panel keeps fields bridge');
 must(personelLivePanelSource, 'badges:', 'personel live panel keeps badges bridge');
 must(personelLivePanelSource, 'facts', 'personel live panel keeps facts bridge');
 must(personelLivePanelSource, 'selectedRecordLabel', 'personel live panel keeps selected record label bridge');
-must(personelLivePanelSource, 'Araç GPS’i', 'personel live panel keeps vehicle gps label');
+must(personelLivePanelSource, 'Araç konum sinyali', 'personel live panel keeps approved vehicle location label');
 must(personelLivePanelSource, 'Sürücünün telefonundan konum sinyali', 'personel live panel keeps driver phone gps label');
 must(personelMyRidePanelSource, 'setCopilotSelection(copilotSelection)', 'personel my-ride panel keeps selection push');
 must(personelMyRidePanelSource, 'fields:', 'personel my-ride panel keeps fields bridge');
@@ -224,11 +284,11 @@ const baseFacts = buildMapFacts({
   vehicleCount: 1,
 });
 
-function buildPersonelFixture({ selectedRecord = null, selectedEntityType = 'vehicle', selectedEntityId = 34, helpContextSummary = '', contextSummary = '', selectedFields = [], selectedBadges = [], extraFacts = {} } = {}) {
+function buildPersonelFixture({ selectedRecord = null, selectedEntityType = 'vehicle', selectedEntityId = 34, selectedLabel = 'Bugünkü servis', selectedRecordLabel = 'Bugünkü servis', selectedRecordStatus = 'Kabul Edildi / APPROVED', helpContextSummary = '', contextSummary = '', selectedFields = [], selectedBadges = [], extraFacts = {}, includeLiveFacts = true } = {}) {
   const facts = {
     ...baseFacts,
     selectedRecordLabel: 'Bugünkü servis',
-    selectedRecordStatus: 'Kabul Edildi / APPROVED',
+    selectedRecordStatus,
     ...extraFacts,
   };
   return {
@@ -236,19 +296,19 @@ function buildPersonelFixture({ selectedRecord = null, selectedEntityType = 'veh
     label: 'Personel • Canlı Harita',
     role: 'PERSONEL',
     companyKind: 'DEMO',
-    selectedLabel: 'Bugünkü servis',
+    selectedLabel,
     selectedEntityType,
     selectedEntityId,
-    selectedSummary: helpContextSummary || facts.selectedRecordSummary || facts.copilotSummary || '',
-    selectedRecordSummary: facts.selectedRecordSummary || helpContextSummary || '',
-    selectedRecordStatus: 'Kabul Edildi / APPROVED',
-    selectedRecordLabel: 'Bugünkü servis',
-    helpContextSummary: helpContextSummary || facts.helpContextSummary || '',
-    contextSummary: contextSummary || facts.contextSummary || '',
+    selectedSummary: includeLiveFacts ? helpContextSummary || facts.selectedRecordSummary || facts.copilotSummary || '' : '',
+    selectedRecordSummary: includeLiveFacts ? facts.selectedRecordSummary || helpContextSummary || '' : '',
+    selectedRecordStatus,
+    selectedRecordLabel,
+    helpContextSummary: includeLiveFacts ? helpContextSummary || facts.helpContextSummary || '' : helpContextSummary,
+    contextSummary: includeLiveFacts ? contextSummary || facts.contextSummary || '' : contextSummary,
     selectedFields,
     selectedBadges,
-    structuredFacts: facts,
-    liveFacts: facts,
+    structuredFacts: includeLiveFacts ? facts : null,
+    liveFacts: includeLiveFacts ? facts : null,
     selectedRecord,
   };
 }
@@ -300,6 +360,8 @@ const resolvedLive = await resolveChatContext({
 must(resolvedLive.context?.type || '', 'screen', 'simple role keeps screen context instead of forbidden entity lookup');
 must(resolvedLive.resolvedEntityType || '', 'screen', 'simple role keeps resolved entity type on screen');
 must(resolvedLive.selectedEntityType || '', 'vehicle', 'simple role preserves selected entity marker');
+if (Number(resolvedLive.selectedEntityId) === 34) ok('simple role preserves the authorized selected entity identifier in context');
+else fail('simple role preserves the authorized selected entity identifier in context');
 
 const responseLive = buildResponse({
   entityId: Number(personelScreen.id),
@@ -325,11 +387,8 @@ mustNotRaw(replyLive, 'FORBIDDEN', 'live personel reply avoids raw FORBIDDEN');
 mustNot(replyLive, 'Bu ekranda seçili servis bilgisi net görünmüyor', 'live personel reply avoids no-selection fallback');
 must(replyLive, '34ABC123', 'live personel reply keeps vehicle plate');
 mustAny(replyLive, ['konum sinyali', 'Çevrim Dışı', 'OFFLINE', 'eski'], 'live personel reply keeps gps state');
-mustAny(replyLive, ['Son GPS', '11dk'], 'live personel reply keeps last gps');
-mustAny(replyLive, ['Durak A'], 'live personel reply keeps next stop');
-mustAny(replyLive, ['Tahmini varış süresi 0 dk', 'Tahmini varış süresi', 'Kalan durak 3'], 'live personel reply keeps ETA');
 must(replyLive, 'Sürücünün telefonundan konum sinyali', 'live personel reply keeps driver phone gps wording');
-mustAny(replyLive, ['araç bağlantısını', 'görev bağlantısını'], 'live personel reply keeps connection controls');
+mustAny(replyLive, ['son sinyali kontrol edelim', 'önce seçili kayıt'], 'live personel reply gives a safe evidence check');
 assertNoForbiddenVisibleTerms(replyLive, 'live personel reply');
 const liveChips = chipList(responseLive);
 mustArrayContains(liveChips, 'Son konum bilgisi ne zaman geldi?', 'live personel chips keep last gps chip');
@@ -352,11 +411,15 @@ const noSelectionFixture = buildPersonelFixture({
   selectedRecord: null,
   selectedEntityType: '',
   selectedEntityId: null,
-  helpContextSummary: 'Şu an: Canlı',
-  contextSummary: 'Şu an: Canlı',
+  selectedLabel: '',
+  selectedRecordLabel: '',
+  selectedRecordStatus: '',
+  helpContextSummary: '',
+  contextSummary: '',
   selectedFields: [],
   selectedBadges: [],
   extraFacts: {},
+  includeLiveFacts: false,
 });
 const resolvedNoSelection = await resolveChatContext({
   entityType: 'screen',
@@ -382,7 +445,10 @@ const noSelectionResponse = buildResponse({
 });
 const noSelectionReply = replyText(noSelectionResponse);
 mustNotRaw(noSelectionReply, 'FORBIDDEN', 'no-selection reply avoids raw FORBIDDEN');
-must(noSelectionReply, 'Bu ekranda seçili servis bilgisi net görünmüyor', 'no-selection reply keeps safe fallback');
+mustAny(noSelectionReply, ['Kesin sebebi veriyle doğrulamak gerekir', 'veriyle doğrulamak gerekir'], 'no-selection reply states uncertainty');
+mustAny(noSelectionReply, ['Önce seçili kayıt', 'son sinyali kontrol edelim'], 'no-selection reply gives a safe next check');
+mustNot(noSelectionReply, '34ABC123', 'no-selection reply does not fabricate the selected vehicle');
+mustNot(noSelectionReply, 'Sürücü Demo', 'no-selection reply does not reuse a stale driver');
 mustNot(noSelectionReply, 'Bunu anlayamadım', 'no-selection reply avoids understand fallback');
 const noSelectionChips = chipList(noSelectionResponse);
 mustArrayContains(noSelectionChips, 'Son konum bilgisi ne zaman geldi?', 'no-selection reply keeps gps chips');

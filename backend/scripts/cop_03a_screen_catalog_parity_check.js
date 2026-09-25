@@ -150,19 +150,13 @@ function main() {
   }
 
   const screenDefinitionBlock = screenCatalog.slice(
-    screenCatalog.indexOf('export function getScreenDefinitionForUser'),
-    screenCatalog.indexOf('export function buildRoleHelpSummary'),
+    screenCatalog.indexOf('export function resolveAuthorizedScreenContext'),
+    screenCatalog.indexOf('export function listScreensForUser'),
   );
-  const safeUnknownBlock = screenCatalog.slice(
-    screenCatalog.indexOf('function buildSafeUnknownScreenDefinition'),
-    screenCatalog.indexOf('export function getScreenDefinitionForUser'),
-  );
-  must(screenDefinitionBlock, 'if (foundByPath)', 'path lookup is canonical first');
-  must(screenDefinitionBlock, 'if (!rawPath && entityId != null)', 'id lookup only runs when path is absent');
-  must(screenDefinitionBlock, 'return buildSafeUnknownScreenDefinition(user, screenContext, entityId);', 'safe unknown fallback is used');
-  must(safeUnknownBlock, "label: firstNonEmpty(screenContext?.label, 'Bu ekran')", 'safe fallback keeps screen label');
-  must(safeUnknownBlock, 'menuPurpose: \'Bu ekran için detaylı rehber henüz katalogda yok; görünen başlık ve panel bilgisine göre yardımcı olabilirim.\'', 'safe fallback menu purpose present');
-  must(safeUnknownBlock, 'path: rawPath', 'safe fallback path preserved');
+  must(screenDefinitionBlock, 'if (rawPath)', 'path lookup is canonical first');
+  must(screenDefinitionBlock, 'if (Number.isInteger(requestedId) && requestedId > 0)', 'id lookup only runs when path is absent');
+  must(screenDefinitionBlock, "status: found ? 'FOUND' : 'UNKNOWN'", 'unknown screen status is bounded');
+  must(helpComposer, 'Bu ekran için detaylı rehber henüz katalogda yok', 'safe unknown fallback is composed downstream');
   mustNot(screenDefinitionBlock, 'return list[0]', 'getScreenDefinitionForUser does not fall back to first role screen');
   mustNot(screenDefinitionBlock, 'return rows[0]', 'getScreenDefinitionForUser does not fall back to first role screen by rows');
 

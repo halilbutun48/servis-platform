@@ -211,7 +211,7 @@ export default function PersonelAccessPanel() {
   }
 
   return (
-    <div className="wrap wrap--fluid personelAccessScope" style={{ display: "grid", gap: 12, minWidth: 0 }}>
+    <div className="wrap wrap--fluid personelAccessScope pre18-personel-access-list" style={{ display: "grid", gap: 12, minWidth: 0 }}>
       <PanelChrome
         title="Personel erişimi"
         subtitle={
@@ -263,7 +263,7 @@ export default function PersonelAccessPanel() {
         <div className="card personelAccessCreateCard">
           <div className="panelSectionTitle">Personel erişimi oluştur</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            Personele 7 gün geçerli kullanıcı kodu ve geçici PIN ver. Raw değerler yalnızca üretim anında gösterilir.
+            Personele 7 gün geçerli kullanıcı kodu ve geçici PIN ver. Değerler yalnızca üretim anında gösterilir.
           </div>
 
           <form onSubmit={onCreateInvite} style={{ display: "grid", gap: 10, marginTop: 12 }}>
@@ -297,7 +297,7 @@ export default function PersonelAccessPanel() {
         </div>
 
         <div className="card personelAccessDesktopList">
-          <div className="panelSectionTitle">Erişim listesi</div>
+          <div className="panelSectionTitle">Erişim listesi <span className="panelMeta">({rows.length})</span></div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             Maskelenmiş kod, durum, son tarih ve iptal aksiyonu gösterilir. Ham PIN listede gösterilmez.
           </div>

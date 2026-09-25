@@ -1,5 +1,18 @@
 # PRIMER SNAPSHOT
 
+## PRE-#18 current foundation overlay (2026-09-24)
+
+## PRE-#18 immutable closure overlay (2026-09-25)
+- Combined PRE-#18 acceptance and No-Surprise Repository Exit are GREEN (`487/487` classified, `0` unexplained).
+- Final terminology / Sefer Abi residual and bounded public-runtime current-source match are PASS with zero raw same-class status leakage.
+- `#18` is not started; this is the exact immutable closure stage, and proven-closed work is not reopened without concrete newer regression evidence.
+
+- HEAD `e3bec6177f32263325bd14e876502faacac7a5b0`, branch `m90d1_web_lint_inventory`.
+- `verify:repo` `PASS 32/32`, `verify:final` `PASS`, KVKK `262/262`, role/data isolation `216/216`.
+- Active/product unowned `0`; presentation authority is single; package ownership delta is `0/0`.
+- M79 D1 `199/199`, AI semantic quality `122/122`, M90C6/M0/roadmap lock/public landing/product-flow are current `PASS` states.
+- `PREMIUM_UI = 72_OF_72_PROVEN`; Foundation Exit is `GREEN PRESERVED`, ROOM/OTHER423 is `PROVEN_CLOSED`, and No-Surprise Repository Exit classification is green. PRE-#18 is `FINAL CLOSURE READY`; #18 and commit/tag/push are not started.
+
 ## Güncel baz
 - Repo: `servis-platform`
 - Branch: `m90d1_web_lint_inventory`

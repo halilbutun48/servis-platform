@@ -40,6 +40,8 @@ export function normalizeVisibleReplyFragment(value) {
     .replace(/\bblokajı\b/gi, 'engeli')
     .replace(/\bblokaj\b/gi, 'engel')
     .replace(/\bengelı\b/gi, 'engeli')
+    .replace(/(?:^|\s)•(?:\s*•)+(?=\s|$)/g, ' ')
+    .replace(/^\s*•\s*|\s*•\s*$/g, '')
     .replace(/\s+/g, ' ')
     .replace(/\s+([.,!?;:])/g, '$1')
     .replace(/([.,!?;:]){2,}/g, '$1')

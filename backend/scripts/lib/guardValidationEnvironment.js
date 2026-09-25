@@ -14,6 +14,14 @@ function must(condition, label) {
   console.log(`OK ${label}`);
 }
 
+function isWithinScope(relPath, scopePaths) {
+  const normalizedPath = String(relPath || "").replace(/\\/g, "/").replace(/^\.\//, "");
+  return scopePaths.some((scopePath) => {
+    const normalizedScope = String(scopePath || "").replace(/\\/g, "/").replace(/\/$/, "");
+    return normalizedPath === normalizedScope || normalizedPath.startsWith(`${normalizedScope}/`);
+  });
+}
+
 export function mustCleanCommittedState({
   routePaths = ["backend/src/routes"],
   servicePaths = ["backend/src/services"],
@@ -42,9 +50,12 @@ export function mustCurrentHeadCommittedState({
   approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
   label = "current head committed state",
 } = {}) {
+  const scopedApprovedConcurrentBackendDiff = approvedConcurrentBackendDiff.filter(({ path }) =>
+    isWithinScope(path, routeServicePaths),
+  );
   mustStatusEmptyOrExactlyWithIdentity(
     routeServicePaths,
-    approvedConcurrentBackendDiff,
+    scopedApprovedConcurrentBackendDiff,
     `${label} route/service status exact current head policy`
   );
   mustNoDiff(prismaPaths, `${label} prisma diff empty`);

@@ -1,6 +1,16 @@
 const KEY = "__psv1CopilotSelection";
 const EVT = "psv1:copilot-selection";
 
+// A visible table row is not a user selection. Consumers may publish an
+// entity only after an explicit focus/modal/selection path supplies its id.
+// Keeping this derivation here makes the same contract testable without a
+// browser-global selection side effect.
+export function resolveExplicitCopilotRecord(items, entityId) {
+  const id = Number(entityId || 0);
+  if (!Number.isInteger(id) || id <= 0 || !Array.isArray(items)) return null;
+  return items.find((item) => Number(item?.id || 0) === id) || null;
+}
+
 export function setCopilotSelection(detail) {
   try {
     const next = detail && typeof detail === "object" ? detail : null;

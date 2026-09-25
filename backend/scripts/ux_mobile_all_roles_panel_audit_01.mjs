@@ -4,10 +4,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium } from "@playwright/test";
 import { listScreensForUser } from "../src/ai/jobGuide/screenCatalog.js";
 import { prisma } from "../src/prisma.js";
 import { buildSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
+import { captureScreenshot, withLaunchedBrowser, withSeededBrowserContext } from "./lib/pre_18_shared_browser_lifecycle.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -338,8 +338,7 @@ async function screenshot(page, scenario, viewportName, stage) {
   const fileName = `${safeRole}-${safeLabel}-${viewportName}-${stage}.png`;
   const relPath = path.join("screenshots", viewportName, fileName).replace(/\\/g, "/");
   const absPath = path.join(screenshotRoot, viewportName, fileName);
-  await ensureDir(path.dirname(absPath));
-  await page.screenshot({ path: absPath, fullPage: false });
+  await captureScreenshot(page, absPath, { fullPage: false });
   return relPath;
 }
 
@@ -1057,17 +1056,16 @@ async function main() {
     for (const group of ROUTE_GROUPS) {
       // Fresh browser per role group keeps Chromium from accumulating buffer pressure
       // across the long audit sequence and avoids false NOT-FOUND blanks.
-      const browser = await chromium.launch({
+      await withLaunchedBrowser({
         headless: HEADLESS,
         slowMo: SLOW_MO,
         env: {
           ...process.env,
           CHROME_LOG_FILE: chromiumDebugLogPath,
         },
-      });
-      if (!browserVersion) browserVersion = browser.version();
+      }, async (browser) => {
+        if (!browserVersion) browserVersion = browser.version();
 
-      try {
         let authState = { role: group.role, token: null, loginInfo: null, error: null };
         let sharedStorageState = null;
         if (group.auth) {
@@ -1095,36 +1093,27 @@ async function main() {
             contextOptions.storageState = sharedStorageState;
           }
 
-          const context = await browser.newContext(contextOptions);
+          const initialStorage = authState.token ? { token: authState.token } : {};
+          await withSeededBrowserContext(browser, contextOptions, initialStorage, async ({ context }) => {
+            for (const scenario of group.routes) {
+              const page = await context.newPage();
+              const row = await runScenario(page, { ...scenario, role: group.role }, viewport.name, report.routes);
+              report.routeCount += 1;
+              report.screenshotCount += row.screenshots.length;
+              report.consoleErrorCount += row.consoleErrors.length;
+              report.pageErrorCount += row.pageErrors.length;
+              report.statusCounts[row.status] = (report.statusCounts[row.status] || 0) + 1;
+              report.success = report.success && !["BLOCKER", "NOT-FOUND"].includes(row.status);
+              console.log(`${row.status} [${group.role}/${viewport.name}] ${scenario.route} -> ${scenario.label}`);
+              await page.close().catch(() => {});
+            }
 
-          if (authState.token) {
-            await context.addInitScript((token) => {
-              localStorage.setItem("token", token);
-            }, authState.token);
-          }
-
-          for (const scenario of group.routes) {
-            const page = await context.newPage();
-            const row = await runScenario(page, { ...scenario, role: group.role }, viewport.name, report.routes);
-            report.routeCount += 1;
-            report.screenshotCount += row.screenshots.length;
-            report.consoleErrorCount += row.consoleErrors.length;
-            report.pageErrorCount += row.pageErrors.length;
-            report.statusCounts[row.status] = (report.statusCounts[row.status] || 0) + 1;
-            report.success = report.success && !["BLOCKER", "NOT-FOUND"].includes(row.status);
-            console.log(`${row.status} [${group.role}/${viewport.name}] ${scenario.route} -> ${scenario.label}`);
-            await page.close().catch(() => {});
-          }
-
-          if (viewport.name === "desktop") {
-            sharedStorageState = await context.storageState().catch(() => null);
-          }
-
-          await context.close().catch(() => {});
+            if (viewport.name === "desktop") {
+              sharedStorageState = await context.storageState().catch(() => null);
+            }
+          });
         }
-      } finally {
-        await browser.close().catch(() => {});
-      }
+      });
     }
 
     report.browserVersion = browserVersion || report.browserVersion;

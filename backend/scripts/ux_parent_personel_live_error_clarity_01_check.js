@@ -10,6 +10,12 @@ import { fileURLToPath } from "node:url";
 import { getCanonicalProvenanceRecord } from "./lib/canonicalProvenanceRegistry.js";
 import { mustNoDiffExceptWithIdentity, mustStatusSubsetWithIdentity } from "./lib/guardGitScope.js";
 import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
+import { CANONICAL_PRESENTATION_PROVENANCE_BY_PATH } from "./lib/presentationProvenanceAuthority.js";
+import {
+  CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES,
+  LIFECYCLE_DEFERRED_TO_NO_SURPRISE_EXIT_PATHS,
+  classifyLifecyclePath,
+} from "./lib/pre18LifecycleClassification.js";
 import { assertProductExtensionsOrder } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -226,18 +232,29 @@ const ACCEPTED_PRISMA_FILES = [
 const ACCEPTED_PRISMA_PATH_SET = new Set(ACCEPTED_PRISMA_FILES.map((entry) => normalizePath(entry.path)));
 const APPROVED_CONCURRENT_BACKEND_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
 const APPROVED_CONCURRENT_BACKEND_PATHS = new Set(APPROVED_CONCURRENT_BACKEND_DIFF.map((entry) => normalizePath(entry.path)));
-const APPROVED_TERMINOLOGY_PRESENTATION = Object.freeze([
-  { path: "web/src/panels/company/CheckinPanel.jsx", sha256: "EE5AFE21578A32E69AA8748E38A1976329EE98088EDBFA0449625A957B9C9588" },
-  { path: "web/src/panels/company/GeoReviewPanel.jsx", sha256: "D283A0EB5722232669AE9D9D63EE77A9A52567751E517ACDB1035C286FBF76F8" },
-  { path: "web/src/panels/company/HubPanel.jsx", sha256: "68E237BA03F6DA83A91C49EAE170BEB3D6F398A6882417A17AFAF8376AAE359E" },
-  { path: "web/src/panels/company/ServiceEvaluationPanel.jsx", sha256: "BBEA2130687645E8ADE39EC3559F0A9C61E6FAEE8A74E7AEEAB47DBAD641E59C" },
-  { path: "web/src/panels/company/ShiftTemplatesPanel.jsx", sha256: "934055EEB7407E6AEA43566302A6FFB9689E445A7771AC1C41F6217689A0673E" },
-  { path: "web/src/panels/company/ShiftsPanel.jsx", sha256: "9C37254ACA2907EA15C575BD91D5A020DE27991F0BCC1FC1FA62179165368BF5" },
-  { path: "web/src/panels/company/companyShiftsPanelActions.js", sha256: "BA93A4ADE7F75C6B575A3BCC2B3188CA01166B5746B7F4DCC7CEA9223E34D218" },
-  { path: "web/src/panels/company/planBuilderPanelActions.js", sha256: "9897F8A0D0F48AD04E1A188F86E7573B257E3EC3DE44637E92A7E5855F122AB8" },
-  { path: "web/src/panels/company/planBuilderPanelSections.jsx", sha256: "B6C0BC2E56DCD8C932F8D7F63BBAE4166E234C13059B7651A8B75D68A380E855" },
-  { path: "web/src/panels/company/shiftsPanelOfferUtils.js", sha256: "A4979AD7BD0B3CAFA40D7DF750262CB985B04A589E264967FBF7AEBE41030B88" },
+const CURRENT_CLOSURE_SOURCE_BY_PATH = new Map(CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES.map((entry) => [normalizePath(entry.path), entry]));
+const LIFECYCLE_DEFERRED_PATHS = new Set(LIFECYCLE_DEFERRED_TO_NO_SURPRISE_EXIT_PATHS);
+const APPROVED_TERMINOLOGY_PRESENTATION_PATH_LIST = Object.freeze([
+  "web/src/panels/company/CheckinPanel.jsx",
+  "web/src/panels/company/GeoReviewPanel.jsx",
+  "web/src/panels/company/HubPanel.jsx",
+  "web/src/panels/company/ServiceEvaluationPanel.jsx",
+  "web/src/panels/company/ShiftTemplatesPanel.jsx",
+  "web/src/panels/company/ShiftsPanel.jsx",
+  "web/src/panels/company/companyShiftsPanelActions.js",
+  "web/src/panels/company/planBuilderPanelActions.js",
+  "web/src/panels/company/planBuilderPanelSections.jsx",
+  "web/src/panels/company/shiftsPanelOfferUtils.js",
 ]);
+const APPROVED_TERMINOLOGY_PRESENTATION = Object.freeze(
+  APPROVED_TERMINOLOGY_PRESENTATION_PATH_LIST.map((path) => {
+    const record = CANONICAL_PRESENTATION_PROVENANCE_BY_PATH.get(path);
+    if (!record?.acceptedIdentities?.rawSha256) {
+      throw new Error(`missing canonical presentation identity for ${path}`);
+    }
+    return { path, sha256: record.acceptedIdentities.rawSha256 };
+  }),
+);
 const APPROVED_TERMINOLOGY_PRESENTATION_PATHS = new Set(
   APPROVED_TERMINOLOGY_PRESENTATION.map((entry) => normalizePath(entry.path))
 );
@@ -263,6 +280,13 @@ function buildStep181ProvenanceBackedConcurrentEntries() {
     mustFileSha256(relPath, record.currentSha256, `step 181 provenance SHA matches for ${relPath}`);
     return { path: relPath, sha256: record.currentSha256 };
   });
+}
+
+function isCanonicalCurrentOrDeferredStatusPath(relPath) {
+  const path = normalizePath(relPath);
+  if (LIFECYCLE_DEFERRED_PATHS.has(path) || path.startsWith("backend/artifacts/harness-topology/")) return true;
+  const entry = CURRENT_CLOSURE_SOURCE_BY_PATH.get(path);
+  return classifyLifecyclePath(path)?.category === "ACTIVE_CURRENT_SOURCE" && entry?.sha256 === fileSha256(path);
 }
 
 function mustAcceptedPrismaManifest() {
@@ -626,7 +650,9 @@ function main() {
   const status = statusNames()
     .filter((file) => !cleanupScopeFiles.includes(file))
     .filter((file) => !file.startsWith("web/src/panels/room/") && file !== "backend/scripts/ux_room_panel_clarity_01_check.js" && file !== "backend/scripts/ux_premium_critical_fix_room_01_check.js" && file !== "docs/UX_ROOM_PANEL_CLARITY_01.md" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md" && file !== "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md" && file !== "web/src/components/AgreementOpsBridgeCard.jsx" && file !== "web/src/panels/company/AgreementsPanel.jsx" && file !== "web/src/panels/company/companyAgreementsBridgeSection.jsx" && file !== "web/src/panels/company/companyAgreementsPanelHelpers.js" && file !== "web/src/panels/company/companyShiftsPanelSections.jsx" && file !== "web/src/panels/company/WorkflowPanel.jsx" && file !== "web/src/panels/company/companyShiftsPanelCards.jsx");
-  const residualStatus = status.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
+  const residualStatus = status.filter(
+    (file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)) && !isCanonicalCurrentOrDeferredStatusPath(file),
+  );
   mustStatusSubsetWithIdentity(
     APPROVED_TERMINOLOGY_PRESENTATION.map((entry) => entry.path),
     APPROVED_TERMINOLOGY_PRESENTATION,

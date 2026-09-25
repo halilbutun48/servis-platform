@@ -34,7 +34,8 @@ must(avatarAssetBytes[25] === 6, "premium character asset preserves an RGBA alph
 must(avatar.includes("premiumAvatarAsset") && avatar.includes("seferAbiAvatar__image"), "character uses the canonical premium raster asset");
 must(!avatar.includes("seferAbiAvatar__portrait") && !avatar.includes("seferAbiAvatar__gaze") && !avatar.includes("seferAbiAvatar__blink") && !avatar.includes("seferAbiAvatar__expression"), "character has no detached eye or face overlay nodes");
 must(!css.includes("seferAbiAvatar__gaze") && !css.includes("seferAbiAvatar__blink") && !css.includes("seferAbiAvatar__expression"), "character stylesheet has no detached eye or face overlay layer");
-must(!css.includes("seferAbiRest") && !css.includes("seferAbiThinking") && !css.includes("seferAbiResponding"), "static portrait transform substitution is not declared as character animation");
+must(css.includes("seferAbiCharacterIdle") && css.includes("seferAbiCharacterListening") && css.includes("seferAbiCharacterThinking") && css.includes("seferAbiCharacterResponding"), "character-level motion keyframes cover the four canonical states");
+must(css.includes(".seferAbiAvatar--idle .seferAbiAvatar__image") && css.includes(".seferAbiAvatar--listening .seferAbiAvatar__image") && css.includes(".seferAbiAvatar--thinking .seferAbiAvatar__image") && css.includes(".seferAbiAvatar--responding .seferAbiAvatar__image"), "character image motion is bound to real lifecycle states");
 must(!/from ["'](?:lottie|rive|@rive|@lottiefiles)/i.test(avatar), "no new mascot runtime dependency is introduced");
 for (const state of ["idle", "hover-focus", "listening", "thinking", "responding", "result-ready", "attention", "approval-required"]) {
   must(widgetState.includes(`\"${state}\"`), `controlled avatar state exists: ${state}`);
@@ -54,7 +55,7 @@ must(css.includes("@media (prefers-reduced-motion: reduce)") && css.includes("an
 must(!/animation\s*:[^;]*(?:bounce|pulse)/i.test(css), "no intrusive bounce/pulse animation is present");
 must(css.includes(".copilotFab--map-safe") && css.includes("env(safe-area-inset-bottom)"), "launcher retains safe-area and map positioning hooks");
 must(!fs.existsSync(path.join(root, "web/src/components/copilot/SeferAbiAvatar.css")), "experimental detached portrait motion stylesheet is not present");
-must(doc.includes("SEFER_ABI_TEMPORARY_BASELINE_VISUAL_MODE = CANONICAL_STATIC_PORTRAIT_WITH_STATE_UI"), "temporary baseline is explicitly static portrait with state UI");
+must(doc.includes("SEFER_ABI_CHARACTER_LEVEL_MOTION = BOUNDED_CSS_STATE_ANIMATION"), "owner document records bounded character-level state motion");
 must(doc.includes("SEFER_ABI_REAL_LIVE2D_ANIMATION_STATUS = DEFERRED_BY_ASSET_PRODUCTION"), "real Live2D animation is explicitly deferred by asset production");
 must(doc.includes("SEFER_ABI_REAL_LIVE2D_REQUIRED_BEFORE_FINAL_COMMERCIAL_ACCEPTANCE = YES"), "real Live2D remains a required pre-commercial acceptance gate");
 must(doc.includes("smoke:seferabicharactersafesnappolish01"), "owner document records the bounded safe-snap browser smoke");

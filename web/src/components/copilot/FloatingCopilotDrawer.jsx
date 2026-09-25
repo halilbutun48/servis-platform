@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { getPath, navigate } from "../../router";
 import { useSession } from "../../state/session";
-import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
+import { clearCopilotSelection, copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
 import { companyPath, normalizeCompanyPath } from "../../utils/paths";
 import { buildCopilotStarterChips, COPILOT_PERSONA } from "../../utils/copilotFacts";
 import { resolveCopilotScreenContext } from "../../copilot/screenRegistry";
+import { canUseRouteBoundCopilotContext, routeContextKey, useCopilotRouteContext } from "../../copilot/routeContext";
 import { planCenterOverlayLayerEventName, readPlanCenterOverlayLayer, setPlanCenterOverlayLayer } from "../../utils/planCenterOverlayLayer";
-import { copilotSharedStateEventName, readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
+import { compactCopilotMessages, copilotAuthScopeKey, copilotSharedStateEventName, readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
 import { captureCopilotUiSurface } from "./uiSurface";
 import SeferAbiAvatar from "./SeferAbiAvatar";
 import { resolveSeferAbiWidgetState, SEFER_ABI_WIDGET_STATE_LABELS } from "./SeferAbiWidgetState";
@@ -63,7 +64,7 @@ function rectIntersects(a, b) {
 function launcherProtectedRects() {
   if (typeof document === "undefined") return [];
   return [...document.querySelectorAll(
-    '[data-primary-cta="true"], [role="alert"], [role="status"], [role="dialog"], #shell-nav-dock, .roleSignalAction, .roleTaskSummaryCard--next .btn, .shellTopLogout, [data-details="task-workspace"] > summary, [data-details="task-workspace"][open] .roleTaskDetailsBody, [data-map-surface="primary"] .leaflet-marker-icon, [data-map-surface="primary"] .leaflet-control',
+    '[data-primary-cta="true"], [role="alert"], [role="status"], [role="dialog"], #shell-nav-dock, .shellTop, .roleSignalAction, .roleTaskSummaryCard--next .btn, .shellTopLogout, [data-details="task-workspace"] > summary, [data-details="task-workspace"][open] .roleTaskDetailsBody, [data-map-surface="primary"] [data-map-current-state="true"], [data-map-surface="primary"] [data-map-legacy-state="true"], [data-map-surface="primary"] .mapOperationsDisclosure, [data-map-surface="primary"] .mapViewRouteNotice, [data-map-surface="primary"] .mapViewFooter, [data-map-surface="primary"] .leaflet-marker-icon, [data-map-surface="primary"] .leaflet-control',
   )].filter((element) => !(element.id === "shell-nav-dock" && window.innerWidth <= 720 && element.classList.contains("navDock--mobileClosed"))).map((element) => element.getBoundingClientRect()).filter((box) => box.width > 0 && box.height > 0);
 }
 
@@ -71,7 +72,13 @@ function loadDrawerState() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {}; } catch { return {}; }
 }
 function saveDrawerState(next) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* no-op: storage may be unavailable */ } }
-function loadHistory() { try { const parsed = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); return Array.isArray(parsed) ? parsed : []; } catch { /* no-op: history may be unreadable */ return []; } }
+function loadHistory(scopeKey = "") {
+  try {
+    const key = scopeKey ? `${HISTORY_KEY}:${scopeKey}` : HISTORY_KEY;
+    const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { /* no-op: history may be unreadable */ return []; }
+}
 
 function normalizeScopePath(path) {
   return String(path || "").split("?")[0];
@@ -79,6 +86,39 @@ function normalizeScopePath(path) {
 
 function normalizeDrawerSize(size) {
   return size === "S" || size === "M" ? size : DEFAULT_DRAWER_SIZE;
+}
+
+function normalizeDrawerPlacement(value) {
+  if (!value || Number(value.version) !== 1) return null;
+  const left = Number(value.left);
+  const top = Number(value.top);
+  if (!Number.isFinite(left) || !Number.isFinite(top)) return null;
+  return { version: 1, left, top };
+}
+
+function resolveSafeDrawerPlacement(left, top, width, height) {
+  const viewportWidth = typeof window === "undefined" ? width + 36 : window.innerWidth;
+  const viewportHeight = typeof window === "undefined" ? height + 36 : window.innerHeight;
+  const inset = viewportWidth <= 720 ? 12 : 18;
+  const maxLeft = Math.max(inset, viewportWidth - width - inset);
+  const maxTop = Math.max(inset, viewportHeight - height - inset);
+  const clamp = (x, min, max) => Math.min(max, Math.max(min, x));
+  const candidates = [
+    [left, top],
+    [maxLeft, top],
+    [inset, top],
+    [left, maxTop],
+    [maxLeft, maxTop],
+    [inset, maxTop],
+    [maxLeft, inset],
+    [inset, inset],
+  ];
+  const obstacles = launcherProtectedRects();
+  const safe = candidates.find(([candidateLeft, candidateTop]) => {
+    const box = { left: candidateLeft, top: candidateTop, right: candidateLeft + width, bottom: candidateTop + height };
+    return box.left >= inset && box.top >= inset && box.right <= viewportWidth - inset && box.bottom <= viewportHeight - inset && !obstacles.some((obstacle) => rectIntersects(box, obstacle));
+  }) || [clamp(Number.isFinite(left) ? left : maxLeft, inset, maxLeft), clamp(Number.isFinite(top) ? top : maxTop, inset, maxTop)];
+  return { version: 1, left: Math.round(clamp(safe[0], inset, maxLeft)), top: Math.round(clamp(safe[1], inset, maxTop)) };
 }
 
 function scopeFamily(path) {
@@ -93,43 +133,27 @@ function selectionApplies(selection, path) {
   const sameFamily = scopeFamily(scope) && scopeFamily(scope) === scopeFamily(current);
   if (!sameFamily) return false;
   if (/\/copilot$/.test(current)) return true;
-  const entityType = String(selection?.entityType || "");
-  return ["shift", "vehicle"].includes(entityType);
+  // A record selection belongs to the exact screen that produced it. The
+  // shared family is only a valid fallback on the dedicated copilot route;
+  // carrying /room/offers into /room/shifts would make the assistant answer
+  // from a stale selected-record context.
+  return false;
 }
 
-function modeMeta(mode) {
-  if (mode === "DIAGNOSE") return { label: "Sorunu bul", instruction: "Sorunu bul. En olası 3 nedeni kısa maddelerle söyle. Sonunda önce neyi kontrol etmem gerektiğini yaz." };
-  if (mode === "SHORT") return { label: "Hızlı cevap", instruction: "Kısa cevap ver. Önce 1 cümle özet yaz, sonra en fazla 2 adım ver." };
-  return { label: "Adım adım", instruction: "Hiç bilmeyen biri için çok sade Türkçe ile adım adım anlat. Teknik jargonu azalt." };
-}
-
-function buildSuggestions(path, _mode, selection, screenContext, me) {
+function buildSuggestions(path, selection, screenContext, me) {
   return buildCopilotStarterChips({
     screenPath: path,
     selection,
     screenContext,
     role: me?.role || "",
     companyKind: me?.companyKind || "",
-  }).slice(0, 4);
+  }).slice(0, 3);
 }
 
-function buildPrompt({ mode, rawText, screenContext, selection }) {
+function buildPrompt({ rawText, screenContext }) {
   const q = String(rawText || "").trim();
   if (q) return q;
-  const meta = modeMeta(mode);
-  const base = [
-    `${meta.instruction}`,
-    `Şu ekran: ${screenContext.label} (${screenContext.path}).`,
-    selection?.summary ? `Seçili kayıt: ${selection.summary}.` : "Seçili kayıt yok veya okunmadı.",
-  ];
-  if (mode === "DIAGNOSE") {
-    base.push("Kullanıcı soru yazmadı. Bu ekran için en olası takılma nedenlerini anlat.");
-  } else if (mode === "SHORT") {
-    base.push("Kullanıcı soru yazmadı. Bu ekranı kısa özetle ve şimdi ne yapacağını söyle.");
-  } else {
-    base.push("Kullanıcı soru yazmadı. Bu ekranı sıfırdan öğretir gibi anlat.");
-  }
-  return base.join(" ");
+  return `Bu ekranı kısaca özetle ve güvenli sonraki adımı söyle: ${screenContext.label} (${screenContext.path}).`;
 }
 
 function selectionSummaryForDisplay(selection) {
@@ -282,15 +306,22 @@ function filterMessageActions(actions, suggestions, followUpPrompt, me) {
   });
 }
 
-export default function FloatingCopilotDrawer({ path: propPath = "" }) {
+export default function FloatingCopilotDrawer({ path: propPath = "", routeContext: propagatedRouteContext = null }) {
   const { token, me } = useSession();
-  const currentPath = String(propPath || getPath() || "").split("?")[0];
+  const inheritedRouteContext = useCopilotRouteContext();
+  const routeContext = propagatedRouteContext || inheritedRouteContext;
+  const authScopeKey = copilotAuthScopeKey(token, me);
+  const currentPath = String(routeContext?.path || propPath || getPath() || "");
   const initial = useRef(loadDrawerState()).current || {};
   const [open, setOpen] = useState(Boolean(initial.open));
-  const [mode, setMode] = useState(initial.mode || "STEP");
   const [size, setSize] = useState(normalizeDrawerSize(initial.size));
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [messages, setMessages] = useState(loadHistory());
+  const [customDrawerSize, setCustomDrawerSize] = useState(null);
+  const [drawerPlacement, setDrawerPlacement] = useState(() => normalizeDrawerPlacement(initial.drawerPlacement));
+  const [drawerDragPreview, setDrawerDragPreview] = useState(null);
+  // Suggestions stay available in every viewport. A fresh compact session
+  // starts closed so the composer and answer surface retain useful height.
+  const [suggestionsOpen, setSuggestionsOpen] = useState(() => typeof window === "undefined" || window.innerWidth > 720);
+  const [messages, setMessages] = useState(() => loadHistory(authScopeKey));
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -303,20 +334,37 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     width: typeof window === "undefined" ? 1280 : window.innerWidth,
     height: typeof window === "undefined" ? 720 : window.innerHeight,
   }));
+  const suggestionPanelId = useId();
+  const wasCompactViewportRef = useRef(typeof window !== "undefined" && window.innerWidth <= 720);
   const [panelSide, setPanelSide] = useState("right");
   // Presentation-only phase derived from the existing request lifecycle; shared context remains the sole state owner.
   const [responsePhase, setResponsePhase] = useState("idle");
   const [attentionBubbleVisible, setAttentionBubbleVisible] = useState(false);
   const [mobileDrawerPlacement, setMobileDrawerPlacement] = useState("bottom");
-  const [selection, setSelection] = useState(() => selectionApplies(readCopilotSelection(), currentPath) ? readCopilotSelection() : null);
+  const [mobileDrawerMaxHeight, setMobileDrawerMaxHeight] = useState(null);
+  const [selection, setSelection] = useState(() => {
+    const initialScreenContext = resolveCopilotScreenContext(currentPath, me);
+    const initialSelection = readCopilotSelection();
+    return canUseRouteBoundCopilotContext(routeContext, initialScreenContext) && selectionApplies(initialSelection, currentPath) ? initialSelection : null;
+  });
   const scrollRef = useRef(null);
   const mascotRef = useRef(null);
   const mapAnchorRef = useRef("");
   const dragRef = useRef(null);
+  const drawerResizeRef = useRef(null);
+  const drawerResizeCleanupRef = useRef(null);
+  const drawerResizeHandleRef = useRef(null);
+  const drawerDragRef = useRef(null);
+  const drawerDragCleanupRef = useRef(null);
+  const drawerHeaderRef = useRef(null);
   const suppressLauncherClickRef = useRef(false);
   const responseTimerRef = useRef(null);
   const attentionBubbleTimerRef = useRef(null);
   const attentionBubbleKeyRef = useRef("");
+  const authScopeRef = useRef(authScopeKey);
+  const skipPersistenceRef = useRef(false);
+  const requestSequenceRef = useRef(0);
+  const activeRequestRef = useRef(null);
   const isMapSurface = /\/map$/.test(currentPath);
   const isRoleTaskHome = /^\/(company|room|school|organization|driver|personel|parent|superadmin)(?:\/live)?$/.test(currentPath);
   // Task homes use a reserved right rail and the canonical bottom-right anchor.
@@ -324,12 +372,22 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   // prevents task-home scroll/layout changes from moving the launcher between
   // screen anchors.
   const isSmartPlacementSurface = isMapSurface;
+  // Compact task-home layouts have no safe overlay slot above the primary
+  // action; keep the attention state on the launcher and reserve the bubble
+  // for surfaces where it can be shown without covering task content.
+  const suppressCompactTaskHomeBubble = isRoleTaskHome && viewportSize.width <= 720;
+  const suppressCompactMapBubble = isMapSurface && viewportSize.width <= 720;
   const [mapSafePosition, setMapSafePosition] = useState(null);
   const lastPathRef = useRef(currentPath);
   const screenContext = useMemo(() => resolveCopilotScreenContext(currentPath, me), [currentPath, me]);
-  const suggestions = useMemo(() => buildSuggestions(currentPath, mode, selection, screenContext, me), [currentPath, mode, selection, screenContext, me]);
+  const canUseRouteBoundContext = canUseRouteBoundCopilotContext(routeContext, screenContext);
+  const currentRouteContextKey = routeContextKey(routeContext);
+  const routeContextRef = useRef(routeContext);
+  routeContextRef.current = routeContext;
+  const suggestions = useMemo(() => buildSuggestions(currentPath, selection, screenContext, me), [currentPath, selection, screenContext, me]);
   const isCopilotPage = /\/copilot$/.test(currentPath);
   const dims = SIZE_PRESETS[size] || SIZE_PRESETS.M;
+  const drawerDims = customDrawerSize || dims;
   const [activeOverlayLayer, setActiveOverlayLayer] = useState(() => readPlanCenterOverlayLayer() || "guide");
   const drawerAvatarState = resolveSeferAbiWidgetState({
     busy,
@@ -357,6 +415,25 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     };
   }, []);
 
+  useEffect(() => {
+    const compact = viewportSize.width <= 720;
+    if (compact !== wasCompactViewportRef.current) {
+      // Preserve an intentionally opened accordion while the viewport is
+      // stable, but choose the useful default when crossing a breakpoint.
+      setSuggestionsOpen(!compact);
+      wasCompactViewportRef.current = compact;
+    }
+  }, [viewportSize.width]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !drawerPlacement || viewportSize.width <= 720) return;
+    const width = Math.min(drawerDims.width, Math.max(320, window.innerWidth - 36));
+    const height = Math.min(drawerDims.height, Math.max(360, window.innerHeight - 36));
+    const safe = resolveSafeDrawerPlacement(drawerPlacement.left, drawerPlacement.top, width, height);
+    if (safe.left === drawerPlacement.left && safe.top === drawerPlacement.top) return;
+    setDrawerPlacement(safe);
+  }, [drawerDims.height, drawerDims.width, drawerPlacement, viewportSize.height, viewportSize.width]);
+
   const clearResponseTimer = useCallback(() => {
     if (responseTimerRef.current && typeof window !== "undefined") window.clearTimeout(responseTimerRef.current);
     responseTimerRef.current = null;
@@ -381,28 +458,68 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     }
   }, [clearResponseTimer]);
 
-  useEffect(() => { saveDrawerState({ open, mode, size }); }, [open, mode, size]);
+  useEffect(() => {
+    if (authScopeRef.current === authScopeKey) return;
+    activeRequestRef.current?.abort?.();
+    activeRequestRef.current = null;
+    requestSequenceRef.current += 1;
+    authScopeRef.current = authScopeKey;
+    skipPersistenceRef.current = true;
+    const scopedMessages = loadHistory(authScopeKey);
+    setMessages(scopedMessages);
+    setSelection(null);
+    setText("");
+    setErr("");
+    setBusy(false);
+    setSuggestionsOpen(viewportSize.width > 720);
+    resetResponsePhase();
+    clearCopilotSelection();
+    writeCopilotSharedState({
+      scopeKey: authScopeKey,
+      messages: scopedMessages,
+      screenPath: canUseRouteBoundContext ? screenContext.path : null,
+      screenLabel: canUseRouteBoundContext ? screenContext.label : null,
+      role: me?.role || "",
+      companyKind: me?.companyKind || "",
+      selection: null,
+      selectedContext: null,
+      routeContextStatus: routeContext.status,
+      metadataStatus: screenContext.metadataStatus,
+    });
+  }, [authScopeKey, canUseRouteBoundContext, me?.companyKind, me?.role, resetResponsePhase, routeContext.status, screenContext.label, screenContext.metadataStatus, screenContext.path, viewportSize.width]);
+
+  useEffect(() => { saveDrawerState({ open, size, drawerPlacement }); }, [open, size, drawerPlacement]);
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
     document.body.classList.toggle("copilot-is-open", open);
     return () => document.body.classList.remove("copilot-is-open");
   }, [open]);
   useEffect(() => {
-    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-20))); } catch { /* no-op: history persistence is best effort */ }
+    if (skipPersistenceRef.current) {
+      skipPersistenceRef.current = false;
+      return;
+    }
+    if (authScopeRef.current !== authScopeKey) return;
+    try { localStorage.setItem(`${HISTORY_KEY}:${authScopeKey}`, JSON.stringify(compactCopilotMessages(messages))); } catch { /* no-op: history persistence is best effort */ }
     writeCopilotSharedState({
+      scopeKey: authScopeKey,
       messages,
-      screenPath: currentPath,
-      screenLabel: screenContext.label,
+      screenPath: canUseRouteBoundContext ? screenContext.path : null,
+      screenLabel: canUseRouteBoundContext ? screenContext.label : null,
       role: me?.role || "",
       companyKind: me?.companyKind || "",
-      selection,
+      selection: canUseRouteBoundContext ? selection : null,
+      selectedContext: canUseRouteBoundContext ? selection : null,
+      routeContextStatus: routeContext.status,
+      metadataStatus: screenContext.metadataStatus,
     });
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, currentPath, screenContext.label, me?.role, me?.companyKind, selection]);
+  }, [authScopeKey, canUseRouteBoundContext, messages, me?.role, me?.companyKind, routeContext.status, screenContext.label, screenContext.metadataStatus, screenContext.path, selection]);
   useEffect(() => {
     function syncSharedState(event) {
-      const incoming = event?.detail || readCopilotSharedState();
+      const incoming = event?.detail || readCopilotSharedState(authScopeKey);
       if (!incoming || !Array.isArray(incoming.messages)) return;
+      if (incoming.scopeKey && incoming.scopeKey !== authScopeKey) return;
       const next = incoming.messages.slice(-20);
       if (JSON.stringify(next) === JSON.stringify(messages.slice(-20))) return;
       setMessages(next);
@@ -410,12 +527,25 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     const eventName = copilotSharedStateEventName();
     window.addEventListener(eventName, syncSharedState);
     return () => window.removeEventListener(eventName, syncSharedState);
-  }, [messages]);
+  }, [authScopeKey, messages]);
   useEffect(() => () => {
     clearResponseTimer();
+    activeRequestRef.current?.abort?.();
+    requestSequenceRef.current += 1;
+    drawerResizeCleanupRef.current?.();
+    drawerDragCleanupRef.current?.();
     if (attentionBubbleTimerRef.current && typeof window !== "undefined") window.clearTimeout(attentionBubbleTimerRef.current);
     try { window.speechSynthesis?.cancel(); } catch { /* no-op: speech synthesis may be unavailable */ }
   }, [clearResponseTimer]);
+  useEffect(() => {
+    if (canUseRouteBoundContext) return;
+    activeRequestRef.current?.abort?.();
+    activeRequestRef.current = null;
+    requestSequenceRef.current += 1;
+    setBusy(false);
+    setSelection(null);
+    resetResponsePhase();
+  }, [canUseRouteBoundContext, currentRouteContextKey, resetResponsePhase]);
   useEffect(() => {
     const currentError = String(err || "").trim();
     const currentSelectionAttention = selectionNeedsAttention(selection) ? String(selection?.selectedRecordStatus || "").trim() : "";
@@ -444,15 +574,40 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     };
   }, [err, open, selection]);
   useEffect(() => {
-    if (!open || !isRoleTaskHome || typeof window === "undefined") {
+    if (!open || (!isRoleTaskHome && !isMapSurface) || typeof window === "undefined") {
       setMobileDrawerPlacement("bottom");
+      setMobileDrawerMaxHeight(null);
       return undefined;
     }
     const placeDrawer = () => {
       if (window.innerWidth > 720) {
         setMobileDrawerPlacement("bottom");
+        setMobileDrawerMaxHeight(null);
         return;
       }
+      if (isMapSurface) {
+        // Reserve the real map CTA rectangle. A fixed viewport fraction can
+        // cover the action when the map's selected-record card moves upward.
+        const safeTop = Math.max(72, (window.visualViewport?.offsetTop || 0) + 64);
+        const safeBottom = Math.max(88, (window.visualViewport?.height || window.innerHeight) - window.innerHeight + 88);
+        const ctaBoxes = [...document.querySelectorAll('[data-primary-cta="true"]')]
+          .map((node) => node.getBoundingClientRect?.())
+          .filter((box) => box && box.width > 0 && box.height > 0);
+        const viewportHeight = window.visualViewport?.height || window.innerHeight;
+        const nearestTop = ctaBoxes.length ? Math.min(...ctaBoxes.map((box) => box.top)) : viewportHeight * 0.7;
+        const farthestBottom = ctaBoxes.length ? Math.max(...ctaBoxes.map((box) => box.bottom)) : viewportHeight * 0.76;
+        const topSpace = Math.max(180, Math.floor(nearestTop - safeTop - 12));
+        const bottomSpace = Math.max(180, Math.floor(viewportHeight - safeBottom - farthestBottom - 12));
+        if (topSpace >= bottomSpace) {
+          setMobileDrawerPlacement("map-top");
+          setMobileDrawerMaxHeight(topSpace);
+        } else {
+          setMobileDrawerPlacement("map-bottom");
+          setMobileDrawerMaxHeight(bottomSpace);
+        }
+        return;
+      }
+      setMobileDrawerMaxHeight(null);
       const primaryCta = document.querySelector('[data-primary-cta="true"]');
       const box = primaryCta?.getBoundingClientRect?.();
       const shouldStayAboveCta = box && box.top > window.innerHeight * 0.52;
@@ -465,7 +620,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       window.removeEventListener("resize", placeDrawer);
       window.removeEventListener("scroll", placeDrawer, true);
     };
-  }, [currentPath, isRoleTaskHome, open]);
+  }, [currentPath, isMapSurface, isRoleTaskHome, open]);
   const resolveSafeLauncherPlacement = useCallback((preferredSide, preferredRatio) => {
     const width = typeof window === "undefined" ? viewportSize.width : window.innerWidth;
     const height = typeof window === "undefined" ? viewportSize.height : window.innerHeight;
@@ -516,12 +671,12 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     const evt = copilotSelectionEventName();
     function onSelection(e) {
       const next = e?.detail || null;
-      setSelection(selectionApplies(next, currentPath) ? next : null);
+      setSelection(canUseRouteBoundContext && selectionApplies(next, currentPath) ? next : null);
     }
     window.addEventListener(evt, onSelection);
-    setSelection(selectionApplies(readCopilotSelection(), currentPath) ? readCopilotSelection() : null);
+    setSelection(canUseRouteBoundContext && selectionApplies(readCopilotSelection(), currentPath) ? readCopilotSelection() : null);
     return () => window.removeEventListener(evt, onSelection);
-  }, [currentPath]);
+  }, [canUseRouteBoundContext, currentPath]);
 
   useEffect(() => {
     if (!isSmartPlacementSurface || open || launcherPlacement || dragPreview || typeof window === "undefined") {
@@ -566,12 +721,19 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       // respecting the same obstacle checks; this is a single deterministic
       // fallback, not a second placement loop.
       candidates.push(
+        // Compact maps can begin below the fold. These header-safe viewport
+        // candidates keep the launcher visible when every visible map slot is
+        // occupied by a marker or map control.
+        { name: "viewport-safe-right", left: viewport.width - buttonBox.width - gap, top: Math.max(72, gap) },
+        { name: "viewport-safe-left", left: gap, top: Math.max(72, gap) },
+        { name: "viewport-safe-right-lower", left: viewport.width - buttonBox.width - gap, top: Math.max(96, gap) },
+        { name: "viewport-safe-left-lower", left: gap, top: Math.max(96, gap) },
         { name: "viewport-top-right", left: viewport.width - buttonBox.width - gap, top: gap },
         { name: "viewport-top-left", left: gap, top: gap },
         { name: "viewport-bottom-right", left: viewport.width - buttonBox.width - gap, top: viewport.height - buttonBox.height - gap },
         { name: "viewport-bottom-left", left: gap, top: viewport.height - buttonBox.height - gap }
       );
-      const obstacles = [...document.querySelectorAll(".leaflet-marker-icon, .leaflet-control, [data-primary-cta=\"true\"], [role=alert], [role=status], [role=dialog], #shell-nav-dock, .roleSignalAction, .roleTaskSummaryCard--next .btn, .shellTopLogout, [data-details=\"task-workspace\"] > summary, [data-details=\"task-workspace\"][open] .roleTaskDetailsBody")]
+      const obstacles = [...document.querySelectorAll(".leaflet-marker-icon, .leaflet-control, [data-primary-cta=\"true\"], [role=alert], [role=status], [role=dialog], #shell-nav-dock, .shellTop, .roleSignalAction, .roleTaskSummaryCard--next .btn, .shellTopLogout, [data-details=\"task-workspace\"] > summary, [data-details=\"task-workspace\"][open] .roleTaskDetailsBody, [data-map-surface=\"primary\"] [data-map-current-state=\"true\"], [data-map-surface=\"primary\"] [data-map-legacy-state=\"true\"], [data-map-surface=\"primary\"] .mapOperationsDisclosure, [data-map-surface=\"primary\"] .mapViewRouteNotice, [data-map-surface=\"primary\"] .mapViewFooter")]
         .map((element) => element.getBoundingClientRect())
         .filter((box) => box.width > 0 && box.height > 0);
       const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
@@ -621,12 +783,21 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     window.addEventListener("resize", schedulePlace);
     window.addEventListener("scroll", schedulePlace, true);
     const frame = window.requestAnimationFrame(placeMascot);
+    // Leaflet marker geometry can settle after the first frame without a DOM
+    // mutation. Recheck twice during initial map layout so the launcher does
+    // not keep an early anchor that becomes occupied by a moving marker.
+    const settleTimers = [250, 900].map((delay) => window.setTimeout(schedulePlace, delay));
+    const settleInterval = window.setInterval(schedulePlace, 200);
+    const settleStopTimer = window.setTimeout(() => window.clearInterval(settleInterval), 3200);
     return () => {
       disposed = true;
       observer?.disconnect();
       contentObserver?.disconnect();
       window.cancelAnimationFrame(frame);
       if (scheduledFrame !== null) window.cancelAnimationFrame(scheduledFrame);
+      settleTimers.forEach((timer) => window.clearTimeout(timer));
+      window.clearTimeout(settleStopTimer);
+      window.clearInterval(settleInterval);
       window.removeEventListener("resize", schedulePlace);
       window.removeEventListener("scroll", schedulePlace, true);
     };
@@ -638,13 +809,26 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       lastPathRef.current = currentPath;
       setErr("");
       resetResponsePhase();
-      setShowSuggestions(false);
+      if (!canUseRouteBoundContext) return;
       setMessages((prev) => [...prev, { role: "assistant", text: `Şimdi ${screenContext.label} ekranındasın. İstersen bu ekranı anlatayım veya seçili kayıt için yardımcı olayım.`, system: true }]);
     }
-  }, [currentPath, open, token, isCopilotPage, screenContext.label, resetResponsePhase]);
+  }, [canUseRouteBoundContext, currentPath, open, token, isCopilotPage, screenContext.label, resetResponsePhase]);
 
   async function ask(rawText) {
-    if (!token || !screenContext.screen) return;
+    if (!token) return;
+    if (!canUseRouteBoundContext) {
+      const recovery = "Bu ekran bağlamını doğrulayamadım; sayfayı yenileyip yetkili bir ekran üzerinden tekrar sorabilirsin.";
+      setErr(recovery);
+      setMessages((prev) => [...prev, { role: "assistant", text: recovery, system: true }]);
+      return;
+    }
+    const requestScopeKey = authScopeKey;
+    const requestRouteContextKey = currentRouteContextKey;
+    const requestId = requestSequenceRef.current + 1;
+    requestSequenceRef.current = requestId;
+    activeRequestRef.current?.abort?.();
+    const controller = new AbortController();
+    activeRequestRef.current = controller;
     const question = String(rawText || "").trim();
     if (question) setMessages((prev) => [...prev, { role: "user", text: question }]);
     resetResponsePhase();
@@ -656,25 +840,21 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       const requestSelection = liveSelection || selection || null;
       const uiSurface = captureCopilotUiSurface();
       const recentMessages = messages.slice(-8).map((m) => ({ role: m?.role || '', text: String(m?.text || '').slice(0, 280) }));
-      const previousCostAnalysisState = [...messages].reverse().find((m) => m?.costAnalysisState)?.costAnalysisState || null;
       const payload = await api.post("/api/ai/copilot", {
         intent: "CHAT_HELP",
         entityType: "screen",
         entityId: Number(screenContext.screen.id),
-        message: buildPrompt({ mode, rawText, screenContext, selection: requestSelection }),
+        message: buildPrompt({ rawText, screenContext }),
         conversationState: {
           recentMessages,
-          drawerMode: mode,
           lastScreenPath: screenContext.path,
           lastScreenLabel: screenContext.label,
           selectedLabel: requestSelection?.label || "",
           selectedEntityType: requestSelection?.entityType || "",
-          // Legacy selection carry guard: selectedEntityId: Number(selection?.entityId || 0) || null
           selectedEntityId: Number(requestSelection?.entityId || 0) || null,
-          selectedSummary: requestSelection?.summary || "",
-          selectedRecordSummary: requestSelection?.selectedRecordSummary || requestSelection?.summary || "",
-          selectedRecordStatus: requestSelection?.selectedRecordStatus || "",
-          costAnalysisState: previousCostAnalysisState,
+          selectedEntitySet: Array.isArray(requestSelection?.entitySet) ? requestSelection.entitySet : [],
+          selectedRelatedEntityType: requestSelection?.relatedEntityType || "",
+          selectedRelatedEntityId: Number(requestSelection?.relatedEntityId || 0) || null,
           uiSurface,
         },
         screenContext: {
@@ -686,24 +866,17 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           selectedLabel: requestSelection?.label || "",
           selectedEntityType: requestSelection?.entityType || "",
           selectedEntityId: Number(requestSelection?.entityId || 0) || null,
-          selectedSummary: requestSelection?.summary || "",
-          selectedRecordSummary: requestSelection?.selectedRecordSummary || requestSelection?.summary || "",
-          selectedRecordStatus: requestSelection?.selectedRecordStatus || "",
-          selectedRecordLabel: requestSelection?.selectedRecordLabel || requestSelection?.label || "",
-          helpContextSummary: requestSelection?.helpContextSummary || requestSelection?.summary || "",
-          contextSummary: requestSelection?.contextSummary || requestSelection?.summary || "",
-          selectedFields: Array.isArray(requestSelection?.fields) ? requestSelection.fields : [],
-          selectedBadges: Array.isArray(requestSelection?.badges) ? requestSelection.badges : [],
-          structuredFacts: requestSelection?.facts && typeof requestSelection.facts === "object" ? requestSelection.facts : null,
-          liveFacts: requestSelection?.facts && typeof requestSelection.facts === "object" ? requestSelection.facts : null,
+          selectedEntitySet: Array.isArray(requestSelection?.entitySet) ? requestSelection.entitySet : [],
+          selectedRelatedEntityType: requestSelection?.relatedEntityType || "",
+          selectedRelatedEntityId: Number(requestSelection?.relatedEntityId || 0) || null,
           uiHints: {
-            drawerMode: mode,
-            visibleSuggestions: buildSuggestions(screenContext.path, mode, requestSelection, screenContext, me),
+            visibleSuggestions: buildSuggestions(screenContext.path, requestSelection, screenContext, me),
             ...uiSurface,
           },
         },
         format: "json",
-      }, { token });
+      }, { token, signal: controller.signal });
+      if (requestId !== requestSequenceRef.current || requestScopeKey !== authScopeRef.current || requestRouteContextKey !== routeContextKey(routeContextRef.current)) return;
       setMessages((prev) => [...prev, {
         role: "assistant",
         text: payload?.reply || payload?.summary || "Yardım metni oluşmadı.",
@@ -712,13 +885,24 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
         responseSections: Array.isArray(payload?.responseSections) ? payload.responseSections : [],
         costReasoning: payload?.costReasoning || null,
         costAnalysisState: payload?.costAnalysisState || null,
+        semanticPlan: payload?.semanticPlan || null,
+        queryPlanExecution: payload?.queryPlanExecution || null,
+        synthesis: payload?.synthesis || null,
+        authorizedProductContext: payload?.authorizedProductContext || null,
+        conversationRoute: payload?.conversationRoute || payload?.semanticPlan?.conversationRoute || null,
+        dialogueTopic: payload?.dialogueTopic || payload?.semanticPlan?.dialogueTopic || null,
       }]);
       markResponseReady();
     } catch (e) {
+      if (controller.signal.aborted || requestId !== requestSequenceRef.current || requestScopeKey !== authScopeRef.current || requestRouteContextKey !== routeContextKey(routeContextRef.current)) return;
       setErr(String(e?.message || e));
+      setMessages((prev) => [...prev, { role: "assistant", text: `Sorgu tamamlanamadı: ${String(e?.message || e)}`, system: true }]);
       resetResponsePhase();
     } finally {
-      setBusy(false);
+      if (requestId === requestSequenceRef.current && requestScopeKey === authScopeRef.current && requestRouteContextKey === routeContextKey(routeContextRef.current)) {
+        activeRequestRef.current = null;
+        setBusy(false);
+      }
     }
   }
 
@@ -735,12 +919,16 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
 
   function openFullWorkspace() {
     writeCopilotSharedState({
+      scopeKey: authScopeKey,
       messages,
-      screenPath: currentPath,
-      screenLabel: screenContext.label,
+      screenPath: canUseRouteBoundContext ? screenContext.path : null,
+      screenLabel: canUseRouteBoundContext ? screenContext.label : null,
       role: me?.role || "",
       companyKind: me?.companyKind || "",
-      selection,
+      selection: canUseRouteBoundContext ? selection : null,
+      selectedContext: canUseRouteBoundContext ? selection : null,
+      routeContextStatus: routeContext.status,
+      metadataStatus: screenContext.metadataStatus,
     });
     openPath(fullWorkspacePath(me));
   }
@@ -757,7 +945,14 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   }
 
   async function openGuideAction(guide) {
-    if (!token || !screenContext.screen) return;
+    if (!token || !canUseRouteBoundContext) return;
+    const requestScopeKey = authScopeKey;
+    const requestRouteContextKey = currentRouteContextKey;
+    const requestId = requestSequenceRef.current + 1;
+    requestSequenceRef.current = requestId;
+    activeRequestRef.current?.abort?.();
+    const controller = new AbortController();
+    activeRequestRef.current = controller;
     resetResponsePhase();
     setBusy(true);
     setErr("");
@@ -776,7 +971,8 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           companyKind: me?.companyKind || "",
         },
         format: "json",
-      }, { token });
+      }, { token, signal: controller.signal });
+      if (requestId !== requestSequenceRef.current || requestScopeKey !== authScopeRef.current || requestRouteContextKey !== routeContextKey(routeContextRef.current)) return;
       const guideText = [
         payload?.summary || payload?.plainSummary || payload?.jobPurpose || "Rehber açıldı.",
         payload?.whatToDoNow ? `Şimdi: ${payload.whatToDoNow}` : "",
@@ -790,10 +986,14 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       }]);
       markResponseReady();
     } catch (e) {
+      if (controller.signal.aborted || requestId !== requestSequenceRef.current || requestScopeKey !== authScopeRef.current || requestRouteContextKey !== routeContextKey(routeContextRef.current)) return;
       setErr(String(e?.message || e));
       resetResponsePhase();
     } finally {
-      setBusy(false);
+      if (requestId === requestSequenceRef.current && requestScopeKey === authScopeRef.current && requestRouteContextKey === routeContextKey(routeContextRef.current)) {
+        activeRequestRef.current = null;
+        setBusy(false);
+      }
     }
   }
 
@@ -865,6 +1065,23 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     launcherPositionStyle.right = "auto";
     launcherPositionStyle.bottom = "auto";
   }
+  const activeDrawerPlacement = drawerDragPreview || drawerPlacement;
+  const renderedDrawerPlacement = activeDrawerPlacement && viewportSize.width > 720
+    ? resolveSafeDrawerPlacement(
+      activeDrawerPlacement.left,
+      activeDrawerPlacement.top,
+      Math.min(drawerDims.width, Math.max(320, viewportSize.width - 36)),
+      Math.min(drawerDims.height, Math.max(360, viewportSize.height - 36)),
+    )
+    : activeDrawerPlacement;
+  const drawerPositionStyle = {
+    width: drawerDims.width,
+    height: drawerDims.height,
+    zIndex: activeOverlayLayer === "copilot" ? 9130 : 4210,
+    ...(renderedDrawerPlacement && viewportSize.width > 720
+      ? { left: renderedDrawerPlacement.left, top: renderedDrawerPlacement.top, right: "auto", bottom: "auto" }
+      : {}),
+  };
 
   function openFromLauncher() {
     setPanelSide(launcherSide);
@@ -872,12 +1089,134 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     setOpen(true);
   }
 
-  function resetLauncherPosition() {
-    setLauncherPlacement(null);
-    setDragPreview(null);
-    writeLauncherPlacement(null);
-    mapAnchorRef.current = "";
-    setMapSafePosition(null);
+  function chooseDrawerSize(nextSize) {
+    setCustomDrawerSize(null);
+    if (nextSize === "S") setSize("S");
+    else if (nextSize === "M") setSize("M");
+    else if (nextSize === "L") setSize("L");
+  }
+
+  function drawerResizeBounds() {
+    const width = typeof window === "undefined" ? viewportSize.width : window.innerWidth;
+    const height = typeof window === "undefined" ? viewportSize.height : window.innerHeight;
+    const maxWidth = Math.min(720, Math.max(320, width - 36));
+    const maxHeight = Math.min(860, Math.max(360, height - 36));
+    return {
+      minWidth: Math.min(400, maxWidth),
+      minHeight: Math.min(500, maxHeight),
+      maxWidth,
+      maxHeight,
+    };
+  }
+
+  function startDrawerDrag(event) {
+    if (viewportSize.width <= 720 || (event.pointerType === "mouse" && event.button !== 0)) return;
+    if (event.target?.closest?.("button, details, summary, input, textarea, a, [role=button]")) return;
+    const drawer = event.currentTarget.closest?.(".copilotDrawer");
+    const box = drawer?.getBoundingClientRect?.();
+    if (!box) return;
+    drawerDragCleanupRef.current?.();
+    drawerDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originLeft: box.left,
+      originTop: box.top,
+      width: box.width,
+      height: box.height,
+    };
+    const handleMove = (moveEvent) => moveDrawerDrag(moveEvent);
+    const handleUp = (upEvent) => finishDrawerDrag(upEvent);
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp, { once: true });
+    window.addEventListener("pointercancel", handleUp, { once: true });
+    drawerDragCleanupRef.current = () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleUp);
+      drawerDragCleanupRef.current = null;
+    };
+    drawerHeaderRef.current?.setPointerCapture?.(event.pointerId);
+    activateCopilotLayer();
+    event.preventDefault();
+  }
+
+  function moveDrawerDrag(event) {
+    const active = drawerDragRef.current;
+    if (!active || active.pointerId !== event.pointerId) return;
+    const width = typeof window === "undefined" ? viewportSize.width : window.innerWidth;
+    const height = typeof window === "undefined" ? viewportSize.height : window.innerHeight;
+    const left = Math.min(Math.max(12, active.originLeft + event.clientX - active.startX), Math.max(12, width - active.width - 12));
+    const top = Math.min(Math.max(12, active.originTop + event.clientY - active.startY), Math.max(12, height - active.height - 12));
+    setDrawerDragPreview({ left, top });
+    event.preventDefault();
+  }
+
+  function finishDrawerDrag(event) {
+    const active = drawerDragRef.current;
+    if (!active || active.pointerId !== event.pointerId) return;
+    const currentLeft = active.originLeft + event.clientX - active.startX;
+    const currentTop = active.originTop + event.clientY - active.startY;
+    const safe = resolveSafeDrawerPlacement(currentLeft, currentTop, active.width, active.height);
+    setDrawerPlacement(safe);
+    setDrawerDragPreview(null);
+    drawerDragRef.current = null;
+    drawerDragCleanupRef.current?.();
+    try { drawerHeaderRef.current?.releasePointerCapture?.(event.pointerId); } catch { /* no-op: pointer capture may already be released */ }
+  }
+
+  function startDrawerResize(event) {
+    if (viewportSize.width <= 720 || (event.pointerType === "mouse" && event.button !== 0)) return;
+    const drawer = event.currentTarget.parentElement;
+    const box = drawer?.getBoundingClientRect?.();
+    if (!box) return;
+    drawerResizeCleanupRef.current?.();
+    drawerResizeRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originWidth: box.width,
+      originHeight: box.height,
+    };
+    drawerResizeHandleRef.current = event.currentTarget;
+    const handleMove = (moveEvent) => moveDrawerResize(moveEvent);
+    const handleUp = (upEvent) => finishDrawerResize(upEvent);
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp, { once: true });
+    window.addEventListener("pointercancel", handleUp, { once: true });
+    drawerResizeCleanupRef.current = () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleUp);
+      drawerResizeCleanupRef.current = null;
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  }
+
+  function moveDrawerResize(event) {
+    const active = drawerResizeRef.current;
+    if (!active || active.pointerId !== event.pointerId) return;
+    const bounds = drawerResizeBounds();
+    const width = Math.min(bounds.maxWidth, Math.max(bounds.minWidth, active.originWidth + (event.clientX - active.startX)));
+    const height = Math.min(bounds.maxHeight, Math.max(bounds.minHeight, active.originHeight + (event.clientY - active.startY)));
+    setCustomDrawerSize({ width: Math.round(width), height: Math.round(height) });
+    setDrawerPlacement(resolveSafeDrawerPlacement(active.originLeft, active.originTop, width, height));
+    event.preventDefault();
+  }
+
+  function finishDrawerResize(event) {
+    const active = drawerResizeRef.current;
+    if (active?.pointerId !== event.pointerId) return;
+    const bounds = drawerResizeBounds();
+    const nextWidth = Math.min(bounds.maxWidth, Math.max(bounds.minWidth, active.originWidth + (event.clientX - active.startX)));
+    const nextHeight = Math.min(bounds.maxHeight, Math.max(bounds.minHeight, active.originHeight + (event.clientY - active.startY)));
+    const safe = resolveSafeDrawerPlacement(active.originLeft, active.originTop, nextWidth, nextHeight);
+    setDrawerPlacement(safe);
+    drawerResizeRef.current = null;
+    drawerResizeCleanupRef.current?.();
+    try { drawerResizeHandleRef.current?.releasePointerCapture?.(event.pointerId); } catch { /* no-op: pointer capture may already be released */ }
+    drawerResizeHandleRef.current = null;
   }
 
   function startLauncherDrag(event) {
@@ -980,7 +1319,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
         </span>
         <span className="copilotMascotLabel">Sefer Abi’ye Sor</span>
       </button>
-      {attentionBubbleVisible && drawerAvatarState === "attention" ? (
+      {attentionBubbleVisible && drawerAvatarState === "attention" && !suppressCompactTaskHomeBubble && !suppressCompactMapBubble ? (
         <button
           type="button"
           className={`copilotAttentionBubble${mapSafePosition?.anchor?.startsWith("top") ? " copilotAttentionBubble--below" : ""}`}
@@ -999,75 +1338,97 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     </div>
   ) : (
     <aside
-      className={`copilotDrawer${mobileDrawerPlacement === "top" ? " copilotDrawer--task-home-top" : ""}${panelSide === "left" ? " copilotDrawer--from-left" : ""}`}
-      style={{ width: dims.width, height: dims.height, zIndex: activeOverlayLayer === "copilot" ? 9130 : 4210 }}
+      className={`copilotDrawer${mobileDrawerPlacement === "top" || mobileDrawerPlacement === "map-top" ? " copilotDrawer--task-home-top" : ""}${mobileDrawerPlacement === "map-top" ? " copilotDrawer--map-top" : ""}${mobileDrawerPlacement === "map-bottom" ? " copilotDrawer--map-bottom" : ""}${panelSide === "left" ? " copilotDrawer--from-left" : ""}`}
+      style={{ ...drawerPositionStyle, ...(mobileDrawerMaxHeight ? { "--copilot-map-safe-height": `${mobileDrawerMaxHeight}px` } : {}) }}
       onPointerDownCapture={activateCopilotLayer}
       onMouseDownCapture={activateCopilotLayer}
       onFocusCapture={activateCopilotLayer}
     >
-      <div className="copilotDrawerHeader">
+      <div
+        ref={drawerHeaderRef}
+        className="copilotDrawerHeader"
+        data-drawer-drag-handle="true"
+        onPointerDown={startDrawerDrag}
+        onPointerMove={moveDrawerDrag}
+        onPointerUp={finishDrawerDrag}
+        onPointerCancel={finishDrawerDrag}
+        title={viewportSize.width > 720 ? "Paneli taşımak için başlıktan sürükle" : undefined}
+      >
         <div className="copilotDrawerIdentity">
           <SeferAbiAvatar state={drawerAvatarState} size={44} />
           <div>
-          <div className="copilotDrawerTitle">{COPILOT_PERSONA.drawerTitle}</div>
-          <div className="copilotDrawerContext">{`${COPILOT_PERSONA.assistantDisplayName} · ${COPILOT_PERSONA.assistantSubtitle}`}</div>
-          <div className={`copilotDrawerState copilotDrawerState--${drawerAvatarState}`} aria-live="polite">{drawerAvatarStateLabel}</div>
-          <div className="copilotDrawerContext copilotDrawerContext--secondary">Bulunduğun ekranda kısa destek verir.</div>
-          <div className="copilotDrawerContext copilotDrawerContext--secondary">Şu an: {screenContext.label}</div>
-          {selection?.label ? <div className="copilotDrawerContext">Seçili kayıt: <b>{selection.label}</b>{selectionSummaryForDisplay(selection) ? ` • ${selectionSummaryForDisplay(selection)}` : ""}</div> : null}
+            <div className="copilotDrawerTitle">{COPILOT_PERSONA.drawerTitle}</div>
+            <div className="copilotDrawerContext">{`${COPILOT_PERSONA.assistantDisplayName} · ${COPILOT_PERSONA.assistantSubtitle}`}</div>
+            <div className={`copilotDrawerState copilotDrawerState--${drawerAvatarState}`} aria-live="polite">{drawerAvatarStateLabel}</div>
+            <div className="copilotDrawerCompactContext">
+              <span>Şu an: <b>{screenContext.label}</b></span>
+              {selection?.label ? <span>Seçili kayıt: <b>{selection.label}</b>{selectionSummaryForDisplay(selection) ? ` • ${selectionSummaryForDisplay(selection)}` : ""}</span> : null}
+            </div>
           </div>
         </div>
-        <div className="copilotDrawerTools">
-          <button
-            type="button"
-            className={size === "S" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"}
-            onClick={() => setSize("S")}
-            aria-pressed={size === "S"}
-            title="Küçük"
-          >
-            <span className="copilotToolIcon" aria-hidden="true">−</span><span>Küçük</span>
-          </button>
-          <button
-            type="button"
-            className={size === "M" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"}
-            onClick={() => setSize("M")}
-            aria-pressed={size === "M"}
-            title="Orta"
-          >
-            <span className="copilotToolIcon" aria-hidden="true">▢</span><span>Orta</span>
-          </button>
-          <button
-            type="button"
-            className={size === "L" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"}
-            onClick={() => setSize("L")}
-            aria-pressed={size === "L"}
-            title="Büyük"
-          >
-            <span className="copilotToolIcon" aria-hidden="true">＋</span><span>Büyük</span>
-          </button>
-          <button type="button" className="btn sm copilotToolBtn" onClick={resetLauncherPosition} title="Varsayılan konuma getir">
-            Varsayılan konuma getir
-          </button>
-          <button type="button" className="btn sm copilotToolBtn copilotToolBtn--close" onClick={() => setOpen(false)} title="Kapat">
-            Kapat
-          </button>
-          <button type="button" className="btn sm primary copilotToolBtn" onClick={openFullWorkspace} title="Aynı konuşmayı tam ekranda sürdür">
-            Tam ekranda aç
+        <div className="copilotDrawerHeaderActions">
+          <details className="copilotDrawerMore">
+            <summary aria-label="Sefer Abi seçenekleri" title="Seçenekler"><span aria-hidden="true">⋯</span></summary>
+            <div className="copilotDrawerMoreMenu">
+              <div className="copilotDrawerPresets" aria-label="Panel boyutu">
+                <span className="copilotDrawerMoreLabel">Panel boyutu</span>
+                <button
+                  type="button"
+                  className={size === "S" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"}
+                  onClick={() => chooseDrawerSize("S")}
+                  aria-pressed={size === "S"}
+                  title="Küçük"
+                >
+                  <span className="copilotToolIcon" aria-hidden="true">−</span><span>Küçük</span>
+                </button>
+                <button
+                  type="button"
+                  className={size === "M" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"}
+                  onClick={() => chooseDrawerSize("M")}
+                  aria-pressed={size === "M"}
+                  title="Orta"
+                >
+                  <span className="copilotToolIcon" aria-hidden="true">▢</span><span>Orta</span>
+                </button>
+                <button
+                  type="button"
+                  className={size === "L" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"}
+                  onClick={() => chooseDrawerSize("L")}
+                  aria-pressed={size === "L"}
+                  title="Büyük"
+                >
+                  <span className="copilotToolIcon" aria-hidden="true">＋</span><span>Büyük</span>
+                </button>
+              </div>
+              <button type="button" className="btn sm copilotToolBtn" onClick={openFullWorkspace} title="Aynı konuşmayı tam ekranda sürdür">
+                Tam ekranda aç
+              </button>
+            </div>
+          </details>
+          <button type="button" className="btn sm copilotToolBtn copilotToolBtn--close" onClick={() => setOpen(false)} title="Kapat" aria-label="Kapat">
+            <span aria-hidden="true">×</span>
           </button>
         </div>
       </div>
 
-      <div className="copilotDrawerModeRow">
-        <button type="button" className={mode === "STEP" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"} onClick={() => setMode("STEP")}>Adım adım</button>
-        <button type="button" className={mode === "DIAGNOSE" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"} onClick={() => setMode("DIAGNOSE")}>Sorunu bul</button>
-        <button type="button" className={mode === "SHORT" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"} onClick={() => setMode("SHORT")}>Hızlı cevap</button>
-        <button type="button" className="btn sm copilotToolBtn" onClick={() => setShowSuggestions((p) => !p)}>{showSuggestions ? "Önerileri gizle" : `Öneriler (${suggestions.length})`}</button>
-      </div>
-
-      {showSuggestions && messages.length > 0 ? <div className="copilotSuggestionWrap">{suggestions.map((chip, index) => <button key={`${chip}:${index}`} type="button" className="copilotChip" onClick={() => ask(chip)}>{chip}</button>)}</div> : null}
+      {suggestions.length ? (
+        <section className="copilotContextSuggestions" aria-label="Bağlama uygun öneriler">
+          <button
+            type="button"
+            className="copilotContextSuggestionsToggle"
+            aria-expanded={suggestionsOpen}
+            aria-controls={suggestionPanelId}
+            onClick={() => setSuggestionsOpen((previous) => !previous)}
+          >
+            <span>Öneriler ({suggestions.length})</span>
+            <span className="copilotContextSuggestionsChevron" aria-hidden="true">{suggestionsOpen ? "▾" : "▸"}</span>
+          </button>
+          <div id={suggestionPanelId} className="copilotSuggestionWrap" hidden={!suggestionsOpen}>{suggestions.map((chip, index) => <button key={`${chip}:${index}`} type="button" className="copilotChip" onClick={() => ask(chip)}>{chip}</button>)}</div>
+        </section>
+      ) : null}
 
       <div className="copilotChatSurface" ref={scrollRef}>
-        {messages.length === 0 ? <div className="copilotEmptyState"><div className="copilotEmptyTitle">{COPILOT_PERSONA.emptyStateLead}</div><div className="copilotEmptyText">{COPILOT_PERSONA.emptyStateBody}</div><div className="copilotSuggestionWrap">{suggestions.map((chip, index) => <button key={`${chip}:${index}`} type="button" className="copilotChip" onClick={() => ask(chip)}>{chip}</button>)}</div></div> : null}
+        {messages.length === 0 ? <div className="copilotEmptyState"><div className="copilotEmptyTitle">{COPILOT_PERSONA.emptyStateLead}</div><div className="copilotEmptyText">{COPILOT_PERSONA.emptyStateBody}</div></div> : null}
         {messages.map((m, idx) => <div key={`${m.role}-${idx}`} className={m.role === "user" ? "copilotMsg user" : "copilotMsg assistant"}>
           <div className="copilotMsgHead">{m.role === "user" ? "Sen" : COPILOT_PERSONA.assistantDisplayName}</div>
           <div className="copilotMsgText">{m.role === "assistant" ? humanizeUserFacingText(m.text, "Yardım metni oluşmadı.") : m.text}</div>
@@ -1088,7 +1449,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           ) : null}
           {m.role === "assistant" && !m.system ? <div className="copilotMsgActions">
             <button type="button" className="btn sm copilotToolBtn" onClick={() => speak(m.text, idx)}>{readingIndex === idx ? "Okuyor..." : "Sesli oku"}</button>
-            {m.followUpPrompt ? <button type="button" className="btn sm copilotToolBtn" onClick={() => ask(m.followUpPrompt)}>Devamını anlat</button> : null}
+            {m.followUpPrompt ? <button type="button" className="btn sm copilotToolBtn" onClick={() => ask("Devamını anlat")}>Devamını anlat</button> : null}
             {filterMessageActions(m.quickActions, suggestions, m.followUpPrompt, me).map((a, i) => (
               <button key={`${idx}-${i}-${actionText(a)}`} type="button" className="btn sm copilotToolBtn" title={a?.reason || ""} onClick={() => triggerQuickAction(a)}>{actionText(a)}</button>
             ))}
@@ -1108,6 +1469,18 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           </div>
         </div>
       </form>
+      <span
+        className="copilotDrawerResizeHandle"
+        role="separator"
+        aria-orientation="both"
+        aria-label="Panel boyutunu ayarla"
+        tabIndex={0}
+        title="Panel boyutunu ayarla"
+        onPointerDown={startDrawerResize}
+        onPointerMove={moveDrawerResize}
+        onPointerUp={finishDrawerResize}
+        onPointerCancel={finishDrawerResize}
+      />
     </aside>
   );
 }

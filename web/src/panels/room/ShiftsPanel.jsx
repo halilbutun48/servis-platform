@@ -486,8 +486,19 @@ async function decideExtend(shiftId, decision) {
     const sid = Number(copilotShift?.id || 0);
     const status = String(copilotShift?.status || "").toUpperCase();
     if (!sid || !["DRAFT", "REQUESTED"].includes(status)) return;
+    const marketOffer = offersByShiftId.get(sid) || null;
+    const effectiveRoomId = effectiveShiftRoomId(copilotShift, marketOffer);
+    const roomScopeReady = Number(copilotShift?.roomId || 0) > 0
+      && Number(copilotShift?.roomId || 0) === Number(effectiveRoomId || 0)
+      && Number(copilotShift?.roomId || 0) === Number(me?.roomId || 0);
+    const capacityMeta = buildCapacityMeta({
+      shift: copilotShift,
+      vehicle: null,
+      roomVehicles: vehiclesForRoom(effectiveRoomId),
+    });
+    if (!roomScopeReady || !capacityMeta.dispatchRequired) return;
     loadDispatchPreviewRef.current?.(copilotShift, { force: false });
-  }, [copilotShift]);
+  }, [copilotShift, me?.roomId, offersByShiftId, vehiclesForRoom]);
 
   useEffect(() => {
     if (!copilotShift) {
@@ -567,7 +578,10 @@ async function decideExtend(shiftId, decision) {
           shift: s,
           vehicle,
           roomVehicles: vehiclesForRoomRef.current?.(effectiveRoomId) || [] });
-        if (capacityMeta.dispatchRequired && effectiveRoomId && !poolSummaryRef.current[sid] && !poolInflight.current.has(sid)) {
+        const roomScopeReady = Number(s?.roomId || 0) > 0
+          && Number(s?.roomId || 0) === Number(effectiveRoomId || 0)
+          && Number(s?.roomId || 0) === Number(me?.roomId || 0);
+        if (capacityMeta.dispatchRequired && roomScopeReady && !poolSummaryRef.current[sid] && !poolInflight.current.has(sid)) {
           await loadPoolSummaryRef.current?.(s);
         }
       }
@@ -576,7 +590,7 @@ async function decideExtend(shiftId, decision) {
     return () => {
       canceled = true;
     };
-  }, [pendingFiltered, assignSel, vehiclesById, offersByShiftId]);
+  }, [pendingFiltered, assignSel, vehiclesById, offersByShiftId, me?.roomId]);
 
   async function loadPoolSummary(shift, { force = false } = {}) {
     const sid = Number(shift?.id);

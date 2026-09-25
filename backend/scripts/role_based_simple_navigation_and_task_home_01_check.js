@@ -77,8 +77,8 @@ async function main() {
   must(homeSource.includes('data-primary-cta="true"'), "task-home exposes one dominant primary action hook");
   must(homeSource.includes("<OperationsCommandCenter"), "task-home composes the command center");
   must(homeSource.includes("<details className=\"roleTaskDetails\""), "task-home keeps existing capability under progressive disclosure");
-  must(commandSource.includes("loadRoomOperationHealthBundle") && commandSource.includes("loadCompanyOperationsBundle") && commandSource.includes("loadSchoolOperationsBundle") && commandSource.includes("loadSuperAdminOverviewBundle"), "command center consumes existing canonical signal bundles");
-  must(commandSource.includes("sourceOwner") && commandSource.includes("evidence"), "command center keeps signal provenance and evidence");
+  must(commandSource.includes("loadActionableEventsBundle") && commandSource.includes("data-command-center-source") && commandSource.includes("data-actionable-event-id"), "command center consumes the canonical actionable event source");
+  must(commandSource.includes("item.sourceType") && commandSource.includes("evidence"), "command center keeps actionable-event provenance and evidence");
   must(!commandSource.includes("#20 optimizer") || commandSource.includes("future"), "command center does not implement the future optimizer");
   must((homeSource.match(/className=\"btn primary rolePrimaryCta\"/g) || []).length === 1, "task home has one dominant primary CTA implementation");
 

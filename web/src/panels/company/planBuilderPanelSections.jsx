@@ -2,9 +2,9 @@ export function PlanBuilderHeaderBar({ who, busy, onReload }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       <div>
-        <h3 style={{ marginTop: 0 }}>Plan Builder (Stage-3)</h3>
+        <h3 style={{ marginTop: 0 }}>Plan oluşturucu</h3>
         <div className="muted">
-          Stage-0: kişi sayısı + kapasite → araç sayısı, geohash/cluster → taslak dağıtım. • Stage-1/2: OSRM + solver ile rota önerisi. • Stage-3: cluster bazlı ayrı market teklifi üretimi.
+          Kişi sayısı ve kapasite → taslak dağıtım → rota önerisi → ayrı pazar teklifi. Nihai araç ve sürücü kararı Taşımacılık Firması tarafında netleşir.
         </div>
       </div>
       <button type="button" onClick={onReload} disabled={busy} title={`${who} listesini yenile`}>
@@ -23,7 +23,7 @@ export function PlanBuilderWorkflowSection() {
         <br />
         <b>Manuel Talep</b>: tekil talep (istisna / düzeltme).
         <br />
-        <b>Shift Tools</b>: shift sonrası personel / durak / konum düzeltme (Adresten Bul).
+        <b>Düzeltme araçları</b>: vardiya sonrası personel, durak ve konum düzeltme (Adresten Bul).
       </div>
     </div>
   );
@@ -49,10 +49,10 @@ export function PlanBuilderSummaryParamsSection({
         </div>
         {stats.needs || stats.failed || stats.missingLoc ? (
           <div className="muted" style={{ marginTop: 6 }}>
-            Not: Stage-0 için varsayılan filtre <b>geoStatus=OK</b> ve <b>lat/lng var</b>. Konum kontrolü bitmeden plan doğruluğu düşer.
+            Not: Varsayılan filtre konumu uygun olan kayıtları kullanır. Konum kontrolü bitmeden plan doğruluğu düşer.
             <div style={{ marginTop: 8 }}>
               <button type="button" className="btn" onClick={openShiftToolsGeocode}>
-                Konumları düzelt (Shift Tools → Adresten Bul)
+                Konumları düzelt (Düzeltme araçları → Adresten Bul)
               </button>
             </div>
           </div>
@@ -63,7 +63,7 @@ export function PlanBuilderSummaryParamsSection({
         <div style={{ fontWeight: 800 }}>Parametreler</div>
         <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input type="checkbox" checked={onlyOk} onChange={(e) => setOnlyOk(e.target.checked)} />
-          Sadece geoStatus=OK
+          Sadece konumu uygun kayıtlar
         </label>
         <div className="muted" style={{ marginTop: 6 }}>
           Taslak plan kapasiteye göre bölünmez; sistem konum kümelerine göre taslak grup çıkarır. Nihai araç kapasitesi <b>taşımacılık firması</b> tarafında netleşir.
@@ -189,7 +189,7 @@ export function PlanBuilderDraftGroupsSection({
         </div>
       </div>
       {!plan.total ? (
-        <div className="muted">Uygun (lat/lng) personel bulunamadı.</div>
+        <div className="muted">Konumu uygun personel bulunamadı.</div>
       ) : (
         <table className="tbl">
           <thead>
@@ -301,7 +301,7 @@ export function PlanBuilderBulkOfferModal({ bulkOffer, setBulkOffer, pbRooms, pb
         <div className="row" style={{ gap: 12, marginTop: 12, flexWrap: "wrap" }}>
           <div className="col" style={{ minWidth: 260 }}>
             <label className="muted">Taşımacılık Firması ara</label>
-            <input value={bulkOffer.q} onChange={(e) => setBulkOffer((p) => ({ ...p, q: e.target.value }))} placeholder="name contains" disabled={bulkOffer.busy} />
+            <input value={bulkOffer.q} onChange={(e) => setBulkOffer((p) => ({ ...p, q: e.target.value }))} placeholder="Firma adına göre ara" disabled={bulkOffer.busy} />
             <div className="muted" style={{ marginTop: 8 }}>{pbRoomsBusy ? "Taşımacılık Firması listesi yükleniyor..." : `Toplam taşımacılık firması: ${pbRooms?.length ?? 0}`}</div>
           </div>
 

@@ -28,7 +28,7 @@ export function RoomPendingSection({ showTitle = true, pendingStatus, setPending
       {showTitle ? <div className="muted roomShiftsSectionSubtitle">Hizmet Alan Firma talebi, Taşımacılık Firması onayı ve karar bekleyen vardiyalar.</div> : null}
       <div className="toolbarLeft" style={{ marginBottom: 10 }}>
         <select value={pendingStatus} onChange={(e) => setPendingStatus(e.target.value)}>
-          <option value="OPEN">Açık (DRAFT + REQUESTED)</option>
+          <option value="OPEN">Açık durumlar</option>
           <option value="REQUESTED">Bekliyor</option>
           <option value="DRAFT">Taslak</option>
         </select>
@@ -108,12 +108,14 @@ export function RoomDispatchPoolSummary({
   const dData = dState?.data || null;
   const suggestions = Array.isArray(dData?.suggestions) ? dData.suggestions : [];
   const requestedDispatchPreviewRef = useRef(new Set());
+  const dispatchScopeReady = Number(shift?.roomId || 0) > 0
+    && Number(shift?.roomId || 0) === Number(effectiveRoomId || 0);
   useEffect(() => {
-    if (!capacityMeta?.dispatchRequired || !sid) return;
+    if (!capacityMeta?.dispatchRequired || !sid || !dispatchScopeReady) return;
     if (requestedDispatchPreviewRef.current.has(sid)) return;
     requestedDispatchPreviewRef.current.add(sid);
     loadDispatchPreview(shift, { force: false });
-  }, [capacityMeta?.dispatchRequired, loadDispatchPreview, shift, sid]);
+  }, [capacityMeta?.dispatchRequired, dispatchScopeReady, loadDispatchPreview, shift, sid]);
   const dispatchSelStates = getDispatchSelectionStates({
     shift,
     suggestions,

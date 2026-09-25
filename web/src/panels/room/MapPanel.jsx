@@ -553,7 +553,6 @@ export default function RoomMapPanel() {
                   gap: 12,
                   padding: 12,
                   minHeight: 96,
-                  overflow: "hidden",
                   textAlign: "left",
                 }}
                 title={shiftTitle(s)}
@@ -612,13 +611,12 @@ export default function RoomMapPanel() {
                 </span>
 
                 <span
+                  className="mapAsideMeta"
                   style={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "flex-end",
                     gap: 6,
-                    flex: "0 0 118px",
-                    maxWidth: 118,
                   }}
                 >
                   <span className="muted" style={{ fontSize: 12 }}>

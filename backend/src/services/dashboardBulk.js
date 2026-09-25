@@ -8,6 +8,7 @@ import { buildRoomCommercialSummary, buildRoomCommercialItems } from "../ops/com
 import { getShiftSummary, getVehicleSummary, getDriverSummary } from "../lib/reports.js";
 import { listFieldFeedbackRecords } from "../ops/fieldFeedbackLoop.js";
 import { resolveNotificationOwnership, resolveRoomOwnership } from "../region/ownership.js";
+import { buildActionableEventsForUser, publishActionableCurrentScreenSnapshot, roleHomePathForUser } from "./actionableEvents.js";
 
 const REQUEST_SHIFT_PREVIEW_INCLUDE = {
   include: {
@@ -891,12 +892,19 @@ async function buildSuperAdminOverviewBundle(user) {
   };
 }
 
+async function buildActionableEventsBundle(user) {
+  const snapshot = await buildActionableEventsForUser(user);
+  publishActionableCurrentScreenSnapshot({ user, path: roleHomePathForUser(user), snapshot });
+  return snapshot;
+}
+
 const BUNDLE_LOADERS = {
   "company-operations": buildCompanyOperationsBundle,
   "school-operations": buildSchoolOperationsBundle,
   "room-operation-health": buildRoomOperationHealthBundle,
   "room-commercial-flow": buildRoomCommercialFlowBundle,
   "superadmin-overview": buildSuperAdminOverviewBundle,
+  "actionable-events": buildActionableEventsBundle,
 };
 
 const BUNDLE_ROLES = {
@@ -905,6 +913,7 @@ const BUNDLE_ROLES = {
   "room-operation-health": ["ROOM", "SUPER_ADMIN"],
   "room-commercial-flow": ["ROOM", "SUPER_ADMIN"],
   "superadmin-overview": ["SUPER_ADMIN"],
+  "actionable-events": ["SUPER_ADMIN", "ROOM", "COMPANY", "DRIVER", "PERSONEL", "PARENT"],
 };
 
 function assertBundleAccess(bundle, user, query = {}) {

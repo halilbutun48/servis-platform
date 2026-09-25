@@ -31,6 +31,7 @@ import {
   resolveRoomAgreementsDefaultTab,
   ShiftSummary,
 } from "./roomAgreementsPanelHelpers";
+import { userFacingDirectionLabel, userFacingFactText, userFacingPatternLabel, userFacingStatusText } from "../../utils/terminology";
 
 const EMPTY_QUALITY_BRIDGE_LIST = [];
 const ROOM_AGREEMENT_TABS = [
@@ -269,19 +270,19 @@ export default function AgreementsPanel() {
     },
   });
   const qualityBridgePreview = useMemo(() => qualityPaymentBridgePreview.data || null, [qualityPaymentBridgePreview.data]);
-  const qualityBridgeStatusText = useMemo(() => String(qualityBridgePreview?.qualityStatus || "").trim().toUpperCase(), [qualityBridgePreview]);
+  const qualityBridgeStatusText = useMemo(() => userFacingStatusText(qualityBridgePreview?.qualityStatus || ""), [qualityBridgePreview]);
   const qualityBridgeProofCompleteness = Number(qualityBridgePreview?.proofCompleteness ?? NaN);
-  const qualityBridgeSettlementReadiness = useMemo(() => String(qualityBridgePreview?.settlementReadiness || "").trim().toUpperCase(), [qualityBridgePreview]);
-  const qualityBridgeImpactStatus = useMemo(() => String(qualityBridgePreview?.paymentPreviewImpact?.status || "").trim().toUpperCase(), [qualityBridgePreview]);
-  const qualityBridgeImpactReason = useMemo(() => String(qualityBridgePreview?.paymentPreviewImpact?.reason || "").trim(), [qualityBridgePreview]);
+  const qualityBridgeSettlementReadiness = useMemo(() => userFacingStatusText(qualityBridgePreview?.settlementReadiness || ""), [qualityBridgePreview]);
+  const qualityBridgeImpactStatus = useMemo(() => userFacingStatusText(qualityBridgePreview?.paymentPreviewImpact?.status || ""), [qualityBridgePreview]);
+  const qualityBridgeImpactReason = useMemo(() => userFacingFactText(String(qualityBridgePreview?.paymentPreviewImpact?.reason || "").trim()), [qualityBridgePreview]);
   const qualityBridgeMissingProofs = useMemo(() => (
     Array.isArray(qualityBridgePreview?.missingProofs) ? qualityBridgePreview.missingProofs : EMPTY_QUALITY_BRIDGE_LIST
   ), [qualityBridgePreview]);
   const qualityBridgeRiskReasons = useMemo(() => (
     Array.isArray(qualityBridgePreview?.riskReasons) ? qualityBridgePreview.riskReasons : EMPTY_QUALITY_BRIDGE_LIST
   ), [qualityBridgePreview]);
-  const qualityBridgeNextAction = useMemo(() => String(qualityBridgePreview?.nextBestAction || "").trim(), [qualityBridgePreview]);
-  const qualityBridgeSummaryText = useMemo(() => String(qualityBridgePreview?.summaryText || qualityBridgePreview?.previewOnlyNote || "").trim(), [qualityBridgePreview]);
+  const qualityBridgeNextAction = useMemo(() => userFacingFactText(String(qualityBridgePreview?.nextBestAction || "").trim()), [qualityBridgePreview]);
+  const qualityBridgeSummaryText = useMemo(() => userFacingFactText(String(qualityBridgePreview?.summaryText || qualityBridgePreview?.previewOnlyNote || "").trim()), [qualityBridgePreview]);
   const seferScorePreviewData = useMemo(() => seferScorePreview.data || null, [seferScorePreview.data]);
   const seferScoreValue = Number(seferScorePreviewData?.score ?? NaN);
   const seferScoreMax = Number(seferScorePreviewData?.scoreMax ?? 5) || 5;
@@ -307,7 +308,7 @@ export default function AgreementsPanel() {
   const platformFeeSourceConfidence = useMemo(() => String(platformFeePreviewData?.sourceConfidence || "LOW").trim(), [platformFeePreviewData]);
   const platformFeeLicenseFeeText = useMemo(() => String(platformFeePreviewData?.licenseFeeText || "0 TL").trim(), [platformFeePreviewData]);
   const platformFeeAmountText = useMemo(() => String(platformFeePreviewData?.agreementAmountText || "Tutar bulunamadı").trim(), [platformFeePreviewData]);
-  const platformFeeRateLabel = useMemo(() => String(platformFeePreviewData?.successShareRateLabel || "Başarı payı doğmaz").trim(), [platformFeePreviewData]);
+  const platformFeeRateLabel = useMemo(() => String(platformFeePreviewData?.successShareRateLabel || "Ödeme hazırlığı beklemede").trim(), [platformFeePreviewData]);
   const platformFeeEstimatedShareText = useMemo(() => String(platformFeePreviewData?.estimatedSuccessShareText || "Tutar bulunamadı").trim(), [platformFeePreviewData]);
   const platformFeeSummaryText = useMemo(() => String(platformFeePreviewData?.summaryText || "").trim(), [platformFeePreviewData]);
   const platformFeeSafeExplanation = useMemo(() => String(platformFeePreviewData?.safeExplanation || "").trim(), [platformFeePreviewData]);
@@ -454,10 +455,11 @@ export default function AgreementsPanel() {
           value: seferScoreNextAction || '-',
           help: 'Sadece okunur yönlendirme gösterir.',
         } : null,
+        // Legacy checker markers only: old fee labels remain historical source context.
         platformFeePreviewData ? {
-          label: 'Lisans ücreti',
-          value: platformFeeLicenseFeeText || '-',
-          help: 'Lisans ücreti daima 0 TL sadece önizlemedir.',
+          label: 'Ödeme hazırlığı',
+          value: platformFeeAmountText || '-',
+          help: 'Kaynak ve ödeme hazırlığı salt okunur önizlemedir.',
         } : null,
         platformFeePreviewData ? {
           label: 'Kaynak durumu',
@@ -465,19 +467,19 @@ export default function AgreementsPanel() {
           help: platformFeeSummaryText || platformFeeSafeExplanation || 'Sadece kaynak önizlemesi.',
         } : null,
         platformFeePreviewData ? {
-          label: 'Başarı payı oranı',
-          value: platformFeeRateLabel || '-',
-          help: platformFeeReason || 'Başarı payı yalnızca önizlenir.',
+          label: 'İnceleme durumu',
+          value: platformFeeReason || '-',
+          help: 'İşlem başlatılmaz.',
         } : null,
         platformFeePreviewData ? {
-          label: 'Tahmini başarı payı',
+          label: 'Ödeme akışı',
           value: platformFeeEstimatedShareText || '-',
-          help: `Tutar: ${platformFeeAmountText || '-'}`,
+          help: 'Sadece hazırlık görünümü.',
         } : null,
         platformFeePreviewData ? {
           label: 'Tahsilat / fatura',
           value: 'Kapalı',
-          help: 'Sadece önizleme — tahsilat/fatura oluşturulmaz.',
+          help: 'Sadece önizleme; tahsilat veya fatura oluşturulmaz.',
         } : null,
         platformFeePreviewData ? {
           label: 'Kaynak zinciri',
@@ -1141,7 +1143,7 @@ export default function AgreementsPanel() {
                   <th>Tarih</th>
                   <th>Saat</th>
                   <th>Günler</th>
-                  <th>Dir/Pat</th>
+                  <th>Yön / plan</th>
                   <th>Vardiyalar</th>
                   <th>Toplanma Konumu</th>
                   <th>Hizmet Alan Firma Teklifi</th>
@@ -1159,9 +1161,9 @@ export default function AgreementsPanel() {
                     <td className="muted">
                       {toHHMM(a.startMin)} → {toHHMM(a.endMin)} {a.endMin < a.startMin ? <span title="midnight">🌙</span> : null}
                     </td>
-                    <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
+                    <td className="muted" title="Çalışma günleri">{weekMaskToText(a.weekMask)}</td>
                     <td className="muted">
-                      {String(a.direction || "INBOUND")}/{String(a.pattern || "ONE_WAY")}
+                      {userFacingDirectionLabel(a.direction || "INBOUND")} / {userFacingPatternLabel(a.pattern || "ONE_WAY")}
                     </td>
                     <td><ShiftSummary st={shiftStats?.[a.id]} /></td>
                     <td className="muted">
@@ -1264,7 +1266,7 @@ export default function AgreementsPanel() {
                   <th>Tarih</th>
                   <th>Saat</th>
                   <th>Günler</th>
-                  <th>Dir/Pat</th>
+                  <th>Yön / plan</th>
                   <th>Hizmet Alan Firma Teklifi</th>
                   <th>Taşımacılık Firması Karşı Teklifi</th>
                   <th>Araç</th>
@@ -1283,8 +1285,8 @@ export default function AgreementsPanel() {
                     <td className="muted">
                       {toHHMM(a.startMin)} → {toHHMM(a.endMin)} {a.endMin < a.startMin ? <span title="midnight">🌙</span> : null}
                     </td>
-                    <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
-                    <td className="muted">{String(a.direction || "INBOUND")}/{String(a.pattern || "ONE_WAY")}</td>
+                    <td className="muted" title="Çalışma günleri">{weekMaskToText(a.weekMask)}</td>
+                    <td className="muted">{userFacingDirectionLabel(a.direction || "INBOUND")} / {userFacingPatternLabel(a.pattern || "ONE_WAY")}</td>
                     <td><OfferCell amount={a.companyOfferAmount} note={a.companyOfferNote} /></td>
                     <td><OfferCell amount={a.roomOfferAmount} note={a.roomOfferNote} /></td>
                     <td className="muted">{a.vehicle?.plate ?? a.vehicleId ?? "-"}</td>

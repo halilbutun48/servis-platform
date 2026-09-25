@@ -48,6 +48,12 @@ assert(fs.existsSync(reportPath), "dedicated real rendered report exists");
 assert(fs.existsSync(visualReportPath), "#17 visual corrective report exists");
 const report = readJson(reportPath);
 const visualReport = readJson(visualReportPath);
+const probe = report.falseNegativeProbe || {};
+assert(Array.isArray(probe.leaks) && probe.leaks.some((item) => item.rule === "raw-domain-enum"), "canonical visible leak probe blocks raw OUTBOUND/ONE_WAY");
+assert(Array.isArray(probe.leaks) && probe.leaks.some((item) => item.rule === "unexplained-abbreviation"), "canonical visible leak probe blocks Dir/Pat");
+const fixtureRows = Array.isArray(probe.fixtures) ? probe.fixtures : [];
+assert(fixtureRows.length === 12, "canonical visible leak probe keeps all current regression fixtures");
+assert(fixtureRows.every((item) => item.blocked === true), "canonical visible leak probe blocks every current regression fixture");
 assert(report.source === "REAL_PLAYWRIGHT_RENDERED_BROWSER", "terminology report identifies real Playwright rendering");
 assert(report.pass === true, "dedicated rendered terminology acceptance is green");
 assert((report.contexts || []).length === requiredContexts.length, "all eight rendered contexts are present");
@@ -70,6 +76,15 @@ setCounter("USER_FACING_HUMAN_APPROVAL_JARGON_COUNT", countRule(report, "human-a
 setCounter("USER_FACING_SEFER_ABI_TERMINAL_LABEL_COUNT", countRule(report, "sefer-abi-terminal"));
 setCounter("USER_FACING_COPILOT_PRIMARY_LABEL_COUNT", countRule(report, "copilot-primary"));
 setCounter("USER_FACING_RAW_ENUM_LEAK_COUNT", countRule(report, "raw-role"));
+setCounter("USER_FACING_RAW_DOMAIN_ENUM_LEAK_COUNT", countRule(report, "raw-domain-enum"));
+setCounter("USER_FACING_UNEXPLAINED_ABBREVIATION_LEAK_COUNT", countRule(report, "unexplained-abbreviation"));
+setCounter("VISIBLE_INTERNAL_FIELD_IDENTIFIER_LEAK_COUNT", countRule(report, "internal-field"));
+setCounter("VISIBLE_INTERNAL_TEST_IDENTIFIER_LEAK_COUNT", countRule(report, "internal-test-identifier"));
+setCounter("VISIBLE_ROUTE_API_TOKEN_LEAK_COUNT", countRule(report, "route-api-token"));
+setCounter("VISIBLE_DESIGN_ANNOTATION_LEAK_COUNT", countRule(report, "design-annotation"));
+setCounter("VISIBLE_TECHNICAL_TOKEN_LEAK_COUNT", countRule(report, "raw-field") + countRule(report, "internal-field") + countRule(report, "route-api-token"));
+setCounter("VISIBLE_UNAPPROVED_ENGLISH_LEAK_COUNT", countRule(report, "english-workflow") + countRule(report, "raw-status"));
+setCounter("VISIBLE_LEGACY_COMMERCIAL_RESIDUE_COUNT", countRule(report, "legacy-commercial-residue"));
 setCounter("USER_FACING_RAW_FIELD_NAME_LEAK_COUNT", countRule(report, "raw-field") + countRule(report, "snake-or-camel-field"));
 setCounter("USER_FACING_INTERNAL_ENGINE_NAME_LEAK_COUNT", countRule(report, "internal-engine"));
 setCounter("USER_FACING_TECHNICAL_IMPLEMENTATION_LEAK_COUNT", countRule(report, "raw-field") + countRule(report, "internal-engine"));
@@ -84,6 +99,17 @@ setCounter("MAP_DIAGNOSTIC_TERMINOLOGY_BROWSER_PASS_COUNT", report.mapDiagnostic
 assert(counters.MAP_RAW_ROUTE_SOURCE_ENUM_LEAK_COUNT === 0, "map route-source enum is not visible in rendered user-facing copy");
 assert(counters.MAP_ESTIMATED_ROUTE_PRESENTED_AS_LIVE_COUNT === 0, "estimated map route is not presented as live location");
 assert(counters.MAP_DIAGNOSTIC_TERMINOLOGY_BROWSER_PASS_COUNT >= 1, "real browser map diagnostic terminology proof passes");
+for (const [name, label] of [
+  ["VISIBLE_INTERNAL_FIELD_IDENTIFIER_LEAK_COUNT", "internal field identifiers"],
+  ["VISIBLE_INTERNAL_TEST_IDENTIFIER_LEAK_COUNT", "internal test identifiers"],
+  ["VISIBLE_ROUTE_API_TOKEN_LEAK_COUNT", "route/API tokens"],
+  ["VISIBLE_DESIGN_ANNOTATION_LEAK_COUNT", "design annotations"],
+  ["VISIBLE_TECHNICAL_TOKEN_LEAK_COUNT", "technical tokens"],
+  ["VISIBLE_UNAPPROVED_ENGLISH_LEAK_COUNT", "unapproved English/status tokens"],
+  ["VISIBLE_LEGACY_COMMERCIAL_RESIDUE_COUNT", "legacy commercial wording"],
+]) {
+  assert(counters[name] === 0, `current rendered UI has no ${label}`);
+}
 
 assert(visualReport.source === "REAL_PLAYWRIGHT_RENDERED_BROWSER_WITH_RESPONSE_FIXTURES", "#17 visual evidence identifies real settled browser rendering");
 assert(visualReport.pass === true, "#17 visual corrective report passes");
@@ -125,6 +151,7 @@ const roomMapPanel = readSource("web/src/panels/room/MapPanel.jsx");
 const mapView = readSource("web/src/components/map/MapView.jsx");
 const floatingAssistant = readSource("web/src/components/copilot/FloatingCopilotDrawer.jsx");
 assert(terminology.includes("Hizmet Alan Firma") && terminology.includes("Taşımacılık Firması") && terminology.includes("Kullanıcı onayı"), "canonical terminology owner is present");
+assert(terminology.includes("userFacingDirectionLabel") && terminology.includes("userFacingPatternLabel"), "canonical terminology owner maps direction and plan enums");
 assert(roleNavigation.includes("hubLabelForKind") && roleNavigation.includes("companyContext"), "role/context navigation remains canonical");
 assert(roomMapPanel.includes("setCopilotSelection") && !roomMapPanel.includes('return () => clearCopilotSelection("/room/map");'), "#17 map shared assistant context remains intact");
 assert(mapView.includes("Yakınlaştır") && mapView.includes("Uzaklaştır"), "map accessibility names remain Turkish");
@@ -142,7 +169,11 @@ const scopePolicy = readSource("backend/scripts/lib/currentHeadScopePolicy.js");
 const paymentHash = crypto.createHash("sha256").update(payment).digest("hex").toUpperCase();
 const scopeHash = crypto.createHash("sha256").update(scopePolicy).digest("hex").toUpperCase();
 assert(scopePolicy.includes("backend/src/services/paymentBackbone.js") && scopePolicy.includes(paymentHash), "paymentBackbone has narrow current-head ownership metadata");
-for (const file of ["backend/scripts/audit_log_and_approval_trace_01_check.js", "backend/scripts/excel_to_route_readiness_redteam_01_check.js", "backend/scripts/security_kvkk_final_01_check.js", "backend/scripts/ux_brand_login_premium_01_check.js"]) assert(readSource(file).includes(scopeHash), `stale scope identity is current in ${file}`);
+for (const file of ["backend/scripts/audit_log_and_approval_trace_01_check.js", "backend/scripts/excel_to_route_readiness_redteam_01_check.js", "backend/scripts/security_kvkk_final_01_check.js", "backend/scripts/ux_brand_login_premium_01_check.js"]) {
+  const source = readSource(file);
+  const consumesCanonicalScope = /from ["']\.\/lib\/currentHeadScopePolicy\.js["']/.test(source);
+  assert(source.includes(scopeHash) || consumesCanonicalScope, `current-head scope identity is canonical in ${file}`);
+}
 for (const [file, phrase] of [
   ["backend/scripts/m65_pilot_launch_gate_check.js", "Kabul özetleri"],
   ["backend/scripts/m78_2_operasyon_dogrulama_kayit_katmani_check.js", "Bağlantı / dışa aktarım / sürüm kanıtı"],

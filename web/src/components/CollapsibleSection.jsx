@@ -7,6 +7,7 @@ export default function CollapsibleSection({
   defaultOpen = false,
   children,
   compact = false,
+  layer = "details",
   rightAction = null,
   "data-testid": dataTestId,
 }) {
@@ -17,8 +18,9 @@ export default function CollapsibleSection({
 
   return (
     <section
-      className={`collapsibleSection${compact ? " collapsibleSection--compact" : ""}${open ? " is-open" : ""}`}
+      className={`collapsibleSection${compact ? " collapsibleSection--compact" : ""}${open ? " is-open" : ""} collapsibleSection--${layer}`}
       data-testid={dataTestId || undefined}
+      data-disclosure-layer={layer}
     >
       <div className="collapsibleSectionHead">
         <button

@@ -90,12 +90,12 @@ function LayerSummary({ layer }) {
   );
 }
 
-export default function ExternalReferenceCard({ token, canView, refreshTick = 0, scope = "ROOM", preview = null }) {
+export default function ExternalReferenceCard({ token, canView, refreshTick = 0, scope = "ROOM", preview = null, regionName: regionNameProp = null }) {
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const snapshot = preview?.snapshot || {};
-  const regionName = snapshot.regionName || preview?.regionName || null;
+  const regionName = regionNameProp || snapshot.regionName || preview?.regionName || null;
   const scopeKey = String(scope || "ROOM").toUpperCase();
   const query = useMemo(() => ({
     family: "FUEL_DIESEL",

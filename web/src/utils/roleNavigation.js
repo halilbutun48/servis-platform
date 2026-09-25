@@ -22,7 +22,9 @@ function companyContext(me) {
     isSchool,
     isOrganization,
     isCompany,
-    homeLabel: isSchool ? "Okul Merkezi" : isOrganization ? "Gezi / Planlama Merkezi" : "Planlama Merkezi",
+    // "Planlama Merkezi" is the decision starting point. The distinct plans
+    // route below remains explicitly named for record-level plan work.
+    homeLabel: isSchool ? "Okul Merkezi" : "Planlama Merkezi",
     operationsLabel: isSchool ? "Okul Operasyon Paneli" : isOrganization ? "Organizasyon Operasyon Paneli" : "Operasyon Paneli",
     peopleTitle: isSchool ? "ÖĞRENCİ VE VELİ" : isOrganization ? "KATILIMCI VE KONUM" : "PERSONEL VE KONUM",
   };
@@ -47,15 +49,21 @@ function companyNavigation(me) {
         { label: "Sözleşmeler", path: `${base}/agreements` },
       ],
     },
-    {
+  ];
+
+  // School navigation intentionally stays focused on school operations.
+  // Commercial controls remain available to the roles that own those
+  // decisions instead of adding company complexity to the school homepage.
+  if (!ctx.isSchool) {
+    sections.push({
       title: "FİNANS VE TİCARİ AKIŞ",
       items: [
         { label: "Bütçe ve Servis Maliyeti", path: `${base}/financial-operations` },
         { label: "Ticari Akış", path: `${base}/commercial-flow` },
         { label: "Hizmet Değerlendirme", path: `${base}/service-evaluation` },
       ],
-    },
-  ];
+    });
+  }
 
   if (ctx.isSchool) {
     sections.push({
@@ -97,16 +105,57 @@ export function navigationContextKey(me = {}) {
   return role;
 }
 
+const ROUTE_CONTEXTS = [
+  ["SUPER_ADMIN", "/superadmin"],
+  ["ROOM", "/room"],
+  ["COMPANY", "/company"],
+  ["SCHOOL", "/school"],
+  ["ORGANIZATION", "/organization"],
+  ["DRIVER", "/driver"],
+  ["PERSONEL", "/personel"],
+  ["PARENT", "/parent"],
+];
+
+function inRouteNamespace(route, prefix) {
+  return route === prefix || route.startsWith(`${prefix}/`);
+}
+
+// Navigation policy intentionally distinguishes a known foreign namespace
+// from an unknown route. App consumes this result for client-side recovery;
+// backend authorization remains the authority for protected data and actions.
+export function resolveRouteScope(me = {}, path = "") {
+  const route = String(path || "").trim();
+  const context = navigationContextKey(me);
+  if (context === "SUPER_ADMIN") return "ALLOW";
+  if (inRouteNamespace(route, "/shared")) return "ALLOW";
+
+  const targetContext = ROUTE_CONTEXTS.find(([, prefix]) => inRouteNamespace(route, prefix))?.[0];
+  if (!targetContext) return "UNKNOWN";
+  return targetContext === context ? "ALLOW" : "DENY";
+}
+
+export function getRoleDefaultPath(me = {}) {
+  if (me?.requirePasswordChange) return "/auth/change-password";
+  const context = navigationContextKey(me);
+  if (["COMPANY", "SCHOOL", "ORGANIZATION"].includes(context)) return companyBase(me);
+  if (context === "ROOM") return "/room";
+  if (context === "DRIVER") return me?.requirePinChange ? "/driver/change-pin" : "/driver/today";
+  if (context === "PERSONEL") return "/personel/live";
+  if (context === "PARENT") return "/parent/live";
+  if (context === "SUPER_ADMIN") return "/superadmin";
+  return "/";
+}
+
 export function getRoleNavigation(me = {}) {
   const role = navigationContextKey(me);
   if (role === "ROOM") {
     return {
       sections: [
         { title: "ANA SAYFA", items: [{ label: "Operasyon Merkezi", path: "/room" }] },
-        { title: "TİCARİ AKIŞ", items: [{ label: "Teklifler", path: "/room/offers" }, { label: "Sözleşmeler", path: "/room/agreements" }] },
+        { title: "TİCARİ AKIŞ", items: [{ label: "Ticari Çalışma Alanı", path: "/room/commercial-flow" }, { label: "Teklifler", path: "/room/offers" }, { label: "Sözleşmeler", path: "/room/agreements" }] },
         { title: "OPERASYON", items: [{ label: "Vardiyalar", path: "/room/shifts" }, { label: "Operasyon Sağlığı", path: "/room/operation-health" }, { label: "Finansal Operasyonlar", path: "/room/financial-operations" }, { label: "Araçlar", path: "/room/vehicles" }] },
       ],
-      advanced: [{ label: "Canlı Takip", path: "/room/map" }, { label: "Sürücüler", path: "/room/drivers" }, { label: "Ticari Akışım", path: "/room/commercial-flow" }, { label: "Raporlar", path: "/room/reports" }, { label: "Taşımacılık Firması Konumu", path: "/room/hub" }, { label: "Biniş kayıtları", path: "/room/checkin" }, ...SHARED_ADVANCED],
+      advanced: [{ label: "Canlı Takip", path: "/room/map" }, { label: "Sürücüler", path: "/room/drivers" }, { label: "Raporlar", path: "/room/reports" }, { label: "Taşımacılık Firması Konumu", path: "/room/hub" }, { label: "Biniş kayıtları", path: "/room/checkin" }, ...SHARED_ADVANCED],
     };
   }
   if (role === "COMPANY" || role === "SCHOOL" || role === "ORGANIZATION") return companyNavigation(me);
@@ -131,9 +180,9 @@ export function getRoleNavigation(me = {}) {
       sections: [
         { title: "GENEL DURUM", items: [{ label: "Genel Bakış", path: "/superadmin" }, { label: "Denetim Paneli", path: "/superadmin/operations" }] },
         { title: "YÖNETİM", items: [{ label: "Firmalar", path: "/superadmin/companies" }, { label: "Taşımacılık Firmaları", path: "/superadmin/rooms" }, { label: "Kullanıcılar", path: "/superadmin/users" }] },
-        { title: "KONTROL", items: [{ label: "İşlem Kayıtları", path: "/superadmin/audit" }, { label: "Canlı İzleme", path: "/superadmin/observability" }, { label: "Kabul Merkezi", path: "/superadmin/acceptance" }] },
+        { title: "KONTROL", items: [{ label: "Kabul Merkezi", path: "/superadmin/acceptance" }] },
       ],
-      advanced: [{ label: "İller ve Bölgeler", path: "/superadmin/regions" }, { label: "Konum veri sağlayıcıları", path: "/superadmin/telematics" }, { label: "Operasyon Doğrulama", path: "/superadmin/operation-verification" }, { label: "Sahaya Çıkış Kontrolü", path: "/superadmin/pilot-launch-gate" }, { label: "Başvuru İncelemesi", path: "/superadmin/onboarding-review" }, { label: "Sistem Standartları", path: "/superadmin/ssot-alignment" }, { label: "Ticari Akış", path: "/superadmin/commercial-core" }, { label: "Güven ve Kalite", path: "/superadmin/trust-quality" }, { label: "İşlem kayıtlarını dışa aktar", path: "/superadmin/logexport" }, ...SHARED_ADVANCED.filter((item) => item.path !== "/shared/logs")],
+      advanced: [{ label: "İşlem Kayıtları", path: "/superadmin/audit" }, { label: "Canlı İzleme", path: "/superadmin/observability" }, { label: "İller ve Bölgeler", path: "/superadmin/regions" }, { label: "Konum veri sağlayıcıları", path: "/superadmin/telematics" }, { label: "Operasyon Doğrulama", path: "/superadmin/operation-verification" }, { label: "Sahaya Çıkış Kontrolü", path: "/superadmin/pilot-launch-gate" }, { label: "Başvuru İncelemesi", path: "/superadmin/onboarding-review" }, { label: "Sistem Standartları", path: "/superadmin/ssot-alignment" }, { label: "Ticari Akış", path: "/superadmin/commercial-core" }, { label: "Güven ve Kalite", path: "/superadmin/trust-quality" }, { label: "İşlem kayıtlarını dışa aktar", path: "/superadmin/logexport" }, ...SHARED_ADVANCED.filter((item) => item.path !== "/shared/logs")],
     };
   }
   return { sections: [], advanced: [] };

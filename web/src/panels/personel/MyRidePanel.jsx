@@ -342,7 +342,7 @@ export default function MyRidePanel() {
   }, [copilotSelection]);
 
   return (
-    <div>
+    <div className="pre18-personel-my-surface">
       <div className="card">
         <h3>Benim Servisim</h3>
         <div className="muted">Talep ekranı yerine sana bağlı son servis, duraklar ve en yakın durağa navigasyon gösterilir.</div>
@@ -452,7 +452,7 @@ export default function MyRidePanel() {
       <div className="card">
         <h3>3) Güzergâh Durakları</h3>
         <div className="muted" style={{ marginBottom: 8 }}>Kendi konumuna göre en yakın durağı bul ve istersen doğrudan navigasyon aç.</div>
-        <table className="tbl">
+        <table className="tbl pre18-mobile-card-table">
           <thead>
               <tr>
                 <th>#</th>
@@ -471,15 +471,15 @@ export default function MyRidePanel() {
                 : "-";
               return (
                 <tr key={String(s.id)} style={active ? { background: "rgba(59,130,246,.10)", outline: "1px solid rgba(59,130,246,.35)" } : undefined}>
-                  <td>{s.order}</td>
-                  <td>
+                  <td data-label="#">{s.order}</td>
+                  <td data-label="Durak">
                     {s.name}
                     {nearestStop && String(nearestStop.id) === String(s.id) ? <span className="pill" data-status="REQUESTED" style={{ marginLeft: 8 }}>EN YAKIN</span> : null}
                   </td>
-                  <td><span className="pill" data-status={String(s.status || "PENDING").toUpperCase()}>{displayStatusLabel(String(s.status || "PENDING").toUpperCase())}</span></td>
-                  <td>{Number.isFinite(Number(s.distanceM)) ? `${(Number(s.distanceM) / 1000).toFixed(2)} km` : "-"}</td>
-                  <td>{stopEtaText}</td>
-                  <td>
+                  <td data-label="Durum"><span className="pill" data-status={String(s.status || "PENDING").toUpperCase()}>{displayStatusLabel(String(s.status || "PENDING").toUpperCase())}</span></td>
+                  <td data-label="Bana uzaklık">{Number.isFinite(Number(s.distanceM)) ? `${(Number(s.distanceM) / 1000).toFixed(2)} km` : "-"}</td>
+                  <td data-label="Araç tahmini süre">{stopEtaText}</td>
+                  <td data-label="İşlem">
                     <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
                       <button type="button" disabled={busy} onClick={() => setSelectedStopId(s.id)}>Seç</button>
                       <button type="button" disabled={busy} onClick={() => openStopNavigation(s, myPos)}>Git</button>

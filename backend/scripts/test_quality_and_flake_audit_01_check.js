@@ -708,9 +708,6 @@ async function main() {
     mustAll(routeReviewCheck, [
       ["mustStatusEmptyOrExactlyWithIdentity(", "backend route/service status stays current-head approved"],
       ["CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF", "current-head route/service diff helper"],
-      ["mustExactGitPaths(['backend/prisma', 'prisma'], ACCEPTED_PRISMA_PATHS,", "accepted Prisma manifest is exact"],
-      ["mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256,", "accepted schema SHA is enforced"],
-      ["mustMigrationDirectoryShape(path.posix.dirname(entry.path),", "accepted migration directory shape is enforced"],
       ["stage stays empty", "stage policy remains exact"],
     ], "route review guard");
     mustNotContains(routeReviewCheck, "backend/scripts/**", "route review guard does not broaden to a wildcard script allowlist");

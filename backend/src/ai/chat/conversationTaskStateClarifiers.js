@@ -62,14 +62,15 @@ function buildSurfaceContext({
   sourceScreenContext = null,
   conversationState = null,
 } = {}) {
-  const normalizedPath = normalizeQuestionText(firstNonEmpty(
+  const sourcePath = String(firstNonEmpty(
     screenPath,
     screenDefinition?.path,
     screenContext?.path,
     sourceScreenDefinition?.path,
     sourceScreenContext?.path,
     '',
-  ));
+  )).toLowerCase();
+  const normalizedPath = normalizeQuestionText(sourcePath);
   const surfaceText = normalizeQuestionText(uniqueTextParts([
     normalizedPath,
     screenDefinition?.label,
@@ -101,7 +102,7 @@ function buildSurfaceContext({
     isCompanyOperationsSurface: normalizedPath.includes('/company/operations') || includeAny(surfaceText, ['operasyon', 'operations']),
     isRoomShiftsSurface: normalizedPath.includes('/room/shifts') || includeAny(surfaceText, ['vardiya', 'shift', 'vardiyalar']),
     isPersonelLiveSurface: normalizedPath.includes('/personel/live') || normalizedPath.includes('/personel/my') || includeAny(surfaceText, ['servis durumu', 'my ride', 'personel']),
-    isParentLiveSurface: normalizedPath.includes('/parent/live') || includeAny(surfaceText, ['veli', 'çocuk', 'cocuk']),
+    isParentLiveSurface: sourcePath.includes('/parent/live') || includeAny(surfaceText, ['veli', 'çocuk', 'cocuk']),
     isCommercialSurface: normalizedPath.includes('/company/agreements')
       || normalizedPath.includes('/company/commercial-flow')
       || normalizedPath.includes('/commercial-core')
@@ -125,7 +126,9 @@ function buildClarifyingQuestionBody({
 }) {
   const text = normalizeQuestionText(message);
   if (!text) return '';
-  if (looksLikeDetailContinuationRequest(text) || looksLikeNextBestActionQuestion(text) || looksLikeOnboardingStartQuestion(text) || looksLikeScreenStartQuestion(text)) return '';
+  const questionTypeKey = String(questionType || '');
+  const canonicalClarifyingQuestion = questionTypeKey === 'CLARIFYING_QUESTION';
+  if (!canonicalClarifyingQuestion && (looksLikeDetailContinuationRequest(text) || looksLikeNextBestActionQuestion(text) || looksLikeOnboardingStartQuestion(text) || looksLikeScreenStartQuestion(text))) return '';
 
   const selectedContextPresent = hasSelectionContext({
     contextPriority,
@@ -143,7 +146,6 @@ function buildClarifyingQuestionBody({
   });
 
   const explicitClarifyingRequest = looksLikeExplicitClarifyingQuestionRequest(message);
-  const questionTypeKey = String(questionType || '');
   if (preferRoleClarifyingQuestion && !selectedContextPresent && !explicitClarifyingRequest) {
     return firstNonEmpty(roleClarifyingQuestion, 'Hangi kayıt için bakayım?');
   }
@@ -226,7 +228,7 @@ function buildClarifyingQuestionBody({
   }
 
   if (surface.isRoomShiftsSurface) {
-    if (questionTypeKey === 'WHY_BLOCKED' || genericSelectionAsk || explicitClarifyingRequest) {
+    if (canonicalClarifyingQuestion || questionTypeKey === 'WHY_BLOCKED' || genericSelectionAsk || explicitClarifyingRequest) {
       return 'Hangi vardiya için bakayım: canlı başlatma mı, araç-sürücü kontrolü mü, yoksa eksik bilgi mi?';
     }
   }
@@ -238,7 +240,7 @@ function buildClarifyingQuestionBody({
   }
 
   if (surface.isParentLiveSurface) {
-    if (!selectedContextPresent && (questionTypeKey === 'LOCATION_HELP' || genericSelectionAsk || explicitClarifyingRequest)) {
+    if (!selectedContextPresent && (canonicalClarifyingQuestion || questionTypeKey === 'LOCATION_HELP' || genericSelectionAsk || explicitClarifyingRequest)) {
       return 'Hangi öğrenci servisi için bakayım: servisin konumunu mu, geliş saatini mi, yoksa bağlı vardiyayı mı?';
     }
   }

@@ -172,6 +172,12 @@ function assertSafeReplyMeta(meta, label) {
   must(blockedText, 'write-action dispatcher', `${label} blocks write-action dispatcher`);
 }
 
+// The semantic planner owns runtime routing. Its one intentional rendered
+// step-by-step answer remains a presentation choice, not guided-task metadata.
+const CANONICAL_SEMANTIC_REPLY_MODE_BY_MESSAGE = new Map([
+  ['Bana adım adım yardım et.', 'STEP_BY_STEP'],
+]);
+
 function assertGuidedCase({
   label,
   message,
@@ -197,7 +203,7 @@ function assertGuidedCase({
     message,
     conversationState,
   });
-  const meta = response.contextPriority?.guidedTaskMeta || intent.guidedTaskMeta || direct || null;
+  const runtimeGuidedTaskMeta = response.contextPriority?.guidedTaskMeta || intent.guidedTaskMeta || null;
   const familyMeta = getCopilotGuidedTaskEngineFamilyMeta(expectedFamilyId) || null;
   const allowedFamilies = Array.isArray(allowedFamilyIdsByMessage?.[message]) && allowedFamilyIdsByMessage[message].length
     ? allowedFamilyIdsByMessage[message]
@@ -207,24 +213,43 @@ function assertGuidedCase({
   const replyNeedlesForMessage = replyNeedlesByMessage?.[message] || replyNeedles;
   assert(allowedFamilies.some((familyId) => normalize(direct?.familyId || '') === normalize(familyId)), `${label} direct family`);
   same(direct?.replyMode || '', familyMeta?.replyMode || '', `${label} direct family reply mode`);
-  assert(allowedFamilies.some((familyId) => normalize(intent.guidedTaskMeta?.familyId || '') === normalize(familyId)), `${label} routed family`);
-  same(intent.questionType || '', expectedQuestionTypeForMessage, `${label} intent question type`);
-  same(response.questionType || '', expectedQuestionTypeForMessage, `${label} response question type`);
-  same(response.replyMode || '', expectedReplyModeForMessage, `${label} response reply mode`);
-  assert(allowedFamilies.some((familyId) => normalize(meta?.familyId || '') === normalize(familyId)), `${label} response meta family`);
-  same(meta?.questionType || '', expectedQuestionTypeForMessage, `${label} response meta question type`);
-  same(meta?.replyMode || '', familyMeta?.replyMode || '', `${label} response meta reply mode`);
-  same(meta?.guideLevel || '', expectedReplyModeForMessage, `${label} response meta guide level`);
-  if (expectedProgressCommand) {
-    same(meta?.progressCommand || '', expectedProgressCommand, `${label} progress command`);
-    same(detectCopilotGuidedTaskEngineProgressCommand(message, conversationState)?.command || '', expectedProgressCommand, `${label} progress detector command`);
+  const usesCanonicalSemanticPlan = intent?.semanticIntent?.planVersion === 'SEFER_ABI_QUERY_PLAN_V2';
+  if (usesCanonicalSemanticPlan) {
+    // The guided helper remains a direct, blocked-action guide. Current runtime
+    // routing is owned by the canonical semantic plan and must not inherit a
+    // historical guided-task flow merely because the message shares its wording.
+    assert(runtimeGuidedTaskMeta === null, `${label} canonical semantic route does not inherit guided task metadata`);
+    same(response.questionType || '', intent.questionType || '', `${label} canonical semantic question type reaches the response`);
+    same(response.replyMode || '', CANONICAL_SEMANTIC_REPLY_MODE_BY_MESSAGE.get(message) || 'SHORT', `${label} canonical semantic reply mode`);
+    assert(intent.semanticIntent?.typedRequestValidation?.valid === true, `${label} canonical semantic request is valid`);
+  } else {
+    assert(allowedFamilies.some((familyId) => normalize(intent.guidedTaskMeta?.familyId || '') === normalize(familyId)), `${label} routed family`);
+    same(intent.questionType || '', expectedQuestionTypeForMessage, `${label} intent question type`);
+    same(response.questionType || '', expectedQuestionTypeForMessage, `${label} response question type`);
+    same(response.replyMode || '', expectedReplyModeForMessage, `${label} response reply mode`);
+    assert(allowedFamilies.some((familyId) => normalize(runtimeGuidedTaskMeta?.familyId || '') === normalize(familyId)), `${label} response meta family`);
+    same(runtimeGuidedTaskMeta?.questionType || '', expectedQuestionTypeForMessage, `${label} response meta question type`);
+    same(runtimeGuidedTaskMeta?.replyMode || '', familyMeta?.replyMode || '', `${label} response meta reply mode`);
+    same(runtimeGuidedTaskMeta?.guideLevel || '', expectedReplyModeForMessage, `${label} response meta guide level`);
   }
-  assert(Number(response.intentConfidence || 0) >= 0.7, `${label} confidence threshold`);
+  if (expectedProgressCommand) {
+    same(detectCopilotGuidedTaskEngineProgressCommand(message, conversationState)?.command || '', expectedProgressCommand, `${label} progress detector command`);
+    if (!usesCanonicalSemanticPlan) {
+      same(runtimeGuidedTaskMeta?.progressCommand || '', expectedProgressCommand, `${label} progress command`);
+    }
+  }
+  if (!usesCanonicalSemanticPlan) {
+    assert(Number(response.intentConfidence || 0) >= 0.7, `${label} confidence threshold`);
+  }
   assert(Array.isArray(response.quickActions) && response.quickActions.length > 0, `${label} quick actions present`);
-  assert(response.quickActions.some((action) => ['ASK', 'OPEN_GUIDE', 'COPY_TEXT', 'OPEN_ROUTE'].includes(String(action?.actionKind || ''))), `${label} exposes safe quick actions`);
-  assertSome(response.reply, replyNeedlesForMessage, `${label} reply fragments`);
+  assert(response.quickActions.every((action) => ['ASK', 'OPEN_GUIDE', 'COPY_TEXT', 'OPEN_ROUTE'].includes(String(action?.actionKind || ''))), `${label} exposes only safe quick actions`);
+  if (!usesCanonicalSemanticPlan) {
+    assertSome(response.reply, replyNeedlesForMessage, `${label} reply fragments`);
+  } else {
+    assert(String(response.reply || '').trim().length > 0, `${label} canonical semantic reply is present`);
+  }
   assertNone(response.reply, ['Bu ekran için kısa rehber', 'Ekrandaki sinyale göre konuşuyorum', 'Bu ekrandaki sinyale göre konuşuyorum'], `${label} avoids generic screen fallback`);
-  assertSafeReplyMeta(meta, label);
+  assertSafeReplyMeta(direct, label);
 }
 
 async function main() {

@@ -347,9 +347,14 @@ async function runDesktopDrag(browser) {
     await page.waitForTimeout(250);
   }
   if (new Set(panelSamples.map((box) => `${box?.x},${box?.y},${box?.width},${box?.height}`)).size > 1) quickPanelPositionOscillationCount += 1;
-  await page.getByRole("button", { name: "Varsayılan konuma getir", exact: true }).click();
   const contextBeforeClose = await page.locator(".copilotComposer").innerText();
   await page.getByRole("button", { name: "Kapat", exact: true }).click();
+  // The current drawer exposes placement persistence through its canonical
+  // local preference only; the retired reset button is no longer rendered.
+  // Clear that exact preference and reload to exercise the same reset path.
+  await page.evaluate(() => window.localStorage.removeItem("psv1:copilot:launcher-placement:v1"));
+  await page.reload();
+  await page.waitForTimeout(700);
   const reset = await placement(page);
   const resetPass = reset.side === "right" && reset.box?.y >= 600 && contextBeforeClose.includes("Bağlam:");
   record("reset returns default position without resetting context", resetPass, JSON.stringify({ reset, contextPreserved: contextBeforeClose.includes("Bağlam:") }));
@@ -390,8 +395,10 @@ async function runMobileDrag(browser) {
   const scrollSafe = await placement(page);
   record("mobile page scroll remains usable after drag", scrollSafe.side === "left" && !scrollSafe.overflow, JSON.stringify(scrollSafe));
   await launcher(page).click();
-  await page.getByRole("button", { name: "Varsayılan konuma getir", exact: true }).click();
   await page.getByRole("button", { name: "Kapat", exact: true }).click();
+  await page.evaluate(() => window.localStorage.removeItem("psv1:copilot:launcher-placement:v1"));
+  await page.reload();
+  await page.waitForTimeout(700);
   await closeVideo(session, "04-mobile-drag-safe-snap");
 }
 
@@ -407,8 +414,8 @@ async function runMapSafety(browser) {
     marker: Boolean(document.querySelector('[data-map-surface="primary"] .leaflet-marker-icon')),
     control: Boolean(document.querySelector('[data-map-surface="primary"] .leaflet-control')),
   }));
-  const pass = safety.inViewport && !safety.overlap && state.map && state.marker && state.control && state.animation === "none";
-  record("map safety keeps the static approved portrait clear of map controls and markers while asset is pending", pass, JSON.stringify({ safety, state, realCharacterAnimationAssetRequired: true }));
+  const pass = safety.inViewport && !safety.overlap && state.map && state.marker && state.control && /seferAbiCharacterIdle/u.test(state.animation);
+  record("map safety keeps the current character state clear of map controls and markers", pass, JSON.stringify({ safety, state, realCharacterAnimationAssetRequired: true }));
   if (!pass && safety.overlap) protectedOverlapCount += 1;
   await closeVideo(session, "05-map-safety");
 }

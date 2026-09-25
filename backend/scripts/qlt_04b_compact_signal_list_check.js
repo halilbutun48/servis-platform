@@ -154,7 +154,7 @@ must(reviewHistoryCard, "Şimdilik dikkate alınmadı", "history card keeps igno
 must(reviewHistoryCard, "Kalite karar geçmişi yükleniyor...", "history card keeps loading text");
 must(reviewHistoryCard, "Kalite karar geçmişi henüz yok.", "history card keeps empty text");
 must(reviewHistoryCard, "Bu geçmiş kesin kalite puanı değildir.", "history card keeps non-final wording");
-must(reviewHistoryCard, "Bu geçmiş hakediş veya komisyon hesabını etkilemez.", "history card keeps payment impact wording");
+must(reviewHistoryCard, "Bu geçmiş ödeme veya sözleşme hesabını etkilemez.", "history card keeps payment impact wording");
 mustNot(reviewHistoryCard, "finalScore", "history card does not expose final score");
 mustNot(reviewHistoryCard, "providerRank", "history card does not expose provider rank");
 mustNot(reviewHistoryCard, "ranking", "history card does not expose ranking");

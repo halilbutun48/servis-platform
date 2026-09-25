@@ -675,7 +675,7 @@ export function verificationHintForQuestionType(questionType, screenDefinition, 
   if (questionType === 'DYNAMIC_SAVINGS_PREVIEW') return `Tasarruf önizlemesini netleştirmek için önce ${firstControl} ve mevcut / yeni rota farkını kontrol et.`;
   if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `Rota değişikliği teklifini işleme almadan önce ${firstControl} ve eski/yeni rota farkını kontrol et.`;
   if (questionType === 'SEFER_SCORE_PREVIEW') return `SeferPuanı önizlemesini netleştirmek için önce ${firstControl} ve eksik sinyal satırlarını kontrol et.`;
-  if (questionType === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') return `Başarı payı önizlemesini netleştirmek için önce ${firstControl} ve kaynak vardiya / teklif seçimi sinyallerini kontrol et.`;
+  if (questionType === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') return `Sözleşme kaynak ve ödeme hazırlığını netleştirmek için önce ${firstControl} ve kaynak vardiya / teklif seçimi sinyallerini kontrol et. Bu ürün modelinde ek kesinti uygulanmaz.`;
   if (questionType === 'STATUS_HELP') return `Durumu netleştirmek için önce ${firstControl} ve varsa seçili kaydın son sinyallerine bak.`;
   if (routeLabel) return `${routeLabel} adımına geçmeden önce ${firstControl} kontrolünü yap.`;
   return `Önce ${firstControl} kontrolünü yap; sonra bu yönlendirmeyi uygula.`;
@@ -727,7 +727,7 @@ export function questionTypeLabel(questionType, activeTopic = '', activeTopicLab
     DYNAMIC_SAVINGS_PREVIEW: 'Dinamik tasarruf önizlemesi',
     AGREEMENT_ROUTE_REFRESH: 'Sözleşmeli rota değişikliği',
     SEFER_SCORE_PREVIEW: 'SeferPuanı önizlemesi',
-    MARKETPLACE_FREE_TO_OPERATE_PREVIEW: 'Başarı payı önizlemesi',
+    MARKETPLACE_FREE_TO_OPERATE_PREVIEW: 'Sözleşme kaynak ve ödeme hazırlığı',
     WHY_BLOCKED: 'Neden olmuyor',
     QUALITY_SIGNAL: 'Kalite / kanıt sinyali',
     TRUST_QUALITY: 'Kalite / kanıt akışı',
@@ -794,7 +794,7 @@ export function responseWhyText(questionType, screenDefinition, activeTopic = ''
   if (questionType === 'DYNAMIC_SAVINGS_PREVIEW') return `${screenLabel} ekranındaki tasarruf önizlemesini, mevcut / yeni / fark metrikleriyle birlikte okudum.`;
   if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `${screenLabel} ekranındaki rota değişikliği teklifini, farkını ve kabul durumunu birlikte okudum.`;
   if (questionType === 'SEFER_SCORE_PREVIEW') return `${screenLabel} ekranındaki SeferPuanı önizlemesini, zamanında hizmet, konum sinyali kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyalleriyle birlikte okudum. Bu sadece önizlemedir. SeferPuanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.`;
-  if (questionType === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') return `${screenLabel} ekranındaki başarı payı önizlemesini, kaynak vardiya / teklif seçimi sinyali ve SeferPuanı ile birlikte okudum. Bu sadece önizlemedir; ödeme, fatura, mutabakat veya otomatik kesinti başlatmaz. Organizasyon planı tek başına başarı payı kanıtı değildir.`;
+  if (questionType === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') return `${screenLabel} ekranındaki kaynak ve ödeme hazırlığı önizlemesini, kaynak vardiya / teklif seçimi sinyali ve SeferPuanı ile birlikte okudum. Bu sadece önizlemedir; ödeme, fatura, mutabakat veya otomatik kesinti başlatmaz. Organizasyon planı tek başına kaynak kanıtı değildir.`;
   if (['PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW'].includes(String(questionType || ''))) return `${screenLabel} ekranındaki hakediş / kanıt önizlemesini, kalite ve eksik satırlarla birlikte okudum. Bu sadece önizlemedir; ödeme başlatılmaz.`;
   if (questionType === 'WHY_BLOCKED') return `${screenLabel} ekranındaki blokaj ve eksik bilgi ihtimaline göre cevap verdim.`;
   if (questionType === 'LOCATION_HELP') return `${screenLabel} ekranındaki konum işaretlerine göre yorum yaptım.`;

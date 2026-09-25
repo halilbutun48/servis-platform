@@ -624,8 +624,8 @@ export async function buildPaymentBackboneSettings() {
     })),
     roomOverrideCount: roomRuleCount,
     summary: ENV.PAYMENT_BACKBONE_ENABLED
-      ? "Süper Yönetici ödeme modu ve komisyon ayarları canlı aktivasyon kapısı için hazırdır; mevcut veri sağlayıcısı bağlantısı hâlâ beklemededir."
-      : "Süper Yönetici ödeme modu ve komisyon ayarları hazırlık omurgasına veri sağlar; gerçek tahsilat ve ödeme hâlâ kapalıdır.",
+      ? "Süper Yönetici ödeme modu ve ödeme hazırlığı canlı aktivasyon kapısı için hazırdır; mevcut veri sağlayıcısı bağlantısı hâlâ beklemededir."
+      : "Süper Yönetici ödeme modu ve ödeme hazırlığı hazırlık omurgasına veri sağlar; gerçek tahsilat ve ödeme hâlâ kapalıdır.",
   };
 }
 
@@ -730,8 +730,8 @@ export async function buildPaymentBackboneStatus() {
       : optionalPilot.readyCount > 0
       ? "İsteğe bağlı ödeme pilotu seçili ticari kaynaklarda hazır duruma alınabilir; gerçek tahsilat ve ödeme henüz zorunlu geçiş değildir."
       : ENV.PAYMENT_BACKBONE_ENABLED
-      ? "Ödeme ve komisyon omurgası canlı aktivasyon anahtarıyla hazır tutuluyor; veri sağlayıcısı bağlantısı hâlâ beklemede ve gerçek tahsilat/ödeme kapısı ayrı bir entegrasyon aşamasında açılacak."
-      : "Ödeme ve komisyon omurgası hazırlık modunda kuruldu. Gerçek tahsilat ve ödeme açık değil; yalnızca özet ve mutabakat hazırlık kaydı üretilir.",
+      ? "Ödeme hazırlığı omurgası canlı aktivasyon anahtarıyla hazır tutuluyor; veri sağlayıcısı bağlantısı hâlâ beklemede ve gerçek tahsilat/ödeme kapısı ayrı bir entegrasyon aşamasında açılacak."
+      : "Ödeme hazırlığı omurgası hazırlık modunda kuruldu. Gerçek tahsilat ve ödeme açık değil; yalnızca özet ve mutabakat hazırlık kaydı üretilir.",
   };
 }
 

@@ -270,7 +270,7 @@ export default function CompanyAgreementsMobileCards({
   onStartRouteRefresh,
 }) {
   if (!Array.isArray(rows) || !rows.length) {
-    return <div className="muted">Filtreye uyan sözleşme yok.</div>;
+    return <div className="muted companyAgreementsMobileEmpty">Filtreye uyan sözleşme yok.</div>;
   }
 
   return (

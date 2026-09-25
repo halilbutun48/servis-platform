@@ -253,23 +253,19 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
 
 
   async function createVehicle(e) {
-    const body = {
-      plate: upperTr(plate),
-      capacity: Number(capacity),
-      speedLimitKmh: Number(speedLimitKmh),
-    };
-    body.brand = upperTr(brand);
-    body.model = upperTr(model);
-    body.color = upperTr(color);
-    body.vin = upperTr(vin);
-    body.note = upperTr(note);
-
     return createVehicleAction({
       api,
       token,
-      body,
+      plate,
+      capacity,
+      speedLimitKmh,
       type,
+      brand,
+      model,
       modelYear,
+      color,
+      vin,
+      note,
       inspectionDueAt,
       lastServiceAt,
       lastServiceKm,

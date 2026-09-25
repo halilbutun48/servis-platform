@@ -57,7 +57,10 @@ export default function DriverTodayPanel() {
     [today]
   );
   const selectedShift = active || today[0] || tomorrow[0] || null;
-  const selectedVehicle = selectedShift?.vehicle || null;
+  // The list may show the next scheduled item, but the assistant must only
+  // receive a selected record when a shift is actually active.
+  const copilotSelectedShift = active || null;
+  const copilotSelectedVehicle = copilotSelectedShift?.vehicle || null;
   const boardingChangeEffects = Array.isArray(selectedShift?.boardingChangeEffects) ? selectedShift.boardingChangeEffects : [];
   const boardingChangeSummary = selectedShift?.boardingChangeSummary || null;
   const routeRefresh = selectedShift?.routeRefresh || null;
@@ -97,65 +100,65 @@ export default function DriverTodayPanel() {
   }, [active, approvedTodayCount]);
 
   const copilotFacts = useMemo(() => buildShiftFacts({
-    shift: selectedShift,
+    shift: copilotSelectedShift,
     itemCount: today.length + tomorrow.length,
-  }), [selectedShift, today.length, tomorrow.length]);
+  }), [copilotSelectedShift, today.length, tomorrow.length]);
 
   const copilotSelection = useMemo(() => {
-    if (!selectedShift) return null;
-    const gpsStateLabel = getGpsReliabilityLabel(selectedVehicle?.gpsState?.lastUiStatus || selectedVehicle?.gpsState?.lastStatus || selectedVehicle?.gpsLast?.status || (selectedShift ? "GPS bekleniyor" : "-"));
-    const rawGpsSource = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel;
-    const gpsSourceLabel = rawGpsSource ? gpsSourcePresentationLabel(rawGpsSource) : (selectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
-    const gpsAge = gpsAgeText(selectedVehicle?.gpsLast || selectedShift?.vehicle?.gpsLast || selectedShift?.gpsLast);
-    const routeProofText = String(selectedShift?.operationProofStatus || selectedShift?.proofStatus || selectedShift?.serviceProofStatus || selectedShift?.vehicle?.operationProofStatus || selectedShift?.vehicle?.proofStatus || "").trim() || "Belirgin değil";
+    if (!copilotSelectedShift) return null;
+    const gpsStateLabel = getGpsReliabilityLabel(copilotSelectedVehicle?.gpsState?.lastUiStatus || copilotSelectedVehicle?.gpsState?.lastStatus || copilotSelectedVehicle?.gpsLast?.status || "GPS bekleniyor");
+    const rawGpsSource = copilotSelectedVehicle?.gpsState?.lastSource || copilotSelectedVehicle?.gpsState?.sourceLabel || copilotSelectedVehicle?.gpsLast?.sourceLabel;
+    const gpsSourceLabel = rawGpsSource ? gpsSourcePresentationLabel(rawGpsSource) : (copilotSelectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
+    const gpsAge = gpsAgeText(copilotSelectedVehicle?.gpsLast || copilotSelectedShift?.vehicle?.gpsLast || copilotSelectedShift?.gpsLast);
+    const routeProofText = String(copilotSelectedShift?.operationProofStatus || copilotSelectedShift?.proofStatus || copilotSelectedShift?.serviceProofStatus || copilotSelectedShift?.vehicle?.operationProofStatus || copilotSelectedShift?.vehicle?.proofStatus || "").trim() || "Belirgin değil";
     return {
       scopeKey: "/driver/today",
       entityType: "shift",
-      entityId: Number(selectedShift?.id || 0) || 0,
-      label: `Vardiya #${selectedShift?.id || "-"}`,
+      entityId: Number(copilotSelectedShift?.id || 0) || 0,
+      label: `Vardiya #${copilotSelectedShift?.id || "-"}`,
       summary: [
-        `Vardiya #${selectedShift?.id || "-"}`,
-        `Durum: ${displayStatusLabel(String(selectedShift?.status || "-").toUpperCase())}`,
-        `Araç: ${selectedVehicle?.plate || selectedShift?.vehicle?.plate || "-"}`,
+        `Vardiya #${copilotSelectedShift?.id || "-"}`,
+        `Durum: ${displayStatusLabel(String(copilotSelectedShift?.status || "-").toUpperCase())}`,
+        `Araç: ${copilotSelectedVehicle?.plate || copilotSelectedShift?.vehicle?.plate || "-"}`,
         `Son GPS: ${gpsAge}`,
-        `Sıradaki durak: ${selectedShift?.nextStop?.name || selectedShift?.route?.nextStop?.name || selectedShift?.stops?.find?.((s) => !["REACHED", "DONE", "COMPLETED", "SKIPPED"].includes(String(s?.status || s?.state || "").toUpperCase()))?.name || "-"}`,
+        `Sıradaki durak: ${copilotSelectedShift?.nextStop?.name || copilotSelectedShift?.route?.nextStop?.name || copilotSelectedShift?.stops?.find?.((s) => !["REACHED", "DONE", "COMPLETED", "SKIPPED"].includes(String(s?.status || s?.state || "").toUpperCase()))?.name || "-"}`,
       ].join(" • "),
       selectedRecordType: "shift",
-      selectedRecordId: Number(selectedShift?.id || 0) || 0,
-      selectedRecordLabel: `Vardiya #${selectedShift?.id || "-"}`,
+      selectedRecordId: Number(copilotSelectedShift?.id || 0) || 0,
+      selectedRecordLabel: `Vardiya #${copilotSelectedShift?.id || "-"}`,
       selectedRecordStatus: [
-        `Durum: ${displayStatusLabel(String(selectedShift?.status || "-").toUpperCase())}`,
-        `Araç: ${selectedVehicle?.plate || selectedShift?.vehicle?.plate || "Yok"}`,
-        `Sürücü: ${selectedShift?.driver?.fullName || selectedShift?.driver?.name || "Yok"}`,
-        `Durak: ${Array.isArray(selectedShift?.stops) ? selectedShift.stops.length : Number(selectedShift?.stopCount || 0)}`,
+        `Durum: ${displayStatusLabel(String(copilotSelectedShift?.status || "-").toUpperCase())}`,
+        `Araç: ${copilotSelectedVehicle?.plate || copilotSelectedShift?.vehicle?.plate || "Yok"}`,
+        `Sürücü: ${copilotSelectedShift?.driver?.fullName || copilotSelectedShift?.driver?.name || "Yok"}`,
+        `Durak: ${Array.isArray(copilotSelectedShift?.stops) ? copilotSelectedShift.stops.length : Number(copilotSelectedShift?.stopCount || 0)}`,
         `Son GPS: ${gpsAge}`,
         `GPS durumu: ${gpsStateLabel}`,
         `Kaynak: ${gpsSourceLabel}`,
         `Operasyon kanıtı: ${routeProofText}`,
       ].join(" • "),
       selectedRecordSummary: [
-        `Vardiya #${selectedShift?.id || "-"}`,
-        displayStatusLabel(String(selectedShift?.status || "-").toUpperCase()),
-        selectedVehicle?.plate || selectedShift?.vehicle?.plate || "-",
+        `Vardiya #${copilotSelectedShift?.id || "-"}`,
+        displayStatusLabel(String(copilotSelectedShift?.status || "-").toUpperCase()),
+        copilotSelectedVehicle?.plate || copilotSelectedShift?.vehicle?.plate || "-",
         `Son GPS ${gpsAge}`,
       ].join(" • "),
       selectedFields: [
-        { label: "Vardiya", value: `#${selectedShift?.id || "-"}` },
-        { label: "Durum", value: displayStatusLabel(String(selectedShift?.status || "-").toUpperCase()) },
-        { label: "Araç", value: selectedVehicle?.plate || selectedShift?.vehicle?.plate || "-" },
-        { label: "Sürücü", value: selectedShift?.driver?.fullName || selectedShift?.driver?.name || "-" },
-        { label: "Durak", value: String(Array.isArray(selectedShift?.stops) ? selectedShift.stops.length : Number(selectedShift?.stopCount || 0)) },
+        { label: "Vardiya", value: `#${copilotSelectedShift?.id || "-"}` },
+        { label: "Durum", value: displayStatusLabel(String(copilotSelectedShift?.status || "-").toUpperCase()) },
+        { label: "Araç", value: copilotSelectedVehicle?.plate || copilotSelectedShift?.vehicle?.plate || "-" },
+        { label: "Sürücü", value: copilotSelectedShift?.driver?.fullName || copilotSelectedShift?.driver?.name || "-" },
+        { label: "Durak", value: String(Array.isArray(copilotSelectedShift?.stops) ? copilotSelectedShift.stops.length : Number(copilotSelectedShift?.stopCount || 0)) },
         { label: "Son GPS", value: gpsAge },
         { label: "GPS durumu", value: gpsStateLabel },
         { label: "Kaynak", value: gpsSourceLabel },
         { label: "Operasyon kanıtı", value: routeProofText },
       ],
       fields: [
-        { label: "Vardiya", value: `#${selectedShift?.id || "-"}` },
-        { label: "Durum", value: displayStatusLabel(String(selectedShift?.status || "-").toUpperCase()) },
-        { label: "Araç", value: selectedVehicle?.plate || selectedShift?.vehicle?.plate || "-" },
-        { label: "Sürücü", value: selectedShift?.driver?.fullName || selectedShift?.driver?.name || "-" },
-        { label: "Durak", value: String(Array.isArray(selectedShift?.stops) ? selectedShift.stops.length : Number(selectedShift?.stopCount || 0)) },
+        { label: "Vardiya", value: `#${copilotSelectedShift?.id || "-"}` },
+        { label: "Durum", value: displayStatusLabel(String(copilotSelectedShift?.status || "-").toUpperCase()) },
+        { label: "Araç", value: copilotSelectedVehicle?.plate || copilotSelectedShift?.vehicle?.plate || "-" },
+        { label: "Sürücü", value: copilotSelectedShift?.driver?.fullName || copilotSelectedShift?.driver?.name || "-" },
+        { label: "Durak", value: String(Array.isArray(copilotSelectedShift?.stops) ? copilotSelectedShift.stops.length : Number(copilotSelectedShift?.stopCount || 0)) },
         { label: "Son GPS", value: gpsAge },
         { label: "GPS durumu", value: gpsStateLabel },
         { label: "Kaynak", value: gpsSourceLabel },
@@ -171,8 +174,8 @@ export default function DriverTodayPanel() {
       ],
       structuredFacts: {
         ...copilotFacts,
-        selectedShiftId: Number(selectedShift?.id || 0) || 0,
-        selectedVehiclePlate: selectedVehicle?.plate || selectedShift?.vehicle?.plate || "",
+        selectedShiftId: Number(copilotSelectedShift?.id || 0) || 0,
+        selectedVehiclePlate: copilotSelectedVehicle?.plate || copilotSelectedShift?.vehicle?.plate || "",
         gpsAge,
         gpsSourceLabel,
         routeProofText,
@@ -182,16 +185,16 @@ export default function DriverTodayPanel() {
         surface: "driver-today",
       },
     };
-  }, [copilotFacts, selectedShift, selectedVehicle]);
+  }, [copilotFacts, copilotSelectedShift, copilotSelectedVehicle]);
 
   useEffect(() => {
-    if (!selectedShift) {
+    if (!copilotSelectedShift) {
       clearCopilotSelection("/driver/today");
       return undefined;
     }
     setCopilotSelection(copilotSelection);
     return () => clearCopilotSelection("/driver/today");
-  }, [copilotSelection, selectedShift]);
+  }, [copilotSelection, copilotSelectedShift]);
 
   async function load() {
     setErr("");

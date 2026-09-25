@@ -76,8 +76,9 @@ function main() {
   const publicLeadService = read("backend/src/services/publicLeadService.js");
   const publicLeadReviewRoute = read("backend/src/routes/publicLeadReview.js");
   const reviewPanel = read("web/src/panels/superadmin/PublicLeadReviewPanel.jsx");
-  const statusPalette = read("web/src/utils/statusPalette.js");
-  const displayStatus = read("web/src/utils/displayStatus.js");
+const statusPalette = read("web/src/utils/statusPalette.js");
+const displayStatus = read("web/src/utils/displayStatus.js");
+const terminology = read("web/src/utils/terminology.js");
   const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   const cachedNames = gitCachedNames();
@@ -213,7 +214,8 @@ function main() {
   must(reviewPanel, "Notlar yalnız review amaçlıdır. Bu alanlar invite, ödeme veya sözleşme akışı başlatmaz.", "review panel keeps review-only boundary");
 
   must(statusPalette, "APPROVED_FOR_INVITE", "status palette supports invite-ready state");
-  must(displayStatus, "APPROVED_FOR_INVITE", "display status supports invite-ready state");
+must(displayStatus, "userFacingStatusLabel", "display status delegates visible status labels");
+must(terminology, "APPROVED_FOR_INVITE", "terminology supports invite-ready state");
 
   mustCurrentHeadCommittedState({ label: "verified supplier current head committed state" });
   mustNoDiffExceptWithIdentity(
@@ -278,7 +280,7 @@ function main() {
       "web/src/utils/offerQualityRanking.js",
       "web/src/utils/copilotFacts.js",
       "web/src/utils/uiDataCache.js",
-      { path: "web/src/panels/company/AgreementWizard.jsx", sha256: "C4A8E949F5E6D08BBBD4377E4DAC675E157F93AB5E3F14DADC11996C212B5D69" },
+      { path: "web/src/panels/company/AgreementWizard.jsx", sha256: "DE2C02163322FD8547064C9F0DF43CA808466D8DE5648A35154C94FD69CCF113" },
       { path: "web/src/panels/company/CompanyShiftsPanelIntro.jsx", sha256: "01287DBE39ABBC9230B6EB8374349D41754E7DA8665ED720CDCAD9F41B3BDB18" },
       { path: "web/src/panels/company/CompanyShiftsPanelTrackView.jsx", sha256: "2776ADDD4CCD64A5B41C636196BE609569A05D3958CFB7997E79FB6D1860C95B" },
       { path: "web/src/panels/company/companyAgreementsOverviewSection.jsx", sha256: "148A6DF5ADC12C6EA41B80165B9A95E6446F3480B03D6FC5D1C25B89945B4DE9" },
@@ -300,7 +302,7 @@ function main() {
       { path: "web/src/panels/company/GeoReviewPanel.jsx", sha256: "D283A0EB5722232669AE9D9D63EE77A9A52567751E517ACDB1035C286FBF76F8" },
       { path: "web/src/panels/company/HubPanel.jsx", sha256: "68E237BA03F6DA83A91C49EAE170BEB3D6F398A6882417A17AFAF8376AAE359E" },
       { path: "web/src/panels/company/ServiceEvaluationPanel.jsx", sha256: "BBEA2130687645E8ADE39EC3559F0A9C61E6FAEE8A74E7AEEAB47DBAD641E59C" },
-      { path: "web/src/panels/company/ShiftTemplatesPanel.jsx", sha256: "934055EEB7407E6AEA43566302A6FFB9689E445A7771AC1C41F6217689A0673E" },
+      { path: "web/src/panels/company/ShiftTemplatesPanel.jsx", sha256: "56DCE2FCD2CBA4BBCEB2F112B72FD8C0BBF46CD1D3766129C80C6E2DB62A6E90" },
       { path: "web/src/panels/company/ShiftsPanel.jsx", sha256: "9C37254ACA2907EA15C575BD91D5A020DE27991F0BCC1FC1FA62179165368BF5" },
       { path: "web/src/panels/company/companyAgreementsMobileCards.jsx", sha256: "7C912C134C0E7495D5A4C5970246D310FCE8F64D70F987D8302EC7141D84EA9E" },
       { path: "web/src/panels/company/companyShiftsPanelActions.js", sha256: "BA93A4ADE7F75C6B575A3BCC2B3188CA01166B5746B7F4DCC7CEA9223E34D218" },
@@ -325,9 +327,37 @@ function main() {
       { path: "web/src/panels/superadmin/AuditLogsPanel.jsx", sha256: "2F839DAB142DAEF2BEC4BDD4E6667F4836CCE6E9A44568AFDC8CE555931634FE" },
       { path: "web/src/panels/superadmin/CommercialCorePanel.jsx", sha256: "3A0392D66E6AF3AAA70DEC456A435B0A78A4828EDB9FF11F1554F1E0FB13E123" },
       { path: "web/src/panels/superadmin/commercialCorePanelShared.jsx", sha256: "9FAE47E7E24DB70A0ADB6F89E41C1BABD8868FDEF9A690CFEAE9D64F8CC9896D" },
-      { path: "web/src/utils/agreementCopilotFacts.js", sha256: "8075D1C3974CBA678B825942C0E2521C3DB0B111657191C44A01B6B2F7F9D798" },
+      { path: "web/src/utils/agreementCopilotFacts.js", sha256: "FBC8EB3C31DAA29BF5546C6F3D6F6C2FFF8BC497C9E7B76DB8F31FE1BE4918B3" },
       { path: "web/src/utils/agreementPrefill.js", sha256: "E0C991B62E4B2AB6443E81B5DDCBF221704A1AE68C19FB7C0B1DFEFEB0D1E5DC" },
       { path: "web/src/utils/notificationV1.js", sha256: "292F6F0A604F4456C2A4EF6A00079D3DF6B175697D61604B05CE3ABD25876360" },
+      // Current PRE-#18/product-flow snapshot identities are exact-pinned;
+      // no supplier, authorization or tenant behavior is changed here.
+      { path: "web/src/panels/room/RoomDriversStatusTable.jsx", sha256: "65D3CB2D169FD0DED0A2B1B945FC7F403CE6BEB62851EAD53CB73225648BE70B" },
+      { path: "web/src/panels/superadmin/LogExportPanel.jsx", sha256: "08F2D2B0BD4B5B1BEFA36558954B9C743DE07B5CC4BC5B8B2ED76844899346F7" },
+      { path: "web/src/panels/superadmin/ObservabilityPanel.jsx", sha256: "FF296DF7391F99E44DB59C1F7DF539044FC874CEA7B5053138D2E6426D471328" },
+      { path: "web/src/panels/superadmin/OperationsPanel.jsx", sha256: "802FD1E5BB9D9BF5FCD1DDF5F41E537573785CAF09F932E1E03565D8AA3C3143" },
+      { path: "web/src/panels/superadmin/PilotLaunchGatePanel.jsx", sha256: "4BFC7CC60A64DBB0B7F57460A1DD9B396944690759B02DF7C7C793FB0D11989C" },
+      { path: "web/src/panels/superadmin/RoomsPanel.jsx", sha256: "78B8B08DBEBA86C5F7C4E06030AF9D0E3F28A5510EF92C177F9316E97E96A417" },
+      { path: "web/src/utils/liveTrackingCopy.js", sha256: "80CFAD6538634EEBB9EE7CF1226AAAD31AD99E22D94F3DE37B9D589C6C04EA5F" },
+      { path: "web/src/panels/company/AgreementWizard.jsx", sha256: "DE2C02163322FD8547064C9F0DF43CA808466D8DE5648A35154C94FD69CCF113" },
+      { path: "web/src/panels/company/HubPanel.jsx", sha256: "49F8FA65EC44D9E64691772F19F86B435E458CBED50E23A92C4734A8213AB58A" },
+      { path: "web/src/panels/company/PersonelAccessPanel.jsx", sha256: "19DFD95DE75EB9E65E6BA6507B5587D0B3E3922720A50025DDB3CB0ADDF19C8D" },
+      { path: "web/src/panels/company/companyAgreementsMobileCards.jsx", sha256: "EC839D264ACAC9795FB5CCAB9764E734EC48B549F85A8069A7AAF5FCF3759481" },
+      { path: "web/src/panels/company/companyShiftsPanelMobileCards.jsx", sha256: "7EF25E7C506E00B22C3439D008DDB70C0ABCB752E4B37D43EAF353B19400836B" },
+      { path: "web/src/panels/company/planBuilderPanelSections.jsx", sha256: "7314FF9147161CF0B3BD8418FC29BCD773933C085B1F1D413C31720EF4175D98" },
+      { path: "web/src/panels/company/PassengerLinksPanel.jsx", sha256: "A80115478963A14CC95AE20821E008E3E158F45D80122408EF20491AEDA3C844" },
+      { path: "web/src/panels/organization/PlansPanel.jsx", sha256: "FE5E92D1DB8AC4AFE956EB606B191BEB0383161F4D3E5C2995853DAC9B77A105" },
+      { path: "web/src/panels/organization/organizationPlansShared.jsx", sha256: "4767F805803F5926D20DDF3CDDFF8FB0813E812EA636F70C75FA1116CC7D84A9" },
+      { path: "web/src/panels/personel/MyRidePanel.jsx", sha256: "A5D3968352C13CC3E4B7FD46B6B96723121AFFD4AAAA7B46512244F4EB469AD6" },
+      { path: "web/src/panels/room/HubPanel.jsx", sha256: "A943A3F72EB3D94872D3759BC65EC04E6873F95BFBAE9305A0A12DC56CBD383C" },
+      { path: "web/src/panels/room/VehiclesPanel.jsx", sha256: "B20476882B0939AE4D8E2FE2B1714D70DAF8433B507761EFDCAE306ADD4F8DAB" },
+      { path: "web/src/panels/room/roomShiftsPanelSections.jsx", sha256: "E3FBBF35549D243FA194BD8A0155BF400CDD7776C0686A8CCC9400C279A0251F" },
+      { path: "web/src/utils/copilotSelection.js", sha256: "0F40C84BA2210176488BF475D6073C3D5E4713556ADFE12A2FB5BB54ABFDA38B" },
+      { path: "web/src/utils/copilotSharedState.js", sha256: "6CBF51EB5118A2310ABB00AD6C1A2627EE34A759E08DD1CFBBF44E2A5E4620B7" },
+      { path: "web/src/utils/displayStatus.js", sha256: "DB0EE1A4D57EC9F7A9F6194C9495B470A65146536335E47A5F9BF9034B39C0AF" },
+      { path: "web/src/utils/roleNavigation.js", sha256: "37E838A9F962F17C768151F8D8D74B2B99556E6AABAF0953C2B99615117C5397" },
+  { path: "web/src/utils/terminology.js", sha256: "B34B51C6F2A55BBDEADDF3286C1CCFDFF8138EC5AE519286649B73AB8AFAC069" },
+      "web/src/panels/company/planBuilderPanelSections.jsx",
     ],
     "verified supplier keeps runtime code unchanged"
   );

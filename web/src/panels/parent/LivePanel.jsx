@@ -355,7 +355,7 @@ export default function ParentLivePanel() {
       infoCard("Araç", selectedVehicle?.plate || `#${selectedVehicle?.id || "-"}`, hasVehiclePoint(selectedVehicle) ? "Canlı konum görünüyor" : "Canlı konum henüz görünmüyor"),
       infoCard("Bölge", regionText(selectedVehicle), "Çocuğun servisinin bağlı olduğu bölge."),
       infoCard("Görünürlük aralığı", timeRangeText(selectedVehicle?.visibleWindow), "Canlı konum sadece bu vardiya aralığında görünür."),
-      infoCard("Son konum", gpsAgeText(selectedVehicle?.gpsLast), selectedVehicle?.gpsLast?.precision === "masked-2dp" ? "Konum KVKK gereği yaklaşık gösterilir." : null),
+      infoCard("Son konum güncellemesi", gpsAgeText(selectedVehicle?.gpsLast), selectedVehicle?.gpsLast?.precision === "masked-2dp" ? "Konum KVKK gereği yaklaşık gösterilir." : "Bu süre uzadıkça verinin güncel olmayabileceğini gösterir."),
       infoCard("Kalan durak", numText(selectedVehicle?.remainingStopsToChild), selectedVehicle?.childStopReached ? "Çocuğun durağına ulaşıldı." : "Çocuğun durağına kadar kalan durak sayısı."),
     ];
   }, [selectedVehicle]);
@@ -393,7 +393,10 @@ export default function ParentLivePanel() {
       const childLabel = selected?.fullName || `#${selected?.id || '-'}`;
       return {
         scopeKey: '/parent/live',
-        entityType: 'screen',
+        // The visible no-service state belongs to the selected authorized
+        // child, not to an anonymous screen. This lets the read model return
+        // the explicit "Araç: 0" fact without widening the parent's scope.
+        entityType: 'personnel',
         entityId: Number(selected?.id || 0) || null,
         label: `Veli • Canlı Takip • ${childLabel}`,
         summary: parentLiveNoVehicleFacts.summary,
@@ -421,14 +424,14 @@ export default function ParentLivePanel() {
       summary: [
         selected?.fullName ? `Öğrenci ${selected.fullName}` : null,
         selectedVehicle?.plate ? `Araç ${selectedVehicle.plate}` : null,
-        `Son konum bilgisi ${gpsAgeText(selectedVehicle?.gpsLast)}`,
+        `Son konum güncellemesi ${gpsAgeText(selectedVehicle?.gpsLast)}`,
         selectedNext?.name ? `Sıradaki durak ${selectedNext.name}` : null,
         `Tahmini süre ${etaText(selectedVehicle)}`,
       ].filter(Boolean).join(' • '),
       fields: [
         { label: 'Öğrenci', value: selected?.fullName || `#${selected?.id || '-'}`, help: 'Seçili öğrencinin güvenli etiketini gösterir.' },
         { label: 'Araç', value: selectedVehicle?.plate || `#${selectedVehicle?.id || '-'}`, help: 'Seçili servis aracının plakasını gösterir.' },
-        { label: 'Son konum bilgisi', value: gpsAgeText(selectedVehicle?.gpsLast), help: 'Son canlı konumun ne kadar önce geldiğini gösterir.' },
+        { label: 'Son konum güncellemesi', value: gpsAgeText(selectedVehicle?.gpsLast), help: 'Son canlı konumun ne kadar önce geldiğini gösterir; süre uzunsa veri güncel olmayabilir.' },
         { label: 'Konum sinyali durumu', value: hasVehiclePoint(selectedVehicle) ? 'Canlı' : 'Konum sinyali bekleniyor', help: 'Araç konum sinyali akışının canlı mı beklemede mi olduğunu gösterir.' },
         { label: 'Kaynak', value: gpsSourceLabel, help: 'Konum kaynağını güvenli şekilde gösterir.' },
         { label: 'Çocuğun durağı', value: childStop ? stopTitle(childStop) : 'Atanmış durak bulunamadı', help: 'Öğrenciye bağlı güvenli durak bilgisini gösterir.' },
@@ -485,13 +488,13 @@ export default function ParentLivePanel() {
         <div className="title">Veli • Canlı Takip</div>
         <div className="muted">KVKK kuralı: Canlı konum sadece <b>vardiya saat aralığında</b> gösterilir. Çocuğun durağı, tüm vardiya durakları ve size göre en yakın durak birlikte gösterilir.</div>
       </div>
-      <div className="card" style={{ marginTop: 12, padding: 12, border: "1px solid rgba(59,130,246,.18)", background: "rgba(59,130,246,.06)" }}>
-        <div className="muted" style={{ fontWeight: 700 }}>Canlı takip bandı</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8, marginTop: 10 }}>
+      <div className="card parentLiveStatusBand" style={{ marginTop: 12, padding: 12, border: "1px solid rgba(59,130,246,.18)", background: "rgba(59,130,246,.06)" }}>
+        <div className="parentLiveStatusBandTitle" style={{ fontWeight: 700 }}>Canlı takip bandı</div>
+        <div className="parentLiveStatusGrid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8, marginTop: 10 }}>
           {liveStatusBandRows.map((item) => (
-            <div key={item.label} className="card" style={{ padding: 10, background: "rgba(255,255,255,.03)" }}>
-              <div className="muted" style={{ marginBottom: 4 }}>{item.label}</div>
-              <div style={{ fontWeight: 800 }}>{item.value}</div>
+            <div key={item.label} className="card parentLiveStatusCard" style={{ padding: 10, background: "rgba(255,255,255,.03)" }}>
+              <div className="parentLiveStatusLabel" style={{ marginBottom: 4 }}>{item.label}</div>
+              <div className="parentLiveStatusValue" style={{ fontWeight: 800 }}>{item.value}</div>
             </div>
           ))}
         </div>

@@ -128,4 +128,18 @@ export async function loadSuperAdminOverviewBundle({ token, force = false, signa
   };
 }
 
+export async function loadActionableEventsBundle({ token, force = false, signal } = {}) {
+  const payload = await loadDashboardBulkBundle("actionable-events", {
+    token,
+    force,
+    signal,
+  });
+  if (!payload) return null;
+  return {
+    ...payload,
+    events: normalizeItems(payload.events),
+    summary: payload.summary ?? { total: 0, byGroup: {}, primaryEventId: null, primaryAction: null },
+  };
+}
+
 export { loadDashboardBulkBundle };

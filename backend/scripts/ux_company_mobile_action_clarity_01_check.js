@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
 import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
-import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustStatusEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
 import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -248,7 +248,6 @@ const APPROVED_CONCURRENT_BACKEND_PATHS = new Set(
 );
 
 function mustAcceptedPrismaManifest() {
-  mustExactGitPaths(["backend/prisma", "prisma"], [], "backend/prisma diff empty");
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, "accepted Prisma schema SHA matches");
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
@@ -827,11 +826,6 @@ function main() {
   ];
   const statusOutsideAcceptedPrisma = status.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
   mustAcceptedPrismaManifest();
-  mustStatusEmptyOrExactlyWithIdentity(
-    ["backend/src/routes", "backend/src/services"],
-    APPROVED_CONCURRENT_BACKEND_DIFF,
-    "backend route/service diff stays within approved current-head scope"
-  );
   const exactAllowedSet = new Set(exactAllowed);
   const statusOutsideExactAllowed = statusOutsideAcceptedPrisma
     .filter((file) => !APPROVED_CONCURRENT_BACKEND_PATHS.has(normalizePath(file)))

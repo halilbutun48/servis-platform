@@ -45,7 +45,7 @@ export default function TabletOpsQuickBar({ role, me, path }) {
         ))}
       </div>
       <div className="muted tabletQuickHint">
-        Bu alan M48.5 temelidir. Taşımacılık Firması ve Hizmet Alan Firma için aynı web uygulaması tablet kullanımında daha hızlı dolaşım verecek şekilde açılır.
+        Taşımacılık Firması ve Hizmet Alan Firma için sık kullanılan işlemlere hızlı erişim.
       </div>
     </div>
   );

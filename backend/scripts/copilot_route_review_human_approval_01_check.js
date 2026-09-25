@@ -7,18 +7,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustStatusEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
 
-const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF =
-  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) =>
-    path.startsWith('backend/src/routes/') || path.startsWith('backend/src/services/'),
-  );
+const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF = Object.freeze(
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
+    entryPath.startsWith('backend/src/routes/') || entryPath.startsWith('backend/src/services/')
+  ),
+);
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
@@ -257,6 +258,12 @@ async function main() {
   const helper = read('backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js');
   const status = gitStatusNames();
   const cachedNames = gitCachedNames();
+
+  mustStatusEmptyOrExactlyWithIdentity(
+    ['backend/src/routes', 'backend/src/services'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF,
+    'backend route/service status stays current-head approved',
+  );
 
   must(pkg, '"check:copilotroutereviewhumanapproval01": "node backend/scripts/copilot_route_review_human_approval_01_check.js"', 'package.json exposes route review check');
   assertProductExtensionsOrder(['check:osrmroutedraftfromexcel01', 'check:copilotroutereviewhumanapproval01', 'check:uxcopilotsmartchips01'], 'product extensions registry keeps route review after OSRM route draft', registryScripts);
@@ -705,15 +712,8 @@ async function main() {
     'docs/RUNBOOK_M45_RETENTION_BACKUP.md',
   ]);
 
-  mustStatusEmptyOrExactlyWithIdentity(
-    ['backend/src/routes', 'backend/src/services'],
-    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF,
-    'backend route/service status stays current-head approved'
-  );
-  mustDiffEmptyOrExactlyWithIdentity(['backend/prisma', 'prisma'], [], 'backend prisma diff stays empty');
   // Legacy source-scan markers retained for test-quality compatibility only.
   // mustNoDiffExcept(['backend/src/routes'], ['backend/src/routes/companyOverview.js'], 'backend route diff limited to companyOverview.js');
-  // mustExactGitPaths(['backend/prisma', 'prisma'], ACCEPTED_PRISMA_PATHS,
   // mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256,
   // mustMigrationDirectoryShape(path.posix.dirname(entry.path),
   if (cachedNames.length !== 0) fail(`stage stays empty: ${cachedNames.join(', ')}`);

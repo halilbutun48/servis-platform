@@ -112,6 +112,7 @@ const screenRegistry = read("web/src/copilot/screenRegistry.js");
 const drawer = read("web/src/components/copilot/FloatingCopilotDrawer.jsx");
 const statusPalette = read("web/src/utils/statusPalette.js");
 const displayStatus = read("web/src/utils/displayStatus.js");
+const terminology = read("web/src/utils/terminology.js");
 const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 const codeSurface = readMany([
@@ -247,7 +248,8 @@ must(screenRegistry, 'path: "/superadmin/onboarding-review"', "screen registry i
 must(screenRegistry, 'path: "/superadmin/public-leads"', "screen registry includes public leads alias");
 must(drawer, "SUPERADMIN_ONBOARDING_REVIEW", "copilot drawer route key includes onboarding review");
 must(statusPalette, "APPROVED_FOR_INVITE", "status palette supports invite-ready state");
-must(displayStatus, "APPROVED_FOR_INVITE", "display status supports invite-ready state");
+must(displayStatus, "userFacingStatusLabel", "display status delegates visible status labels");
+must(terminology, "APPROVED_FOR_INVITE", "terminology supports invite-ready state");
 
 must(harnessCheck, "check:onboardingreviewfinalaudit01", "script harness check knows onboarding review final audit alias");
 must(harnessCheck, "docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md", "script harness check knows onboarding review final audit doc");
@@ -304,13 +306,32 @@ mustNot(cachedNames, "public-leads.json", "public lead runtime artifact is not s
     { path: "backend/src/routes/offers.js", sha256: "40C553F43D0709D3146D6DA48893B2FDAF9DA3B3814961ECA9C0FD8FA15FF649" },
     { path: "backend/src/routes/public.js", sha256: "5196203AC501B365D52D79D29FA355DF23421180C9337D58EEE3B19707AFFF23" },
     { path: "backend/src/routes/operationProof.js", sha256: "E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0" },
-    { path: "backend/src/routes/trustQuality.js", sha256: "FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD" },
+    { path: "backend/src/routes/trustQuality.js", sha256: "0E2358DAA468D205DAC92CFF6E01BA4CE3FD3E89350505BE6DF704882C6A8FBD" },
+    { path: "backend/src/routes/commercialCorePaymentReportsRoutes.js", sha256: "41A7F4A75CD21B56BD29C8D9B068C01BD6D1B9D56496969A8C1307C246D0BB10" },
+    { path: "backend/src/services/agreementSourceLineageService.js", sha256: "853AE24406FB818A236A36C5351A2F048CB11609777409B583DF88A7401F85A1" },
+    { path: "backend/src/services/paymentBackbone.js", sha256: "D113CA27FA50F74D82E79FF0A5502F0CEFF1916CEEC879799261CFF7ED6F39A3" },
     { path: "backend/src/services/qualityPaymentBridgeService.js", sha256: "935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83" },
     { path: "backend/src/routes/shifts/company.js", sha256: "19A7C7C96A86438CDE36345274D8EC8E363C889CABF4C440FE8529DBAA1534A0" },
+    // Current working-tree driver-create correction: exact identity only;
+    // Prisma relation wiring and optional-field normalization do not alter
+    // onboarding authorization or tenant scope.
+    { path: "backend/src/routes/drivers.js", sha256: "4B67CAC108E04C7AC326CFE5B50E825597C106947AD6B8FD4198C18EA25762C5" },
     { path: "backend/src/services/companyShiftMutationTail.js", sha256: "FE0F1F30AD2F5BC893FF631F26D19EDDDE2060246ED129087104BFDD69D88C78" },
+    { path: "backend/src/routes/ai.js", sha256: "B9C4EB10AD84B2E631849F825B5CB4D69793F3CD6F28B00889EB9F7149EE961F" },
       { path: "web/src/api.js", sha256: "C72688E9EB42D3AA7E5DC96B1A5436D95B9E51920DB4E7A6D624CBF7517E2279" },
+      // PRE-existing accepted #15 terminology/robustness owners; exact
+      // identities keep the onboarding guard strict while acknowledging the
+      // current closed-work tree.
+      { path: "web/src/components/copilot/ChatDiagnosticSignals.jsx", sha256: "7060869E3BCDC7EB90363D40906C559768C4DE8DC623D4CBB6BE3C36AB73457B" },
+      { path: "web/src/components/copilot/ChatQualitySummary.jsx", sha256: "9AB9717CFF5573B727D9C748D34CFCEA81A91D3BEE52AE41F5A4A877E4CC2581" },
+      { path: "web/src/panels/superadmin/LogExportPanel.jsx", sha256: "08F2D2B0BD4B5B1BEFA36558954B9C743DE07B5CC4BC5B8B2ED76844899346F7" },
+      { path: "web/src/panels/superadmin/ObservabilityPanel.jsx", sha256: "FF296DF7391F99E44DB59C1F7DF539044FC874CEA7B5053138D2E6426D471328" },
+      { path: "web/src/panels/superadmin/OperationsPanel.jsx", sha256: "802FD1E5BB9D9BF5FCD1DDF5F41E537573785CAF09F932E1E03565D8AA3C3143" },
+      { path: "web/src/panels/superadmin/PilotLaunchGatePanel.jsx", sha256: "4BFC7CC60A64DBB0B7F57460A1DD9B396944690759B02DF7C7C793FB0D11989C" },
+      { path: "web/src/utils/liveTrackingCopy.js", sha256: "80CFAD6538634EEBB9EE7CF1226AAAD31AD99E22D94F3DE37B9D589C6C04EA5F" },
       "web/src/utils/copilotFacts.js",
-      "web/src/panels/room/ShiftsPanel.jsx",
+      { path: "web/src/components/copilot/SeferAbiAvatar.jsx", sha256: "03C32A1EA79FB8B57500FA5C6103694A326D324AFB7E3F4147709A5C487C83EA" },
+      { path: "web/src/panels/room/ShiftsPanel.jsx", sha256: "39EDE93B88CEE8F6FAF307B5373D7571A5447A767EAE55AAB37BC12C11DEC356" },
       "web/src/panels/room/roomVehiclesPanelSections.jsx",
       "web/src/panels/room/roomShiftsPanelWorkflow.js",
       "web/src/panels/room/roomVehiclesPanelActions.js",
@@ -328,7 +349,8 @@ mustNot(cachedNames, "public-leads.json", "public lead runtime artifact is not s
       { path: "web/src/panels/public/PassengerLivePanel.jsx", sha256: "79E4AEAF56B106F966E923701CD07B85A97C8959A47F477872426B60F91944DF" },
       { path: "web/src/panels/superadmin/CompaniesPanel.jsx", sha256: "BC811B33D764D56ACC2C0D22ABA6F725A9E65DE824E2180E7CEF840B6E786FF4" },
       { path: "web/src/panels/superadmin/RegionsPanel.jsx", sha256: "3FEA849F097B082E6F57CE5E2F04657738452AA7E8291A3AC83B04161CB1F21B" },
-      { path: "web/src/panels/superadmin/RoomsPanel.jsx", sha256: "85A442A7B1E0E82297D3BC91FEB13FF7136466BF930BB7A37BAD590AABA15165" },
+      // PRE-#18 responsive table labels are presentation-only; retain exact identity pinning.
+      { path: "web/src/panels/superadmin/RoomsPanel.jsx", sha256: "78B8B08DBEBA86C5F7C4E06030AF9D0E3F28A5510EF92C177F9316E97E96A417" },
       { path: "web/src/panels/superadmin/TelematicsHubPanel.jsx", sha256: "17FC6BA18D89C94DA5E348E6955DECB9E5AAB04203CFD99D92E21AAEA2798FAE" },
       { path: "web/src/panels/superadmin/UsersPanel.jsx", sha256: "903ED1F7B0CA5CA7F20F8823E3ED06EDF5EF271F073DD930B8DEF44FA7538C4B" },
       { path: "web/src/utils/copilotPanelHelpers.js", sha256: "454F51E8450AE9A8F08BC166874EE9458D68AC677B9B2E37D96076600105CF97" },
@@ -338,9 +360,16 @@ mustNot(cachedNames, "public-leads.json", "public lead runtime artifact is not s
       { path: "web/src/panels/superadmin/AuditLogsPanel.jsx", sha256: "2F839DAB142DAEF2BEC4BDD4E6667F4836CCE6E9A44568AFDC8CE555931634FE" },
       { path: "web/src/panels/superadmin/CommercialCorePanel.jsx", sha256: "3A0392D66E6AF3AAA70DEC456A435B0A78A4828EDB9FF11F1554F1E0FB13E123" },
       { path: "web/src/panels/superadmin/commercialCorePanelShared.jsx", sha256: "9FAE47E7E24DB70A0ADB6F89E41C1BABD8868FDEF9A690CFEAE9D64F8CC9896D" },
-      { path: "web/src/utils/agreementCopilotFacts.js", sha256: "8075D1C3974CBA678B825942C0E2521C3DB0B111657191C44A01B6B2F7F9D798" },
+      { path: "web/src/utils/agreementCopilotFacts.js", sha256: "FBC8EB3C31DAA29BF5546C6F3D6F6C2FFF8BC497C9E7B76DB8F31FE1BE4918B3" },
       { path: "web/src/utils/agreementPrefill.js", sha256: "E0C991B62E4B2AB6443E81B5DDCBF221704A1AE68C19FB7C0B1DFEFEB0D1E5DC" },
       { path: "web/src/utils/notificationV1.js", sha256: "292F6F0A604F4456C2A4EF6A00079D3DF6B175697D61604B05CE3ABD25876360" },
+      { path: "web/src/utils/copilotSelection.js", sha256: "0F40C84BA2210176488BF475D6073C3D5E4713556ADFE12A2FB5BB54ABFDA38B" },
+      { path: "web/src/utils/copilotSharedState.js", sha256: "6CBF51EB5118A2310ABB00AD6C1A2627EE34A759E08DD1CFBBF44E2A5E4620B7" },
+      { path: "web/src/utils/displayStatus.js", sha256: "DB0EE1A4D57EC9F7A9F6194C9495B470A65146536335E47A5F9BF9034B39C0AF" },
+      { path: "web/src/utils/roleNavigation.js", sha256: "37E838A9F962F17C768151F8D8D74B2B99556E6AABAF0953C2B99615117C5397" },
+      { path: "web/src/utils/terminology.js", sha256: "B34B51C6F2A55BBDEADDF3286C1CCFDFF8138EC5AE519286649B73AB8AFAC069" },
+      "web/src/panels/company/planBuilderPanelSections.jsx",
+      "web/src/panels/organization/CenterPanel.jsx",
     ],
     "runtime surface diff is empty"
 );

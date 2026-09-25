@@ -45,7 +45,7 @@ function CardHeader({ shift, selected, children }) {
     <div className="shiftCardHeader">
       <div className="shiftCardHeaderMain">
         <div className="shiftCardTitleRow">
-          <div className="shiftCardTitle">Vardiya ID {shift.id}</div>
+          <h3 className="shiftCardTitle">Vardiya ID {shift.id}</h3>
           {children}
         </div>
         {Number(shift.splitRootId || 0) > 0 ? (

@@ -1,8 +1,60 @@
 # SCRIPT KILAVUZU / MILESTONE HARITASI
 
-Tarih: 2026-04-08  
+Tarihsel başlangıç: 2026-04-08
 Repo: `servis-platform`  
 Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script ilişkisini **tek resmi rehberde** toplar.
+
+## PRE-#18 current-state overlay (2026-09-24)
+
+## PRE-#18 immutable closure overlay (2026-09-25)
+
+- Combined acceptance and No-Surprise Repository Exit are GREEN (`487/487` classified, `0` unexplained).
+- The final terminology / Sefer Abi residual is closed; bounded public-runtime current-source match is PASS and raw same-class status leakage is `0`.
+- `#18` has not started. This exact stage establishes the immutable closure commit/tag/push boundary; do not reopen proven-closed work without concrete newer regression evidence.
+
+Bu overlay, aşağıdaki tarihsel milestone haritasının güncel PRE-#18 kapanış durumudur. Tarihsel ve compatibility kayıtları korunur; aktif sıra ve semantic sahiplik için bu bölüm esas alınır.
+
+### Tek canonical semantic sahiplik zinciri
+
+`canonicalSemanticRequest.js` → `intentRouter.js` `[context transport / compatibility only]` → `semanticIntentPlanner.js` `[single typed decision owner]` → `toPublicQuestionType` `[single public adapter]` → `helpComposer.js` `[presentation/composition only]`
+
+- `intentRouter.js` semantic/public type kararı vermez; yalnızca yetkili context transport ve mevcut E-block compatibility precedence/admission akışını taşır.
+- `helpComposer.js` public type veya typed intent mutate etmez.
+- `SEMANTIC_DECISION_AUTHORITY_COUNT = 1`, `POST_ADAPTER_TYPE_MUTATION_COUNT = 0`; dördüncü owner yoktur.
+
+### PRE-#18 kapalı paket kanıtı
+
+| Paket | Güncel kanıt |
+| --- | --- |
+| B v2 | `30/30` ownership acceptance |
+| C1 v3 | `59/59`; readiness/risk canonical contract |
+| C2 | `117/117`; dynamic/clarify/root-cause contract |
+| C3 v2 | focused `17/17`, Plan Review `103/103` |
+| D | continuation green; residual stale expectation olarak kapalı |
+| F | Operation Health `124/124`, `5229` assertion, empty reply `0`; static guard stale structural residual |
+| No-browser semantic seal | residual `0`; priority `56/56`, generic `15/15`, visible matrix `168/168`, screen `29/29`, role isolation `216/216`, risk `88/88` exit `0` |
+
+### Güvenli yürütme sırası
+
+1. PRE-#18 current semantic, security, ownership and documentation/SSOT reconciliation is complete at the current HEAD.
+2. Foundation Exit Gate is `GREEN PRESERVED`; ROOM / OTHER423 and role-specific acceptance are proven closed, and Premium UI is `72_OF_72_PROVEN`.
+3. The current No-Surprise Repository Exit classification is green: worktree, ownership, lifecycle, backup/recovery and transient-artifact state are classified.
+4. PRE-#18 is `FINAL CLOSURE READY`; #18 has not started.
+5. Commit/tag/push remains outside this package and is still `NO`.
+
+### Contract ve güvenlik notu
+
+- `SHIFT_START_READINESS → READINESS_CHECK`; `RISK_RANKING / URGENT_ISSUES → RISK_LIST`; `CLARIFY → CLARIFYING_QUESTION` yalnızca gerekli ambiguity'de; authorized real object olmadan `PLAN_REVIEW` yoktur.
+- Root-cause yanıtı observation, possible cause, uncertainty ve validation/next safe check'i ayırır. Generic Help Model A stale route/entity context tüketmez.
+- E-block preview/blocked cevapları authorization ALLOW ile kapılıdır; roleless/unauthorized context `SEMANTIC_AUTHORIZATION_BOUNDARY` çizgisinde kalır. Import/write, geocode, OSRM draft, route review/apply, fake success ve approval akışları gerçek execution açmaz.
+- Türkçe visible terminology korunur: firma için `Hizmet Alan Firma/Firma`, taşımacılık yüzeyi için `Turizm/Taşımacılık Firması`, approval için `Kullanıcı onayı` / `Onayınız gerekli`.
+
+### Identity ve blocker kaydı
+
+- HEAD `e3bec6177f32263325bd14e876502faacac7a5b0`, branch `m90d1_web_lint_inventory`; `verify:repo` `PASS 32/32` and `verify:final` `PASS`.
+- KVKK `262/262`, role/data isolation `216/216`, presentation authority `PASS` with one authority, active/product unowned `0`, package ownership delta `0/0`.
+- M79 D1 `199/199` (score/floor `1.0/1.0`), AI semantic quality `122/122`, Copilot Context `PROVEN_SUPERSEDED_BY_CURRENT_ACCEPTANCE`, M90C6 `PASS`, M0 static compatibility `PASS`, roadmap lock `PASS`, public landing `PASS`, product-flow smoke `18/18 PASS`.
+- `PREMIUM_UI = 72_OF_72_PROVEN`; Foundation Exit is `GREEN PRESERVED`, ROOM/OTHER423 is `PROVEN_CLOSED`, and No-Surprise Repository Exit is green after current-tree classification. PRE-#18 is `FINAL CLOSURE READY`; #18 is not started.
 
 ## 1) Bu dosya nasıl okunmalı?
 - Önce `tools/repo_contract_state.json` okunur.
@@ -1749,7 +1801,7 @@ Bu bant güncel doğrulanmış üst hattır.
 ### UX-COMPANY-PANELS-FINAL-POLISH-01 [CHECK]
 - `check:uxcompanypanelsfinalpolish01` Company / Vardiyalar, Sözleşmeler ve Ticari Akış yüzeylerini son gerçeklik düzeltmesiyle hizalar.
 - `Company / Vardiyalar` içinde Market, Bekleyen, Sözleşmeden Üretilen ve Diğer Vardiyalar accordion başlıkları varsayılan açık gelir; takip yüzeyi kapalı blok bırakmadan başlar.
-- `Company / Ticari Akış` final satır aksiyonları agreement-bağlı kayıtları doğru takip yüzeyine yönlendirir; misleading `Listeyi aç` dili yerine `Sözleşmeden Üretilen'e git` / `Diğer Vardiyalar'a git` kullanılır.
+- `Company / Ticari Akış` final satır aksiyonları agreement-bağlı kayıtları doğru takip yüzeyine yönlendirir; misleading `Listeyi aç` dili yerine `Sözleşmeden üretilen vardiyaya git` / `Diğer vardiyalara git` kullanılır.
 - Bu final polish, `UX-COMPANY-SHIFTS-TABS-01`, `UX-COMPANY-OPS-PANEL-TABS-01`, `UX-COMPANY-QUALITY-PANEL-TABS-01`, `UX-ROOM-SHIFTS-TABS-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.
 
 ### UX-SCHOOL-ORGANIZATION-PANELS-01 [CHECK]
@@ -1836,3 +1888,8 @@ Bu bant güncel doğrulanmış üst hattır.
 - Sekiz kullanıcı bağlamında görev merkezi, özet-ilk hiyerarşi, tek ana aksiyon, Komuta Merkezi ve rol uyumlu menü sahipliğini doğrular.
 - Sefer Abi’nin tek birincil girişi sağ alttaki kompakt mascot/avatar’dır; hızlı panel ve tam çalışma alanı ortak konuşma/bağlam durumunu kullanır. `Sefer Abi Terminali` ayrı birincil menü öğesi değildir.
 - #15 terminoloji taraması, #18 yönlendirmeli vurgu ve #20 optimizasyonu bu kontrolün kapsamı dışındadır.
+
+## PRE-18 OWNER ARCHITECTURE BOUNDED CORRECTIVE
+
+- Doğrulama yolu: `node backend/scripts/pre_18_sol_owner_architecture_bounded_corrective_check.mjs`.
+- Bu corrective, `App.jsx` içindeki route/tenant tüketiminin tek kanonik sahibi olan `web/src/utils/roleNavigation.js` ile uyumunu; rol, tenant ve backend yetki sınırlarını genişletmeden kanıtlar.

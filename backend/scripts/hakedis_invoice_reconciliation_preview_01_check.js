@@ -136,7 +136,7 @@ must(entryCard.includes("Sözleşmeleri aç") && entryCard.includes("Mutabakatı
 must(!entryCard.includes("amountMinor") && !entryCard.includes("/ 100"), "mutabakat giriş kartı hesaplama çoğaltmaz");
 must(companyCommercialFlow.includes("HakedisReconciliationEntryCard") && companyCommercialFlow.includes("getCompanyAgreements"), "COMPANY Ticari Akış mutabakat girişini tenant-scope sözleşmelerle bağlar");
 must(roomCommercialFlow.includes("HakedisReconciliationEntryCard") && roomCommercialFlow.includes("loadRoomAgreementRows"), "ROOM Ticari Akış mutabakat girişini tenant-scope sözleşmelerle bağlar");
-must(roomCommercialFlow.includes('label: "Ödeme Hazırlığı"') && !roomCommercialFlow.includes('label: "Ödeme & Komisyon"'), "ROOM legacy ödeme/komisyon etiketi hazırlık semantiğiyle netleştirilir");
+must(roomCommercialFlow.includes("Hakediş hazırlık özeti") && !roomCommercialFlow.includes('label: "Ödeme & Komisyon"'), "ROOM legacy ödeme/komisyon etiketi hazırlık semantiğiyle netleştirilir");
 
 if (failed > 0) {
   console.error(`HAKEDIS_INVOICE_RECONCILIATION_PREVIEW_01 FAIL ${passed}/${passed + failed}`);

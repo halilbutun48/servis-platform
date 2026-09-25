@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
-import { getPath, navigate, useHashRoute } from "../../router";
+import { getPath, navigate } from "../../router";
 import { useSession } from "../../state/session";
 import JobGuideHeader from "../../components/copilot/JobGuideHeader";
 import BeforeYouStartCard from "../../components/copilot/BeforeYouStartCard";
@@ -24,10 +24,12 @@ import SeferAbiAvatar from "../../components/copilot/SeferAbiAvatar";
 import { resolveSeferAbiWidgetState, SEFER_ABI_WIDGET_STATE_LABELS } from "../../components/copilot/SeferAbiWidgetState";
 import { captureCopilotUiSurface } from "../../components/copilot/uiSurface";
 import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
-import { readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
+import { copilotAuthScopeKey, readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
 import { COPILOT_PERSONA, COPILOT_TERMINAL } from "../../utils/copilotFacts";
 import { nowIsoTR } from "../../utils/time";
 import { getCopilotScreenOptions } from "../../copilot/screenRegistry";
+import { resolveCopilotScreenContext } from "../../copilot/screenRegistry";
+import { canUseRouteBoundCopilotContext, routeContextKey, useCopilotRouteContext } from "../../copilot/routeContext";
 import { humanizeUserFacingText } from "../../utils/terminology";
 import {
   canUseEntityChat,
@@ -39,7 +41,6 @@ import {
   safeHistoryLoad,
   saveHistory,
   screenOptionLabel,
-  selectionApplies,
 } from "../../utils/copilotPanelHelpers";
 
 const COPILOT_TERMINAL_TITLE = COPILOT_TERMINAL.title || "Sefer Abi";
@@ -138,7 +139,8 @@ function selectionSummaryForDisplay(selection) {
 
 export default function CopilotPanel() {
   const { token, me } = useSession();
-  const { path: hashPath } = useHashRoute();
+  const routeContext = useCopilotRouteContext();
+  const authScopeKey = copilotAuthScopeKey(token, me);
   const [panelMode, setPanelMode] = useState("CHAT");
   const [intent, setIntent] = useState("SHIFT_SUMMARY");
   const [jobType, setJobType] = useState("OFFER_REVIEW");
@@ -153,13 +155,16 @@ export default function CopilotPanel() {
   const [vehicles, setVehicles] = useState([]);
   const [screenOptions, setScreenOptions] = useState([]);
   const screenOptionsFromMe = useMemo(() => buildScreenOptions({ role: me?.role, companyKind: me?.companyKind }), [me?.role, me?.companyKind]);
+  const screenMetadata = useMemo(() => resolveCopilotScreenContext(routeContext.path, me), [routeContext.path, me]);
+  const canUseFullRouteContext = canUseRouteBoundCopilotContext(routeContext, screenMetadata);
+  const currentRouteContextKey = routeContextKey(routeContext);
   const [loadingRefs, setLoadingRefs] = useState(false);
   const [history, setHistory] = useState([]);
   const [copyMsg, setCopyMsg] = useState("");
   const [chatScreenId, setChatScreenId] = useState("");
   const [chatEntityType, setChatEntityType] = useState(defaultChatEntityType(me?.role));
   const [chatEntityId, setChatEntityId] = useState("");
-  const [sharedContext] = useState(() => readCopilotSharedState());
+  const [sharedContext, setSharedContext] = useState(() => readCopilotSharedState(authScopeKey));
   const [chatMessages, setChatMessages] = useState(() => Array.isArray(sharedContext?.messages) ? sharedContext.messages.slice(-20) : []);
   const [chatBusy, setChatBusy] = useState(false);
   const [chatErr, setChatErr] = useState("");
@@ -173,6 +178,12 @@ export default function CopilotPanel() {
   const lastAutoRunKeyRef = useRef("");
   const userChangedChatContextRef = useRef(false);
   const responseTimerRef = useRef(null);
+  const chatRequestControllerRef = useRef(null);
+  const chatRequestSequenceRef = useRef(0);
+  const chatAuthScopeRef = useRef(authScopeKey);
+  const routeContextRef = useRef(routeContext);
+  const skipSharedPersistenceRef = useRef(false);
+  routeContextRef.current = routeContext;
 
   const selectedIntent = useMemo(() => INTENT_OPTIONS.find((x) => x.value === intent) || INTENT_OPTIONS[0], [intent]);
   const selectedJob = useMemo(() => GUIDE_JOB_OPTIONS.find((x) => x.value === jobType) || GUIDE_JOB_OPTIONS[0], [jobType]);
@@ -198,7 +209,40 @@ export default function CopilotPanel() {
     }
   }, [clearResponseTimer]);
 
+  useEffect(() => {
+    if (chatAuthScopeRef.current === authScopeKey) return;
+    chatRequestControllerRef.current?.abort?.();
+    chatRequestControllerRef.current = null;
+    chatRequestSequenceRef.current += 1;
+    chatAuthScopeRef.current = authScopeKey;
+    skipSharedPersistenceRef.current = true;
+    const scoped = readCopilotSharedState(authScopeKey);
+    setSharedContext(scoped);
+    setChatMessages(Array.isArray(scoped?.messages) ? scoped.messages.slice(-20) : []);
+    setChatConversationState(scoped?.conversationState || null);
+    setChatSuggestedChips([]);
+    setChatErr("");
+    setChatBusy(false);
+    setAutoChatBusy(false);
+    setResult(null);
+    setErr("");
+    resetResponsePhase();
+  }, [authScopeKey, resetResponsePhase]);
+
   useEffect(() => () => clearResponseTimer(), [clearResponseTimer]);
+
+  useEffect(() => {
+    if (canUseFullRouteContext) return;
+    chatRequestControllerRef.current?.abort?.();
+    chatRequestControllerRef.current = null;
+    chatRequestSequenceRef.current += 1;
+    chatRequestInFlightRef.current = false;
+    setChatBusy(false);
+    setAutoChatBusy(false);
+    setChatSelection(null);
+    setChatScreenId("");
+    resetResponsePhase();
+  }, [canUseFullRouteContext, currentRouteContextKey, resetResponsePhase]);
 
   useEffect(() => {
     setHistory(safeHistoryLoad());
@@ -222,19 +266,18 @@ export default function CopilotPanel() {
 
   useEffect(() => {
     setScreenOptions(screenOptionsFromMe);
-    const current = String(getPath() || "").split("?")[0];
-    const preferredPath = sharedContext?.screenPath || current;
+    const preferredPath = canUseFullRouteContext ? screenMetadata.path : "";
     if (screenOptionsFromMe.some((x) => x.path === preferredPath) && activeEntityType === "screen") {
       const match = screenOptionsFromMe.find((x) => x.path === preferredPath);
       if (match) setEntityId(String(match.id));
     }
-  }, [screenOptionsFromMe, activeEntityType, sharedContext?.screenPath]);
+  }, [activeEntityType, canUseFullRouteContext, screenMetadata.path, screenOptionsFromMe]);
   useEffect(() => {
-    const current = String(hashPath || getPath() || "").split("?")[0];
-    const carriedPath = sharedContext?.screenPath === "/room" ? "/room/map" : sharedContext?.screenPath;
-    const match = screenOptionsFromMe.find((x) => x.path === carriedPath) || screenOptionsFromMe.find((x) => x.path === current) || screenOptionsFromMe[0] || null;
-    if (match) setChatScreenId(String(match.id));
-  }, [hashPath, screenOptionsFromMe, sharedContext?.screenPath]);
+    const match = canUseFullRouteContext
+      ? screenOptionsFromMe.find((x) => x.path === screenMetadata.path) || null
+      : null;
+    setChatScreenId(match ? String(match.id) : "");
+  }, [canUseFullRouteContext, screenMetadata.path, screenOptionsFromMe]);
 
   useEffect(() => {
     if (!userChangedChatContextRef.current) return;
@@ -315,14 +358,14 @@ export default function CopilotPanel() {
   const selectedItem = useMemo(() => targetOptions.find((x) => String(x.id) === String(entityId)) || null, [targetOptions, entityId]);
   const selectedChatScreen = useMemo(() => screenOptions.find((x) => String(x.id) === String(chatScreenId)) || null, [screenOptions, chatScreenId]);
   const [chatSelection, setChatSelection] = useState(() => {
-    const current = readCopilotSelection() || sharedContext?.selection || null;
-    const path = sharedContext?.screenPath || screenOptions.find((x) => String(x.id) === String(chatScreenId))?.path || "";
-    return selectionApplies(current, path) ? current : null;
+    const current = readCopilotSelection() || null;
+    const path = screenMetadata.path || "";
+    return canUseFullRouteContext && String(current?.scopeKey || "") === path ? current : null;
   });
   const fullAvatarState = resolveSeferAbiWidgetState({
     busy: busy || chatBusy || autoChatBusy,
     error: Boolean(err || chatErr),
-    approvalRequired: /onay(?:ınız|ı|ı gerekiyor| bekliyor)|approval_required/i.test(String((chatSelection || sharedContext?.selection)?.selectedRecordStatus || "")),
+    approvalRequired: /onay(?:ınız|ı|ı gerekiyor| bekliyor)|approval_required/i.test(String(chatSelection?.selectedRecordStatus || "")),
     responding: responsePhase === "responding",
     resultReady: responsePhase === "result-ready",
   });
@@ -335,8 +378,8 @@ export default function CopilotPanel() {
   useEffect(() => {
     const path = selectedChatScreen?.path || "";
     const sync = () => {
-      const current = readCopilotSelection() || (sharedContext?.screenPath === path ? sharedContext?.selection : null);
-      const next = selectionApplies(current, path) ? current : null;
+      const current = readCopilotSelection() || null;
+      const next = canUseFullRouteContext && String(current?.scopeKey || "") === path ? current : null;
       setChatSelection(next);
       if (next && canUseEntityChat(me?.role)) {
         const nextType = String(next.entityType || "");
@@ -355,29 +398,45 @@ export default function CopilotPanel() {
     const evt = copilotSelectionEventName();
     window.addEventListener(evt, sync);
     return () => window.removeEventListener(evt, sync);
-  }, [selectedChatScreen?.path, me?.role, sharedContext?.screenPath, sharedContext?.selection]);
+  }, [canUseFullRouteContext, selectedChatScreen?.path, me?.role]);
 
   useEffect(() => {
-    if (!chatMessages.length && !sharedContext?.screenPath) return;
+    if (skipSharedPersistenceRef.current) {
+      skipSharedPersistenceRef.current = false;
+      return;
+    }
+    if (chatAuthScopeRef.current !== authScopeKey) return;
+    if (!chatMessages.length && !canUseFullRouteContext) return;
     writeCopilotSharedState({
+      scopeKey: authScopeKey,
       messages: chatMessages,
-      screenPath: selectedChatScreen?.path || sharedContext?.screenPath || hashPath,
-      screenLabel: selectedChatScreen?.label || sharedContext?.screenLabel || "",
+      screenPath: canUseFullRouteContext ? selectedChatScreen?.path || screenMetadata.path : null,
+      screenLabel: canUseFullRouteContext ? selectedChatScreen?.label || screenMetadata.label : null,
       role: me?.role || "",
       companyKind: me?.companyKind || "",
-      selection: chatSelection || sharedContext?.selection || null,
+      selection: canUseFullRouteContext ? chatSelection : null,
+      selectedContext: canUseFullRouteContext ? chatSelection : null,
+      routeContextStatus: routeContext.status,
+      metadataStatus: screenMetadata.metadataStatus,
       conversationState: chatConversationState,
     });
-  }, [chatMessages, selectedChatScreen?.path, selectedChatScreen?.label, chatSelection, chatConversationState, hashPath, me?.role, me?.companyKind, sharedContext]);
+  }, [authScopeKey, canUseFullRouteContext, chatMessages, chatSelection, chatConversationState, me?.role, me?.companyKind, routeContext.status, screenMetadata.label, screenMetadata.metadataStatus, screenMetadata.path, selectedChatScreen?.label, selectedChatScreen?.path]);
   const effectiveChatEntityId = chatEntityType === "screen" ? chatScreenId : chatEntityId;
   const autoRunKey = useMemo(() => {
-    if (panelMode !== "CHAT" || !selectedChatScreen || !effectiveChatEntityId) return "";
+    if (panelMode !== "CHAT" || !canUseFullRouteContext || !selectedChatScreen || !effectiveChatEntityId) return "";
     return `${selectedChatScreen.id}|${selectedChatScreen.path}|${chatEntityType}|${effectiveChatEntityId}`;
-  }, [panelMode, selectedChatScreen, effectiveChatEntityId, chatEntityType]);
+  }, [panelMode, canUseFullRouteContext, selectedChatScreen, effectiveChatEntityId, chatEntityType]);
 
   const runChat = useCallback(async (messageText = "", options = {}) => {
     const isAuto = Boolean(options?.auto);
-    if (!token || !selectedChatScreen || !effectiveChatEntityId || chatRequestInFlightRef.current) return;
+    if (!token || !canUseFullRouteContext || !selectedChatScreen || !effectiveChatEntityId || chatRequestInFlightRef.current) return;
+    const requestScopeKey = authScopeKey;
+    const requestRouteContextKey = currentRouteContextKey;
+    const requestId = chatRequestSequenceRef.current + 1;
+    chatRequestSequenceRef.current = requestId;
+    const controller = new AbortController();
+    chatRequestControllerRef.current?.abort?.();
+    chatRequestControllerRef.current = controller;
     chatRequestInFlightRef.current = true;
     if (isAuto) setAutoChatBusy(true);
     else setChatBusy(true);
@@ -388,7 +447,7 @@ export default function CopilotPanel() {
         setChatMessages((prev) => [...prev, { role: "user", text: String(messageText || "").trim() }]);
       }
       const latestSelection = readCopilotSelection();
-      const liveSelection = selectionApplies(latestSelection, selectedChatScreen?.path || "") ? latestSelection : chatSelection;
+      const liveSelection = String(latestSelection?.scopeKey || "") === String(selectedChatScreen?.path || "") ? latestSelection : null;
       const requestSelection = liveSelection || chatSelection || null;
       const uiSurface = captureCopilotUiSurface();
       const chatDiagnosticSignals = Array.isArray(requestSelection?.facts?.copilotSignals) ? requestSelection.facts.copilotSignals : [];
@@ -400,7 +459,6 @@ export default function CopilotPanel() {
         entityId: Number(selectedChatScreen.id),
         message: String(messageText || ""),
         conversationState: {
-          ...(chatConversationState || {}),
           recentMessages: [
             ...chatMessages.slice(-7).map((m) => ({ role: m?.role || '', text: String(m?.text || '').slice(0, 280) })),
             ...(String(messageText || '').trim() ? [{ role: 'user', text: String(messageText || '').trim().slice(0, 280) }] : []),
@@ -408,14 +466,9 @@ export default function CopilotPanel() {
           uiSurface,
           lastScreenPath: selectedChatScreen.path,
           lastScreenLabel: selectedChatScreen.label,
-          // Legacy selection carry guard: selectedEntityType: chatSelection?.entityType || ""
           selectedLabel: requestSelection?.label || "",
           selectedEntityType: requestSelection?.entityType || "",
-          // Legacy selection carry guard: selectedEntityId: Number(chatSelection?.entityId || 0) || null
           selectedEntityId: Number(requestSelection?.entityId || 0) || null,
-          selectedSummary: requestSelection?.summary || "",
-          selectedRecordSummary: requestSelection?.selectedRecordSummary || requestSelection?.summary || "",
-          selectedRecordStatus: requestSelection?.selectedRecordStatus || "",
         },
         screenContext: {
           id: Number(selectedChatScreen.id),
@@ -424,22 +477,13 @@ export default function CopilotPanel() {
           role: me?.role || "",
           companyKind: me?.companyKind || "",
           selectedLabel: requestSelection?.label || "",
-          selectedSummary: requestSelection?.summary || "",
-          selectedRecordSummary: requestSelection?.selectedRecordSummary || requestSelection?.summary || "",
-          selectedRecordStatus: requestSelection?.selectedRecordStatus || "",
-          selectedRecordLabel: requestSelection?.selectedRecordLabel || requestSelection?.label || "",
-          helpContextSummary: requestSelection?.helpContextSummary || requestSelection?.summary || "",
-          contextSummary: requestSelection?.contextSummary || requestSelection?.summary || "",
-          selectedFields: Array.isArray(requestSelection?.fields) ? requestSelection.fields : [],
-          selectedBadges: Array.isArray(requestSelection?.badges) ? requestSelection.badges : [],
-          structuredFacts: requestSelection?.facts && typeof requestSelection.facts === "object" ? requestSelection.facts : null,
-          liveFacts: requestSelection?.facts && typeof requestSelection.facts === "object" ? requestSelection.facts : null,
           selectedEntityType: requestSelection?.entityType || "",
           selectedEntityId: Number(requestSelection?.entityId || 0) || null,
           uiHints: uiSurface,
         },
         format: "json",
-      }, { token });
+      }, { token, signal: controller.signal });
+      if (requestId !== chatRequestSequenceRef.current || requestScopeKey !== chatAuthScopeRef.current || controller.signal.aborted || requestRouteContextKey !== routeContextKey(routeContextRef.current)) return;
       setChatConversationState(payload?.conversationState || null);
       const contextualSuggestedChips = Array.isArray(payload?.contextualSuggestedChips) && payload.contextualSuggestedChips.length
         ? payload.contextualSuggestedChips
@@ -485,16 +529,20 @@ export default function CopilotPanel() {
       }]);
       markResponseReady();
     } catch (e2) {
+      if (controller.signal.aborted || requestId !== chatRequestSequenceRef.current || requestScopeKey !== chatAuthScopeRef.current || requestRouteContextKey !== routeContextKey(routeContextRef.current)) return;
       setChatErr(String(e2?.message || e2));
       resetResponsePhase();
     } finally {
-      if (isAuto) setAutoChatBusy(false);
-      else setChatBusy(false);
-      chatRequestInFlightRef.current = false;
+      if (requestId === chatRequestSequenceRef.current && requestRouteContextKey === routeContextKey(routeContextRef.current)) {
+        if (isAuto) setAutoChatBusy(false);
+        else setChatBusy(false);
+        chatRequestInFlightRef.current = false;
+        if (chatRequestControllerRef.current === controller) chatRequestControllerRef.current = null;
+      }
     }
-  }, [token, selectedChatScreen, effectiveChatEntityId, chatConversationState, chatMessages, chatSelection, me?.role, me?.companyKind, markResponseReady, resetResponsePhase]);
+  }, [authScopeKey, canUseFullRouteContext, currentRouteContextKey, token, selectedChatScreen, effectiveChatEntityId, chatConversationState, chatMessages, chatSelection, me?.role, me?.companyKind, markResponseReady, resetResponsePhase]);
 
-  const shouldAutoRunChat = panelMode === "CHAT" && Boolean(selectedChatScreen) && Boolean(effectiveChatEntityId) && chatMessages.length === 0 && !chatBusy && !autoChatBusy && Boolean(autoRunKey) && lastAutoRunKeyRef.current !== autoRunKey;
+  const shouldAutoRunChat = panelMode === "CHAT" && canUseFullRouteContext && Boolean(selectedChatScreen) && Boolean(effectiveChatEntityId) && chatMessages.length === 0 && !chatBusy && !autoChatBusy && Boolean(autoRunKey) && lastAutoRunKeyRef.current !== autoRunKey;
 
   useEffect(() => {
     if (!shouldAutoRunChat || !autoRunKey) return;
@@ -520,6 +568,11 @@ export default function CopilotPanel() {
 
   async function onRun(e) {
     e?.preventDefault?.();
+    if (!canUseFullRouteContext) {
+      setErr("Bu ekran bağlamı doğrulanmadığı için istek gönderilmedi.");
+      return;
+    }
+    const requestRouteContextKey = currentRouteContextKey;
     resetResponsePhase();
     setBusy(true);
     setErr("");
@@ -533,7 +586,7 @@ export default function CopilotPanel() {
             entityId: Number(entityId),
             jobType,
             guideLevel,
-            screenContext: activeEntityType === "screen" ? { path: selectedItem?.path || String(getPath() || "").split("?")[0], label: selectedItem?.label || "Ekran", role: me?.role || "", companyKind: me?.companyKind || "" } : undefined,
+            screenContext: activeEntityType === "screen" ? { path: selectedItem?.path || screenMetadata.path, label: selectedItem?.label || screenMetadata.label, role: me?.role || "", companyKind: me?.companyKind || "" } : undefined,
             format: "json",
           }
         : {
@@ -543,6 +596,7 @@ export default function CopilotPanel() {
             format: "json",
           };
       const payload = await api.post("/api/ai/copilot", body, { token });
+      if (requestRouteContextKey !== routeContextKey(routeContextRef.current)) return;
       setResult(payload);
       setHistory(saveHistory({
         at: nowIsoTR(),
@@ -556,6 +610,7 @@ export default function CopilotPanel() {
       }));
       markResponseReady();
     } catch (e2) {
+      if (requestRouteContextKey !== routeContextKey(routeContextRef.current)) return;
       setErr(String(e2?.message || e2));
       resetResponsePhase();
     } finally {

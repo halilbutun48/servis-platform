@@ -326,8 +326,12 @@ function main() {
   mustContains(miniMap, "Harita döşemeleri yüklenemedi", "shared mini map shows tile failure fallback");
   mustContains(miniMap, "map-preview-pill", "shared mini map renders legend pills");
   mustContains(miniMap, "OpenStreetMap contributors", "shared mini map uses real tile attribution");
-  mustContains(miniMap, "Leaflet tile arka planlı mini rota görünümü", "shared mini map reflects real leaflet map wording");
-  mustContains(miniMap, "Koordinat eklenince burada tile arka planlı mini harita görünür.", "shared mini map fallback note present");
+  mustContains(miniMap, "Harita üzerinde mini rota görünümü", "shared mini map keeps accepted user-facing wording");
+  mustContains(
+    miniMap,
+    "Koordinat eklenince burada mini harita görünür. Rota çizgisi ve durak işaretleri birlikte okunur.",
+    "shared mini map fallback note present"
+  );
 
   mustContains(orgPlansShared, "ReadableMiniRouteMap", "organization mini map uses shared Leaflet component");
   mustContains(orgPlansShared, "Mini Harita Önizleme", "organization mini map title present");
@@ -335,7 +339,11 @@ function main() {
   mustContains(orgPlansShared, "Bitiş", "organization mini map keeps end legend");
   mustContains(orgPlansShared, "1..N", "organization mini map keeps sequential legend");
   mustContains(orgPlansShared, "Koordinatlı konum ekleyin.", "organization mini map fallback text present");
-  mustContains(orgPlansShared, "tile arka planında gösterilir", "organization mini map mentions tile background");
+  mustContains(
+    orgPlansShared,
+    "Organizasyon planı durakları gerçek harita üzerinde gösterilir.",
+    "organization mini map keeps accepted user-facing wording"
+  );
   mustNotContain(orgPlansShared, "<svg", "organization mini map no longer uses svg drawing");
 
   mustContains(boardingImpact, "ReadableMiniRouteMap", "boarding route impact mini map uses shared Leaflet component");
@@ -344,9 +352,24 @@ function main() {
   mustContains(boardingImpact, "1..N", "boarding route impact mini map keeps sequential legend");
   mustContains(boardingImpact, "Salt okunur önizleme — rota uygulanmaz", "boarding route impact mini map keeps readonly wording");
   mustContains(boardingImpact, "Harita için yeterli koordinat yok. Rota etkisi metinsel olarak önizleniyor.", "boarding route impact mini map keeps fallback wording");
-  mustContains(boardingImpact, "Leaflet mini-harita", "boarding route impact mini map mentions leaflet mini map");
+  mustContains(boardingImpact, "Mini harita önizlemesi", "boarding route impact mini map keeps accepted user-facing title");
   mustNotContain(boardingImpact, "boardingRoutePreviewGrid", "boarding route impact mini map no longer uses abstract grid");
   mustNotContain(boardingImpact, "<svg", "boarding route impact mini map no longer uses svg drawing");
+
+  const currentVisibleMapCopy = [miniMap, orgPlansShared, boardingImpact].join("\n");
+  const retiredTechnicalMapCopy = [
+    "Leaflet tile arka planlı mini rota görünümü",
+    "Koordinat eklenince burada tile arka planlı mini harita görünür.",
+    "tile arka planında gösterilir",
+    "Leaflet mini-harita",
+  ];
+  for (const retiredCopy of retiredTechnicalMapCopy) {
+    mustNotContain(
+      currentVisibleMapCopy,
+      retiredCopy,
+      `mini map rejects retired technical wording: ${retiredCopy}`
+    );
+  }
 
   mustContains(roomShiftsSections, "tableWrap", "room shifts sections still use tableWrap");
   mustContains(companyShiftsSections, "tableWrap", "company shifts sections still use tableWrap");

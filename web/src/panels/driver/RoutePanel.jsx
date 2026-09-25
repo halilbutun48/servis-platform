@@ -75,7 +75,7 @@ export default function RoutePanel() {
   }, [shift, progress, orderedStops]);
 
   const routeSummary = useMemo(() => routeStats(orderedStops), [orderedStops]);
-  const selectedVehicle = data?.vehicle || null;
+  const selectedVehicle = shift ? data?.vehicle || null : null;
   const vehicleCount = selectedVehicle ? 1 : 0;
   const boardingChangeEffects = Array.isArray(data?.boardingChangeEffects) ? data.boardingChangeEffects : Array.isArray(shift?.boardingChangeEffects) ? shift.boardingChangeEffects : [];
   const boardingChangeSummary = data?.boardingChangeSummary || shift?.boardingChangeSummary || null;

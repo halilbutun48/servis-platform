@@ -9,7 +9,9 @@ const ROLE_LABELS = Object.freeze({
   PARENT: "Veli",
 });
 
-const STATUS_LABELS = Object.freeze({
+// This is the canonical visible-status boundary. Backend enums stay intact;
+// presentation code imports this map instead of recreating partial versions.
+export const STATUS_LABELS = Object.freeze({
   LIVE: "Canlı",
   ONLINE: "Bağlı",
   STALE: "Güncel değil",
@@ -25,7 +27,49 @@ const STATUS_LABELS = Object.freeze({
   ERROR: "Hata",
   WARN: "Uyarı",
   UNKNOWN: "Belirsiz",
+  MISSING_PROOF: "Kanıt eksik",
+  MISSING: "Eksik",
+  WEAK: "Zayıf",
+  PARTIAL: "Kısmi",
+  RISKY: "Riskli",
+  INSUFFICIENT_DATA: "Yetersiz veri",
+  READY_FOR_REVIEW: "İncelemeye hazır",
+  NEEDS_PROOF: "Kanıt gerekli",
+  NEEDS_QUALITY_REVIEW: "Kalite incelemesi gerekli",
+  NO_IMPACT: "Etki yok",
+  PARTIAL_HOLD_RECOMMENDED: "Kısmi bekleme",
+  REVIEW_REQUIRED: "İnceleme gerekli",
+  REVIEWED: "İncelendi",
+  NEEDS_RECHECK: "Tekrar kontrol gerekli",
+  IGNORED_FOR_NOW: "Şimdilik beklemede",
+  CLEAR: "Temiz",
+  RISK: "Risk",
+  NEEDS_REVIEW: "İnceleme gerekli",
+  NOT_STARTED: "Başlamadı",
   READY: "Hazır",
+  DRAFT: "Taslak",
+  OPEN: "Açık",
+  COUNTERED: "Karşı teklif aşamasında",
+  SPLIT: "Bölünerek onaylandı",
+  DISABLED: "Devre dışı",
+  GRANTED: "İzin var",
+  DENIED: "İzin yok",
+  REFRESH_NEEDED: "Yenileme gerekli",
+  HIGH: "Yüksek",
+  MEDIUM: "Orta",
+  LOW: "Düşük",
+  PASSIVE: "Pasif",
+  BOARD: "Biniş",
+  ALIGHT: "İniş",
+  ARCHIVED: "Arşiv",
+  SHIFT_PUBLISHED: "Teklif / vardiya açıldı",
+  AGREEMENT_REQUESTED: "Sözleşme talebi",
+  RECEIVED: "Alındı",
+  IN_REVIEW: "İnceleniyor",
+  NEEDS_INFO: "Ek bilgi gerekli",
+  APPROVED_FOR_INVITE: "Davet için uygun",
+  BLOCKED: "Engellenmiş",
+  TEKRAR_KONTROL: "Tekrar kontrol gerekli",
   REVIEW_NEEDED: "Kontrol gerekli",
   STEP_UP_REQUIRED: "Ek doğrulama gerekli",
   AUTH_LOGIN_OK: "Giriş başarılı",
@@ -45,7 +89,84 @@ export function userFacingRoleLabel(value, companyKind = "") {
 
 export function userFacingStatusLabel(value) {
   const key = String(value || "").trim().toUpperCase();
-  return STATUS_LABELS[key] || (key ? "Durum bilgisi" : "Belirtilmedi");
+  // A generic "Durum bilgisi" hid both the fact that a mapping was missing
+  // and the underlying status. Keep the boundary safe without inventing a
+  // reassuring label.
+  return STATUS_LABELS[key] || (key ? "Tanımlı olmayan durum" : "Belirtilmedi");
+}
+
+export function userFacingStatusText(value) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  return /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/u.test(text)
+    ? userFacingStatusLabel(text)
+    : text;
+}
+
+export function userFacingFactText(value, fallback = "") {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text) return String(fallback || "").trim();
+  return text
+    .replace(/\b(?:UNKNOWN|MISSING|WEAK)\b/g, (token) => userFacingStatusText(token))
+    .replace(/\b[A-Z][A-Z0-9]+(?:_[A-Z0-9]+)+\b/g, (token) => userFacingStatusText(token))
+    .replace(/\b[a-z][A-Za-z]*(?:Id|ID)\b/g, "ek kaynak bilgisi")
+    .replace(/\b(?:PRE[-_]?\d+|M\d{1,3}|(?:TEST|CHECK|PACKAGE)[-_][A-Z0-9_-]+)\b/gi, "ek doğrulama bilgisi")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function userFacingDirectionLabel(value) {
+  const key = String(value || "").trim().toUpperCase();
+  if (key === "INBOUND") return "Toplama";
+  if (key === "OUTBOUND") return "Dağıtım";
+  return "Yön bilgisi yok";
+}
+
+export function userFacingPatternLabel(value) {
+  const key = String(value || "").trim().toUpperCase();
+  if (key === "ONE_WAY") return "Tek yön";
+  if (key === "LOOP") return "Döngü";
+  if (key === "ROUND_TRIP") return "Gidiş-dönüş";
+  return "Plan bilgisi yok";
+}
+
+const LINEAGE_SIGNAL_LABELS = Object.freeze({
+  sourceShiftId: "Kaynak vardiyası",
+  marketShiftId: "Pazar vardiyası",
+  organizationPlanId: "Organizasyon planı",
+  selectedOfferId: "Seçili teklif",
+  sourceSummary: "Kaynak özeti",
+  commercialSource: "Ticari kaynak",
+});
+
+export function userFacingLineageSignalLabel(value) {
+  const key = String(value || "").trim();
+  return LINEAGE_SIGNAL_LABELS[key] || (key ? "Ek kaynak bilgisi" : "");
+}
+
+export function userFacingLineageText(value, fallback = "") {
+  const text = String(value || "").trim();
+  if (!text) return fallback;
+  return text
+    .replace(/\bsourceShiftId\b/g, "kaynak vardiyası")
+    .replace(/\bmarketShiftId\b/g, "pazar vardiyası")
+    .replace(/\borganizationPlanId\b/g, "organizasyon planı")
+    .replace(/\bselectedOfferId\b/g, "seçili teklif")
+    .replace(/\bsourceSummary\b/g, "kaynak özeti")
+    .replace(/\bcommercialSource\b/g, "ticari kaynak")
+    .replace(/\b[a-z][A-Za-z]*(?:Id|ID)\b/g, "ek kaynak bilgisi")
+    .replace(/\b[a-z]+_[a-z0-9_]+\b/gi, "ek kaynak bilgisi")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function userFacingCommercialPreviewText(value, fallback = "Ticari bilgiler yalnızca karar desteği önizlemesidir; ödeme veya fatura oluşturulmaz.") {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text) return fallback;
+  if (/lisans\s+ücreti|başarı\s+payı|komisyon|commission|platform\s+fee|success\s+fee|%\s*\d+(?:[.,]\d+)?/iu.test(text)) {
+    return fallback;
+  }
+  return text;
 }
 
 export function userFacingRouteSourceLabel(value) {
@@ -123,10 +244,31 @@ export const USER_FACING_TERMS = Object.freeze({
   gpsSource: "Konum sinyali kaynağı",
 });
 
+function normalizeVisibleWhitespace(value) {
+  const lines = String(value || "")
+    .split(/\r?\n/u)
+    .map((line) => line.replace(/[^\S\r\n]+/gu, " ").trim());
+  const normalized = [];
+  for (const line of lines) {
+    // Keep one intentional blank separator between paragraphs, but do not
+    // retain leading, trailing, or repeated empty lines.
+    if (!line) {
+      if (normalized.length && normalized.at(-1) !== "") normalized.push("");
+      continue;
+    }
+    // A multi-item response may have passed through more than one presenter.
+    // Deduplicate repeated bullet markers only within that line; never strip
+    // the marker or join separate list rows.
+    normalized.push(line.replace(/^(?:•\s*){2,}/u, "• "));
+  }
+  while (normalized.at(-1) === "") normalized.pop();
+  return normalized.join("\n");
+}
+
 export function humanizeUserFacingText(value, fallback = "-") {
   const text = String(value ?? "").trim();
   if (!text) return fallback;
-  return text
+  const humanized = text
     .replace(/\bTELEMATICS_DISABLED\b/gi, "Konum cihazı bağlantısı devre dışı")
     .replace(/intent engine/gi, "yardım akışı")
     .replace(/root cause engine/gi, "neden analizi")
@@ -155,7 +297,9 @@ export function humanizeUserFacingText(value, fallback = "-") {
     .replace(/\bchecklist\b/gi, "kontrol listesi")
     .replace(/\bbuild\b/gi, "sürüm")
     .replace(/\bfield operator\b/gi, "saha operatörü")
-    .replace(/\bdriver\b/gi, "sürücü")
+    // Preserve title-cased user-facing names such as "Driver One"; only
+    // uppercase internal role codes are safe to normalize here.
+    .replace(/\bDRIVER\b/g, "sürücü")
     .replace(/\bblocking\b/gi, "engelleyen")
     .replace(/\bsync\b/gi, "senkronizasyon")
     .replace(/\bRead[- ]?only\b/gi, "Salt okunur")
@@ -187,6 +331,10 @@ export function humanizeUserFacingText(value, fallback = "-") {
     .replace(/\bMISSING_INFO\b/gi, "Eksik bilgi")
     .replace(/\bstep[- ]?up\b/gi, "ek doğrulama")
     .replace(/\bprovider\b/gi, "veri sağlayıcısı")
+    .replace(/\bworker\b/gi, "arka plan işlemi")
+    .replace(/\bqueue\b/gi, "bekleyen işlemler")
+    .replace(/\braw\s+(?:ip|ua|user[- ]?agent)\b/gi, "ağ bilgisi")
+    .replace(/\b(?:ip address|user[- ]?agent)\b/gi, "ağ bilgisi")
     .replace(/\bentity\b/gi, "ilgili kayıt")
     .replace(/\baction\b/gi, "işlem")
     .replace(/\bstatus\b/gi, "durum")
@@ -212,7 +360,33 @@ export function humanizeUserFacingText(value, fallback = "-") {
     .replace(/planned-vs-actual/gi, "planlanan-gerçekleşen")
     .replace(/\bactual\b/gi, "gerçekleşen")
     .replace(/saha\s+oncesi/gi, "saha öncesi")
-    .replace(/^#\d+$/g, "")
-    .replace(/\s+/g, " ")
-    .trim() || fallback;
+    // Sefer Abi answers may carry internal domain/status tokens from a
+    // read-model summary. Keep those identifiers internal at the final
+    // rendered-text boundary; backend/auth semantics remain unchanged.
+    .replace(/\bOPERATIONS\b/gi, "operasyon")
+    .replace(/\bSHIFTS\b/gi, "vardiya")
+    .replace(/\bOFFERS\b/gi, "teklif")
+    .replace(/\bAGREEMENTS\b/gi, "sözleşme")
+    .replace(/\bPERSONNEL\b/gi, "personel")
+    .replace(/\bPARENT\b/gi, "veli")
+    .replace(/\bCOMPANY\b/gi, "Hizmet Alan Firma")
+    .replace(/\bROOM\b/gi, "Taşımacılık Firması")
+    .replace(/\bBLOCKED\b/gi, "engellenmiş")
+    .replace(/\bDRAFT\b/gi, "taslak")
+    .replace(/\bOPEN\b/gi, "açık")
+    .replace(/\bCOUNTERED\b/gi, "karşı teklif aşamasında")
+    .replace(/\bOUTBOUND\b/gi, "gidiş")
+    .replace(/\bINBOUND\b/gi, "dönüş")
+    .replace(/\bONE_WAY\b/gi, "tek yönlü")
+    .replace(/\bAI_COPILOT_QUERY\b/gi, "Sefer Abi sorusu")
+    .replace(/(?<!\()\bETA\b/gi, "tahmini varış zamanı (ETA)")
+    .replace(/\bGPS\b/gi, "GPS/konum")
+    .replace(/\b(?:baş|bas)koordinat\p{L}*/giu, "başlatılması")
+    .replace(/(?:konum\/)?GPS\/konum(?:\/konum)?/gi, "GPS/konum")
+    .replace(/^(?:\s*\d+\s+(?:operasyon|vardiya|teklif|sözleşme|personel|veli|araç|sürücü)\s+kayd[ıi][,.;:]?\s*)+(?=(?:sonraki|önce|önerim|risk|güvenli))/iu, "")
+    .replace(/^#\d+$/g, "");
+  // Whitespace is presentation semantics for Sefer Abi: newline-delimited
+  // bullets and paragraphs must reach the drawer intact. Only horizontal
+  // whitespace is normalized inside each line.
+  return normalizeVisibleWhitespace(humanized) || fallback;
 }

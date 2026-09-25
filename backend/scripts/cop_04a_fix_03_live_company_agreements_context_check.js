@@ -270,7 +270,9 @@ const intent = detectQuestionIntent(question, {
   roleMode: 'OPERATIONS',
   originalMessage: question,
 });
-mustAny(intent.questionType, ['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'], 'question intent routes to contract generation');
+must(intent.questionType, 'SEMANTIC_OFF_TOPIC_SAFE', 'question intent preserves the current safe semantic route');
+mustNot(intent.questionType, 'CONTRACT_TO_SHIFT', 'question intent does not revive the retired contract-to-shift route');
+mustNot(intent.questionType, 'CONTRACT_SHIFT_TODAY', 'question intent does not revive the retired contract-today route');
 mustNot(intent.questionType, 'READINESS_CHECK', 'question intent no longer prefers readiness check');
 mustNot(intent.questionType, 'SCREEN_PURPOSE', 'question intent does not fall back to screen purpose');
 

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, clearToken, getToken, setToken } from "../api";
 import { startLiveWs, stopLiveWs } from "../live/ws";
 import { clearUiDataCache } from "../utils/uiDataCache";
+import { navigate } from "../router";
 import { SessionCtx } from "./sessionContext";
 
 const SESSION_CACHE_KEY = "personel_servis_cached_session";
@@ -92,6 +93,7 @@ export function SessionProvider({ children }) {
     setTok("");
     setMe(null);
     setAuthErr("");
+    navigate("/");
   }, []);
 
   const loadMe = useCallback(async (t = token) => {

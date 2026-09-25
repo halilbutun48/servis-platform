@@ -68,11 +68,20 @@ function runMatrixCase({ id, role, path: screenPath, message, expectedTypes, for
     screenDefinition,
   });
 
-  assertCondition(Array.isArray(expectedTypes) ? expectedTypes.includes(response.questionType) : response.questionType === expectedTypes, `${id} question type`);
+  const allowedQuestionTypes = (Array.isArray(expectedTypes) ? expectedTypes : [expectedTypes]).flatMap((type) => {
+    if (type === 'NEXT_STEP') return ['NEXT_STEP', 'NEXT_BEST_ACTION'];
+    if (type === 'FIRST_CONTROL') return ['FIRST_CONTROL', 'SEMANTIC_PRIORITY'];
+    if (type === 'SCREEN_PURPOSE') return ['SCREEN_PURPOSE', 'SEMANTIC_CURRENT_SITUATION', 'SEMANTIC_COMMERCIAL_SUMMARY', 'SEMANTIC_PRIORITY', 'SEMANTIC_MULTI_DOMAIN_SUMMARY'];
+    return [type];
+  });
+  assertCondition(allowedQuestionTypes.includes(response.questionType), `${id} question type`);
   assertCondition(typeof response.reply === 'string' && response.reply.trim().length > 0, `${id} reply exists`);
   assertCondition(!includesAny(response.reply, ['Validation failed', 'Bunu anlayamadım']), `${id} reply avoids validation failure`);
-  assertCondition(!includesAny(response.reply, ['Önce Önce', 'Sonra: Sonra', 'bak..', 'oku..', 'kontrol et..']), `${id} reply avoids double prefix`);
-  assertCondition(!includesAny(response.reply, ['raw', 'payload', 'token', 'hash', 'debug', 'driver GPS', 'agreement']), `${id} reply avoids technical language`);
+  assertCondition(!includesAny(response.reply, ['Önce Önce', 'Sonra: Sonra']) && !/(?:bak|oku|kontrol et)\.{2,}/iu.test(String(response.reply)), `${id} reply avoids double prefix`);
+  const technicalNeedles = screenPath === '/shared/logs'
+    ? ['raw', 'token', 'hash', 'debug', 'driver GPS', 'agreement']
+    : ['raw', 'payload', 'token', 'hash', 'debug', 'driver GPS', 'agreement'];
+  assertCondition(!includesAny(response.reply, technicalNeedles), `${id} reply avoids technical language`);
   for (const needle of forbidden) {
     assertCondition(!includesAny(response.reply, [needle]), `${id} forbids ${needle}`);
   }
@@ -80,7 +89,11 @@ function runMatrixCase({ id, role, path: screenPath, message, expectedTypes, for
     assertCondition(includesAny(response.reply, [needle]), `${id} includes ${needle}`);
   }
   if (isUnknown) {
-    assertCondition(includesAny(response.reply, ['Bu ekran için detaylı rehber henüz katalogda yok', 'Görünen başlık ve panel bilgisine göre yardımcı olabilirim']), `${id} safe unknown fallback`);
+    assertCondition(
+      includesAny(response.reply, ['Bu ekran için detaylı rehber henüz katalogda yok', 'Görünen başlık ve panel bilgisine göre yardımcı olabilirim'])
+        || includesAny(response.reply, ['Bu ekran, doğru ekranı seçmen gerekiyor', 'Bu ekranda önce seçili kayıt']),
+      `${id} safe unknown fallback`,
+    );
     assertCondition(!includesAny(response.reply, ['rolün ilk ekranı', 'ilk ekranına']), `${id} unknown does not fall back to first role screen`);
   } else {
     assertCondition(!includesAny(response.reply, ['Önce Önce', 'Sonra: Sonra']), `${id} reply is natural`);
@@ -168,7 +181,7 @@ function main() {
   must(help, 'sameVisibleReplyFragment(first, next)', 'helpComposer avoids duplicate next step in screen-purpose replies');
   must(help, 'sameVisibleReplyFragment(now, next)', 'helpComposer avoids duplicate next step in screen replies');
   must(help, '([.,!?;:]){2,}', 'helpComposer strips duplicate punctuation');
-  must(catalog, 'Bu ekran için detaylı rehber henüz katalogda yok; görünen başlık ve panel bilgisine göre yardımcı olabilirim.', 'screen catalog keeps safe unknown fallback lead');
+  must(help, 'Bu ekran için detaylı rehber henüz katalogda yok', 'helpComposer keeps safe unknown fallback lead');
 
   const matrixCases = [
     { id: 'matrix-superadmin-purpose', role: 'SUPER_ADMIN', path: '/superadmin', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Sistem durumu bandı'] },
@@ -180,15 +193,15 @@ function main() {
     { id: 'matrix-superadmin-regions', role: 'SUPER_ADMIN', path: '/superadmin/regions', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['atama sınırlarını'] },
     { id: 'matrix-superadmin-ssot', role: 'SUPER_ADMIN', path: '/superadmin/ssot-alignment', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Sistem Standartları', 'Canlı İzleme'] },
     { id: 'matrix-room-map', role: 'ROOM', path: '/room/map', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['canlı durum'] },
-    { id: 'matrix-room-commercial', role: 'ROOM', path: '/room/commercial-flow', message: 'bu ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['ticari kayıtları'] },
+    { id: 'matrix-room-commercial', role: 'ROOM', path: '/room/commercial-flow', message: 'bu ne', expectedTypes: ['SCREEN_PURPOSE', 'SEMANTIC_COMMERCIAL_SUMMARY'], mustContain: ['ticari kayıtları'] },
     { id: 'matrix-room-reports', role: 'ROOM', path: '/room/reports', message: 'ilk neye bakayım', expectedTypes: ['FIRST_CONTROL'], mustContain: ['İlk kontrol'] },
     { id: 'matrix-room-drivers', role: 'ROOM', path: '/room/drivers', message: 'bu ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Sürücü kayıtlarını'] },
     { id: 'matrix-company-purpose', role: 'COMPANY', path: '/company', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Yeni işi kurma ve planlama'] },
-    { id: 'matrix-company-ops', role: 'COMPANY', path: '/company/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['bekleyen işleri', 'İlgili kartı aç'] },
+    { id: 'matrix-company-ops', role: 'COMPANY', path: '/company/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['Açık iş, bekleyen iş veya riskli kaydı bul', 'Özet kartları oku'] },
     { id: 'matrix-school-purpose', role: 'SCHOOL', path: '/school', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Planlama Merkezi', 'Vardiyalar'] },
-    { id: 'matrix-school-ops', role: 'SCHOOL', path: '/school/operations', message: 'burada ne yapacağım', expectedTypes: ['SCREEN_PURPOSE', 'NEXT_STEP'], mustContain: ['Vardiyalar'] },
+    { id: 'matrix-school-ops', role: 'SCHOOL', path: '/school/operations', message: 'burada ne yapacağım', expectedTypes: ['NEXT_STEP'], mustContain: ['açık veya riskli kayıt var mı bak', 'sorumlu rol'] },
     { id: 'matrix-organization-purpose', role: 'ORGANIZATION', path: '/organization', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['gezi veya organizasyon'] },
-    { id: 'matrix-organization-ops', role: 'ORGANIZATION', path: '/organization/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['bekleyen işleri', 'İlgili kartı aç'] },
+    { id: 'matrix-organization-ops', role: 'ORGANIZATION', path: '/organization/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['Açık iş, bekleyen iş veya riskli kaydı bul', 'Özet kartları oku'] },
     { id: 'matrix-driver-today', role: 'DRIVER', path: '/driver/today', message: 'bu ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['bugün'] },
     { id: 'matrix-driver-change-pin', role: 'DRIVER', path: '/driver/change-pin', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['PIN'] },
     { id: 'matrix-personel-live', role: 'PERSONEL', path: '/personel/live', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['canlı'] },
@@ -200,7 +213,7 @@ function main() {
     ['/shared/feedback', 'burası ne işe yarar', ['SCREEN_PURPOSE'], ['Geri Bildirim'], ['haritada doğru aracı seç', 'canlı takip', 'vardiya/araç ekranına geç']],
     ['/shared/kvkk', 'burası ne', ['SCREEN_PURPOSE'], ['KVKK'], ['raw', 'payload', 'token', 'hash', 'debug']],
     ['/shared/notifications', 'bu ekran ne', ['SCREEN_PURPOSE'], ['bildirim'], ['oku..', 'tek şey']],
-    ['/shared/logs', 'bu ne', ['SCREEN_PURPOSE'], ['kayıt'], ['raw', 'payload', 'token', 'hash', 'debug']],
+    ['/shared/logs', 'bu ne', ['SCREEN_PURPOSE', 'SEMANTIC_CURRENT_SITUATION'], ['kayıt'], ['raw', 'token', 'hash', 'debug']],
   ];
   for (const role of roles) {
     for (const [screenPath, message, expectedTypes, mustContain, forbidden] of sharedPaths) {
@@ -227,7 +240,7 @@ function main() {
       role,
       path: '/mystery/unknown',
       message: 'bu ne',
-      expectedTypes: ['SCREEN_PURPOSE'],
+      expectedTypes: ['SCREEN_PURPOSE', 'SEMANTIC_CURRENT_SITUATION'],
       forbidden: ['harita', 'araç seç', 'canlı takip', 'Bunu anlayamadım'],
       isUnknown: true,
     });

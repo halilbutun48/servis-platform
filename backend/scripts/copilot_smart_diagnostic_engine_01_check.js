@@ -357,7 +357,13 @@ function main() {
     fixture: planningFixture,
     message: 'Rota neden görünmüyor?',
   });
-  must(planningHelp.reply, 'Rota genelde personel konumu eksikse', 'help composer uses smart diagnostic reply');
+  must(planningHelp.reply, 'Kesin sebebi veriyle doğrulamak gerekir', 'help composer uses the current evidence-grounded root-cause reply');
+  must(planningHelp.reply, 'Önce seçili kayıt ve son sinyali kontrol edelim', 'help composer keeps the current safe first check');
+  mustNot(planningHelp.reply, 'Rota genelde personel konumu eksikse', 'help composer does not reintroduce a static diagnostic cause');
+  if (planningHelp.questionType !== 'ROOT_CAUSE') {
+    fail(`planning help questionType expected ROOT_CAUSE actual=${planningHelp.questionType}`);
+  }
+  ok('help composer keeps current root-cause semantic route');
 
   const planningAssistant = buildAssistantResponse({
     role: 'COMPANY',

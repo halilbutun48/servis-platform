@@ -167,7 +167,7 @@ must(helperSource, 'assistantSubtitle: \'Operasyon yardımcısı\'', 'persona co
 must(helperSource, "menuLabel: 'Sefer Abi'", 'persona constant keeps Sefer Abi menu label');
 must(helperSource, "drawerTitle: 'Sefer Abi’ye Sor'", 'persona constant keeps new drawer title');
 must(helperSource, 'emptyStateLead: \'Bulunduğun ekranda soru sorabilirsin.\'', 'persona constant keeps empty state lead');
-must(helperSource, 'emptyStateBody: \'Yazı alanı altta. Hazır öneriler istersen açılır. Seçili kayıt varsa onu da konuşmaya katmaya çalışırım.\'', 'persona constant keeps empty state body');
+must(helperSource, 'emptyStateBody: \'Yazı alanı altta. Bağlama uygun öneriler görünür; seçili kayıt varsa onu da konuşmaya katabilirsin.\'', 'persona constant keeps empty state body');
 must(helperSource, 'toneLead', 'persona constant includes tone lead');
 must(helperSource, 'voiceReadoutConfig', 'persona constant includes voice readout config');
 must(helperSource, 'mobileAcceptanceNote', 'persona constant includes mobile acceptance note');

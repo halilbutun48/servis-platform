@@ -117,7 +117,7 @@ function main() {
   mustContains(orgCenter, 'Toplam konum', "Organization center uses konum count label");
   mustContains(orgCenter, '<th>Konum</th>', "Organization center uses konum table header");
 
-  mustContains(orgPlans, 'Toplu Konum İçe Aktar (Legacy)', "Organization plans uses konum import label");
+  mustContains(orgPlans, 'Toplu konum aktarımı', "Organization plans uses konum import label");
   mustContains(orgPlans, 'Konumlar', "Organization plans uses konum plural heading");
   mustContains(orgPlans, 'Yeni konum kurgusu', "Organization plans uses konum copy");
   mustContains(orgPlans, 'konum sırasını', "Organization plans uses konum ordering copy");

@@ -151,7 +151,8 @@ const screenDefinition = getScreenDefinitionForUser(user, screen, Number(screen.
 const question = 'Bu sözleşmeden bugün vardiya üretildi mi?';
 
 const intent = detectQuestionIntent(question, { entityType: 'screen', screenPath: screen.path, roleMode: 'OPERATIONS', originalMessage: question });
-must(intent.questionType, 'CONTRACT_TO_SHIFT', 'question intent routes to contract-to-shift');
+must(intent.questionType, 'SEMANTIC_OFF_TOPIC_SAFE', 'question intent preserves the current safe semantic route');
+mustNot(intent.questionType, 'CONTRACT_TO_SHIFT', 'question intent does not revive the retired contract-to-shift route');
 mustNot(intent.questionType, 'READINESS_CHECK', 'question intent no longer prefers readiness check');
 
 const baseContext = {

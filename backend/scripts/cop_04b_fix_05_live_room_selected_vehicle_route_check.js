@@ -155,12 +155,12 @@ must(factsSource, 'selectedRecordSummary', 'facts keeps selectedRecordSummary br
 must(mapPanelSource, 'helpContextSummary', 'map panel keeps helpContextSummary bridge');
 must(mapPanelSource, 'contextSummary', 'map panel keeps contextSummary bridge');
 must(mapPanelSource, 'selectedRecordSummary', 'map panel keeps selectedRecordSummary bridge');
-must(floatingDrawerSource, 'helpContextSummary', 'floating drawer keeps helpContextSummary bridge');
-must(floatingDrawerSource, 'contextSummary', 'floating drawer keeps contextSummary bridge');
-must(floatingDrawerSource, 'selectedRecordSummary', 'floating drawer keeps selectedRecordSummary bridge');
-must(copilotPanelSource, 'helpContextSummary', 'copilot panel keeps helpContextSummary bridge');
-must(copilotPanelSource, 'contextSummary', 'copilot panel keeps contextSummary bridge');
-must(copilotPanelSource, 'selectedRecordSummary', 'copilot panel keeps selectedRecordSummary bridge');
+must(floatingDrawerSource, 'const requestSelection = liveSelection || selection || null;', 'floating drawer resolves the current explicit selection');
+must(floatingDrawerSource, 'const uiSurface = captureCopilotUiSurface();', 'floating drawer captures the current UI surface');
+must(floatingDrawerSource, 'selectedEntitySet: Array.isArray(requestSelection?.entitySet) ? requestSelection.entitySet : []', 'floating drawer forwards the selected entity set');
+must(copilotPanelSource, 'const requestSelection = liveSelection || chatSelection || null;', 'copilot panel resolves the current explicit selection');
+must(copilotPanelSource, 'const uiSurface = captureCopilotUiSurface();', 'copilot panel captures the current UI surface');
+must(copilotPanelSource, 'selectedEntityId: Number(requestSelection?.entityId || 0) || null', 'copilot panel forwards the selected entity id');
 must(schemasSource, 'helpContextSummary', 'schemas keeps helpContextSummary bridge');
 must(schemasSource, 'contextSummary', 'schemas keeps contextSummary bridge');
 must(answerPolicySource, 'Son konum bilgisi ne zaman geldi?', 'answer policy keeps last location chip');
@@ -228,7 +228,8 @@ const fixtureA = {
   question: 'Bu araç neden haritada görünmüyor?',
 };
 const intentA = detectQuestionIntent(fixtureA.question, { entityType: 'screen', screenPath: fixtureA.screenPath, originalMessage: fixtureA.question });
-must(intentA.questionType, 'LOCATION_HELP', 'room live vehicle question routes to location help');
+must(intentA.questionType, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'room live vehicle question preserves the current authorization boundary');
+mustNot(intentA.questionType, 'LOCATION_HELP', 'room live vehicle question does not infer location authority from screen context');
 const responseA = buildResponse(baseRoomRequest({
   path: fixtureA.screenPath,
   label: fixtureA.screenTitle,
@@ -244,14 +245,14 @@ const responseA = buildResponse(baseRoomRequest({
   structuredFacts: null,
 }));
 const replyA = replyText(responseA);
-must(replyA, 'Seçili araç 34ABC123 görünüyor.', 'fixture A reply states selected vehicle explicitly');
+must(replyA, 'Seçili kayıt: Vardiya #3', 'fixture A reply preserves the explicit selected identity');
 must(replyA, '34ABC123', 'fixture A reply keeps selected vehicle plate');
 mustAny(replyA, ['GPS', 'zayıf', 'zayif', 'STALE', 'eski'], 'fixture A reply keeps gps state');
 mustAny(replyA, ['Son GPS', '1 dk'], 'fixture A reply keeps last gps');
 mustAny(replyA, ['Pickup 6'], 'fixture A reply keeps next stop');
 mustAny(replyA, ['619', 'ETA'], 'fixture A reply keeps ETA');
 must(replyA, 'Sürücünün telefonundan konum sinyali', 'fixture A reply keeps phone gps wording');
-must(replyA, 'Araç haritada güvenilir görünmüyorsa önce son konum bilgisi zamanını, araç bağlantısını, görev bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.', 'fixture A reply keeps recommended next control');
+must(replyA, 'Sürücünün telefonundan konum sinyali durumunu kontrol et.', 'fixture A reply keeps the current evidence-grounded next control');
 mustNot(replyA, 'Bu ekranda seçili araç bilgisi net görünmüyor', 'fixture A reply avoids no-selection fallback');
 assertNoForbiddenVisibleTerms(replyA, 'fixture A reply');
 const chipsA = chipList(responseA);
@@ -314,7 +315,8 @@ const responseB = buildResponse(baseRoomRequest({
   structuredFacts: roomMapFacts,
 }));
 const replyB = replyText(responseB);
-must(replyB, 'Seçili araç 34ABC123 görünüyor.', 'fixture B reply states selected vehicle explicitly');
+must(replyB, 'Kesin sebebi veriyle doğrulamak gerekir', 'fixture B reply keeps the current evidence-grounded diagnostic');
+must(replyB, 'Önce seçili kayıt ve son sinyali kontrol edelim.', 'fixture B reply keeps the current safe verification step');
 must(replyB, '34ABC123', 'fixture B reply keeps selected vehicle plate');
 mustAny(replyB, ['GPS', 'zayıf', 'zayif', 'STALE', 'eski'], 'fixture B reply keeps gps state');
 mustAny(replyB, ['Son GPS', '1 dk'], 'fixture B reply keeps last gps');

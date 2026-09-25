@@ -34,15 +34,37 @@ const mapDiagnosticCounters = {
 
 const leakRules = [
   ["raw-role", /\b(?:SUPER_ADMIN|COMPANY|ROOM|DRIVER|PARENT|SCHOOL|ORGANIZATION)\b/g],
+  ["raw-domain-enum", /\b(?:OUTBOUND|INBOUND|ONE_WAY|ROUND_TRIP|LOOP)\b/g],
+  ["unexplained-abbreviation", /\bDir\/Pat\b/g],
   ["old-oda", /\bOda\b/gi],
   ["human-approval-jargon", /\b(?:human approval|insan onayı)\b/gi],
   ["sefer-abi-terminal", /Sefer Abi Terminali/gi],
   ["copilot-primary", /\bCopilot\b/gi],
-  ["raw-status", /\b(?:OFFLINE|ONLINE|STALE|APPROVED|PENDING|REJECTED|ACTIVE|CANCELLED|READY|REQUIRED|EXECUTED)\b/g],
+  ["raw-status", /\b(?:OFFLINE|ONLINE|STALE|APPROVED|PENDING|REQUESTED|REJECTED|ACTIVE|CANCELLED|READY|REQUIRED|EXECUTED|DRAFT|UNKNOWN|MISSING|WEAK)\b/g],
   ["raw-field", /\b(?:requestUrl|routeSource|providerAdapter|selectedEntity|sourceKey|entryKind|sourceType|latitude|longitude|lat|lng)\b/g],
+  ["internal-field", /\b(?:[a-z][A-Za-z]*(?:Id|ID)|[a-z]+_[a-z][a-z0-9_]*)\b/g],
+  ["internal-test-identifier", /\bPRE18_[A-Z0-9_]+\b/g],
+  ["route-api-token", /(?:\/api\/[A-Za-z0-9_?=&/.:-]+|\/#\/[A-Za-z0-9_?=&/.:-]+)/g],
+  ["design-annotation", /\b(?:TODO|FIXME|DEBUG|mockup|wireframe|design[-_ ]?token|test[-_ ]?fixture)\b/gi],
+  ["legacy-commercial-residue", /(?:lisans\s+ücreti|başarı\s+payı|\bkomisyon\b|\bcommission\b|\bplatform\s+fee\b|\bsuccess\s+fee\b|%\s*\d+(?:[.,]\d+)?)/giu],
   ["snake-or-camel-field", /\b[a-z]+_[a-z]+\b|\b[a-z]+[A-Z][a-zA-Z]+\b/g],
   ["internal-engine", /\b(?:intent engine|root cause engine|risk scoring engine|canonical owner|provider adapter|feature flag)\b/gi],
   ["english-workflow", /\b(?:Check-in|Confirm|Approve|Execute|Cancel|Send|Accept|Reject|Convert|Dispatch|Publish|Finalize)\b/gi],
+];
+
+const FALSE_NEGATIVE_FIXTURES = [
+  { token: "OUTBOUND/ONE_WAY", visibleText: "OUTBOUND/ONE_WAY", rule: "raw-domain-enum" },
+  { token: "Dir/Pat", visibleText: "Dir/Pat", rule: "unexplained-abbreviation" },
+  { token: "DRAFT", visibleText: "DRAFT", rule: "raw-status" },
+  { token: "REQUESTED", visibleText: "REQUESTED", rule: "raw-status" },
+  { token: "UNKNOWN", visibleText: "UNKNOWN", rule: "raw-status" },
+  { token: "MISSING", visibleText: "MISSING", rule: "raw-status" },
+  { token: "WEAK", visibleText: "WEAK", rule: "raw-status" },
+  { token: "PRE18_OTHER423_PENDING_REQUEST_FINAL_RESIDUAL_CLOSURE_01", visibleText: "PRE18_OTHER423_PENDING_REQUEST_FINAL_RESIDUAL_CLOSURE_01", rule: "internal-test-identifier" },
+  { token: "organizationalPlanId", visibleText: "organizationalPlanId", rule: "internal-field" },
+  { token: "selectedOfferId", visibleText: "selectedOfferId", rule: "internal-field" },
+  { token: "başarı payı", visibleText: "başarı payı", rule: "legacy-commercial-residue" },
+  { token: "Lisans ücreti yoktur", visibleText: "Lisans ücreti yoktur", rule: "legacy-commercial-residue" },
 ];
 
 function unique(values) {
@@ -588,6 +610,57 @@ async function runEmptyMissingAndNotFound(browser) {
   return { empty, missing, notFound };
 }
 
+async function runAgreementTerminology(browser) {
+  const company = await recordState(
+    browser,
+    "company-agreement-wizard-terminology",
+    "COMPANY",
+    "/company/agreements",
+    "Open the existing Yazım tab and inspect its current direction and plan labels.",
+    null,
+    async (page) => {
+      const tab = page.getByRole("tab", { name: "Yazım" });
+      if (await tab.count()) await tab.first().click();
+      await page.waitForTimeout(300);
+      const snapshot = await visibleSnapshot(page);
+      const text = `${snapshot.visibleText}\n${snapshot.accessibleLabels.join("\n")}`;
+      return {
+        pass: bodyHas(snapshot, "Hizmet Alan Firma Sözleşmeleri", "Yazım")
+          && !/\b(?:OUTBOUND|INBOUND|ONE_WAY|LOOP)\b|\bDir\/Pat\b/i.test(text),
+        evidence: "Existing Company agreement writing surface remained Turkish and free of raw direction/plan enum or abbreviation text; current helper mappings are asserted by the canonical checker.",
+      };
+    },
+    "39-company-agreement-wizard-terminology-real",
+    { width: 1440, height: 900 },
+    1800,
+  );
+
+  const room = await recordState(
+    browser,
+    "room-agreement-terminology",
+    "ROOM",
+    "/room/agreements",
+    "Open the existing Other Agreements tab and inspect the current direction and plan columns.",
+    null,
+    async (page) => {
+      const tab = page.getByRole("tab", { name: "Diğer" });
+      if (await tab.count()) await tab.first().click();
+      await page.waitForTimeout(300);
+      const snapshot = await visibleSnapshot(page);
+      const text = `${snapshot.visibleText}\n${snapshot.accessibleLabels.join("\n")}`;
+      return {
+        pass: bodyHas(snapshot, "Yön / plan")
+          && !/\b(?:OUTBOUND|INBOUND|ONE_WAY|LOOP)\b|\bDir\/Pat\b/i.test(text),
+        evidence: "Existing Room agreements rendered Turkish direction/plan labels without raw enum or abbreviation text.",
+      };
+    },
+    "40-room-agreement-terminology-real",
+    { width: 1440, height: 900 },
+    1800,
+  );
+  return { company, room };
+}
+
 async function runSeferAbi(browser) {
   const token = await login(users.ROOM.identifier);
   const prepared = await preparePage(browser, "state:sefer-abi", token, { width: 1440, height: 900 });
@@ -638,6 +711,7 @@ async function main() {
     await runSuccessAndCrossKind(browser);
     await runPermissionAndRecovery(browser);
     await runConflictMatrix(browser);
+    await runAgreementTerminology(browser);
     await runPublicConfirmationCancellation(browser);
     await runSeferAbi(browser);
   } finally {
@@ -654,6 +728,14 @@ async function main() {
     screenshots,
     mapDiagnosticCounters,
     errors: { consoleAndPage: allErrors, http: allHttpErrors },
+    falseNegativeProbe: {
+      visibleText: FALSE_NEGATIVE_FIXTURES.map((fixture) => fixture.visibleText).join(" "),
+      leaks: recordLeaks(FALSE_NEGATIVE_FIXTURES.map((fixture) => fixture.visibleText).join(" "), []),
+      fixtures: FALSE_NEGATIVE_FIXTURES.map((fixture) => ({
+        ...fixture,
+        blocked: recordLeaks(fixture.visibleText, []).some((item) => item.rule === fixture.rule),
+      })),
+    },
     pass: contexts.length === 8 && contexts.every((item) => item.pass) && states.length >= 12 && states.every((item) => item.pass),
   };
   await fs.writeFile(path.join(evidenceRoot, "report.json"), JSON.stringify(report, null, 2));

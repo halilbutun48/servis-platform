@@ -24,7 +24,7 @@ export default function RoomDriversStatusTable({
         <h3 style={{ margin: 0 }}>Operasyon Durumu</h3>
         <button type="button" className="btn sm ghost" onClick={clearStatusColumnFilters}>Sütun filtrelerini temizle</button>
       </div>
-      <table className="tbl">
+      <table className="tbl pre18-mobile-card-table">
         <thead>
           <tr>
             <th>Sürücü</th>
@@ -84,26 +84,26 @@ export default function RoomDriversStatusTable({
                 onClick={() => setFocusDriverId(Number(d.id) || 0)}
                 style={rowSelectionStyle(isSelected)}
               >
-                <td>
+                <td data-label="Sürücü">
                   <b>{displayDriverName?.(d.fullName) || d.fullName || "Sürücü kaydı"}</b> <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
                   <div className="muted">Sürücü kaydı</div>
                   {hasRegionOwnership(d) ? <div className="muted" style={{ fontSize: 12 }}>{formatRegionOwnership(d)}</div> : null}
                 </td>
-                <td>{d.phone}</td>
-                <td>
+                <td data-label="Telefon">{d.phone}</td>
+                <td data-label="Bağlantı">
                   <span className="pill" data-status={connectionBadgeStatus(ops)}>{ops.connectionLabel}</span>
                   <div className="muted">{fmtTR(d?.user?.deviceLastSeenAt)}</div>
                 </td>
-                <td>
+                <td data-label="Görev">
                   <span className="pill" data-status={assignmentBadgeStatus(ops)}>{ops.assignmentLabel}</span>
                   <div className="muted">{d?.currentShift ? "Mevcut vardiya" : d?.nextShift ? "Sonraki vardiya" : '-'}</div>
                 </td>
-                <td className="muted">{bv ? bv.plate : '-'}</td>
-                <td>
+                <td data-label="Araç" className="muted">{bv ? bv.plate : '-'}</td>
+                <td data-label="GPS">
                   <span className="pill" data-status={gpsBadgeStatus(ops, stat)}>{ops.gpsLabel}</span>
                 </td>
-                <td className="muted">{bv?.gpsLast?.at ? fmtTR(bv.gpsLast.at) : '-'}</td>
-                <td className="muted">{bv?.gpsLast?.lat != null && bv?.gpsLast?.lng != null ? `${Number(bv.gpsLast.lat).toFixed(5)}, ${Number(bv.gpsLast.lng).toFixed(5)}` : '-'}</td>
+                <td data-label="Son GPS" className="muted">{bv?.gpsLast?.at ? fmtTR(bv.gpsLast.at) : '-'}</td>
+                <td data-label="Konum" className="muted">{bv?.gpsLast?.lat != null && bv?.gpsLast?.lng != null ? `${Number(bv.gpsLast.lat).toFixed(5)}, ${Number(bv.gpsLast.lng).toFixed(5)}` : '-'}</td>
               </tr>
             );
           }) : (

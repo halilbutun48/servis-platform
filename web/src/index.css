@@ -1,4 +1,4 @@
-:root { font-family: system-ui, Arial; color-scheme: dark; }
+:root { font-family: Inter, system-ui, Arial, sans-serif; color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body, #root { min-height: 100%; width: 100%; overflow-x: hidden; }
 body { margin: 0; background: #0b0f17; color: #e7eefc; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
@@ -452,6 +452,28 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   }
 }
 
+/* Explicit authenticated recovery for invalid/deep-link routes. */
+.notFoundRecovery {
+  min-height: min(62vh, 620px);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.notFoundRecoveryCard {
+  width: min(100%, 560px);
+  display: grid;
+  gap: 12px;
+  padding: 28px;
+}
+.notFoundRecoveryCard h1 { margin: 0; }
+.notFoundRecoveryCard p { margin: 0; }
+.notFoundRecoveryCard .btn { justify-self: start; margin-top: 4px; }
+@media (max-width: 720px) {
+  .notFoundRecovery { min-height: 60vh; padding: 12px; }
+  .notFoundRecoveryCard { padding: 20px; }
+  .notFoundRecoveryCard .btn { width: 100%; }
+}
+
 .landingSplitGrid {
   grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
 }
@@ -582,9 +604,81 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   flex: 1 1 150px;
 }
 
+/* The desktop agreement list has enough columns that a fixed table can
+   squeeze status pills below their intrinsic label width. Keep the existing
+   table surface readable by letting the list scroll as a unit instead of
+   clipping individual business-status labels. */
+@media (min-width: 761px) {
+  .companyAgreementsDesktopList {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .companyAgreementsDesktopList > .tbl {
+    width: 1800px !important;
+    min-width: 1800px !important;
+    table-layout: fixed;
+  }
+
+  .companyAgreementsDesktopList > .tbl th:nth-child(1),
+  .companyAgreementsDesktopList > .tbl td:nth-child(1) { width: 180px; min-width: 180px; }
+
+  .companyAgreementsDesktopList > .tbl th:nth-child(2),
+  .companyAgreementsDesktopList > .tbl td:nth-child(2) { width: 150px; min-width: 150px; }
+
+  .companyAgreementsDesktopList .pill {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+}
+
 .companyAgreementsMobileCard .shiftCardInfoRow .pill,
 .companyAgreementsMobileCard .shiftCardActions > * {
   white-space: normal;
+}
+
+.companyAgreementsMobileCard,
+.companyAgreementsMobileCard .shiftCardHeader,
+.companyAgreementsMobileCard .shiftCardHeaderMain,
+.companyAgreementsMobileCard .shiftCardTitleRow,
+.companyAgreementsMobileCard .shiftCardMetaGrid,
+.companyAgreementsMobileCard .shiftCardSection,
+.companyAgreementsMobileCard .shiftCardInfoBlock {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.companyAgreementsMobileCard .shiftCardTitleRow > *,
+.companyAgreementsMobileCard .shiftCardSubtle,
+.companyAgreementsMobileCard .shiftCardFieldValue,
+.companyAgreementsMobileCard .shiftCardActionNote {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.companyAgreementsMobileCard .pill {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.companyAgreementsMobileCard .shiftCardActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.companyAgreementsMobileCard .shiftCardActions > * {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .personelAccessScope {
@@ -1362,6 +1456,8 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 .mapGrid--primary-canvas { grid-template-columns: minmax(0, 1fr); }
 .mapAsideCard { height: var(--mapH); display:flex; flex-direction:column; }
 .mapAsideList { overflow:auto; padding-right: 4px; }
+.mapAsideMeta { flex: 0 0 118px; max-width: 118px; min-width: 0; }
+.hubLocationGrid { min-width: 0; }
 .mapOperationsDisclosure {
   min-width: 0;
   border: 1px solid rgba(148, 163, 184, .22);
@@ -1423,10 +1519,10 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   .mapCurrentSummaryTitle { font-size:18px; }
   .mapModeToggle { gap:4px; }
   .mapModeToggle .btn { min-height:30px; padding:4px 8px; font-size:11px; }
-  .mapSummaryMetric { display:flex; align-items:center; gap:6px; min-height:30px; }
-  .mapSummaryMetricLabel { font-size:10px; }
+  .mapSummaryMetric { display:grid; align-content:start; align-items:start; gap:4px; min-height:30px; }
+  .mapSummaryMetricLabel { font-size:10px; white-space:normal; }
   .mapSummaryMetric--risk { grid-column:1 / -1; }
-  .mapSummaryMetric .pill { min-height:26px; padding:3px 8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mapSummaryMetric .pill { width:fit-content; max-width:100%; min-height:26px; padding:3px 8px; overflow-wrap:anywhere; overflow:visible; text-overflow:clip; white-space:normal; }
   .mapSummaryActions { grid-column:1 / -1; justify-content:flex-start; min-width:0; }
   .mapDetailsGrid { grid-template-columns:1fr; }
   .mapDetailActions { grid-column:auto; }
@@ -1563,6 +1659,7 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 .shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; min-height: 100dvh; position: relative; }
 .shellTopMenu { display: none; }
 .navDockBackdrop { display: none; }
+.navDockMobileClose { display: none; }
 
 .navDock {
   --nav-item-height: 44px;
@@ -1725,6 +1822,17 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 }
 .panelChromeTitleBlock { min-width: 0; }
 .panelChromeActions { justify-content: flex-end; gap: 8px; }
+.panelChromeEyebrow {
+  margin-bottom: 4px;
+  color: var(--pre18-ink-muted, #667085);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.panelChromePrimaryAction,
+.panelChromeSecondaryActions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.panelChromePrimaryAction .btn { min-height: 44px; }
 .panelChrome { display: grid; gap: 10px; min-width: 0; }
 .panelChromeCard { border-radius: var(--ui-surface-radius-lg); }
 
@@ -2217,6 +2325,19 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
   min-width: 0;
 }
 
+.organizationPlansEditor { container-type: inline-size; }
+
+@media (max-width: 1300px) and (min-width: 901px) {
+  .organizationPlansLayout { grid-template-columns: minmax(230px, .8fr) minmax(0, 1.7fr); }
+  .organizationPlansLayout > :last-child { grid-column: 1 / -1; }
+}
+
+@container (max-width: 720px) {
+  .organizationPlanMetaGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .organizationPlanContextGrid,
+  .organizationOfferMetaGrid { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
 .organizationPlansSidebar {
   position: sticky;
   top: 12px;
@@ -2431,6 +2552,22 @@ button, input, select, textarea, .btn, .secondary {
     transform: translateX(-102%);
     visibility: hidden;
     pointer-events: none;
+  }
+  .navDockMobileClose {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-end;
+    min-height: 36px;
+    margin: 0 0 8px;
+    padding: 0 10px;
+    border: 1px solid #33466d;
+    border-radius: 10px;
+    color: #e5edff;
+    background: rgba(18, 31, 58, .92);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
   }
   .navDockBackdrop {
     display: block;
@@ -2853,6 +2990,9 @@ button, input, select, textarea, .btn, .secondary {
   flex-wrap: wrap;
   align-items: center;
 }
+.copilotDrawerTools { display: grid; gap: 6px; justify-items: end; min-width: 0; }
+.copilotDrawerPresets, .copilotDrawerActions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: flex-end; min-width: 0; }
+.copilotDrawerActions .copilotToolBtn--close { min-width: 34px; width: 34px; padding-inline: 0; justify-content: center; font-size: 20px; line-height: 1; }
 .copilotToolBtn {
   display: inline-flex;
   align-items: center;
@@ -2866,9 +3006,34 @@ button, input, select, textarea, .btn, .secondary {
 .copilotToolBtn--close {
   margin-left: 2px;
 }
-.copilotDrawerModeRow {
-  padding: 10px 14px;
+.copilotContextSuggestions {
   border-bottom: 1px solid #22314f;
+  background: rgba(236, 243, 255, .72);
+}
+.copilotContextSuggestionsToggle {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 14px;
+  border: 0;
+  background: transparent;
+  color: #344054;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+.copilotContextSuggestionsToggle:hover,
+.copilotContextSuggestionsToggle:focus-visible { background: rgba(197, 216, 248, .6); }
+.copilotContextSuggestionsChevron { font-size: 16px; line-height: 1; }
+.copilotContextSuggestions .copilotSuggestionWrap {
+  border-bottom: 0;
+  padding-top: 7px;
 }
 .copilotSuggestionWrap {
   padding: 10px 14px 12px;
@@ -2876,6 +3041,46 @@ button, input, select, textarea, .btn, .secondary {
   gap: 6px;
   flex-wrap: wrap;
   border-bottom: 1px solid #22314f;
+}
+.copilotSuggestionWrap[hidden] { display: none; }
+
+/* PRE-#18: a dense commercial table becomes a record-first decision list on
+   compact screens; desktop keeps the structured grid. */
+.companyCommercialFlowTable { overflow-x: auto; }
+@media (max-width: 720px) {
+  .companyCommercialFlowTable > table,
+  .companyCommercialFlowTable > table > tbody,
+  .companyCommercialFlowTable > table > tbody > tr,
+  .companyCommercialFlowTable > table > tbody > tr > td { display: block; width: 100%; }
+  .companyCommercialFlowTable > table { min-width: 0 !important; }
+  .companyCommercialFlowTable > table > thead { display: none; }
+  .companyCommercialFlowTable > table > tbody { display: grid; gap: 8px; }
+  .companyCommercialFlowTable > table > tbody > tr {
+    border: 1px solid rgba(87, 118, 170, .3);
+    border-radius: 12px;
+    padding: 8px 10px;
+  }
+  .companyCommercialFlowTable > table > tbody > tr > td {
+    display: grid;
+    grid-template-columns: minmax(104px, 42%) minmax(0, 1fr);
+    gap: 8px;
+    padding: 4px 0;
+    overflow-wrap: anywhere;
+  }
+  .companyCommercialFlowTable > table > tbody > tr > td::before {
+    color: var(--pre18-ink-muted, #667085);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .companyCommercialFlowTable > table > tbody > tr > td:nth-child(1)::before { content: "Karşı taraf"; }
+  .companyCommercialFlowTable > table > tbody > tr > td:nth-child(2)::before { content: "Akış"; }
+  .companyCommercialFlowTable > table > tbody > tr > td:nth-child(3)::before { content: "Teklif / tutar"; }
+  .companyCommercialFlowTable > table > tbody > tr > td:nth-child(4)::before { content: "Durum"; }
+  .companyCommercialFlowTable > table > tbody > tr > td:nth-child(5)::before { content: "Son güncelleme"; }
+  .companyCommercialFlowTable > table > tbody > tr > td:nth-child(6)::before { content: "Sonraki adım"; }
+  .companyCommercialFlowTable > table > tbody > tr > td[colspan] { grid-template-columns: 1fr; }
+  .companyCommercialFlowTable > table > tbody > tr > td[colspan]::before { content: none; }
+  .copilotContextSuggestions .copilotSuggestionWrap { padding-top: 7px; }
 }
 .copilotChip {
   min-height: 34px;
@@ -2892,6 +3097,22 @@ button, input, select, textarea, .btn, .secondary {
   text-overflow: ellipsis;
   white-space: nowrap;
   box-shadow: 0 1px 0 rgba(255,255,255,.55) inset;
+}
+@media (max-width: 420px) {
+  .copilotDrawer:has(.copilotContextSuggestionsToggle[aria-expanded="true"]) {
+    height: min(55vh, 480px) !important;
+  }
+
+  .copilotContextSuggestions .copilotChip {
+    min-width: 0;
+    min-height: 44px;
+    height: auto;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-align: left;
+    text-overflow: clip;
+    white-space: normal;
+  }
 }
 .copilotChatSurface {
   flex: 1;
@@ -2987,11 +3208,13 @@ button, input, select, textarea, .btn, .secondary {
   .copilotDrawerTitle { font-size: 16px; line-height: 1.2; white-space: nowrap; }
   .copilotDrawerTools {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 5px;
     min-width: 0;
     width: 100%;
   }
+  .copilotDrawerPresets, .copilotDrawerActions { width: 100%; justify-content: stretch; }
+  .copilotDrawerPresets .copilotToolBtn, .copilotDrawerActions .copilotToolBtn { flex: 1 1 0; }
   .copilotDrawerTools .copilotToolBtn {
     min-width: 0;
     max-width: 100%;
@@ -3105,6 +3328,12 @@ button, input, select, textarea, .btn, .secondary {
 .copilotAttentionBubble--below { top: calc(100% + 10px); bottom: auto; }
 .copilotAttentionBubble--below::after { top: -6px; bottom: auto; transform: rotate(225deg); }
 .copilotAttentionBubbleTitle { color: #fbbf24; font-weight: 900; }
+.parentLiveStatusBand { min-width:0; }
+.parentLiveStatusBandTitle { color:#bfd0f2; }
+.parentLiveStatusGrid { min-width:0; }
+.parentLiveStatusCard { min-width:0; margin:0; background:linear-gradient(180deg, rgba(24,45,78,.96), rgba(13,29,56,.98)) !important; border-color:rgba(126,164,232,.34) !important; color:#f4f7ff; }
+.parentLiveStatusLabel { color:#bfd0f2; font-size:12px; line-height:1.3; }
+.parentLiveStatusValue { color:#f8fafc; font-size:14px; font-weight:800; line-height:1.35; overflow-wrap:anywhere; }
 .copilotDrawer { bottom: max(96px, calc(env(safe-area-inset-bottom) + 78px)); max-width: calc(100vw - 24px); }
 .copilotDrawer--from-left { left: 18px; right: auto; }
 .copilotDrawerIdentity, .copilotWorkspaceIdentity { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -3156,6 +3385,7 @@ button, input, select, textarea, .btn, .secondary {
   transform-origin: center;
   user-select: none;
   -webkit-user-drag: none;
+  will-change: transform;
 }
 .seferAbiAvatar__stateMark {
   position: absolute;
@@ -3190,6 +3420,34 @@ button, input, select, textarea, .btn, .secondary {
 .seferAbiAvatar--listening .seferAbiAvatar__stateMark { background: #2dd4bf; }
 .seferAbiAvatar--thinking .seferAbiAvatar__stateMark { background: #e3b75b; }
 .seferAbiAvatar--responding .seferAbiAvatar__stateMark { background: #60a5fa; }
+
+/* The approved portrait remains the same asset; only its character layer
+   moves subtly with the real assistant lifecycle. */
+.seferAbiAvatar--idle .seferAbiAvatar__image { animation: seferAbiCharacterIdle 4.8s ease-in-out infinite; }
+.seferAbiAvatar--listening .seferAbiAvatar__image { animation: seferAbiCharacterListening 1.8s ease-in-out infinite; }
+.seferAbiAvatar--thinking .seferAbiAvatar__image { animation: seferAbiCharacterThinking 1.7s ease-in-out infinite; }
+.seferAbiAvatar--responding .seferAbiAvatar__image { animation: seferAbiCharacterResponding .92s ease-in-out infinite; }
+
+@keyframes seferAbiCharacterIdle {
+  0%, 100% { transform: translateY(1px) scale(1.06) rotate(0deg); }
+  50% { transform: translateY(-1px) scale(1.065) rotate(.2deg); }
+}
+@keyframes seferAbiCharacterListening {
+  0%, 100% { transform: translateY(1px) scale(1.06) rotate(0deg); }
+  38% { transform: translateY(0) scale(1.065) rotate(-1deg); }
+  68% { transform: translateY(-1px) scale(1.07) rotate(.7deg); }
+}
+@keyframes seferAbiCharacterThinking {
+  0%, 100% { transform: translateY(1px) scale(1.06) rotate(0deg); }
+  32% { transform: translateY(-1px) scale(1.065) rotate(-.8deg); }
+  66% { transform: translateY(0) scale(1.06) rotate(.6deg); }
+}
+@keyframes seferAbiCharacterResponding {
+  0%, 100% { transform: translateY(1px) scale(1.06) rotate(0deg); }
+  28% { transform: translateY(-1px) scale(1.07) rotate(-.5deg); }
+  54% { transform: translateY(0) scale(1.075) rotate(.5deg); }
+  82% { transform: translateY(-1px) scale(1.068) rotate(0deg); }
+}
 
 @keyframes seferAbiListeningHalo {
   0%, 100% { box-shadow: 0 0 0 3px rgba(45, 212, 191, .14), 0 4px 10px rgba(4, 12, 30, .24); }
@@ -3240,6 +3498,219 @@ button, input, select, textarea, .btn, .secondary {
 @media (prefers-reduced-motion: reduce) {
   .seferAbiAvatar *, .seferAbiAvatar, .copilotFab--mascot { animation: none !important; transition: none !important; }
 }
+
+/* PRE-#18 major-finding corrective: keep dense operational cards decision-first. */
+.pre18-offer-quality-compact {
+  gap: 10px;
+  border-color: rgba(88, 166, 255, .18) !important;
+}
+
+.pre18-offer-quality-compact .pre18-primary-status-row,
+.pre18-offer-quality-compact .pre18-secondary-status-row {
+  gap: 6px !important;
+}
+
+.pre18-offer-quality-compact .pre18-primary-status-row .pill,
+.pre18-offer-quality-compact > .pre18-secondary-status-row > .pill {
+  padding: 4px 8px !important;
+}
+
+.pre18-secondary-disclosure {
+  min-width: 0;
+}
+
+.pre18-secondary-disclosure > summary {
+  color: #b8c7e6;
+  cursor: pointer;
+  font-size: var(--pre18-type-helper-size);
+  font-weight: 600;
+  line-height: var(--pre18-type-helper-line);
+}
+
+.pre18-row-secondary-disclosure {
+  max-width: 100%;
+}
+
+.pre18-offer-quality-compact .card {
+  border-color: rgba(255, 255, 255, .07) !important;
+}
+
+.pre18-offer-quality-compact .pill {
+  max-width: 100%;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  height: auto;
+}
+
+.pre18-offer-quality-compact .pill > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pre18-finance-surface,
+.pre18-commercial-flow,
+.pre18-organization-surface {
+  min-width: 0;
+}
+
+.pre18-finance-surface .pre18-finance-secondary,
+.pre18-organization-surface .pre18-secondary-flow {
+  border-color: rgba(255, 255, 255, .08) !important;
+  background: rgba(255, 255, 255, .018);
+}
+
+.pre18-finance-surface .pre18-finance-secondary > summary,
+.pre18-organization-surface .pre18-secondary-flow > summary {
+  cursor: pointer;
+  color: #dbe7ff;
+  font-weight: 700;
+}
+
+.pre18-finance-surface .pre18-finance-secondary[open] > summary,
+.pre18-organization-surface .pre18-secondary-flow[open] > summary {
+  margin-bottom: 12px;
+}
+
+.pre18-commercial-flow .companyCommercialFlowLayout {
+  min-width: 0;
+}
+
+.pre18-commercial-flow .companyCommercialFlowSplit {
+  align-items: start;
+}
+
+.pre18-commercial-flow table th,
+.pre18-commercial-flow table td {
+  padding: 9px 8px;
+}
+
+.pre18-personel-access-list {
+  min-width: 0;
+}
+
+.pre18-personel-my-surface,
+.pre18-personel-live-surface {
+  min-width: 0;
+}
+
+.pre18-shift-secondary-details {
+  border-top: 1px solid rgba(255, 255, 255, .07);
+  padding-top: 8px;
+}
+
+.pre18-shift-secondary-details > summary {
+  color: var(--pre18-ink-muted, #98a2b3);
+  cursor: pointer;
+  font-size: var(--pre18-type-helper-size);
+  font-weight: 600;
+  line-height: var(--pre18-type-helper-line);
+}
+
+@media (max-width: 760px) {
+  .pre18-personel-my-surface,
+  .pre18-personel-live-surface {
+    padding-bottom: 132px;
+  }
+
+  .pre18-offer-quality-compact {
+    padding: 12px !important;
+  }
+
+  .pre18-offer-quality-compact > div:first-child {
+    display: grid !important;
+    gap: 8px;
+  }
+
+  .pre18-offer-quality-compact > div:first-child > .row {
+    justify-content: flex-start !important;
+  }
+
+  .pre18-row-secondary-disclosure {
+    width: 100%;
+  }
+
+  .pre18-row-secondary-disclosure > div {
+    justify-items: start !important;
+  }
+
+  .pre18-commercial-flow table {
+    min-width: 620px;
+  }
+
+  .pre18-organization-surface .organizationPlansSidebar {
+    padding-right: 76px;
+  }
+
+  .pre18-organization-surface .organizationPlansSidebar .card > button {
+    max-width: calc(100% - 8px);
+  }
+}
+
+/* PRE-#18 — Super Admin log preview becomes a readable stacked record list
+   on narrow screens while retaining the semantic table for larger screens. */
+@media (max-width: 700px) {
+  .pre18-admin-log-table {
+    display: block;
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed;
+  }
+
+  .pre18-admin-log-table thead {
+    display: none;
+  }
+
+  .pre18-admin-log-table tbody,
+  .pre18-admin-log-table tr {
+    display: grid;
+    gap: 6px;
+  }
+
+  .pre18-admin-log-table tr {
+    margin: 8px 0;
+    padding: 9px;
+    border: 1px solid #22314f;
+    border-radius: 10px;
+    background: rgba(14, 22, 38, 0.72);
+  }
+
+  .pre18-admin-log-table td {
+    display: grid;
+    grid-template-columns: minmax(76px, 30%) minmax(0, 1fr);
+    gap: 8px;
+    min-width: 0;
+    padding: 5px 0;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    border-bottom: 1px solid rgba(34, 49, 79, 0.65);
+  }
+
+  .pre18-admin-log-table td::before {
+    content: attr(data-label);
+    color: var(--pre18-ink-muted);
+    font-size: var(--pre18-type-helper-size);
+    font-weight: 700;
+    line-height: var(--pre18-type-helper-line);
+  }
+
+  .pre18-admin-log-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .pre18-admin-log-table td[colspan] {
+    display: block;
+  }
+
+  .pre18-admin-log-table td[colspan]::before {
+    content: none;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1180px) {
+  .pre18-organization-surface .organizationPlansSidebar {
+    padding-right: 76px;
+  }
+}
 @media (max-width: 720px) {
   .copilotLauncherStack { right: max(14px, env(safe-area-inset-right)); bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px)); }
   .copilotFab--mascot { right: max(14px, env(safe-area-inset-right)); bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px)); width: 58px; height: 58px; min-width: 58px; min-height: 58px; }
@@ -3251,7 +3722,15 @@ button, input, select, textarea, .btn, .secondary {
   .copilotDrawerContext--secondary { display: none; }
   .copilotDrawer .copilotComposer { flex: 0 0 auto; }
   .copilotDrawer .copilotComposer textarea { height: 44px; min-height: 44px; }
+  .copilotDrawer--map-top {
+    top: max(72px, calc(env(safe-area-inset-top) + 64px));
+    bottom: auto;
+    height: min(var(--copilot-map-safe-height, 66vh), 560px) !important;
+    max-height: calc(100dvh - 88px);
+  }
   .copilotAttentionBubble { width: min(224px, calc(100vw - 24px)); padding: 9px 10px; font-size: 11px; }
+  .parentLiveStatusGrid { grid-template-columns: 1fr !important; }
+  .parentLiveStatusCard { padding: 10px !important; }
 }
 
 /* #17 role task-home: shared hierarchy, role-specific content. */
@@ -3303,6 +3782,7 @@ button, input, select, textarea, .btn, .secondary {
   body.copilot-is-open .roleTaskHeroAction { margin-right: min(460px, 32vw); }
 }
 @media (max-width: 900px) {
+  .hubLocationGrid { grid-template-columns: minmax(0, 1fr) !important; }
   .roleTaskHome { padding-right: 74px; padding-bottom: 92px; }
   .roleTaskHero { align-items: stretch; flex-direction: column; padding: 18px; }
   .roleTaskHeroAction { justify-items: stretch; min-width: 0; }
@@ -3312,4 +3792,1495 @@ button, input, select, textarea, .btn, .secondary {
   .roleCommandCenterCounts { justify-content: flex-start; }
   .roleSignalCard { align-items: stretch; flex-direction: column; }
   .roleSignalAction { width: 100%; text-align: center; }
+}
+
+/* PRE-#18 — premium typography and responsive hierarchy polish.
+   This layer consumes the existing surface classes; it is not a parallel UI system. */
+:root {
+  --pre18-font-ui: Inter, system-ui, Arial, sans-serif;
+  --pre18-ink-strong: #f4f7ff;
+  --pre18-ink-muted: #a9b7d6;
+  --pre18-ink-soft: #98a2b3;
+  --pre18-focus: #6e95ff;
+  --pre18-radius: 14px;
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--pre18-font-ui);
+}
+
+body {
+  font-size: 15px;
+  line-height: 1.45;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+:is(h1, h2, h3, h4, .title, .panelTitle, .panelSectionTitle, .navDockRole, .roleTaskHero h1, .roleSectionTitle) {
+  text-wrap: balance;
+}
+
+.shellTop {
+  min-height: 72px;
+  padding-block: 10px;
+  gap: 14px;
+}
+
+.shellTopBrand {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+}
+
+.shellTopBrand .seferpaktLogo {
+  gap: 0;
+}
+
+.shellTopBrand .seferpaktLogoAsset {
+  width: 40px !important;
+  max-width: 40px !important;
+}
+
+.shellTopMeta {
+  display: grid;
+  gap: 2px;
+  flex: 1 1 auto;
+}
+
+.shellTopMeta .title {
+  font-size: 17px;
+  letter-spacing: -.01em;
+}
+
+.shellTopMeta .muted {
+  color: var(--pre18-ink-muted);
+  font-size: 12px;
+}
+
+.navDockBrand {
+  padding: 11px 13px;
+}
+
+.navDockBrand .seferpaktLogoAsset {
+  width: 160px !important;
+  max-width: 100% !important;
+}
+
+.navDockTitle {
+  padding: 10px 13px;
+}
+
+.navLabel {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.navItem {
+  height: auto;
+  min-height: var(--nav-item-height);
+}
+
+.card,
+.roleTaskHero,
+.roleCommandCenter,
+.roleTaskDetails {
+  border-radius: var(--pre18-radius);
+}
+
+.panelTitle,
+.title {
+  color: var(--pre18-ink-strong);
+}
+
+.panelSubtitle,
+.panelMeta,
+.panelSectionSubtitle,
+.muted {
+  color: var(--pre18-ink-muted);
+}
+
+.panelBody {
+  line-height: 1.55;
+}
+
+.tableWrap,
+.reportsTableWrap,
+.notifTblWrap {
+  min-width: 0;
+  max-width: 100%;
+  scrollbar-color: #526a9c #0c1322;
+}
+
+.tableWrap > table,
+.tableWrap > .tbl,
+.reportsTableWrap > table,
+.notifTblWrap > table {
+  max-width: none;
+}
+
+.tableWrap th,
+.tableWrap td,
+.reportsTableWrap th,
+.reportsTableWrap td,
+.notifTblWrap th,
+.notifTblWrap td {
+  line-height: 1.4;
+}
+
+.roleTaskHome {
+  padding-right: 88px;
+}
+
+.roleTaskHero {
+  padding: 20px 22px;
+}
+
+.roleTaskHero p,
+.roleSectionLead {
+  max-width: 72ch;
+}
+
+.roleTaskSummaryCard small {
+  font-size: 13px;
+}
+
+.roleTaskDetails > summary {
+  line-height: 1.35;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.navItem:focus-visible,
+.navToggle:focus-visible {
+  outline: 2px solid var(--pre18-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .shellTop {
+    display: grid;
+    grid-template-columns: auto 40px minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 64px;
+    padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
+    gap: 8px;
+  }
+
+  .shellTopMenu,
+  .shellTopBrand,
+  .shellTopMeta,
+  .shellTopLogout {
+    width: auto;
+    min-width: 0;
+  }
+
+  .shellTopMenu {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 40px;
+  }
+
+  .shellTopBrand {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .shellTopMeta {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .shellTopMeta .title {
+    font-size: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .shellTopMeta .muted {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .shellTopLogout {
+    grid-column: 4;
+    grid-row: 1;
+    align-self: center;
+    min-height: 40px;
+    padding-inline: 10px;
+  }
+
+  .navDockBrand .seferpaktLogoAsset {
+    width: 150px !important;
+  }
+
+  .roleTaskHome {
+    padding-right: 74px;
+    padding-bottom: 104px;
+  }
+
+  .roleTaskHero {
+    padding: 18px;
+  }
+
+  .roleTaskHero h1 {
+    font-size: clamp(25px, 7vw, 34px);
+  }
+
+  .roleTaskSummaryCard,
+  .roleCommandCenter,
+  .roleTaskDetails {
+    min-width: 0;
+  }
+
+  .roleCommandCenter {
+    padding: 15px;
+  }
+
+  .roleTaskDetailsBody {
+    padding-inline: 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  .shellTop {
+    grid-template-columns: auto 36px minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+
+  .shellTopBrand,
+  .shellTopBrand .seferpaktLogoAsset {
+    width: 36px !important;
+    max-width: 36px !important;
+  }
+
+  .shellTopMenu,
+  .shellTopLogout {
+    padding-inline: 8px;
+    font-size: 13px;
+  }
+
+  .shellTopMeta .title {
+    font-size: 15px;
+  }
+
+  .roleTaskHero p {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Keep segmented navigation readable without introducing a page-level x-scroll. */
+  .panelSegmentTabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .panelSegmentTab {
+    flex: 1 1 auto;
+    max-width: 100%;
+  }
+
+  .panelSegmentTabLabel {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
+}
+
+/* PRE-#18 — canonical semantic typography roles.
+   Existing surface classes are mapped here so the visible product has one
+   final type contract while API names, route contracts and feature ownership
+   remain unchanged. */
+:root {
+  --pre18-type-family: Inter, system-ui, Arial, sans-serif;
+  --pre18-type-page-title-size: 36px;
+  --pre18-type-page-title-line: 1.14;
+  --pre18-type-section-eyebrow-size: 13px;
+  --pre18-type-section-eyebrow-line: 18px;
+  --pre18-type-section-title-size: 24px;
+  --pre18-type-section-title-line: 28.8px;
+  --pre18-type-card-title-size: 17px;
+  --pre18-type-card-title-line: 22.1px;
+  --pre18-type-body-size: 14px;
+  --pre18-type-body-line: 22px;
+  --pre18-type-helper-size: 12px;
+  --pre18-type-helper-line: 18px;
+  --pre18-type-button-size: 14px;
+  --pre18-type-button-line: 20px;
+  --pre18-type-sidebar-size: 15px;
+  --pre18-type-sidebar-line: 22px;
+  --pre18-type-badge-size: 12px;
+  --pre18-type-badge-line: 16px;
+  --pre18-type-table-head-size: 12px;
+  --pre18-type-table-head-line: 18px;
+  --pre18-type-table-cell-size: 13px;
+  --pre18-type-table-cell-line: 20px;
+  --pre18-type-modal-title-size: 20px;
+  --pre18-type-modal-title-line: 26px;
+}
+
+:where(
+  .pre18-type-page-title,
+  .panelTitle,
+  .roleTaskHero h1,
+  .page > h1,
+  .pageTitle,
+  .topbar > :first-child > .title,
+  h1
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-page-title-size) !important;
+  font-weight: 800 !important;
+  line-height: var(--pre18-type-page-title-line) !important;
+  letter-spacing: -0.02em !important;
+}
+
+:where(
+  .pre18-type-section-eyebrow,
+  .roleSectionKicker,
+  .roleTaskActionHint,
+  .roleTaskSummaryCard > span,
+  .navSectionTitle,
+  .navDockBrandName,
+  .mapSummaryEyebrow,
+  .roleSignalGroupTitle
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-section-eyebrow-size) !important;
+  font-weight: 700 !important;
+  line-height: var(--pre18-type-section-eyebrow-line) !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
+}
+
+:where(
+  .pre18-type-section-title,
+  .panelSectionTitle,
+  .roleSectionTitle,
+  .page > h2,
+  .sectionTitle,
+  .card > h2,
+  h2
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-section-title-size) !important;
+  font-weight: 700 !important;
+  line-height: var(--pre18-type-section-title-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(
+  .pre18-type-card-title,
+  .title,
+  h3,
+  h4,
+  .card > h3,
+  .card > h4,
+  .navDockRole,
+  .copilotEmptyTitle,
+  .listSelectionBannerTitle,
+  .roleTaskSummaryCard strong,
+  .roleSignalCard h3,
+  .mapCurrentSummaryTitle
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-card-title-size) !important;
+  font-weight: 700 !important;
+  line-height: var(--pre18-type-card-title-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(.topbar > :first-child > .title) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-page-title-size) !important;
+  font-weight: 800 !important;
+  line-height: var(--pre18-type-page-title-line) !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* Generic headings are semantic roles too.  These late, low-specificity
+   guards win over legacy `.title`/inline heading rules while the modal rule
+   below still owns dialog headings. */
+:where(h1) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-page-title-size) !important;
+  font-weight: 800 !important;
+  line-height: var(--pre18-type-page-title-line) !important;
+  letter-spacing: -0.02em !important;
+}
+
+:where(h2) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-section-title-size) !important;
+  font-weight: 700 !important;
+  line-height: var(--pre18-type-section-title-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(
+  .pre18-type-body,
+  .panelBody,
+  .roleTaskHero p,
+  .roleSectionLead,
+  .card > p,
+  p,
+  .roleCommandCenter,
+  .copilotMsgText,
+  .parentLiveStatusValue
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-body-size) !important;
+  font-weight: 400 !important;
+  line-height: var(--pre18-type-body-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(
+  .pre18-type-helper,
+  .panelSubtitle,
+  .panelSectionSubtitle,
+  .roleTaskSummaryCard small,
+  .roleSignalEvidence,
+  .copilotMsgHead,
+  .parentLiveStatusLabel,
+  .copilotDrawerContext,
+  .copilotDrawerState
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-helper-size) !important;
+  font-weight: 500 !important;
+  line-height: var(--pre18-type-helper-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(
+  .pre18-type-meta,
+  .panelMeta,
+  .muted,
+  .mapCurrentSummaryShift,
+  .mapSummaryMetricLabel,
+  .listSelectionBannerMeta,
+  .copilotDrawerContext,
+  .copilotDrawerState
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-helper-size) !important;
+  font-weight: 500 !important;
+  line-height: var(--pre18-type-helper-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(
+  .pre18-type-button,
+  button,
+  .btn,
+  .secondary
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-button-size) !important;
+  font-weight: 600 !important;
+  line-height: var(--pre18-type-button-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(
+  .pre18-type-form-label,
+  label,
+  .page label,
+  .modal label,
+  .copilotDrawer label
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-helper-size) !important;
+  font-weight: 500 !important;
+  line-height: var(--pre18-type-helper-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(
+  .pre18-type-input,
+  input,
+  select,
+  textarea
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-body-size) !important;
+  font-weight: 400 !important;
+  line-height: var(--pre18-type-body-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(
+  .pre18-type-sidebar-section,
+  .navToggle,
+  .navDockTitle
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-section-eyebrow-size) !important;
+  font-weight: 700 !important;
+  line-height: var(--pre18-type-section-eyebrow-line) !important;
+  letter-spacing: 0.08em !important;
+}
+
+:where(
+  .pre18-type-sidebar-item,
+  .navLabel
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-sidebar-size) !important;
+  font-weight: 600 !important;
+  line-height: var(--pre18-type-sidebar-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(
+  .pre18-type-badge-chip,
+  .pill,
+  .navBadge,
+  .panelSegmentTabBadge,
+  .quality-chip,
+  .roleSignalCount
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-badge-size) !important;
+  font-weight: 700 !important;
+  line-height: var(--pre18-type-badge-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(
+  .pre18-type-table-header,
+  table th,
+  .tbl th,
+  .table th,
+  .saHead
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-table-head-size) !important;
+  font-weight: 700 !important;
+  line-height: var(--pre18-type-table-head-line) !important;
+  letter-spacing: 0.04em !important;
+}
+
+:where(
+  .pre18-type-table-cell,
+  .pre18-type-table-body,
+  table td,
+  .tbl td,
+  .table td,
+  .saRow
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-table-cell-size) !important;
+  font-weight: 400 !important;
+  line-height: var(--pre18-type-table-cell-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(
+  .pre18-type-modal-title,
+  .copilotDrawerTitle,
+  .modal > :is(h1, h2, h3, h4),
+  [role="dialog"] > :is(h1, h2, h3, h4)
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-modal-title-size) !important;
+  font-weight: 700 !important;
+  line-height: var(--pre18-type-modal-title-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(
+  .pre18-type-modal-body,
+  .copilotDrawer .copilotEmptyText,
+  .modal .panelBody,
+  .modal .muted,
+  [role="dialog"] .panelBody,
+  [role="dialog"] .muted
+) {
+  font-family: var(--pre18-type-family) !important;
+  font-size: var(--pre18-type-body-size) !important;
+  font-weight: 400 !important;
+  line-height: var(--pre18-type-body-line) !important;
+  letter-spacing: 0 !important;
+}
+
+:where(
+  .pre18-type-map-label,
+  .mapSummaryMetricLabel,
+  .mapCurrentSummaryShift,
+  .roleCommandCenter,
+  .roleSignalCardBody
+) {
+  font-family: var(--pre18-type-family) !important;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --pre18-type-page-title-size: 32px;
+    --pre18-type-section-title-size: 22px;
+    --pre18-type-section-title-line: 26.4px;
+    --pre18-type-card-title-size: 16px;
+    --pre18-type-card-title-line: 20.8px;
+    --pre18-type-body-size: 14px;
+    --pre18-type-body-line: 22px;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Keep dense operational tables readable inside their existing card rather
+     than allowing min-content columns to push the card off-screen. */
+  .card > table.tbl,
+  .card > table.table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed;
+  }
+
+  .card > table.tbl th,
+  .card > table.tbl td,
+  .card > table.table th,
+  .card > table.table td {
+    min-width: 0;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+}
+
+@media (max-width: 720px) {
+  /* The quick assistant is a compact, two-row control surface on narrow
+     screens: its controls reflow instead of competing with the heading. */
+  .copilotDrawer {
+    height: min(49vh, 420px) !important;
+    min-height: 0;
+    max-height: calc(100dvh - 112px);
+    box-sizing: border-box;
+    overflow: hidden;
+    resize: none;
+  }
+
+  .copilotDrawerHeader {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px;
+    flex: 0 0 auto;
+    position: sticky;
+    top: 0;
+    z-index: 4;
+  }
+
+  .copilotDrawerIdentity {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .copilotDrawerIdentity > div:last-child {
+    min-width: 0;
+  }
+
+  .copilotDrawerTitle {
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: normal;
+    word-break: keep-all;
+    font-size: 16px;
+    line-height: 1.25;
+  }
+
+  .copilotDrawerTools {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+    width: 100%;
+    min-width: 0;
+  }
+  .copilotDrawerPresets, .copilotDrawerActions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; width: 100%; }
+  .copilotDrawerPresets .copilotToolBtn, .copilotDrawerActions .copilotToolBtn { width: 100%; min-width: 0; }
+  .copilotDrawerActions .copilotToolBtn:first-child { grid-column: span 2; }
+  .copilotDrawerActions .copilotToolBtn:last-child { grid-column: span 2; }
+  .copilotDrawerActions .copilotToolBtn--close { grid-column: auto; }
+
+  .copilotDrawerTools .copilotToolBtn {
+    min-width: 0;
+    width: 100%;
+    min-height: 32px;
+    height: auto;
+    padding: 4px 6px;
+    justify-content: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+
+  .copilotDrawerTools > :nth-child(4),
+  .copilotDrawerTools > :nth-child(5),
+  .copilotDrawerTools > :nth-child(6) {
+    grid-column: auto;
+  }
+
+  .copilotDrawerModeRow .copilotToolBtn {
+    min-width: 0;
+    height: auto;
+    min-height: 32px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .copilotDrawer .copilotChatSurface {
+    min-height: 120px;
+  }
+
+  .copilotDrawerModeRow,
+  .copilotDrawer .copilotComposer {
+    flex: 0 0 auto;
+  }
+
+  .copilotDrawer .copilotComposer textarea {
+    min-height: 64px;
+    height: 64px;
+  }
+
+  .copilotDrawer .copilotChatSurface {
+    padding-bottom: 132px;
+  }
+
+  .copilotDrawer .copilotComposer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    box-sizing: border-box;
+    max-height: 132px;
+    overflow: hidden;
+  }
+
+  .copilotDrawer--map-top {
+    top: max(72px, calc(env(safe-area-inset-top) + 64px));
+    bottom: auto;
+    height: min(var(--copilot-map-safe-height, 66vh), 560px) !important;
+    max-height: calc(100dvh - 88px);
+  }
+}
+
+@media (max-width: 640px) {
+  /* The map shell previously widened its compact mark for the map-specific
+     header. Keep the authenticated header contract consistent on map routes. */
+  .shell--map-primary .shellTopBrand .seferpaktLogoAsset {
+    width: 40px !important;
+    max-width: 40px !important;
+  }
+
+  .mapAsideList .navItem {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .mapAsideList .navItem > span {
+    width: 100%;
+    flex: 0 1 auto;
+    max-width: none;
+  }
+
+  .mapAsideList .navItem > span:last-child {
+    align-items: flex-start;
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .mapAsideList .mapAsideMeta {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .mapAsideList .navItem .muted {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere;
+  }
+
+  .companyAgreementsMobileCard .shiftCardTitleRow {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .companyAgreementsMobileCard .shiftCardActions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Notifications stay readable as compact records on phones instead of
+   forcing the whole wide desktop table through a horizontal scrollbar. */
+@media (max-width: 640px) {
+  .notifTblWrap { overflow-x: hidden !important; }
+  .notifTbl {
+    display: block;
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed;
+  }
+  .notifTbl colgroup,
+  .notifTbl thead { display: none; }
+  .notifTbl tbody,
+  .notifTbl tr { display: grid; min-width: 0; }
+  .notifTbl tr {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(148, 163, 184, .16);
+  }
+  .notifTbl td {
+    display: none;
+    min-width: 0;
+    max-width: 100%;
+    padding: 3px 0;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+  .notifTbl td:nth-child(1),
+  .notifTbl td:nth-child(2),
+  .notifTbl td:nth-child(5),
+  .notifTbl td:nth-child(6),
+  .notifTbl td:nth-child(7),
+  .notifTbl td:nth-child(10),
+  .notifTbl td:nth-child(12) { display: block; }
+  .notifTbl td:nth-child(1) { grid-column: 1; grid-row: 1; }
+  .notifTbl td:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .notifTbl td:nth-child(5) { grid-column: 2; grid-row: 1; text-align: right; }
+  .notifTbl td:nth-child(6) { grid-column: 1 / -1; grid-row: 3; font-weight: 700; }
+  .notifTbl td:nth-child(7) { grid-column: 1 / -1; grid-row: 4; }
+  .notifTbl td:nth-child(10) { grid-column: 2; grid-row: 2; text-align: right; }
+  .notifTbl td:nth-child(12) { grid-column: 2; grid-row: 3 / span 2; align-self: start; }
+  .notifTbl .pillEllip {
+    display: inline-flex;
+    max-width: 100%;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* PRE-#18 Round 1 — location controls stay readable on narrow form cards. */
+.geoLocationPicker,
+.geoLocationPickerModal,
+.geoLocationPicker .topbar > *,
+.geoLocationPickerModal .topbar > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.geoLocationPicker .muted,
+.geoLocationPickerModal .muted,
+.geoLocationPicker .panelMeta,
+.geoLocationPickerModal .panelMeta {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+@media (max-width: 760px) {
+  .geoLocationActions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .geoLocationActions > .btn {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 42px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .geoLocationActions > .btn.primary {
+    grid-column: 1 / -1;
+    /* Reserve the fixed Sefer Abi safe lane so the location CTA remains fully readable. */
+    width: min(100%, calc(100% - 88px));
+    justify-self: start;
+  }
+
+  .geoLocationPickerModal {
+    width: 100%;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .geoLocationPickerModal .ms-mapwrap,
+  .geoLocationPickerModal [style*="height: 70vh"] {
+    min-height: min(520px, 56dvh) !important;
+    height: min(56dvh, 520px) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .geoLocationActions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .geoLocationActions > .btn.primary {
+    grid-column: auto;
+  }
+}
+
+/* PRE-#18 Round 1 — keep offer cards decision-first and shift cards calm. */
+.pre18-room-offer-card {
+  min-width: 0;
+  overflow: hidden;
+  gap: 9px;
+}
+
+.pre18-offer-secondary {
+  min-width: 0;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+  padding-top: 8px;
+}
+
+.pre18-offer-secondary > summary {
+  cursor: pointer;
+  color: var(--pre18-ink-muted, #a9b7d6);
+  font-size: var(--pre18-type-helper-size, 12px);
+  font-weight: 600;
+  line-height: var(--pre18-type-helper-line, 18px);
+}
+
+.pre18-offer-secondary-body {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding-top: 9px;
+}
+
+.pre18-offer-secondary-values > *,
+.pre18-offer-secondary-body .muted {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pre18-offer-secondary-actions,
+.pre18-offer-counter {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.pre18-offer-counter > .col {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.pre18-offer-counter input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.shiftCardLifecycle--compact {
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+.shiftCardLifecycleCompactValue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  color: #dbe4ff;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.shiftCardLifecycleCompactValue b {
+  color: #f4f7ff;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.shiftCardLifecycleDisclosure {
+  min-width: 0;
+}
+
+.shiftCardLifecycleDisclosure > summary {
+  cursor: pointer;
+  color: var(--pre18-ink-muted, #a9b7d6);
+  font-size: var(--pre18-type-helper-size, 12px);
+  line-height: var(--pre18-type-helper-line, 18px);
+}
+
+@media (max-width: 640px) {
+  .roomShiftsDensityScope .shiftCardMetaGrid,
+  .roomShiftsDensityScope .shiftMetaGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .roomShiftsDensityScope .shiftCardField {
+    min-width: 0;
+    padding: 7px 8px;
+    border-color: rgba(58, 102, 255, .10);
+  }
+
+  .roomShiftsDensityScope .shiftCardField--wide {
+    grid-column: 1 / -1;
+  }
+
+  .pre18-offer-secondary-actions > .btn,
+  .pre18-offer-counter > .btn {
+    flex: 1 1 150px;
+    min-width: 0;
+  }
+
+  .pre18-offer-counter {
+    align-items: stretch;
+  }
+}
+
+/* PRE-#18 — readable mobile representations for dense operational tables. */
+@media (max-width: 900px) {
+  .pre18-mobile-card-table .pill {
+    max-width: 100%;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+    height: auto;
+    min-height: 26px;
+  }
+}
+
+@media (max-width: 640px) {
+  .pre18-mobile-card-table {
+    display: block;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .pre18-mobile-card-table thead {
+    display: none;
+  }
+
+  .pre18-mobile-card-table tbody,
+  .pre18-mobile-card-table tr {
+    display: grid;
+    gap: 8px;
+  }
+
+  .pre18-mobile-card-table tr {
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #22314f;
+    border-radius: 12px;
+    background: rgba(14, 22, 38, 0.72);
+  }
+
+  .pre18-mobile-card-table td {
+    display: grid;
+    grid-template-columns: minmax(92px, 34%) minmax(0, 1fr);
+    gap: 8px;
+    min-width: 0;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(34, 49, 79, 0.65);
+    overflow-wrap: anywhere;
+  }
+
+  .pre18-mobile-card-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .pre18-mobile-card-table td::before {
+    content: attr(data-label);
+    color: var(--pre18-ink-muted);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 18px;
+  }
+
+  .pre18-mobile-card-table td[colspan] {
+    display: block;
+  }
+
+  .pre18-mobile-card-table td[colspan]::before {
+    content: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .schoolParentInviteLayout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .schoolParentInviteLayout > .card,
+  .schoolParentInviteLayout > .card > .grid,
+  .schoolParentInviteLayout > .card label,
+  .schoolParentInviteLayout > .card textarea,
+  .schoolParentInviteLayout > .card input,
+  .schoolParentInviteLayout > .card select {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .schoolParentInviteLayout > .card > .grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .schoolParentInviteLayout > .card {
+    overflow: hidden;
+  }
+
+  /* The rooms list is a div-based data table with inline desktop columns. */
+  .pre18-responsive-list {
+    overflow: visible !important;
+  }
+
+  .pre18-responsive-list > .pre18-responsive-list-head {
+    display: none !important;
+  }
+
+  .pre18-responsive-list > .pre18-responsive-list-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 6px;
+    margin: 10px;
+    padding: 10px !important;
+    border: 1px solid #22314f;
+    border-radius: 12px;
+    background: rgba(14, 22, 38, 0.72);
+  }
+
+  .pre18-responsive-list-row > div {
+    display: grid;
+    grid-template-columns: minmax(92px, 34%) minmax(0, 1fr);
+    gap: 8px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(34, 49, 79, 0.65);
+  }
+
+  .pre18-responsive-list-row > div::before {
+    content: attr(data-label);
+    color: var(--pre18-ink-muted);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 18px;
+  }
+
+  .pre18-responsive-list-row > div:last-child {
+    border-bottom: 0;
+  }
+
+  .pre18-responsive-list-row .saActions {
+    justify-content: flex-start;
+  }
+
+  .pre18-responsive-list-row .saActions > * {
+    flex: 0 1 auto;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  .schoolParentInviteLayout {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) !important;
+  }
+
+  .schoolParentInviteLayout > .card,
+  .schoolParentInviteLayout > .card > .grid,
+  .schoolParentInviteLayout > .card label,
+  .schoolParentInviteLayout > .card textarea,
+  .schoolParentInviteLayout > .card input,
+  .schoolParentInviteLayout > .card select {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.pre18-type-page-title, .pre18-type-section-title, .pre18-type-card-title) {
+    scroll-behavior: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* PRE-#18 Round-4 bounded Sefer Abi drawer corrective.
+   Keep the conversation primary; sizing and workspace navigation are
+   secondary, while the close action stays immediately available. */
+.copilotDrawer {
+  overflow: visible;
+  min-width: min(400px, calc(100vw - 24px));
+  min-height: 500px;
+  resize: none;
+}
+
+.copilotDrawerResizeHandle {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  z-index: 40;
+  width: 18px;
+  height: 18px;
+  border-right: 2px solid rgba(227, 183, 91, .78);
+  border-bottom: 2px solid rgba(227, 183, 91, .78);
+  border-radius: 0 0 4px 0;
+  cursor: nwse-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.copilotDrawerResizeHandle:hover,
+.copilotDrawerResizeHandle:focus-visible {
+  border-color: #f3cc74;
+}
+
+.copilotDrawerHeader {
+  align-items: center;
+  padding: 10px 12px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.copilotDrawerHeader:active { cursor: grabbing; }
+
+.copilotDrawerIdentity {
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.copilotDrawerIdentity > .seferAbiAvatar {
+  width: 36px !important;
+  height: 36px !important;
+}
+
+.copilotDrawerTitle {
+  font-size: 16px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.copilotDrawerCompactContext {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  color: #c8d6f6;
+  font-size: 11px;
+  line-height: 1.3;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.copilotDrawerCompactContext > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copilotDrawerCompactContext > span:last-child { flex: 1 1 auto; }
+
+.copilotDrawerHeaderActions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.copilotDrawerHeaderActions .copilotToolBtn--close {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.copilotDrawerMore {
+  position: relative;
+  z-index: 12;
+}
+
+.copilotDrawerMore > summary {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(126, 164, 232, .5);
+  border-radius: 8px;
+  background: rgba(20, 38, 72, .9);
+  color: #f8fafc;
+  cursor: pointer;
+  list-style: none;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.copilotDrawerMore > summary::-webkit-details-marker { display: none; }
+.copilotDrawerMore > summary::marker { content: ""; }
+.copilotDrawerMore > summary:hover,
+.copilotDrawerMore > summary:focus-visible {
+  border-color: #8fb8ff;
+  outline: 2px solid rgba(143, 184, 255, .32);
+  outline-offset: 2px;
+}
+
+.copilotDrawerMoreMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  display: grid;
+  gap: 8px;
+  width: min(260px, calc(100vw - 36px));
+  padding: 10px;
+  border: 1px solid #9ab2da;
+  border-radius: 12px;
+  background: #f7faff;
+  box-shadow: 0 18px 38px rgba(2, 6, 23, .35);
+}
+
+.copilotDrawerMore:not([open]) .copilotDrawerMoreMenu { display: none; }
+.copilotDrawerMore[open] .copilotDrawerMoreMenu { display: grid; }
+
+.copilotDrawerMoreMenu .copilotDrawerPresets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.copilotDrawerMoreLabel {
+  grid-column: 1 / -1;
+  color: #344054;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.copilotDrawerMoreMenu .copilotToolBtn {
+  min-width: 0;
+  width: 100%;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.copilotDrawerMoreMenu > .copilotToolBtn {
+  justify-self: stretch;
+}
+
+@media (min-width: 721px) {
+  .copilotDrawerResizeHandle { display: block; }
+
+  .copilotDrawerModeRow {
+    padding: 7px 12px;
+  }
+
+  .copilotDrawer .copilotComposer textarea {
+    min-height: 84px;
+    height: 84px;
+    line-height: 1.45;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1180px) {
+  .copilotDrawer {
+    left: auto;
+    right: 18px;
+    top: 18px;
+    bottom: auto;
+    width: min(560px, calc(100vw - 36px));
+    height: min(72vh, 700px);
+    min-width: min(400px, calc(100vw - 36px));
+    min-height: 420px;
+    max-width: calc(100vw - 36px);
+    max-height: calc(100vh - 36px);
+  }
+}
+
+@media (max-width: 720px) {
+  .copilotDrawer {
+    overflow: visible;
+    min-width: 0;
+    min-height: 0;
+    resize: none;
+  }
+
+  .copilotDrawerResizeHandle { display: none; }
+
+  .copilotDrawerHeader {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    cursor: default;
+    touch-action: auto;
+    user-select: auto;
+  }
+
+  .copilotDrawerIdentity {
+    width: auto;
+  }
+
+  .copilotDrawerCompactContext {
+    gap: 4px;
+    font-size: 10px;
+  }
+
+  .copilotDrawerMoreMenu {
+    width: min(260px, calc(100vw - 34px));
+  }
+
+  .copilotDrawer .copilotComposer textarea {
+    min-height: 64px;
+    height: 64px;
+  }
+
+  .copilotDrawer .copilotComposer {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .copilotDrawer--map-top {
+    top: max(72px, calc(env(safe-area-inset-top) + 64px));
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 88px);
+  }
+
+  .copilotDrawer--map-bottom {
+    top: auto;
+    bottom: max(88px, calc(env(safe-area-inset-bottom) + 78px));
+    height: min(var(--copilot-map-safe-height, 49vh), 420px) !important;
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 88px);
+  }
 }

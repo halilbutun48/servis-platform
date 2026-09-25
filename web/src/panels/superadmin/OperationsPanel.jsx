@@ -384,8 +384,8 @@ export default function SuperAdminOperationsPanel() {
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
             <SectionCard title="Kritik uyarı özeti" subtitle="Ek doğrulama ve KVKK bandının kısa yorumu">
               <div style={{ display: "grid", gap: 8 }}>
-                {criticalSignals.length ? criticalSignals.map((item) => (
-                  <div key={item} className="card" style={{ padding: 10, borderRadius: 8 }}>
+                {criticalSignals.length ? criticalSignals.map((item, index) => (
+                  <div key={`critical:${index}`} className="card" style={{ padding: 10, borderRadius: 8 }}>
                     <div className="panelMeta">{item}</div>
                   </div>
                 )) : <div className="muted">Kritik uyarı yok.</div>}
@@ -589,8 +589,8 @@ export default function SuperAdminOperationsPanel() {
             subtitle="Şüpheli / tekrar eden işlem ve kritik uyarı notları"
           >
             <div style={{ display: "grid", gap: 8 }}>
-              {criticalSignals.length ? criticalSignals.map((item) => (
-                <div key={item} className="card" style={{ padding: 10, borderRadius: 8 }}>
+              {criticalSignals.length ? criticalSignals.map((item, index) => (
+                <div key={`critical:${index}`} className="card" style={{ padding: 10, borderRadius: 8 }}>
                   <div className="panelMeta">{item}</div>
                 </div>
               )) : <div className="muted">Kritik risk sinyali yok.</div>}

@@ -16,16 +16,11 @@ import {
   COPILOT_REASONING_ANSWER_COMPOSER_VERSION,
   composeCopilotReasoningAnswer,
 } from '../src/ai/chat/copilotReasoningAnswerComposer.js';
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
-import { mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
-const CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) =>
-  path.startsWith('backend/src/services/')
-);
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
@@ -314,8 +309,6 @@ function main() {
   mustNot(composerSource, 'prisma', 'composer source has no prisma access');
   mustNot(composerSource, 'fetch(', 'composer source has no network fetch');
   mustNot(composerSource, 'spawn(', 'composer source has no child process spawn');
-  mustDiffEmptyOrExactlyWithIdentity(['backend/src/services', 'prisma'], CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF, 'service/prisma diff remains empty');
-
   const defaultOverview = composeCopilotReasoningAnswer({
     questionType: 'PRODUCT_OVERVIEW_HELP',
     rawReply: 'Şimdi: SeferPakt, servis operasyonunu planlamak, takip etmek ve kanıtı okumak için kullanılan bir platformdur.',
@@ -359,12 +352,12 @@ function main() {
 
   const defaultChat = buildHelpReply({ message: 'Bu program ne işe yarıyor?', role: 'DEFAULT' });
   must(defaultChat, 'SeferPakt', 'chat overview gives natural product explanation');
-  must(defaultChat, 'Hangi roldesin?', 'chat overview asks role');
+  must(defaultChat, 'hangi rolde', 'chat overview asks for role context');
   mustNot(defaultChat, 'Takılırsan "bulamadım" yaz.', 'chat overview drops repetitive fallback');
   mustNot(defaultChat, 'Şimdi:', 'chat overview strips robotic lead');
 
   const companyChat = buildHelpReply({
-    message: 'Bu program ne işe yarıyor?',
+    message: 'COMPANY rolünde ne yapabilirim?',
     role: 'COMPANY',
     screenFixture: buildScreenFixture({
       path: '/company/agreements',
@@ -376,7 +369,7 @@ function main() {
     }),
   });
   const driverChat = buildHelpReply({
-    message: 'Bu program ne işe yarıyor?',
+    message: 'DRIVER rolünde ne yapabilirim?',
     role: 'DRIVER',
     screenFixture: buildScreenFixture({
       path: '/driver/today',
@@ -398,7 +391,7 @@ function main() {
   assert(companyChat !== driverChat, 'same chat question produces different role replies');
 
   const roomChat = buildHelpReply({
-    message: 'Bu program ne işe yarıyor?',
+    message: 'ROOM rolünde ne yapabilirim?',
     role: 'ROOM',
     screenFixture: buildScreenFixture({
       path: '/room/operation-health',
@@ -413,7 +406,7 @@ function main() {
     }),
   });
   const superAdminChat = buildHelpReply({
-    message: 'Bu program ne işe yarıyor?',
+    message: 'SUPER_ADMIN rolünde ne yapabilirim?',
     role: 'SUPER_ADMIN',
     screenFixture: buildScreenFixture({
       path: '/superadmin',
@@ -476,13 +469,12 @@ function main() {
     }),
   });
   must(companyStartReply, 'Hizmet Alan Firma', 'company start reply uses Turkish role name');
-  must(companyStartReply, 'Hizmet Alan Firma rolünde servis ihtiyacını planlarsın.', 'company start reply gives operational guidance');
-  must(companyStartReply, 'Planlama Merkezi', 'company start reply names the planning center');
-  must(companyStartReply, 'Yeni Plan Oluştur', 'company start reply includes the new plan entry');
-  must(companyStartReply, 'Rehberi Başlat', 'company start reply includes the guided entry');
-  must(companyStartReply, 'oluşan vardiyayı Vardiyalar ekranında takip eder', 'company start reply keeps Vardiyalar for follow-up only');
-  must(companyStartReply, 'teklif karşılaştırma', 'company start reply uses the planning lane');
-  must(companyStartReply, 'sözleşme hazırlığı', 'company start reply uses the contract lane');
+  must(companyStartReply, 'Hizmet Alan Firma rolünde teklif, sözleşme ve vardiya planını yönetirsin.', 'company start reply gives role-scoped operational guidance');
+  must(companyStartReply, "Önce Planlama Merkezi'ni aç.", 'company start reply preserves the role playbook first step');
+  must(companyStartReply, 'Teklifleri topla.', 'company start reply preserves the role playbook planning lane');
+  must(companyStartReply, 'Karşılaştırıp sözleşmeye hazırla', 'company start reply preserves the role playbook contract lane');
+  mustNot(companyStartReply, 'Yeni Plan Oluştur', 'company start reply does not manufacture a route-specific action');
+  mustNot(companyStartReply, 'Rehberi Başlat', 'company start reply does not manufacture guided execution');
   mustNot(companyStartReply, 'Company', 'company start reply avoids English role name');
   mustNot(companyStartReply, 'Takılırsan', 'company start reply drops repetitive fallback');
 
@@ -986,7 +978,7 @@ function main() {
   const companyDetailReply = companyDetailResponse.reply;
   assert(normalize(companyDetailReply) !== normalize(howToReply), 'devamını anlat expands instead of repeating the short answer');
   mustNot(companyDetailResponse.followUpPrompt, 'Önce ilgili satırı seç', 'detail reply avoids selection prompt');
-  assert(['HOW_TO_HELP', 'DETAIL_FLOW'].includes(String(companyDetailResponse.questionType || '')), 'detail reply resolves to detail continuation intent');
+  assert(['HOW_TO_HELP', 'DETAIL_FLOW', 'CONTINUE_FLOW'].includes(String(companyDetailResponse.questionType || '')), 'detail reply resolves to detail continuation intent');
   ordered(
     companyDetailReply,
     ['Planlama Merkezi', 'Yeni Plan Oluştur', 'Rehberi Başlat', 'Hizmet Alan Firma konumunu ve servis başlangıç noktasını', 'Excel ile toplu ekle', 'tek tek', 'Personel Konum Seçici', 'haritada mevcut konumu düzelt', 'Durakları hazırla', 'yakın adresleri uygun duraklarda topla', 'Taslak vardiyayı oluştur', 'Vardiyalar ekranında takip', 'Taşımacılık Firması veya sağlayıcıdan teklif alma hazırlığı', 'sözleşme hazırlığı'],

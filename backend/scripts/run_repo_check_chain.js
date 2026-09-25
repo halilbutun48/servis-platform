@@ -30,6 +30,7 @@ function nodeStep(id, relPath, args = []) {
 
 const phaseDefinitions = {
   lint: [
+    nodeStep("package-ownership-delta", "backend/scripts/package_ownership_delta_01_check.js"),
     nodeStep("backend-lint", "backend/scripts/run_backend_lint.js"),
     nodeStep("relative-import-integrity", "backend/scripts/relative_import_integrity_check.js"),
     nodeStep("web-lint-with-evidence", "backend/scripts/run_web_lint_with_evidence.js"),

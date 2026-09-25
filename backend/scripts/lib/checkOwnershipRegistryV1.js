@@ -7,6 +7,7 @@ import {
 } from "./productExtensionsRegistry.js";
 import { CHANGE_IMPACT_VALID_DOMAINS } from "./changeImpactRegistryV1.js";
 import { repoRoot } from "./guardGitScope.js";
+import { getRegistryPaths } from "./pre_18_harness_topology_provenance_registry.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -683,6 +684,226 @@ export function buildCheckOwnershipRegistryV1Summary(registry = null) {
     costClassCounts: countBy("costClass"),
     negativeSensitivityCounts: countBy("negativeSensitivityOwner"),
   });
+}
+
+const GATE_POLICY_CLASSES = Object.freeze([
+  "CLASS_1_FOUNDATION_SECURITY",
+  "CLASS_2_PRODUCT_QUALITY",
+  "CLASS_3_ADVISORY_OWNER_REVIEW",
+]);
+
+// These are the already-known, current PRE-18 components that independently
+// decide durable evidence or the immutable replay selection. They are selected
+// only from the frozen topology record; focused, unregistered local checks do
+// not become release gates merely by existing in a dirty worktree.
+const CURRENT_PRE18_GATE_PATHS = Object.freeze([
+  "backend/scripts/pre_18_topo_01_topo_04_provenance_foundation.mjs",
+  "backend/scripts/lib/pre_18_room_canonical_replay_selection_profile.mjs",
+  "backend/scripts/lib/pre_18_room_root_hit190_durable_closure_recovery.mjs",
+  "backend/scripts/lib/pre_18_room_root_hit190_lineage.mjs",
+  "backend/scripts/lib/pre_18_room_true_open72_selection_reconciliation.mjs",
+]);
+
+function readFrozenTopologyRegistry() {
+  const paths = getRegistryPaths(repoRoot);
+  const parsed = JSON.parse(fs.readFileSync(paths.topology, "utf8"));
+  const scripts = parsed?.topology?.scripts;
+  if (!Array.isArray(scripts)) {
+    throw new Error("GATE_POLICY_TOPOLOGY_REGISTRY_INVALID:topology scripts missing");
+  }
+  return Object.freeze({ parsed, scripts, byPath: new Map(scripts.map((record) => [record.path, record])) });
+}
+
+function resolveActiveDecisionRecord(topologyRecord, byPath, seen = new Set()) {
+  if (!topologyRecord) return null;
+  if (topologyRecord.provenanceConclusion === "PROVEN_ACTIVE") return topologyRecord;
+  if (!["PROVEN_WRAPPER", "PROVEN_COMPATIBILITY"].includes(topologyRecord.provenanceConclusion)) {
+    return null;
+  }
+  if (seen.has(topologyRecord.path)) {
+    throw new Error(`GATE_POLICY_REGISTRY_INCONSISTENCY:wrapper cycle ${topologyRecord.path}`);
+  }
+  seen.add(topologyRecord.path);
+  const references = Array.isArray(topologyRecord.staticReferences) ? topologyRecord.staticReferences : [];
+  if (references.length !== 1) {
+    throw new Error(`GATE_POLICY_REGISTRY_INCONSISTENCY:wrapper without one canonical reference ${topologyRecord.path}`);
+  }
+  return resolveActiveDecisionRecord(byPath.get(references[0]), byPath, seen);
+}
+
+function primaryGateClass(record) {
+  if (record.protectionClass === "DOCUMENTATION_TRACEABILITY") {
+    return "CLASS_3_ADVISORY_OWNER_REVIEW";
+  }
+  if ([
+    "SECURITY_AUTH_TENANT",
+    "GLOBAL_CURRENT_HEAD",
+    "GLOBAL_PROVENANCE",
+    "WORKTREE_HYGIENE",
+    "DATA_INTEGRITY",
+    "TOOLING_RUNTIME",
+  ].includes(record.protectionClass)) {
+    return "CLASS_1_FOUNDATION_SECURITY";
+  }
+  if (["DOMAIN_SEMANTIC", "SMOKE_EVIDENCE", "QUALITY_GATE"].includes(record.protectionClass)) {
+    return "CLASS_2_PRODUCT_QUALITY";
+  }
+  throw new Error(`GATE_POLICY_CLASSIFICATION_UNRESOLVED:${record.checkId}:${record.protectionClass}`);
+}
+
+function identityPolicyFor(record, gateClass) {
+  if (gateClass === "CLASS_1_FOUNDATION_SECURITY") {
+    return record.protectionClass === "SECURITY_AUTH_TENANT"
+      ? "SECURITY_SENSITIVE_OWNER_BOUND_IDENTITY"
+      : "CANONICAL_EVIDENCE_OR_OWNER_BOUND_IDENTITY";
+  }
+  if (gateClass === "CLASS_2_PRODUCT_QUALITY") {
+    return "BEHAVIORAL_ACCEPTANCE_OWNER_BOUND";
+  }
+  return "ADVISORY_OR_PRESENTATION_OWNER_ACCEPTANCE";
+}
+
+function cleanTreePolicyFor(record, gateClass) {
+  if (gateClass === "CLASS_1_FOUNDATION_SECURITY") {
+    return record.protectionClass === "SECURITY_AUTH_TENANT"
+      ? "DECLARED_SECURITY_OWNER_SCOPE_HARD_BLOCK"
+      : "CANONICAL_EVIDENCE_SCOPE_HARD_BLOCK";
+  }
+  if (gateClass === "CLASS_2_PRODUCT_QUALITY") {
+    return "DECLARED_OWNER_SCOPE_ONLY_NO_OUT_OF_SCOPE_HARD_BLOCK";
+  }
+  return "OWNER_REVIEW_WITHOUT_FOUNDATION_HARD_BLOCK";
+}
+
+function negativeControlFamilyFor(record) {
+  if (record.protectionClass === "SECURITY_AUTH_TENANT") return "RBAC_TENANT_ENTITY_AUTH_SESSION";
+  if (record.protectionClass === "TOOLING_RUNTIME") return "UNSAFE_EXECUTION";
+  if (record.primaryDomain === "FINANCE_PAYMENT") return "PAYMENT_WRITE";
+  if (record.primaryDomain === "AI_SEFER_ABI") return "ROUTE_SCREEN_CONTEXT";
+  return "NONE";
+}
+
+function overlapGroupFor(record) {
+  if (record.protectionClass === "SECURITY_AUTH_TENANT") return "SECURITY_RBAC_TENANT_DEFENSE_IN_DEPTH";
+  if (record.protectionClass === "SMOKE_EVIDENCE") return "BROWSER_EVIDENCE_SOURCE_IDENTITY";
+  if (record.primaryDomain === "AI_SEFER_ABI") return "SEFER_ABI_SEMANTIC_CONTRACT";
+  return `${record.primaryDomain}_${record.protectionClass}`;
+}
+
+function buildPolicyEntry({ record, topologyRecord, gateId = record.checkId, isCurrentPre18 = false }) {
+  const gateClass = isCurrentPre18 ? "CLASS_1_FOUNDATION_SECURITY" : primaryGateClass(record);
+  return Object.freeze({
+    gateId,
+    owner: topologyRecord.ownerFamily || record.checkerPath,
+    domain: record.primaryDomain,
+    class: gateClass,
+    blocksFoundation: gateClass === "CLASS_1_FOUNDATION_SECURITY",
+    blocksPre18Final: gateClass !== "CLASS_3_ADVISORY_OWNER_REVIEW",
+    advisory: gateClass === "CLASS_3_ADVISORY_OWNER_REVIEW",
+    sourceFamily: isCurrentPre18 ? topologyRecord.ownerFamily : `${record.primaryDomain}__${record.protectionClass}`,
+    identityPolicy: isCurrentPre18
+      ? "DURABLE_EVIDENCE_AND_SELECTION_INTEGRITY"
+      : identityPolicyFor(record, gateClass),
+    cleanTreePolicy: isCurrentPre18
+      ? "FROZEN_SELECTION_AND_DURABLE_EVIDENCE_SCOPE_HARD_BLOCK"
+      : cleanTreePolicyFor(record, gateClass),
+    negativeControlFamily: isCurrentPre18 ? "UNSAFE_EXECUTION" : negativeControlFamilyFor(record),
+    overlapGroup: isCurrentPre18 ? "PRE18_DURABLE_CLOSURE_AND_SELECTION" : overlapGroupFor(record),
+    canonicalDecisionOwner: isCurrentPre18
+      ? topologyRecord.path
+      : record.checkerPath,
+    notes: isCurrentPre18
+      ? "Derived from frozen PROVEN_ACTIVE PRE-18 topology/provenance evidence."
+      : `Derived from productExtensions ownership ${record.productExtensionsStep} and frozen topology owner.`,
+  });
+}
+
+/**
+ * The one generated policy projection for known active release and PRE-18
+ * gates. It reads the existing package/check-ownership mapping and frozen
+ * topology registry; it does not crawl the repository or create a registry.
+ */
+export function buildGatePolicyProjectionV1() {
+  const ownership = buildCheckOwnershipRegistryV1();
+  const frozenTopology = readFrozenTopologyRegistry();
+  const entries = [];
+
+  for (const record of ownership.records) {
+    const topologyRecord = frozenTopology.byPath.get(record.checkerPath);
+    if (!topologyRecord) {
+      throw new Error(`GATE_POLICY_REGISTRY_INCONSISTENCY:missing frozen topology record for ${record.checkerPath}`);
+    }
+    const decisionTopologyRecord = resolveActiveDecisionRecord(topologyRecord, frozenTopology.byPath);
+    if (!decisionTopologyRecord) {
+      throw new Error(`GATE_POLICY_REGISTRY_INCONSISTENCY:non-active package gate ${record.checkId}:${topologyRecord.provenanceConclusion}`);
+    }
+    entries.push(buildPolicyEntry({ record, topologyRecord: decisionTopologyRecord }));
+  }
+
+  for (const gatePath of CURRENT_PRE18_GATE_PATHS) {
+    const topologyRecord = frozenTopology.byPath.get(gatePath);
+    if (!topologyRecord || topologyRecord.provenanceConclusion !== "PROVEN_ACTIVE") {
+      throw new Error(`GATE_POLICY_REGISTRY_INCONSISTENCY:missing active PRE-18 gate ${gatePath}`);
+    }
+    entries.push(buildPolicyEntry({
+      record: {
+        checkId: `pre18:${gatePath}`,
+        checkerPath: gatePath,
+        primaryDomain: topologyRecord.ownerFamily === "PRE_18_ROOM" ? "ROOM" : "CHECKER_INFRA",
+        protectionClass: "GLOBAL_PROVENANCE",
+        productExtensionsStep: "PRE18_FROZEN_TOPOLOGY",
+      },
+      topologyRecord,
+      gateId: `pre18:${gatePath}`,
+      isCurrentPre18: true,
+    }));
+  }
+
+  const sortedEntries = entries.sort((left, right) => left.gateId.localeCompare(right.gateId, "en"));
+  const classCounts = Object.fromEntries(GATE_POLICY_CLASSES.map((gateClass) => [
+    gateClass,
+    sortedEntries.filter((entry) => entry.class === gateClass).length,
+  ]));
+  const knownScriptTotal = frozenTopology.parsed.topology.summary.totalScriptCount;
+  const duplicateGateIdCount = sortedEntries.length - new Set(sortedEntries.map((entry) => entry.gateId)).size;
+  const unresolvedClassificationCount = sortedEntries.filter((entry) => !GATE_POLICY_CLASSES.includes(entry.class)).length;
+  const unknownOwnerCount = sortedEntries.filter((entry) => !entry.owner || !entry.canonicalDecisionOwner).length;
+
+  return Object.freeze({
+    version: "PRE_18_GATE_POLICY_PROJECTION_V1",
+    owner: "backend/scripts/lib/checkOwnershipRegistryV1.js",
+    ownerCount: 1,
+    knownScriptTotal,
+    activeGateCandidateCount: sortedEntries.length,
+    calibrationTargetCount: sortedEntries.length,
+    excludedArchivedCount: frozenTopology.scripts.filter((record) => record.provenanceConclusion === "PROVEN_HISTORICAL").length,
+    excludedCompatibilityOnlyCount: frozenTopology.scripts.filter((record) => ["PROVEN_COMPATIBILITY", "PROVEN_WRAPPER"].includes(record.provenanceConclusion)).length,
+    excludedNonGateCount: knownScriptTotal - sortedEntries.length,
+    duplicateGateIdCount,
+    unresolvedClassificationCount,
+    unknownOwnerCount,
+    classCounts: Object.freeze(classCounts),
+    entries: Object.freeze(sortedEntries),
+  });
+}
+
+export function assertGatePolicyProjectionV1(projection = null, label = "gate policy projection v1") {
+  const actual = projection || buildGatePolicyProjectionV1();
+  if (!actual || actual.ownerCount !== 1) {
+    throw new Error(`FAIL ${label}: requires exactly one owner`);
+  }
+  if (!Array.isArray(actual.entries) || actual.entries.length !== actual.calibrationTargetCount) {
+    throw new Error(`FAIL ${label}: target entries are incomplete`);
+  }
+  if (actual.duplicateGateIdCount !== 0 || actual.unresolvedClassificationCount !== 0 || actual.unknownOwnerCount !== 0) {
+    throw new Error(`FAIL ${label}: ${JSON.stringify({ duplicateGateIdCount: actual.duplicateGateIdCount, unresolvedClassificationCount: actual.unresolvedClassificationCount, unknownOwnerCount: actual.unknownOwnerCount })}`);
+  }
+  for (const entry of actual.entries) {
+    if (!GATE_POLICY_CLASSES.includes(entry.class) || !entry.sourceFamily || !entry.cleanTreePolicy) {
+      throw new Error(`FAIL ${label}: invalid policy entry ${entry.gateId}`);
+    }
+  }
+  return actual;
 }
 
 assertCheckOwnershipRegistryV1Shape();

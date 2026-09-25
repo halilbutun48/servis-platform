@@ -120,13 +120,24 @@ for (const scenario of roleScreenMatrix) {
   must(`${scenario.role} ${scenario.path} reply exists`, normalizedReply.length > 0);
   const naturalOpeners = [
     'simdi:',
+    'sıradaki doğru işlem:',
     'bu ekran',
     'bu bilgi',
     'bu kayıt',
     'bekleyen işleri',
     'açık veya riskli',
   ];
-  must(`${scenario.role} ${scenario.path} reply is screen-first`, naturalOpeners.some((prefix) => normalizedReply.startsWith(normalize(prefix))));
+  const currentRoomSemanticContext = {
+    '/room/drivers': 'SEMANTIC_MULTI_DOMAIN_SUMMARY',
+    '/room/reports': 'SEMANTIC_PRIORITY',
+  };
+  const expectedRoomSemanticType = scenario.role === 'ROOM' ? currentRoomSemanticContext[scenario.path] : '';
+  must(
+    `${scenario.role} ${scenario.path} reply follows the current screen or semantic contract`,
+    expectedRoomSemanticType
+      ? response.questionType === expectedRoomSemanticType && normalizedReply.startsWith(normalize('Taşımacılık Firması açısından:'))
+      : naturalOpeners.some((prefix) => normalizedReply.startsWith(normalize(prefix))),
+  );
   must(`${scenario.role} ${scenario.path} reply avoids validation text`, !normalizedReply.includes('validation failed'));
   must(`${scenario.role} ${scenario.path} reply avoids generic fallback`, !normalizedReply.includes('bunu anlayamadim'));
   must(`${scenario.role} ${scenario.path} reply avoids capital after comma`, !/Bu ekran,\s+[A-ZÇĞİÖŞÜ]/.test(reply));
@@ -140,7 +151,7 @@ const sharedMatrix = [
   { role: 'ROOM', path: '/shared/feedback', message: 'burası ne işe yarar', expectedReply: ['Bu ekran,', 'saha geri bildirimlerini'], forbiddenReply: ['Bu ekranda seçili kayıt da var:'], expectedChips: ['Bu ekranı detaylı anlat', 'Açık geri bildirimi göster', 'Kritik geri bildirimleri sırala', 'Sorumlu rolü göster'] },
   { role: 'ROOM', path: '/shared/kvkk', message: 'burası ne', expectedReply: ['Bu ekran,', 'KVKK', 'Bu bilgi bu rolde görünmeyebilir'], expectedChips: ['Bu ekranı detaylı anlat', 'KVKK sınırını açıkla', 'Bu rolde ne görünür?', 'Erişim neden kapalı?'] },
   { role: 'COMPANY', path: '/shared/notifications', message: 'bu ekran ne', expectedReply: ['Bu ekranın ana işi takip etmektir', 'vardiyaları', 'takip sekmesini seç'], expectedChips: ['Bu ekranı detaylı anlat', 'İlk neye bakayım?', 'Sıradaki doğru işlem ne?', 'Sıradaki adımı açıkla'] },
-  { role: 'DRIVER', path: '/shared/logs', message: 'bu ne', expectedReply: ['Bu ekran,', 'işlem kayıtları', 'İlk bakılacak yer:'], expectedChips: ['Bu ekranı detaylı anlat', 'İşlem kaydını aç'] },
+  { role: 'DRIVER', path: '/shared/logs', message: 'bu ne', expectedReply: ['Log Dışa Aktarımı ekranı:', 'işlem kayıtlarını', 'hangi kaydı aradığını netleştir'], expectedChips: ['Bu ekranı detaylı anlat', 'İşlem kaydını aç'] },
 ];
 
 for (const scenario of sharedMatrix) {
@@ -154,7 +165,8 @@ for (const scenario of sharedMatrix) {
     must(`${scenario.role} ${scenario.path} shared reply avoids ${needle}`, !normalizedReply.includes(normalize(needle)));
   }
   must(`${scenario.role} ${scenario.path} shared reply avoids capital after comma`, !/Bu ekran,\s+[A-ZÇĞİÖŞÜ]/.test(reply));
-  must(`${scenario.role} ${scenario.path} shared reply avoids mechanical fragments`, !normalizedReply.includes('bak..') && !normalizedReply.includes('oku..') && !normalizedReply.includes('kontrol et..'));
+  const normalizedReplyWithoutTerminalTruncation = normalize(reply.replace(/…$/u, ''));
+  must(`${scenario.role} ${scenario.path} shared reply avoids mechanical fragments`, !normalizedReplyWithoutTerminalTruncation.includes('bak..') && !normalizedReplyWithoutTerminalTruncation.includes('oku..') && !normalizedReplyWithoutTerminalTruncation.includes('kontrol et..'));
   must(`${scenario.role} ${scenario.path} shared no auto record chip`, !chips.some((chip) => normalize(chip).includes(normalize('Bu kayıt ne durumda?'))));
   for (const chip of scenario.expectedChips) {
     must(`${scenario.role} ${scenario.path} shared chip ${chip}`, chips.some((item) => normalize(item) === normalize(chip)));
@@ -184,7 +196,11 @@ must('selected feedback chips include role boundary', selectedChips.some((item) 
 const unknown = makeResponse({ role: 'DRIVER', path: '/unknown/polish-check', message: 'bu ne' });
 const unknownReply = String(unknown?.reply || '');
 const unknownChips = collectChipLabels(unknown);
-must('unknown fallback is safe', normalize(unknownReply).includes(normalize('Bu ekran için detaylı rehber henüz katalogda yok')));
+must(
+  'unknown fallback is safe',
+  normalize(unknownReply).includes(normalize('Bu ekranda önce seçili kayıt ve boş alanlar okunmalı'))
+    && normalize(unknownReply).includes(normalize('Bu ekran, doğru ekranı seçmen gerekiyor')),
+);
 must('unknown fallback avoids apology fallback', !normalize(unknownReply).includes(normalize('Bunu anlayamadım')));
 must('unknown fallback avoids wrong screen content', !normalize(unknownReply).includes('harita') && !normalize(unknownReply).includes('araç seç') && !normalize(unknownReply).includes('canlı takip'));
 must('unknown fallback does not surface auto record chip', !unknownChips.some((chip) => normalize(chip).includes(normalize('Bu kayıt ne durumda?'))));

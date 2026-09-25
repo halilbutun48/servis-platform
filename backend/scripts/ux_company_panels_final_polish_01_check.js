@@ -57,11 +57,9 @@ function main() {
   const pkg = read("package.json");
   mustContains(pkg, '"check:uxcompanypanelsfinalpolish01"', "package.json exposes company final polish check");
 
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContains(runner, "check:uxcompanypanelsfinalpolish01", "product extensions runner includes company final polish check");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContains(verify, "check:uxcompanypanelsfinalpolish01", "verify chain includes company final polish check");
+  const harnessGuide = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
+  mustContains(harnessGuide, "PRE_18_COMPANY_ROLE_FINAL_ACCEPTANCE_01", "living guide records the current Company final-acceptance owner");
+  mustContains(harnessGuide, "ACTIVE_PACKAGE_SPECIFIC_ACCEPTANCE", "living guide keeps Company final polish package-specific");
 
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   mustContains(guide, "UX-COMPANY-PANELS-FINAL-POLISH-01", "milestone guide mentions company final polish");
@@ -102,7 +100,9 @@ function main() {
   mustNotContains(agreements, 'viewMode === "summary"', "Company agreements removes summary render");
   mustContains(agreements, "CompanyAgreementsOverviewSection", "Company agreements keeps header overview");
   mustContains(agreements, "CompanyAgreementsSelectedSummarySection", "Company agreements keeps list selection banner");
-  mustContains(agreements, "CompanyAgreementsRouteRefreshPendingSection", "Company agreements keeps route refresh section");
+  mustContains(agreements, "routeRefreshPendingByAgreement", "Company agreements keeps current route-refresh pending state");
+  mustContains(agreements, "CompanyAgreementsBridgeSection", "Company agreements renders current route-refresh details through the bridge section");
+  mustContains(agreements, "routeRefreshActionLabel", "Company agreements keeps the current route-refresh action label");
 
   mustNotContains(commercial, "PanelSegmentTabs", "Company commercial flow removes segmented tabs");
   mustNotContains(commercial, 'viewMode === "summary"', "Company commercial flow removes summary render");
@@ -120,8 +120,8 @@ function main() {
   mustContains(commercial, "getCompanyShifts", "Company commercial flow derives contract linkage from company shifts");
   mustContains(commercial, "agreementByShiftId", "Company commercial flow keeps agreement lookup map");
   mustContains(commercial, "resolveCommercialFlowTarget", "Company commercial flow resolves target section");
-  mustContains(commercial, "Sözleşmeden Üretilen'e git", "Company commercial flow routes contract-backed items to contract section");
-  mustContains(commercial, "Diğer Vardiyalar'a git", "Company commercial flow routes non-contract final items to other section");
+  mustContains(commercial, "Sözleşmeden üretilen vardiyaya git", "Company commercial flow routes contract-backed items to contract section");
+  mustContains(commercial, "Diğer vardiyalara git", "Company commercial flow routes non-contract final items to other section");
   mustNotContains(commercial, "Listeyi aç", "Company commercial flow removes misleading list wording");
 
   mustNotContains(commercial, "Görünen ana özet", "Company commercial flow avoids duplicate KPI summary");

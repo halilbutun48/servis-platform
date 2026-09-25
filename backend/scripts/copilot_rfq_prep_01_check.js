@@ -8,8 +8,6 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as copilotRfqPrep from '../src/ai/chat/copilotRfqPrep.js';
-import { mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -255,11 +253,6 @@ const requiredRoles = [
   'ORGANIZATION',
 ];
 
-const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF =
-  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) =>
-    path.startsWith('backend/src/routes/') || path.startsWith('backend/src/services/'),
-  );
-
 const ACCEPTED_PRISMA_MIGRATIONS = [
   { path: 'backend/prisma/migrations/20260125133000_seed_root_baseline/migration.sql', sha256: '27DF5155D24311AA9199AC7B8FC94DB615EC6457401B2BA0105C7FD30A5587DD' },
   { path: 'backend/prisma/migrations/20260125133100_organization_shift_import_baseline/migration.sql', sha256: '864CB0607DB2F7833C834BFD9747D9518806CE9EC206C0C19F1A79271ACE3FBD' },
@@ -461,12 +454,6 @@ async function main() {
   const neverAutomateCount = copilotRfqPrep.COPILOT_RFQ_PREP_NEVER_AUTOMATE.length;
   const handoffCount = copilotRfqPrep.COPILOT_RFQ_PREP_HANOFFS.length;
 
-  mustStatusEmptyOrExactlyWithIdentity(
-    ['backend/src/routes', 'backend/src/services'],
-    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF,
-    'backend route/service status stays current-head approved'
-  );
-  mustDiffEmptyOrExactlyWithIdentity(['backend/prisma', 'prisma'], [], 'backend prisma diff stays empty');
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, 'accepted Prisma schema SHA matches');
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);

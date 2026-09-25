@@ -28,7 +28,7 @@ function chipTexts(signal) {
   if (/paymentpreviewmissinginfo|eksik bilgi|kontrol gerekli/.test(hay)) chips.push('Hakediş eksik bilgi içeriyor');
   if (/paymentaccountstatus|odeme hesabi/.test(hay)) chips.push('Ödeme hesabı eksik');
   if (/contractshiftgeneration|sozlesme.*vardiya|vardiya uretil/.test(hay)) chips.push('Sözleşme/vardiya üretimi kontrol edildi');
-  if (/commissionstatus/.test(hay)) chips.push('Komisyon durumu kontrol edildi');
+  if (/commissionstatus/.test(hay)) chips.push('Ödeme hazırlığı kontrol edildi');
   if (/settlementstatus/.test(hay)) chips.push('Tahsilat kapalı');
   if (/paymentpreviewstatus/.test(hay) && !chips.length) chips.push('Hakediş önizlemesi var');
 
@@ -73,9 +73,9 @@ export default function ChatDiagnosticSignals({
 
       {chips.length ? (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-          {chips.map((chip) => (
+          {chips.map((chip, index) => (
             <span
-              key={chip.text}
+              key={`${chip.text}:${index}`}
               title={chip.title}
               style={{
                 borderRadius: 999,

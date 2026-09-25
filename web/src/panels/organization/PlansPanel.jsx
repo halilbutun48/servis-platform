@@ -335,30 +335,23 @@ export default function OrganizationPlansPanel() {
   );
 
   return (
-    <div className="wrap" style={{ maxWidth: "none", width: "100%", paddingRight: 12, overflowX: "hidden" }}>
+    <div className="wrap pre18-organization-surface" style={{ maxWidth: "none", width: "100%", paddingRight: 12, overflowX: "hidden" }}>
       <div className="card" style={{ width: "100%" }}>
-        <div className="title">Organizasyon Planları (eski görünüm)</div>
+        <h1 className="title">Organizasyon Planları</h1>
         <div className="muted">
           Yeni plan oluşturma akışı <b>Planlama Merkezi</b> ekranına taşındı. Bu sayfa eski
-          organizasyon planlarını görmek için korunur. Yeni iş kurarken <b>Planlama Merkezi</b>
+          organizasyon planlarını görmek için korunur. Yeni iş kurarken <b>Planlama Merkezi</b>{" "}
           kullanılmalıdır.
         </div>
-        <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" className="btn primary" onClick={() => navigate("/organization")}>Planlama Merkezi&apos;ne git</button>
-          <button type="button" className="btn" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Bu sayfada kal</button>
-        </div>
+        <div className="panelMeta" style={{ marginTop: 10 }}>Yeni çalışma başlatmak için sağdaki Planlama Merkezi kısayolunu kullanın.</div>
       </div>
 
       <div className="organizationPlansLayout" style={{ display: "grid", gap: 12, alignItems: "start", width: "100%" }}>
         <div className="card" style={{ alignSelf: "start", minWidth: 0 }}>
-          <div className="title">Kayıtlı Planlar</div>
+          <h2 className="title">Kayıtlı Planlar</h2>
           <div className="muted" style={{ marginBottom: 10 }}>
             Eski planı seçip inceleyebilirsin. Yeni plan oluşturma artık Planlama Merkezi&apos;ndedir.
           </div>
-
-          <button type="button" onClick={() => navigate("/organization")}>
-            Planlama Merkezi&apos;ne git
-          </button>
 
           <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
             {items.map((it) => (
@@ -373,14 +366,16 @@ export default function OrganizationPlansPanel() {
           </div>
         </div>
 
-        <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
+        <details className="organizationPlansEditor pre18-secondary-flow" style={{ minWidth: 0 }}>
+          <summary className="panelSectionTitle">Seçili planı düzenle ve ayrıntıları yönet</summary>
+          <div style={{ display: "grid", gap: 12, minWidth: 0, marginTop: 12 }}>
           <div className="card">
-            <div className="title">{current.id ? `Plan #${current.id}` : "Yeni Plan"}</div>
+            <h2 className="title">{current.id ? `Plan #${current.id}` : "Yeni Plan"}</h2>
             <div className="muted" style={{ marginBottom: 10 }}>
               Plan başlığı, tarih, saat aralığı ve operasyon notları.
             </div>
 
-            <div
+            <div className="organizationPlanMetaGrid"
               style={{
                 display: "grid",
                 gridTemplateColumns: "minmax(220px,1.7fr) 150px 120px 120px",
@@ -438,7 +433,7 @@ export default function OrganizationPlansPanel() {
               </label>
             </div>
 
-            <div
+            <div className="organizationPlanContextGrid"
               style={{
                 display: "grid",
                 gridTemplateColumns: "180px minmax(0,1fr)",
@@ -472,9 +467,9 @@ export default function OrganizationPlansPanel() {
           </div>
 
           <div className="card">
-            <div className="title">Toplu Konum İçe Aktar (Legacy)</div>
+          <h2 className="title">Toplu konum aktarımı</h2>
             <div className="muted" style={{ marginBottom: 8 }}>
-              Her satır: <b>İsim;Adres;Lat;Lng;Kişi;Başlangıç(HH:mm);Bitiş(HH:mm);Not</b>
+              Her satır: <b>İsim;Adres;Enlem;Boylam;Kişi;Başlangıç (saat:dakika);Bitiş (saat:dakika);Not</b>
             </div>
 
             <textarea
@@ -506,7 +501,7 @@ export default function OrganizationPlansPanel() {
               }}
             >
               <div>
-                <div className="title">Konumlar</div>
+                <h2 className="title">Konumlar</h2>
                 <div className="muted">Bu ekran eski planı okumak için tutulur. Yeni konum kurgusu Planlama Merkezi&apos;nde yapılır.</div>
               </div>
 
@@ -561,9 +556,9 @@ export default function OrganizationPlansPanel() {
                 }}
               >
                 <div>
-                  <div className="title">Taşımacılık Firmalarına Teklif Gönder</div>
+                  <h2 className="title">Taşımacılık Firmalarına Teklif Gönder</h2>
                   <div className="muted">
-                    Bu akış karşı tarafta <b>Offers</b> bölümüne düşer.
+                    Bu akış karşı tarafta <b>Teklifler</b> bölümüne düşer.
                   </div>
                 </div>
 
@@ -572,7 +567,7 @@ export default function OrganizationPlansPanel() {
                 </button>
               </div>
 
-              <div
+              <div className="organizationOfferMetaGrid"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "minmax(0,1fr) 180px minmax(0,1fr)",
@@ -586,7 +581,7 @@ export default function OrganizationPlansPanel() {
                     style={inputStyle}
                     value={roomSearch}
                     onChange={(e) => setRoomSearch(e.target.value)}
-                    placeholder="name contains"
+                    placeholder="Firma adına göre ara"
                   />
                 </label>
 
@@ -663,7 +658,8 @@ export default function OrganizationPlansPanel() {
               </div>
             </div>
           ) : null}
-        </div>
+          </div>
+        </details>
 
         <div className="organizationPlansSidebar">
           <SummaryCard

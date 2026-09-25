@@ -1,6 +1,9 @@
 import { CANONICAL_PRISMA_SCHEMA_NORMALIZED_SHA256 } from "./prismaSchemaIdentity.js";
+import { CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES } from "./pre18LifecycleClassification.js";
 
-export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF = [
+// Historical commercial split-route identity remains separately pinned for
+// security review. It is not a current working-tree scope allowlist.
+export const CURRENT_HEAD_COMMERCIAL_SPLIT_ROUTE_IDENTITY = Object.freeze([
   {
     path: "backend/src/routes/commercialCore.js",
     sha256: "14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F",
@@ -15,60 +18,228 @@ export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF = [
   },
   {
     path: "backend/src/routes/commercialCorePaymentReportsRoutes.js",
-    sha256: "02A327CB70645AA8652E542F5825B271B143AE7A741FC8FBD1CB0C157093FD36",
+    sha256: "41A7F4A75CD21B56BD29C8D9B068C01BD6D1B9D56496969A8C1307C246D0BB10",
   },
   {
     path: "backend/src/routes/commercialCoreRoomRoutes.js",
     sha256: "CA2B42085F02A2DFEB03ED3992FE47583152EE424FF39DDF73C9699B99D6D2FF",
   },
   {
-    path: "backend/src/routes/trustQuality.js",
-    sha256: "FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD",
-  },
-  {
-    path: "backend/src/routes/shifts/company.js",
-    sha256: "19A7C7C96A86438CDE36345274D8EC8E363C889CABF4C440FE8529DBAA1534A0",
-  },
-  {
-    path: "backend/src/routes/auth.js",
-    sha256: "A137B997660215DBD2C5E8AA24593BD96F319CF784322C65D3628B8C9F4AACF3",
-  },
-  {
     path: "backend/src/routes/commercialCoreRouteData.js",
     sha256: "5EB28DD6ABEC1AD63CA236AB567BB14B0CEEF35D54DF75343D5EC746F5A6FCD2",
   },
+]);
+
+// The accepted Sefer Abi / Actionable Events backend-context change has one
+// current-head owner. Each record is exact-pinned after bounded authorization,
+// tenant, context-isolation and read-only acceptance; this is not a wildcard
+// for later backend changes.
+export const CURRENT_HEAD_APPROVED_SEFER_ABI_BACKEND_CONTEXT_ACCEPTANCE = Object.freeze([
   {
-    path: "backend/src/routes/companyOverview.js",
-    sha256: "EB2E7956FD7C02891687815D389AB9E9C5374CAB2FD684E2ADE7CE42C83F8528",
+    path: "backend/src/routes/ai.js",
+    sha256: "B9C4EB10AD84B2E631849F825B5CB4D69793F3CD6F28B00889EB9F7149EE961F",
+    owner: "PRE_18_SEFER_ABI_ACTIONABLE_EVENTS_BACKEND_CONTEXT_ACCEPTANCE",
   },
   {
-    path: "backend/src/routes/companyBudgetLifecycleRoutes.js",
-    sha256: "3D29611FD1D4DE54FA7DE87D6C98D6D7CB034D13776512A792EBD4C139D049EE",
+    path: "backend/src/services/dashboardBulk.js",
+    sha256: "A67C83C15740AA2426F48E852F29A11F75B2EFC35A84A954C9F7137B84D3D02A",
+    owner: "PRE_18_SEFER_ABI_ACTIONABLE_EVENTS_BACKEND_CONTEXT_ACCEPTANCE",
   },
   {
-    path: "backend/src/services/financialOperationsLifecycle.js",
-    sha256: "0767FB5A163CCB19B06F111FE8B00B2340913E29C613A9DEDA93B2CCAA711FF2",
+    path: "backend/src/ai/chat/conversationTaskStateShared.js",
+    sha256: "6BA9366F646AD3C0CCABDACE6143AB72B5D51CEA04090EA6D89C0EBAC0CE8C36",
+    owner: "PRE_18_SEFER_ABI_ACTIONABLE_EVENTS_BACKEND_CONTEXT_ACCEPTANCE",
   },
-  // #15 bounded corrective: this service change is user-facing terminology
-  // only. Keep the exact content identity so the scope guard still rejects
-  // any unrelated or subsequent service mutation.
+]);
+
+// These service sources were accepted by their bounded PRE-#18 packages and
+// are already recorded in the canonical lifecycle registry. Project their
+// exact current identities into the current-head route/service scope so the
+// roadmap lock consumes the same accepted authority. This remains an exact
+// path/hash list; it is not a wildcard or a second identity ledger.
+const CURRENT_HEAD_ACCEPTED_SERVICE_PATHS = new Set([
+  "backend/src/services/actionableEvents.js",
+  "backend/src/services/authorizedProductAwareness.js",
+  "backend/src/services/queryPlanExecutor.js",
+]);
+
+export const CURRENT_HEAD_APPROVED_CURRENT_ACCEPTED_SERVICE_SOURCES = Object.freeze(
+  CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES
+    .filter(({ path }) => CURRENT_HEAD_ACCEPTED_SERVICE_PATHS.has(path))
+    .map(({ path, sha256, owner }) => ({ path, sha256, owner })),
+);
+
+// Screen-context authority has a distinct owner from presentation identity.
+// These exact pins were accepted by the bounded route-policy, stale-context,
+// Floating/full Copilot and server-hint isolation contract. They do not grant
+// future source changes or turn the registry into an authorization authority.
+export const CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE = Object.freeze([
   {
-    path: "backend/src/services/paymentBackbone.js",
-    sha256: "8F8D3B8E2C43C156CF8BD2864CD3ACFB0E17B0B3BD5C14F6AE83AE33251B6A9B",
+    path: "web/src/App.jsx",
+    sha256: "804362A517CD0A5D49570BB37EE32A4370E2C8D657EC5864C9CBE0CAC9C2DE2F",
+    owner: "PRE_18_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE",
   },
   {
-    path: "backend/Dockerfile",
-    sha256: "BC81A199698A5758B51B0EA35A4C9B1C6640E22684E09FC4CD19BC977D21113D",
+    path: "web/src/layout/AppShell.jsx",
+    sha256: "2E88DC82822CACAF0CAEB2EAF6B7DDCAD88A7D398E88CACAC4C812E5FA862BFE",
+    owner: "PRE_18_SUPER_ADMIN_BOUNDED_FINAL_BACKFILL_01",
   },
   {
-    path: "backend/scripts/smoke.js",
-    sha256: "A6FC4C039803A5A8FFA61BC733FA2B13C51707F1C1B00EF6007EF0326F328C12",
+    path: "web/src/copilot/routeContext.js",
+    sha256: "54F58E779908F254CCE63A2FA088A3FF0B99EB2E29E1FB919FA0C779A334A9ED",
+    owner: "PRE_18_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE",
   },
+  {
+    path: "web/src/copilot/screenRegistry.js",
+    sha256: "3FFF110D83CD723FC4528CC2E91F021E1B4318AF028E7107B0BFED95C91F2A81",
+    owner: "PRE_18_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE",
+  },
+  {
+    path: "web/src/components/copilot/FloatingCopilotDrawer.jsx",
+    sha256: "64DA2F246F0C82048C1C0A829851F461F3C6A0ACF0572A786B7234A8179999BB",
+    owner: "PRE_18_SEFER_ABI_FINAL_UX_AND_CHARACTER_STATE_CLOSURE_01",
+  },
+  {
+    path: "web/src/panels/shared/CopilotPanel.jsx",
+    sha256: "7A3BD7C6804E4AE852F13629EF57DBDB0C0E8ABC5AA5D64D98542DC3B1978CE3",
+    owner: "PRE_18_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE",
+  },
+  {
+    path: "web/src/utils/copilotSharedState.js",
+    sha256: "6CBF51EB5118A2310ABB00AD6C1A2627EE34A759E08DD1CFBBF44E2A5E4620B7",
+    owner: "PRE_18_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE",
+  },
+]);
+
+// The backend catalog and service consume only authenticated role/company
+// context when validating a client screen hint. Keep these entries separate
+// from the preceding Actionable Events acceptance while deriving both through
+// the same current-head policy owner.
+export const CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_BACKEND_ACCEPTANCE = Object.freeze([
+  {
+    path: "backend/src/ai/jobGuide/screenCatalog.js",
+    sha256: "D77932247CAFA4267508C82B5A48A7C342847517307675619AD459DC02A91F3C",
+    owner: "PRE_18_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE",
+  },
+]);
+
+// The semantic-priority corrective is accepted through this same current-head
+// policy owner after its bounded generic-help, role-help, continuation and
+// visible-matrix evidence passes. It is exact source identity, not a generic
+// allowance for future Sefer Abi changes. The service entry supersedes its
+// earlier screen-context-only identity while the frozen screen-context
+// behavioural contract remains independently covered by its 29-case check.
+// The operation-health profile precedence corrective is included only after
+// its focused Company/Super Admin path-selection acceptance passes.
+// C1 v3 extends this same bounded family for the accepted start-readiness and
+// urgent-risk routing/remap contract. C2 extends it for the accepted
+// dynamic-follow-up, clarification, root-cause and direct-status boundaries;
+// it remains an exact identity list.
+export const CURRENT_HEAD_APPROVED_SEFER_ABI_SEMANTIC_REASONING_ACCEPTANCE = Object.freeze([
   {
     path: "backend/src/ai/service.js",
-    sha256: "30BC3DAF78FA5B114F6F3653E7039AB7DB777EA8D0B22B494034DC2A3F1AF4F5",
+    sha256: "186DEAE407BCB7396C630860D5AD73D66113AED652424080D6CC371D6773975C",
+    owner: "PRE_18_SEFER_ABI_SEMANTIC_PRIORITY_ACCEPTANCE",
   },
-];
+  {
+    path: "backend/src/ai/chat/canonicalSemanticRequest.js",
+    sha256: "7C39D5F458FBAB8F86E105722197298ECE8045BF0872F8DA9C967321C1C5E252",
+    owner: "PRE_18_SEFER_ABI_SEMANTIC_PRIORITY_ACCEPTANCE",
+  },
+  {
+    path: "backend/src/ai/chat/conversationRouting.js",
+    sha256: "A94722550C797BDD7B5C1B27B1CE730362D0A3CA8EB47676DAE18E38944BB565",
+    owner: "PRE_18_SEFER_ABI_SEMANTIC_PRIORITY_ACCEPTANCE",
+  },
+  {
+    path: "backend/src/ai/chat/semanticIntentPlanner.js",
+    sha256: "B447E3A60924156CDA74A35471BB45AB719634ECD1ED7E8CD03ACB81865DE583",
+    owner: "PRE_18_PERSONEL_LOCATION_SIGNAL_SEMANTIC_VOCABULARY_REGRESSION_CORRECTIVE_01",
+  },
+  {
+    path: "backend/src/ai/chat/intentRouter.js",
+    sha256: "CD3B0853320C2773D5CCD42CD8050CF5B84608FC83F18D9A9F110989C1291B9F",
+    owner: "PRE_18_SEFER_ABI_SEMANTIC_PRIORITY_ACCEPTANCE",
+  },
+  {
+    path: "backend/src/ai/chat/helpComposer.js",
+    sha256: "3663D4C15879691ED0486D67C522F0C432BE7F1C2E9709E58ED21E289D056A58",
+    owner: "PRE_18_FINAL_VERIFY_FOUNDATION_TRIPLE_RESIDUAL_CLOSURE_01",
+  },
+  {
+    path: "backend/src/ai/chat/conversationTaskStateClarifiers.js",
+    sha256: "75F6BC7CA7B9D38E0F4CE7F79A320F6FBBD30B1DC4FA36326E73A3ADF6CA21E7",
+    owner: "PRE_18_SEFER_ABI_SEMANTIC_PRIORITY_ACCEPTANCE",
+  },
+  {
+    path: "backend/src/ai/chat/conversationTaskStateBuilders.js",
+    sha256: "510A9D7D7FA6B9F1EAA771238A3FDD31DF258C0B1651C4A090D402A6D2ACB1F2",
+    owner: "PRE_18_SEFER_ABI_SEMANTIC_PRIORITY_ACCEPTANCE",
+  },
+  {
+    path: "backend/src/ai/chat/seferAbiReasoningAssistant.js",
+    sha256: "5CE69B34F73017E4004D2CC0A333D4C3B8F1B57AED6F3009C0D25E35DC9A6169",
+    owner: "PRE_18_SEFER_ABI_SEMANTIC_PRIORITY_ACCEPTANCE",
+  },
+  {
+    path: "backend/src/ai/chat/conversationOperationHealthEngine.js",
+    sha256: "DA78F288FFD4C660A5865600094FE3E1D0221A34642B2A66F832EBFDF98045E8",
+    owner: "PRE_18_SEFER_ABI_SEMANTIC_PRIORITY_ACCEPTANCE",
+  },
+]);
+
+// Current HEAD working-tree backend scope. The driver correction remains a
+// separately reviewed entry; the accepted backend-context family above is
+// derived into the shared scope instead of being copied into each guard.
+export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF = Object.freeze([
+  // Current working-tree driver-create correction: connect the required
+  // Prisma room relation and omit an empty optional device value. Keep exact
+  // identity pinning; this does not expand authorization or tenant scope.
+  {
+    path: "backend/src/routes/drivers.js",
+    sha256: "4B67CAC108E04C7AC326CFE5B50E825597C106947AD6B8FD4198C18EA25762C5",
+  },
+  {
+    path: "backend/src/services/agreementSourceLineageService.js",
+    sha256: "6B411A750AF66EC684D42D33D2771371840DEEC09F931500341D33F8A361C511",
+    owner: "PRE_18_POST_TERMINOLOGY_PRODUCT_FLOW_EVIDENCE_REGEN_01",
+  },
+  {
+    path: "backend/src/services/paymentBackbone.js",
+    sha256: "D113CA27FA50F74D82E79FF0A5502F0CEFF1916CEEC879799261CFF7ED6F39A3",
+    owner: "PRE_18_LEGACY_COMMISSION_AND_COMMERCIAL_RESIDUE_ZERO_CHECK_01",
+  },
+  {
+    path: "backend/src/routes/commercialCorePaymentReportsRoutes.js",
+    sha256: "41A7F4A75CD21B56BD29C8D9B068C01BD6D1B9D56496969A8C1307C246D0BB10",
+    owner: "PRE_18_LEGACY_COMMISSION_AND_COMMERCIAL_RESIDUE_ZERO_CHECK_01",
+  },
+  {
+    path: "backend/src/routes/trustQuality.js",
+    sha256: "0E2358DAA468D205DAC92CFF6E01BA4CE3FD3E89350505BE6DF704882C6A8FBD",
+    owner: "PRE_18_LEGACY_COMMISSION_AND_COMMERCIAL_RESIDUE_ZERO_CHECK_01",
+  },
+  ...CURRENT_HEAD_APPROVED_SEFER_ABI_BACKEND_CONTEXT_ACCEPTANCE,
+  ...CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_BACKEND_ACCEPTANCE,
+  ...CURRENT_HEAD_APPROVED_SEFER_ABI_SEMANTIC_REASONING_ACCEPTANCE,
+  ...CURRENT_HEAD_APPROVED_CURRENT_ACCEPTED_SERVICE_SOURCES,
+]);
+
+// Current product terminology ownership remains exact-pinned separately from
+// the uncommitted backend route scope. The payment service is already part of
+// the accepted current product baseline and is not an additional working-tree
+// backend change.
+export const CURRENT_HEAD_APPROVED_PRESENTATION_IDENTITY = Object.freeze([
+  {
+    path: "backend/src/services/paymentBackbone.js",
+    sha256: "D113CA27FA50F74D82E79FF0A5502F0CEFF1916CEEC879799261CFF7ED6F39A3",
+  },
+  {
+    path: "web/src/components/PanelChrome.jsx",
+    sha256: "54777BE86FB65ED26F0A75D72512C8726833915E490A24B62B42A225263D14C6",
+    owner: "PRE_18_PANELCHROME_SEMANTIC_PRESENTATION_ACCEPTANCE",
+  },
+]);
 
 export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS =
   CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.map(({ path }) => path);

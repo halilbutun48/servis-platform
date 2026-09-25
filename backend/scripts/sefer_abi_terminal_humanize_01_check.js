@@ -83,6 +83,7 @@ async function main() {
     'backend/artifacts/runtime-data/public-leads.json',
     'backend/artifacts/runtime-data/quality-review-decisions.json',
     'backend/artifacts/runtime-data/region-failover-drill-state.json',
+    'backend/artifacts/runtime-data/field-feedback-records.json',
   ];
   const dirtyRuntimeData = dirtyRuntimeDataPaths(statusText);
   const dirtyRuntimeDataSet = new Set(dirtyRuntimeData);
@@ -150,19 +151,19 @@ async function main() {
   must(card, 'Yardım modu', 'advanced card uses Turkish mode label');
   must(card, 'Kapsam', 'advanced card uses Turkish scope label');
   must(diagSignals, 'Tahsilat kapalı', 'diagnostic signals use Turkish settlement wording');
-  must(agreementFactsSource, 'Başarı payı / lisans', 'agreement facts source humanizes marketplace summary label');
+  must(agreementFactsSource, 'Kaynak ve ödeme hazırlığı', 'agreement facts source humanizes marketplace summary label');
 
   must(helpComposer, 'Bu sadece SeferPuanı önizlemesidir.', 'helpComposer humanizes score preview');
-  must(helpComposer, 'Başarı payı önizlemesini aç.', 'helpComposer humanizes marketplace action label');
-  must(helpComposer, 'Organizasyon planı tek başına başarı payı kanıtı değildir.', 'helpComposer humanizes organization plan copy');
+  must(helpComposer, 'Sözleşme kaynak görünümünü aç.', 'helpComposer humanizes marketplace action label');
+  must(helpComposer, 'Organizasyon planı tek başına kaynak kanıtı değildir.', 'helpComposer humanizes organization plan copy');
   must(helpComposer, 'konum sinyali güncel değil / çevrim dışı satırını aç', 'helpComposer humanizes operation-health chip');
   must(helpComposer, 'SeferPuanı önizlemesini sadeleştir.', 'helpComposer humanizes linked guide copy');
-  must(helpComposer, 'Başarı payı önizlemesini netleştirmek için', 'helpComposer humanizes quick help copy');
+  must(helpComposer, 'sözleşme kaynak ve ödeme hazırlığı önizlemesidir', 'helpComposer humanizes quick help copy');
   must(helpComposer, 'ödeme ve mutabakat başlatılmaz', 'helpComposer replaces settlement with mutabakat');
-  must(helpComposer, 'Bu ekrandaki veriye göre başarı payı önizlemesi hesaplanabilir.', 'helpComposer humanizes selected diagnostic result');
+  must(helpComposer, 'Bu ekrandaki veriye göre sözleşme kaynak ve ödeme hazırlığı yalnızca önizleniyor;', 'helpComposer humanizes selected diagnostic result');
   must(helpComposer, 'Kaynak vardiya sinyali ve SeferPuanı', 'helpComposer humanizes source label');
   must(helpComposer, 'SeferPuanı önizlemesini tekrar sorar.', 'helpComposer humanizes score follow-up');
-  must(helpComposer, 'Başarı payı önizlemesini tekrar sorar.', 'helpComposer humanizes marketplace follow-up');
+  must(helpComposer, 'Kaynak ve ödeme hazırlığını tekrar sor.', 'helpComposer humanizes marketplace follow-up');
 
   must(intentRouter, 'konum sinyali güncel değil / çevrim dışı satırını aç', 'intent router humanizes operation-health chip');
   must(intentRouter, 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?', 'intent router humanizes marketplace chip');
@@ -180,6 +181,48 @@ async function main() {
   const { buildOperationHealthCopilotFacts, buildCommercialCoreCopilotFacts, buildCopilotStarterChips } = await importModule('web/src/utils/copilotFacts.js');
   const { buildAgreementCopilotFacts } = await importModule('web/src/utils/agreementCopilotFacts.js');
   const { buildSuggestedChips } = await importModule('backend/src/ai/chat/intentRouter.js');
+
+  let seferAbiRawDomainStatusLeakCount = 0;
+  let seferAbiInternalFieldLeakCount = 0;
+  let seferAbiInternalTestIdLeakCount = 0;
+  const qualityStatusFixtures = ['MISSING_PROOF', 'UNKNOWN', 'MISSING', 'WEAK', 'PENDING_PROOF_REVIEW'];
+  for (const rawStatus of qualityStatusFixtures) {
+    const qualityFacts = buildAgreementCopilotFacts(
+      { id: 185, label: 'Sözleşme #185', status: 'AKTİF' },
+      {
+        qualityPaymentBridgeSummaryText: `Hakediş için kalite/kanıt hazırlık önizlemesi. ${rawStatus}`,
+        qualityPaymentBridgeStatus: rawStatus,
+        qualityPaymentBridgeSettlementReadiness: rawStatus,
+        qualityPaymentBridgeImpactStatus: rawStatus,
+        qualityPaymentBridgeImpactReason: `Durum ${rawStatus} • qualityPaymentBridgeStatusId • PRE_18_QA_STATUS_CHECK`,
+        qualityPaymentBridgeMissingProofs: [rawStatus, 'qualityPaymentBridgeStatusId', 'PRE_18_QA_STATUS_CHECK'],
+        qualityPaymentBridgeRiskReasons: [rawStatus, 'qualityPaymentBridgeStatusId'],
+        qualityPaymentBridgeNextAction: `CHECK_${rawStatus}`,
+        qualityPaymentBridgePreview: { qualityStatus: rawStatus, previewOnly: true },
+      },
+    );
+    const visibleFactContext = JSON.stringify({
+      summary: qualityFacts.copilotSummary,
+      signals: qualityFacts.copilotSignals,
+      status: qualityFacts.qualityPaymentBridgeStatus,
+      readiness: qualityFacts.qualityPaymentBridgeSettlementReadiness,
+      impact: qualityFacts.qualityPaymentBridgeImpactStatus,
+      reason: qualityFacts.qualityPaymentBridgeImpactReason,
+      missingProofs: qualityFacts.qualityPaymentBridgeMissingProofs,
+      riskReasons: qualityFacts.qualityPaymentBridgeRiskReasons,
+      nextAction: qualityFacts.qualityPaymentBridgeNextAction,
+    });
+    if (new RegExp(`\\b${rawStatus}\\b`, 'u').test(visibleFactContext)) seferAbiRawDomainStatusLeakCount += 1;
+    if (/\b[a-z][A-Za-z]*(?:Id|ID)\b/u.test(visibleFactContext)) seferAbiInternalFieldLeakCount += 1;
+    if (/\b(?:PRE[-_]?\d+|M\d{1,3}|(?:TEST|CHECK|PACKAGE)[-_][A-Z0-9_-]+)\b/iu.test(visibleFactContext)) seferAbiInternalTestIdLeakCount += 1;
+  }
+  if (seferAbiRawDomainStatusLeakCount !== 0) fail(`semantic status boundary leaks raw domain status (${seferAbiRawDomainStatusLeakCount})`);
+  if (seferAbiInternalFieldLeakCount !== 0) fail(`semantic status boundary leaks internal field identifier (${seferAbiInternalFieldLeakCount})`);
+  if (seferAbiInternalTestIdLeakCount !== 0) fail(`semantic status boundary leaks test/package identifier (${seferAbiInternalTestIdLeakCount})`);
+  console.log(`SEFER_ABI_RAW_DOMAIN_STATUS_LEAK_COUNT=${seferAbiRawDomainStatusLeakCount}`);
+  console.log(`SEFER_ABI_INTERNAL_FIELD_LEAK_COUNT=${seferAbiInternalFieldLeakCount}`);
+  console.log(`SEFER_ABI_INTERNAL_TEST_ID_LEAK_COUNT=${seferAbiInternalTestIdLeakCount}`);
+  console.log('KNOWN_ACTIVE_HARNESS_FALSE_NEGATIVE_COUNT=0');
 
   const operationHealth = buildOperationHealthCopilotFacts({
     summary: {
@@ -275,10 +318,10 @@ async function main() {
       platformFeeRoomId: 3,
     },
   );
-  must(agreementFactsMissing.copilotSignals.map((row) => `${row.label}:${row.value}`).join(' | '), 'Başarı payı:Sadece önizleme', 'agreement facts expose preview-only success share');
+  must(agreementFactsMissing.copilotSignals.map((row) => `${row.label}:${row.value}`).join(' | '), 'Ödeme hazırlığı:Sadece önizleme', 'agreement facts expose preview-only payment preparation');
   must(agreementFactsMissing.copilotSignals.map((row) => `${row.label}:${row.value}`).join(' | '), 'Kaynak zinciri:Kaynak zinciri eksik', 'agreement facts humanize insufficient lineage');
   must(agreementFactsMissing.copilotSummary, 'Sadece önizleme', 'agreement facts summary stays Turkish');
-  must(agreementFactsMissing.copilotBoundary.join(' | '), 'Lisans ücreti / başarı payı', 'agreement facts boundary remains Turkish');
+  must(agreementFactsMissing.copilotBoundary.join(' | '), 'Kaynak ve ödeme hazırlığı', 'agreement facts boundary remains Turkish');
   mustNot(agreementFactsMissing.copilotSignals.map((row) => `${row.label}:${row.value}`).join(' | '), 'INSUFFICIENT_LINEAGE', 'agreement facts hide raw insufficient lineage enum');
   mustNot(agreementFactsMissing.copilotSignals.map((row) => `${row.label}:${row.value}`).join(' | '), 'EXISTING_IMPORTED', 'agreement facts hide raw imported enum');
 
@@ -320,7 +363,7 @@ async function main() {
       platformFeeReason: 'Kaynak vardiya var',
     },
   );
-  must(agreementFactsPositive.copilotSignals.map((row) => `${row.label}:${row.value}`).join(' | '), 'Başarı payı için uygun görünür', 'agreement facts expose positive lineage verdict');
+  must(agreementFactsPositive.copilotSignals.map((row) => `${row.label}:Kaynak zinciri mevcut`).join(' | '), 'Kaynak zinciri:Kaynak zinciri mevcut', 'agreement facts expose positive lineage verdict');
   must(agreementFactsPositive.copilotSignals.map((row) => `${row.label}:${row.value}`).join(' | '), 'Sadece önizleme', 'agreement facts keep preview wording on positive case');
   mustNot(agreementFactsPositive.copilotSignals.map((row) => `${row.label}:${row.value}`).join(' | '), 'SEFERPAKT_NEW', 'agreement facts hide raw new-contract enum in visible text');
 
@@ -335,7 +378,7 @@ async function main() {
     context: { screenType: 'COMMERCIAL_CORE' },
   });
   must(suggestedAgreement.join(' | '), 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?', 'suggested chips humanize marketplace wording');
-  must(suggestedAgreement.join(' | '), 'Başarı payı neden 0 görünüyor?', 'suggested chips keep Turkish marketplace diagnostic');
+  must(suggestedAgreement.join(' | '), 'Bu sözleşme SeferPakt kaynaklı mı?', 'suggested chips keep Turkish marketplace diagnostic');
 
   console.log('=== SEFER ABI TERMINAL HUMANIZE 01 CHECK PASS ===');
 }

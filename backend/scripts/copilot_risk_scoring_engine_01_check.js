@@ -572,6 +572,13 @@ function main() {
   console.log(`testedCases=${testedCases}`);
   console.log(`passCount=${passCount}`);
   console.log(`failCount=${failCount}`);
+
+  if (failCount > 0) {
+    console.error(`FAIL COPILOT-RISK-SCORING-ENGINE-01 passCount=${passCount} failCount=${failCount}`);
+    process.exitCode = 1;
+    return;
+  }
+
   console.log('PASS COPILOT-RISK-SCORING-ENGINE-01');
 }
 

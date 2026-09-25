@@ -131,8 +131,9 @@ export default function DriverMapPanel() {
     return shifts.find((s) => s.status === "ACTIVE" || s.status === "APPROVED") || null;
   }, [shifts]);
   const selectedVehicle = useMemo(() => {
-    return vehicles.find((v) => String(v?.id || "") === String(selectedVehicleId || "")) || vehicles[0] || null;
-  }, [vehicles, selectedVehicleId]);
+    if (!activeShift) return null;
+    return vehicles.find((v) => String(v?.id || "") === String(selectedVehicleId || "")) || null;
+  }, [activeShift, vehicles, selectedVehicleId]);
 
   const stops = useMemo(
     () => (Array.isArray(activeShift?.stops) ? activeShift.stops : []),

@@ -420,7 +420,7 @@ function buildChipsForState(snapshot) {
     return ['Konum sinyali (GPS)', 'Sürücü', 'Son konum', 'Durak'];
   }
   if (snapshot.isPersonelLiveSurface && /(niye|neden|görünmüyor|gorunmuyor|yok|nerede)/.test(text)) {
-    return ['Araç nerede?', 'Son GPS ne zaman geldi? / Saat', 'Servis durumu ne? / Durak', 'Sürücünün telefon GPS’i devrede mi?'];
+    return ['Araç nerede?', 'Son konum bilgisi ne zaman geldi? / Saat', 'Servis durumu ne? / Durak', 'Sürücünün telefonundan konum sinyali devrede mi?'];
   }
   if (snapshot.isParentLiveSurface && /(gelmedi\s+m[iı]|gelmedi\s+mi|gelmedi|niye\s+yok|neden\s+yok|görünmüyor|gorunmuyor)/.test(text)) {
     return ['Araç konumu', 'Servis saati', 'Bağlı vardiya'];

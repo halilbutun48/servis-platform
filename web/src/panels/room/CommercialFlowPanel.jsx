@@ -14,11 +14,11 @@ import CollapsibleSection from "../../components/CollapsibleSection";
 import HakedisReconciliationEntryCard from "../../components/HakedisReconciliationEntryCard";
 
 const ROOM_FLOW_TABS = [
-  { key: "settlement", label: "Hakediş" },
+  { key: "settlement", label: "Hakediş önizleme" },
   { key: "contractShift", label: "Sözleşme & Vardiya" },
   { key: "offers", label: "Teklifler" },
   { key: "quality", label: "Kalite / Kanıt" },
-  { key: "payment", label: "Ödeme Hazırlığı" },
+  { key: "payment", label: "Hakediş hazırlık özeti" },
   { key: "history", label: "Geçmiş" },
 ];
 
@@ -406,7 +406,7 @@ export default function CommercialFlowPanel() {
       return (
         <div style={{ display: "grid", gap: 14 }}>
           <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
-            <div className="panelSectionTitle">Hakediş</div>
+            <div className="panelSectionTitle">Hakediş önizleme</div>
             <div className="panelMeta">
               Bu sekme hakediş yolunu özetler; ödeme başlatmaz. Sözleşme ve aktif operasyon sinyalleri birlikte okunur.
             </div>
@@ -432,7 +432,7 @@ export default function CommercialFlowPanel() {
           >
             <div style={{ display: "grid", gap: 8 }}>
               <div className="panelMeta">• Taşımacılık Firması tarafında hakediş görünürlüğü, sözleşme ve aktif operasyon bağlantısıyla okunur.</div>
-              <div className="panelMeta">• Kesin ödeme / komisyon ayrıntısı başka omurgada kalır; bu ekran sadece yolu gösterir.</div>
+              <div className="panelMeta">• Kesin ödeme ayrıntısı ayrı hazırlık omurgasında kalır; bu ekran yalnızca yolu gösterir.</div>
               <div className="panelMeta">• Kullanıcı bu sekmede ödeme başlatmaz, yalnızca özet ve bağlantı görür.</div>
             </div>
           </CollapsibleSection>
@@ -568,9 +568,9 @@ export default function CommercialFlowPanel() {
       return (
         <div style={{ display: "grid", gap: 14 }}>
           <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
-            <div className="panelSectionTitle">Ödeme Hazırlığı</div>
+            <div className="panelSectionTitle">Hakediş hazırlık özeti</div>
             <div className="panelMeta">
-              Bu taşımacılık firması ekranı ödeme başlatmaz; yalnızca ödeme öncesi bağlı kayıtların hazırlık durumunu ve yönünü gösterir.
+              Bu taşımacılık firması ekranı ödeme başlatmaz; yalnızca hakediş için bağlı kayıtların hazırlık durumunu ve yönünü gösterir.
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
               <MetricCard title="Aktif Sözleşme" value={summary?.cards?.activeAgreements ?? "-"} note="Ödeme hazırlığına bağlı kayıtlar" accent={summary?.cards?.activeAgreements ? "good" : "default"} />
@@ -581,7 +581,7 @@ export default function CommercialFlowPanel() {
           </div>
 
           <CollapsibleSection
-            title="Ödeme hazırlığı notları"
+            title="Hakediş hazırlık notları"
             subtitle="Salt okunur görünür kural ve ilişkiler"
             badge={paymentCount ? `${paymentCount}` : "0"}
             compact
@@ -700,7 +700,7 @@ export default function CommercialFlowPanel() {
   return (
       <div className="roomCommercialWorkspaceFull">
       <PanelChrome
-        title="Ticari Akışım"
+        title="Ticari Çalışma Alanı"
         subtitle="Taşımacılık Firması için ticari görünüm artık kısa özet + sekmeli bölümlerle açılıyor. Hakediş, sözleşme, teklif, kalite, ödeme ve geçmiş ayrı okunur; kritik özet hep açık kalır."
         actions={<div className="panelMeta">Kapsam: Kendi ticari alanınız</div>}
         style={{ width: "100%" }}
@@ -774,7 +774,7 @@ export default function CommercialFlowPanel() {
                 <div className="panelMeta">• Sözleşme & Vardiya: operasyon bağlantılı kayıtlar.</div>
                 <div className="panelMeta">• Teklifler: market ve pazarlık kayıtları.</div>
                 <div className="panelMeta">• Kalite / Kanıt: kalite ve destek yönlendirmesi.</div>
-                <div className="panelMeta">• Ödeme Hazırlığı: yalnızca salt okunur hazırlık yolu.</div>
+                <div className="panelMeta">• Hakediş hazırlık özeti: yalnızca salt okunur hazırlık yolu.</div>
                 <div className="panelMeta">• Geçmiş: filtreli tam tablo.</div>
               </div>
             </CollapsibleSection>

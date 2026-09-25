@@ -20,6 +20,7 @@ import { cachedGet } from "../../utils/uiDataCache";
 import { linkAgreementsToOrigin } from "../../utils/agreementOriginLink";
 import { AgreementWizardModal as Modal } from "./AgreementWizardModal";
 import { AGREEMENT_WIZARD_PACKS } from "./agreementWizardPacks";
+import { userFacingDirectionLabel, userFacingPatternLabel } from "../../utils/terminology";
 
 function todayYmd() {
   return ymdTR();
@@ -351,9 +352,9 @@ function guessPackKey(prefill) {
     setErr("");
     setOkMsg("");
 
-    if (!token) return setErr("Token yok.");
+    if (!token) return setErr("Oturum bilgisi bulunamadı.");
     if (!launchPrefill?.sourceShiftId) return setErr("Doğrudan sözleşme açma kapalı. Önce vardiyada “Sözleşmeye Dönüştür” kullan.");
-    if (!roomsSupported) return setErr("Odalar endpointi yok. Önce /api/rooms çalışmalı.");
+    if (!roomsSupported) return setErr("Taşımacılık Firmaları listesi kullanılamıyor. Önce hizmet veren firma listesi hazır olmalı.");
 
     const rid = Number(roomId || 0);
     if (!rid) return setErr("Taşımacılık Firması seçmelisin.");
@@ -463,7 +464,7 @@ function guessPackKey(prefill) {
 
   async function createMarketShiftAndSendOffers() {
     setMarketErr("");
-    if (!token) return setMarketErr("Token yok.");
+    if (!token) return setMarketErr("Oturum bilgisi bulunamadı.");
     if (!isYmd(marketDate)) return setMarketErr("Tarih formatı YYYY-MM-DD olmalı.");
 
     const pickedRooms = Object.entries(marketRoomIds || {})
@@ -595,7 +596,7 @@ function guessPackKey(prefill) {
             <div style={{ fontWeight: 800 }}>{okMsg}</div>
             <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
               <button type="button" disabled={busy} onClick={() => navigate(companyPath(me, "/agreements"))}>Sözleşmelere Git</button>
-              <button type="button" disabled={busy} onClick={openMarketFlow}>Odalara Teklif Topla</button>
+              <button type="button" disabled={busy} onClick={openMarketFlow}>Taşımacılık Firmalarından Teklif Topla</button>
               <button type="button" disabled={busy} onClick={() => setOpen(false)}>Kapat</button>
             </div>
           </div>
@@ -643,15 +644,15 @@ function guessPackKey(prefill) {
                 <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   Yön
                   <select value={marketDirection} onChange={(e) => setMarketDirection(e.target.value)}>
-                    <option value="INBOUND">INBOUND</option>
-                    <option value="OUTBOUND">OUTBOUND</option>
+                    <option value="INBOUND">{userFacingDirectionLabel("INBOUND")}</option>
+                    <option value="OUTBOUND">{userFacingDirectionLabel("OUTBOUND")}</option>
                   </select>
                 </label>
                 <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   Desen
                   <select value={marketPattern} onChange={(e) => setMarketPattern(e.target.value)}>
-                    <option value="ONE_WAY">ONE_WAY</option>
-                    <option value="LOOP">LOOP</option>
+                    <option value="ONE_WAY">{userFacingPatternLabel("ONE_WAY")}</option>
+                    <option value="LOOP">{userFacingPatternLabel("LOOP")}</option>
                   </select>
                 </label>
               </div>
@@ -893,7 +894,7 @@ function guessPackKey(prefill) {
             </div>
 
             <div className="muted" style={{ marginTop: 6 }}>
-              Günler: <b>{weekMaskToText(weekMask)}</b> • weekMask: <b>{weekMask}</b>
+              Günler: <b>{weekMaskToText(weekMask)}</b>
             </div>
           </div>
         </div>
@@ -904,7 +905,7 @@ function guessPackKey(prefill) {
           <div style={{ marginTop: 10 }}>
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={useRoomHub} onChange={(e) => setUseRoomHub(e.target.checked)} disabled={busy} />
-              Odanın toplanma konumunu otomatik kullan
+              Taşımacılık Firmasının toplanma konumunu otomatik kullan
             </label>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
@@ -936,15 +937,15 @@ function guessPackKey(prefill) {
                 <label className="muted">
                   Yön
                   <select value={direction} onChange={(e) => setDirection(e.target.value)} disabled={busy}>
-                    <option value="INBOUND">INBOUND</option>
-                    <option value="OUTBOUND">OUTBOUND</option>
+                    <option value="INBOUND">{userFacingDirectionLabel("INBOUND")}</option>
+                    <option value="OUTBOUND">{userFacingDirectionLabel("OUTBOUND")}</option>
                   </select>
                 </label>
                 <label className="muted">
                   Desen
                   <select value={pattern} onChange={(e) => setPattern(e.target.value)} disabled={busy}>
-                    <option value="ONE_WAY">ONE_WAY</option>
-                    <option value="LOOP">LOOP</option>
+                    <option value="ONE_WAY">{userFacingPatternLabel("ONE_WAY")}</option>
+                    <option value="LOOP">{userFacingPatternLabel("LOOP")}</option>
                   </select>
                 </label>
               </div>

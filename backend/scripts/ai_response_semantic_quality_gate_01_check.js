@@ -640,6 +640,46 @@ const BROAD_ALLOWED_PUBLIC_QUESTION_TYPES = [
 
 const INTEGRATION_CASES = [
   {
+    id: 'operation-health:school',
+    family: DIRECT_FAMILIES[5],
+    surface: SURFACES[4],
+    message: 'Operasyon sağlığı nasıl?',
+    allowedQuestionTypes: ['SEMANTIC_SERVICE_SUMMARY'],
+    expectedMode: 'CONTEXTUAL_REASONING',
+    fieldName: 'operationHealthReply',
+    replyMustAny: ['operasyon', 'açık', 'yetki'],
+    publicMustAny: ['operasyon', 'açık', 'yetki'],
+    compareField: 'operationHealthReply',
+  },
+  {
+    id: 'operation-health:room-map',
+    family: DIRECT_FAMILIES[5],
+    surface: SURFACES[5],
+    message: 'Durum iyi mi?',
+    allowedQuestionTypes: ['SEMANTIC_ENTITY_LOOKUP'],
+    expectedMode: 'CONTEXTUAL_REASONING',
+    fieldName: 'operationHealthReply',
+    replyMustAny: ['konum', 'canlılık', 'rota'],
+    publicMustAny: ['konum', 'canlılık', 'rota'],
+    compareField: 'operationHealthReply',
+  },
+  {
+    id: 'operation-health:parent-live',
+    family: DIRECT_FAMILIES[5],
+    surface: SURFACES[11],
+    message: 'Bugünkü durum iyi mi?',
+    allowedQuestionTypes: ['SEMANTIC_ENTITY_LOOKUP'],
+    expectedMode: 'CONTEXTUAL_REASONING',
+    fieldName: 'operationHealthReply',
+    allowMissingField: true,
+    allowMissingCompareField: true,
+    allowMissingOperationHealthField: true,
+    replyMustAny: ['öğrencinin servisi', 'tahmini varış', 'araç bağlantısını'],
+    publicMustAny: ['öğrencinin servisi', 'tahmini varış', 'araç bağlantısını'],
+    publicMustNot: ['riskli cihaz', 'açık talep', 'yetki satırı'],
+    compareField: 'operationHealthReply',
+  },
+  {
     id: 'next-best-action-company-plan',
     family: DIRECT_FAMILIES[0],
     surface: SURFACES[0],
@@ -657,11 +697,11 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[0],
     surface: SURFACES[4],
     message: 'Önce neye bakayım?',
-    allowedQuestionTypes: [...BROAD_ALLOWED_PUBLIC_QUESTION_TYPES, 'NEXT_STEP', 'NEXT_BEST_ACTION', 'SAFE_NEXT_STEP'],
+    allowedQuestionTypes: ['SEMANTIC_PRIORITY'],
     expectedMode: 'CONTEXTUAL_REASONING',
     fieldName: 'nextBestAction',
-    replyMustAny: ['Sıradaki', 'Önce', 'güvenli'],
-    publicMustAny: ['Sıradaki', 'Önce', 'Şimdi'],
+    replyMustAny: ['Plan', 'Vardiyalar'],
+    publicMustAny: ['Plan', 'Vardiyalar'],
     compareField: 'nextBestAction',
     separationField: 'reply',
   },
@@ -670,7 +710,7 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[2],
     surface: SURFACES[7],
     message: 'Bu akış nasıl ilerliyor?',
-    allowedQuestionTypes: [...BROAD_ALLOWED_PUBLIC_QUESTION_TYPES, 'NEXT_STEP', 'DETAIL_FLOW', 'NEXT_BEST_ACTION', 'SAFE_NEXT_STEP'],
+    allowedQuestionTypes: ['SEMANTIC_GENERAL_KNOWLEDGE'],
     expectedMode: 'CONTEXTUAL_REASONING',
     fieldName: 'workflowReasoningReply',
     replyMustAny: ['akış', 'adım', 'şimdi', 'devam'],
@@ -682,7 +722,7 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[2],
     surface: SURFACES[9],
     message: 'Akış nasıl?',
-    allowedQuestionTypes: [...BROAD_ALLOWED_PUBLIC_QUESTION_TYPES, 'NEXT_STEP', 'DETAIL_FLOW', 'NEXT_BEST_ACTION', 'SAFE_NEXT_STEP'],
+    allowedQuestionTypes: ['SEMANTIC_GENERAL_KNOWLEDGE'],
     expectedMode: 'CONTEXTUAL_REASONING',
     fieldName: 'workflowReasoningReply',
     replyMustAny: ['akış', 'adım', 'şimdi', 'devam'],
@@ -742,7 +782,7 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[5],
     surface: SURFACES[8],
     message: 'Bugünkü durum iyi mi?',
-    allowedQuestionTypes: [...BROAD_ALLOWED_PUBLIC_QUESTION_TYPES, 'STATUS_HELP', 'NEXT_STEP', 'SAFE_NEXT_STEP'],
+    allowedQuestionTypes: ['SEMANTIC_ENTITY_LOOKUP'],
     expectedMode: 'CONTEXTUAL_REASONING',
     fieldName: 'operationHealthReply',
     replyMustAny: ['canlılık', 'risk', 'konum', 'sinyal'],
@@ -754,7 +794,7 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[5],
     surface: SURFACES[12],
     message: 'Operasyon sağlığı nasıl?',
-    allowedQuestionTypes: [...BROAD_ALLOWED_PUBLIC_QUESTION_TYPES, 'STATUS_HELP', 'NEXT_STEP', 'SAFE_NEXT_STEP'],
+    allowedQuestionTypes: ['SEMANTIC_SERVICE_SUMMARY'],
     expectedMode: 'CONTEXTUAL_REASONING',
     fieldName: 'operationHealthReply',
     replyMustAny: ['canlılık', 'risk', 'konum', 'sinyal'],
@@ -766,7 +806,7 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[6],
     surface: SURFACES[5],
     message: 'Servis gelmedi.',
-    allowedQuestionTypes: [...BROAD_ALLOWED_PUBLIC_QUESTION_TYPES, 'DETAIL_FLOW', 'NEXT_STEP', 'NEXT_BEST_ACTION', 'STATUS_HELP', 'SCREEN_PURPOSE'],
+    allowedQuestionTypes: ['SEMANTIC_MULTI_DOMAIN_SUMMARY'],
     expectedMode: 'CONTEXTUAL_REASONING',
     fieldName: 'smartDiagnosticReply',
     allowMissingField: true,
@@ -778,7 +818,7 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[6],
     surface: SURFACES[11],
     message: 'Servis yok mu?',
-    allowedQuestionTypes: [...BROAD_ALLOWED_PUBLIC_QUESTION_TYPES, 'DETAIL_FLOW', 'NEXT_STEP', 'NEXT_BEST_ACTION', 'STATUS_HELP', 'SCREEN_PURPOSE'],
+    allowedQuestionTypes: ['SEMANTIC_MULTI_DOMAIN_SUMMARY'],
     expectedMode: 'CONTEXTUAL_REASONING',
     fieldName: 'smartDiagnosticReply',
     replyMustAny: ['servis gelmediyse', 'araç konumu', 'servis saati', 'vardiya'],
@@ -789,7 +829,7 @@ const INTEGRATION_CASES = [
     family: CLARIFYING_FAMILY,
     surface: SURFACES[1],
     message: 'Bu ne?',
-    allowedQuestionTypes: [...BROAD_ALLOWED_PUBLIC_QUESTION_TYPES, 'SCREEN_PURPOSE', 'CLARIFYING_QUESTION', 'SCREEN_EXPLANATION_HELP'],
+    allowedQuestionTypes: ['SEMANTIC_MULTI_DOMAIN_SUMMARY'],
     expectedMode: 'CLARIFYING_QUESTION',
     fieldName: 'clarifyingQuestion',
     replyMustAny: ['netleştirelim', 'hangi kayıt', 'alternatif'],
@@ -815,7 +855,7 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[7],
     surface: SURFACES[0],
     message: 'Tamam.',
-    allowedQuestionTypes: [...BROAD_ALLOWED_PUBLIC_QUESTION_TYPES, 'NEXT_BEST_ACTION', 'NEXT_STEP', 'DETAIL_FLOW', 'NEXT_SCREEN'],
+    allowedQuestionTypes: ['SEMANTIC_OFF_TOPIC_SAFE'],
     expectedMode: 'CONTEXTUAL_REASONING',
     replyMustAny: ['plan', 'vardiya', 'teklif', 'sözleşme'],
     publicMustAny: ['plan', 'vardiya', 'teklif', 'sözleşme'],
@@ -827,7 +867,7 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[7],
     surface: SURFACES[7],
     message: 'Devam.',
-    allowedQuestionTypes: [...BROAD_ALLOWED_PUBLIC_QUESTION_TYPES, 'DETAIL_FLOW', 'NEXT_STEP', 'NEXT_BEST_ACTION', 'NEXT_SCREEN'],
+    allowedQuestionTypes: ['SEMANTIC_MULTI_DOMAIN_SUMMARY'],
     expectedMode: 'CONTEXTUAL_REASONING',
     replyMustAny: ['vardiyalar', 'seçili vardiya', 'araç', 'sürücü', 'başlatma'],
     publicMustAny: ['vardiyalar', 'seçili vardiya', 'araç', 'sürücü', 'başlatma'],
@@ -839,7 +879,7 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[7],
     surface: SURFACES[5],
     message: 'Bulamadım.',
-    allowedQuestionTypes: [...BROAD_ALLOWED_PUBLIC_QUESTION_TYPES, 'NEXT_SCREEN', 'DETAIL_FLOW', 'NEXT_STEP', 'NEXT_BEST_ACTION'],
+    allowedQuestionTypes: ['SEMANTIC_OFF_TOPIC_SAFE'],
     expectedMode: 'CONTEXTUAL_REASONING',
     replyMustAny: ['araç', 'alternatif', 'ekran', 'bulamadığın'],
     publicMustAny: ['araç', 'alternatif', 'ekran', 'bulamadığın'],
@@ -853,7 +893,7 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[7],
     surface: SURFACES[11],
     message: 'Bulamadım.',
-    allowedQuestionTypes: [...BROAD_ALLOWED_PUBLIC_QUESTION_TYPES, 'NEXT_SCREEN', 'DETAIL_FLOW', 'NEXT_STEP', 'NEXT_BEST_ACTION'],
+    allowedQuestionTypes: ['SEMANTIC_OFF_TOPIC_SAFE'],
     expectedMode: 'CONTEXTUAL_REASONING',
     replyMustAny: ['servis', 'alternatif', 'ekran', 'bulamadığın'],
     publicMustAny: ['servis', 'alternatif', 'ekran', 'bulamadığın'],
@@ -870,6 +910,16 @@ for (const family of DIRECT_FAMILIES) {
   for (let index = 0; index < SURFACES.length; index += 1) {
     const surface = SURFACES[index];
     const message = family.messages[index % family.messages.length];
+    const contextualOperationHealthCase = family.id === 'operation-health'
+      ? INTEGRATION_CASES.find((testCase) => testCase.id === `${family.id}:${surface.id}`)
+      : null;
+    if (contextualOperationHealthCase) {
+      CASES.push({
+        kind: 'integration',
+        ...contextualOperationHealthCase,
+      });
+      continue;
+    }
     CASES.push({
       kind: 'direct',
       id: `${family.id}:${surface.id}`,
@@ -882,6 +932,7 @@ for (const family of DIRECT_FAMILIES) {
 }
 
 for (const testCase of INTEGRATION_CASES) {
+  if (CASES.some((existing) => existing.id === testCase.id)) continue;
   CASES.push({
     kind: 'integration',
     ...testCase,
@@ -1000,7 +1051,7 @@ function runCase(testCase) {
   if (testCase.id.startsWith('risk-')) {
     must(String(assistant.riskScoringReply || '').trim().length > 0, `${testCase.id} risk scoring reply helper is non-empty`);
   }
-  if (testCase.id.startsWith('operation-health-')) {
+  if (testCase.id.startsWith('operation-health-') && !testCase.allowMissingOperationHealthField) {
     must(String(assistant.operationHealthReply || '').trim().length > 0, `${testCase.id} operation health reply helper is non-empty`);
   }
   if (testCase.id.startsWith('workflow-')) {

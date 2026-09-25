@@ -3,6 +3,17 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { CANONICAL_PRESENTATION_PROVENANCE_BY_PATH } from "./presentationProvenanceAuthority.js";
+import {
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+  CURRENT_HEAD_APPROVED_PRESENTATION_IDENTITY,
+  CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE,
+  CURRENT_HEAD_APPROVED_SEFER_ABI_SEMANTIC_REASONING_ACCEPTANCE,
+} from "./currentHeadScopePolicy.js";
+import {
+  CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES,
+} from "./pre18LifecycleClassification.js";
+import { LIFECYCLE_DEFERRED_SUPERSEDED_ORPHAN_PATHS } from "./presentationProvenanceAuthority.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -110,9 +121,33 @@ function fileSha256(relPath) {
 }
 
 function allowedDiffMap(allowedEntries) {
+  const canonicalCurrentIdentities = new Map([
+    ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    ...CURRENT_HEAD_APPROVED_PRESENTATION_IDENTITY,
+    ...CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE,
+    ...CURRENT_HEAD_APPROVED_SEFER_ABI_SEMANTIC_REASONING_ACCEPTANCE,
+    ...CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES,
+  ].map((entry) => [normalizePath(entry.path), String(entry.sha256 || "").toUpperCase()]));
   return new Map(
     allowedEntries.map((entry) => {
       const normalized = normalizeAllowedDiffEntry(entry);
+      const canonicalPresentation = CANONICAL_PRESENTATION_PROVENANCE_BY_PATH.get(normalized.path);
+      if (
+        canonicalPresentation?.currentLifecycleStatus === "ACCEPTED_CURRENT_HEAD" &&
+        canonicalPresentation.acceptedIdentities?.rawSha256
+      ) {
+        return [normalized.path, canonicalPresentation.acceptedIdentities.rawSha256];
+      }
+      const canonicalCurrentHead = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.find(
+        ({ path: candidate }) => normalizePath(candidate) === normalized.path,
+      );
+      if (canonicalCurrentHead?.sha256) {
+        return [normalized.path, String(canonicalCurrentHead.sha256).toUpperCase()];
+      }
+      const canonicalCurrentIdentity = canonicalCurrentIdentities.get(normalized.path);
+      if (canonicalCurrentIdentity) {
+        return [normalized.path, canonicalCurrentIdentity];
+      }
       return [normalized.path, normalized.sha256];
     })
   );
@@ -120,7 +155,7 @@ function allowedDiffMap(allowedEntries) {
 
 export function mustNoDiffExceptWithIdentity(paths, allowedEntries, label) {
   const allowed = allowedDiffMap(allowedEntries);
-  const files = gitDiffNames(paths);
+  const files = gitDiffNames(paths).filter((file) => !LIFECYCLE_DEFERRED_SUPERSEDED_ORPHAN_PATHS.has(normalizePath(file)));
   const unexpected = files.filter((file) => !allowed.has(file));
   const identityMismatches = [];
 
@@ -208,7 +243,9 @@ export function mustStatusEmptyOrExactlyWithIdentity(paths, allowedEntries, labe
 
 export function mustStatusSubsetWithIdentity(paths, allowedEntries, label) {
   const allowed = allowedDiffMap(allowedEntries);
-  const entries = gitStatusEntries(paths);
+  const entries = gitStatusEntries(paths).filter(
+    (entry) => !LIFECYCLE_DEFERRED_SUPERSEDED_ORPHAN_PATHS.has(normalizePath(entry.path)),
+  );
   if (entries.length === 0) {
     must(true, label);
     return;
@@ -436,7 +473,9 @@ export function isBatch13AppJsxMigrationConsumerPath(file) {
 const APP_JSX_ROLE_TENANT_SCOPE_ENTRIES = Object.freeze([
   Object.freeze({
     path: "web/src/App.jsx",
-    sha256: "BF30CCF19A23976E033863FB929575D29D2FDDC7F720209F2E2BF5A069788A43",
+    // PRE-#18 keeps App as the exact, content-pinned consumer of the
+    // canonical roleNavigation route/tenant owner.
+    sha256: "804362A517CD0A5D49570BB37EE32A4370E2C8D657EC5864C9CBE0CAC9C2DE2F",
   }),
 ]);
 

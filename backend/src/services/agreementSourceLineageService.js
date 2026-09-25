@@ -18,6 +18,19 @@ function compactList(items = [], limit = 6) {
   return out;
 }
 
+function userFacingLineageSignal(value) {
+  const key = compactText(value, "");
+  const labels = {
+    sourceShiftId: "Kaynak vardiyası",
+    marketShiftId: "Pazar vardiyası",
+    organizationPlanId: "Organizasyon planı",
+    selectedOfferId: "Seçili teklif",
+    sourceSummary: "Kaynak özeti",
+    commercialSource: "Ticari kaynak",
+  };
+  return labels[key] || (key ? "Ek kaynak bilgisi" : "");
+}
+
 function normalizeAgreementSourceType(value) {
   const text = compactText(value, "").replace(/[\s-]+/g, "_").toUpperCase();
   if (!text) return "";
@@ -115,7 +128,9 @@ function buildSourceEvidence({
     isLegacy ? "Eski kayıt" : "",
     isImported ? "Mevcut / taşınmış kayıt" : "",
     isInsufficient ? "Kaynak zinciri eksik" : "",
-    compactList(missingSignals, 4).length ? `Eksik sinyal: ${compactList(missingSignals, 4).join(", ")}` : "",
+    compactList(missingSignals, 4).map(userFacingLineageSignal).filter(Boolean).length
+      ? `Eksik sinyal: ${compactList(missingSignals, 4).map(userFacingLineageSignal).filter(Boolean).join(", ")}`
+      : "",
   ], 8);
 }
 
@@ -190,7 +205,7 @@ export function buildAgreementLineageSummary(lineage = {}) {
   const organizationPlanId = Number(lineage?.organizationPlanId || 0);
   const selectedOfferId = Number(lineage?.selectedOfferId || 0);
   const sourceSummary = compactText(lineage?.sourceSummary || "", "");
-  const missingSignals = compactList(lineage?.missingSignals || [], 6);
+  const missingSignals = compactList(lineage?.missingSignals || [], 6).map(userFacingLineageSignal).filter(Boolean);
   const sourceTypeLabel = {
     SEFERPAKT_NEW: "SeferPakt kaynaklı yeni sözleşme",
     SEFERPAKT_RENEWAL: "SeferPakt kaynaklı yenileme",
@@ -226,8 +241,8 @@ export function buildAgreementLineageSummary(lineage = {}) {
 
   if (sourceType === "MANUAL_INTERNAL" || sourceType === "PILOT_FREE" || sourceType === "LEGACY") {
     return compactText(
-      `${sourceTypeLabel} • başarı payı doğmaz`,
-      `${sourceTypeLabel} • başarı payı doğmaz`,
+      `${sourceTypeLabel} • ek pay uygulanmaz`,
+      `${sourceTypeLabel} • ek pay uygulanmaz`,
     );
   }
 
@@ -391,9 +406,9 @@ export function inferAgreementSourceLineage(agreement, context = {}) {
     reason: billableByMarketplacePolicy
       ? `Kaynak vardiyası / teklif zinciri kanıtlı; ${sourceType === "SEFERPAKT_RENEWAL" ? "yenileme" : "yeni"} SeferPakt kaydı sadece önizlenebilir.`
       : sourceType === "LEGACY"
-        ? "Eski kayıt; başarı payı doğmaz."
+        ? "Eski kayıt; ek pay uygulanmaz."
         : sourceType === "MANUAL_INTERNAL" || sourceType === "PILOT_FREE"
-          ? "Mevcut / manuel / pilot kayıt; başarı payı doğmaz."
+          ? "Mevcut / manuel / pilot kayıt; ek pay uygulanmaz."
           : sourceType === "EXISTING_IMPORTED"
             ? "Kaynak vardiya zinciri bulunamadığı için mevcut/taşınmış kabul edilir."
             : "Kaynak vardiya zinciri kanıtlanamadı; insufficient lineage fallback uygulandı.",

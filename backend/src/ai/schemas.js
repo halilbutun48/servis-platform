@@ -138,10 +138,19 @@ const CONTRACT_TO_SHIFT_PHRASES = [
 function isShortNaturalScreenPrompt(message) {
   const text = normalizeLooseText(message);
   if (!text) return false;
+  // Keep explicit record references intact; otherwise a short action phrase
+  // can erase the record before semantic planning (for example, “Sözleşme
+  // #184 için şimdi ne yapmalıyım?” becoming “Şimdi ne yapayım?”).
+  if (hasExplicitProductEntityReference(text)) return false;
   return matchesStandalonePhrase(text, SHORT_SCREEN_PURPOSE_PHRASES)
     || matchesStandalonePhrase(text, SHORT_FIRST_CONTROL_PHRASES)
     || matchesStandalonePhrase(text, SHORT_NEXT_STEP_PHRASES)
     || matchesStandalonePhrase(text, NEXT_BEST_ACTION_PHRASES);
+}
+
+function hasExplicitProductEntityReference(text) {
+  return /(?:vardiya|sefer|teklif|rfq|sözleşme|sozlesme|anlaşma|anlasma|araç|arac|sürücü|surucu|plan|kayıt|kayit)\s*#?\s*\d+/iu.test(text)
+    || /(?:bu|seçili|secili|ilgili|aynı|ayni)\s+(?:vardiya|sefer|teklif|sözleşme|sozlesme|anlaşma|anlasma|araç|arac|sürücü|surucu|kayıt|kayit)/iu.test(text);
 }
 
 function isAgreementScreenContext(input) {
@@ -196,6 +205,7 @@ export function normalizeCopilotShortPrompt(message) {
   const raw = String(message || "").trim();
   if (!raw) return raw;
   const text = raw.toLocaleLowerCase("tr-TR");
+  if (hasExplicitProductEntityReference(text)) return raw;
   if (matchesStandalonePhrase(text, SHORT_SCREEN_PURPOSE_PHRASES)) return "Bu ekran ne için?";
   if (matchesStandalonePhrase(text, SHORT_FIRST_CONTROL_PHRASES)) return "İlk neye bakayım?";
   if (matchesStandalonePhrase(text, NEXT_BEST_ACTION_PHRASES)) return raw;

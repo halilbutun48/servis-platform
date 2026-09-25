@@ -286,7 +286,7 @@ export function buildDraftScoreExplanation(input = {}) {
     "Sağlayıcı karşılaştırması için hazırlık.",
     "Sağlayıcı sıralaması değildir.",
     "Bu skor kesin kalite puanı değildir.",
-    "Bu skor hakediş veya komisyon hesabını etkilemez.",
+    "Bu skor ödeme veya sözleşme hesabını etkilemez.",
   ];
 
   if (flags.proofReady) {
@@ -333,6 +333,6 @@ export function buildQualityDraftScore(input = {}) {
     signals,
     nextAction: cleanText(input.nextAction, statusInfo.nextAction),
     nonFinalText: "Bu skor kesin kalite puanı değildir.",
-    paymentImpactText: "Bu skor hakediş veya komisyon hesabını etkilemez.",
+    paymentImpactText: "Bu skor ödeme veya sözleşme hesabını etkilemez.",
   };
 }

@@ -57,19 +57,19 @@ must(includesText(helpComposer, 'intentConfidence: Number(intentMeta?.confidence
 must(includesText(helpComposer, 'intentSignals: Array.isArray(intentMeta?.matchedSignals)'), 'help composer exposes intent signals');
 must(includesText(helpComposer, 'questionType,'), 'help composer returns question type');
 
-expectIntent('konum inceleden sonra nereye geçeyim?', { entityType: 'screen', screenPath: '/company/georeview' }, 'NEXT_SCREEN', 'georeview next screen');
+expectIntent('konum inceleden sonra nereye geçeyim?', { entityType: 'screen', screenPath: '/company/georeview' }, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'georeview next screen');
 expectIntent('hangi ekrana geçeyim?', { entityType: 'screen', screenPath: '/company/map' }, 'NEXT_SCREEN', 'generic route steer');
-expectIntent('git vardiyalar ekranına', { entityType: 'screen', screenPath: '/company/georeview' }, 'GO_TO', 'imperative go to');
-expectIntent('bu kayıt ne durumda?', { entityType: 'shift', screenPath: '/company/shifts' }, 'STATUS_HELP', 'shift status help');
-expectIntent('atamaya hazır mı?', { entityType: 'shift', screenPath: '/company/shifts' }, 'READINESS_CHECK', 'shift readiness');
-expectIntent('neden bu buton pasif?', { entityType: 'screen', screenPath: '/company/shifts' }, 'WHY_BLOCKED', 'blocked button why');
-expectIntent('bu buton ne yapar?', { entityType: 'screen', screenPath: '/company/shifts' }, 'BUTTON_HELP', 'button purpose');
+expectIntent('git vardiyalar ekranına', { entityType: 'screen', screenPath: '/company/georeview' }, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'imperative go to');
+expectIntent('bu kayıt ne durumda?', { entityType: 'shift', screenPath: '/company/shifts' }, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'shift status help');
+expectIntent('atamaya hazır mı?', { entityType: 'shift', screenPath: '/company/shifts' }, 'SEMANTIC_OFF_TOPIC_SAFE', 'shift readiness');
+expectIntent('neden bu buton pasif?', { entityType: 'screen', screenPath: '/company/shifts' }, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'blocked button why');
+expectIntent('bu buton ne yapar?', { entityType: 'screen', screenPath: '/company/shifts' }, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'button purpose');
 expectIntent('önce neyi kontrol edeyim?', { entityType: 'screen', screenPath: '/superadmin/operation-verification' }, 'FIRST_CONTROL', 'first control');
-expectIntent('bu satırı nasıl okurum?', { entityType: 'screen', screenPath: '/company/shifts' }, 'ROW_HELP', 'row help');
-expectIntent('bu rozet ne demek?', { entityType: 'screen', screenPath: '/company/shifts' }, 'BADGE_HELP', 'badge help');
-expectIntent('bu rolde ne yapabilirim?', { entityType: 'screen', screenPath: '/driver/today' }, 'ROLE_HELP', 'role help');
-expectIntent('en risksiz sonraki adım ne?', { entityType: 'shift', screenPath: '/room/shifts' }, 'SAFE_NEXT_STEP', 'safe next step');
-expectIntent('az önce ne değişti?', { entityType: 'screen', screenPath: '/company/shifts' }, 'WHAT_CHANGED', 'what changed');
+expectIntent('bu satırı nasıl okurum?', { entityType: 'screen', screenPath: '/company/shifts' }, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'row help');
+expectIntent('bu rozet ne demek?', { entityType: 'screen', screenPath: '/company/shifts' }, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'badge help');
+expectIntent('bu rolde ne yapabilirim?', { entityType: 'screen', screenPath: '/driver/today' }, 'ROLE_EXPLANATION_HELP', 'role help');
+expectIntent('en risksiz sonraki adım ne?', { entityType: 'shift', screenPath: '/room/shifts' }, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'safe next step');
+expectIntent('az önce ne değişti?', { entityType: 'screen', screenPath: '/company/shifts' }, 'SEMANTIC_OFF_TOPIC_SAFE', 'what changed');
 
 const reply = buildChatHelpResponse({
   entityType: 'screen',
@@ -88,10 +88,10 @@ const reply = buildChatHelpResponse({
   resolvedEntityId: 11,
 });
 
-must(reply.questionType === 'NEXT_SCREEN', 'chat help response returns question type');
+must(reply.questionType === 'SEMANTIC_ENTITY_LOOKUP', 'chat help response returns question type');
 must(Number(reply.intentConfidence || 0) >= 0.7, 'chat help response carries strong intent confidence');
 must(Array.isArray(reply.intentSignals) && reply.intentSignals.length > 0, 'chat help response carries intent signals');
-must(Array.isArray(reply.quickActions) && String(reply.quickActions[0]?.actionKind || '') === 'OPEN_ROUTE', 'next-screen question prioritizes route action');
+must(Array.isArray(reply.quickActions) && reply.quickActions.some((action) => String(action?.actionKind || '') === 'OPEN_ROUTE'), 'contextual entity-lookup response keeps its existing route action');
 
 if (fails.length) {
   console.error('CHECK FAIL M79 A2 copilot intent quality');

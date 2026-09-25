@@ -141,7 +141,7 @@ must(helpComposer, "if (path.includes('/room/map') || path.includes('/room/live'
 must(helpComposer, "if (['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(questionType || ''))) return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];", 'help composer keeps GPS workflow question chips');
 mustNot(helpComposer, "if (path.includes('/room/map')) return ['Bu araç neden haritada görünmüyor?',", 'help composer removes GPS self-question chip');
 must(helpComposer, 'Canlı takip ekranını aç', 'help composer keeps live tracking chip');
-must(helpComposer, 'Bu ekranda hakediş sinyali görünmüyor; Ticari Akış/Hakediş önizlemesi ekranında eksik bilgi, ödeme hesabı ve komisyon durumunu kontrol et.', 'help composer keeps payment mismatch guard');
+must(helpComposer, 'Bu ekranda hakediş sinyali görünmüyor; Ticari Akış/Hakediş önizlemesi ekranında eksik bilgi, ödeme hesabı ve hazırlık durumunu kontrol et.', 'help composer keeps payment mismatch guard');
   must(helpComposer, 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya sözleşme üretim sinyali gerekir.', 'help composer keeps contract-shift mismatch guard');
 must(helpComposer, "makeGuideAction('Sıralı kontrol rehberini aç', { jobType: 'ASSIGNMENT_READINESS_GUIDE'", 'help composer keeps generic readiness guide label in shift fallback');
 must(helpComposer, 'Konum sinyali/operasyon kanıtını kontrol et', 'help composer uses vardiya follow-up in shift fallback');

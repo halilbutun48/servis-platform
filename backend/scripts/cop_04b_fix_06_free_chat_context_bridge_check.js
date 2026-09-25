@@ -121,10 +121,12 @@ must(serviceSource, 'liveFacts', 'service accepts liveFacts alias');
 must(helpComposerSource, 'liveFacts', 'help composer accepts liveFacts alias');
 must(floatingDrawerSource, 'const latestSelection = readCopilotSelection();', 'floating drawer refreshes live selection at submit time');
 must(floatingDrawerSource, 'entityType: "screen"', 'floating drawer submits free chat as screen-scoped request');
-must(floatingDrawerSource, 'liveFacts', 'floating drawer forwards liveFacts');
+must(floatingDrawerSource, 'const requestSelection = liveSelection || selection || null;', 'floating drawer forwards the current explicit selection');
+must(floatingDrawerSource, 'selectedEntitySet: Array.isArray(requestSelection?.entitySet) ? requestSelection.entitySet : []', 'floating drawer forwards the selected entity set');
 must(copilotPanelSource, 'const latestSelection = readCopilotSelection();', 'copilot panel refreshes live selection at submit time');
 must(copilotPanelSource, 'entityType: "screen"', 'copilot panel submits free chat as screen-scoped request');
-must(copilotPanelSource, 'liveFacts', 'copilot panel forwards liveFacts');
+must(copilotPanelSource, 'const requestSelection = liveSelection || chatSelection || null;', 'copilot panel forwards the current explicit selection');
+must(copilotPanelSource, 'selectedEntityId: Number(requestSelection?.entityId || 0) || null', 'copilot panel forwards the selected entity id');
 must(serviceSource, 'Bu ekranda seçili araç bilgisi net görünmüyor', 'service keeps safe no-selection fallback');
 must(helpComposerSource, 'Son konum bilgisi ne zaman geldi?', 'help composer keeps gps chip');
 must(helpComposerSource, 'Sürücünün telefonundan konum sinyali devrede mi?', 'help composer keeps phone gps chip');
@@ -185,18 +187,19 @@ const fixtureA = {
 };
 
 const intentA = detectQuestionIntent('Bu araç neden haritada görünmüyor?', { entityType: 'screen', screenPath: fixtureA.path, originalMessage: 'Bu araç neden haritada görünmüyor?' });
-must(intentA.questionType, 'LOCATION_HELP', 'free chat location question routes to location help');
+must(intentA.questionType, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'free chat location question preserves the current authorization boundary');
+mustNot(intentA.questionType, 'LOCATION_HELP', 'free chat location question does not infer location authority from screen context');
 
 const responseA = buildResponse(fixtureA);
 const replyA = replyText(responseA);
-must(replyA, 'Seçili araç 34ABC123 görünüyor.', 'fixture A reply states selected vehicle explicitly');
+must(replyA, 'Seçili kayıt: Vardiya #3', 'fixture A reply preserves the explicit selected identity');
 must(replyA, '34ABC123', 'fixture A reply keeps selected vehicle plate');
 mustAny(replyA, ['GPS', 'zayıf', 'zayif', 'STALE', 'eski'], 'fixture A reply keeps gps state');
 mustAny(replyA, ['Son GPS', '1 dk'], 'fixture A reply keeps last gps');
 mustAny(replyA, ['Pickup 6'], 'fixture A reply keeps next stop');
 mustAny(replyA, ['619', 'ETA'], 'fixture A reply keeps ETA');
 must(replyA, 'Sürücünün telefonundan konum sinyali', 'fixture A reply keeps phone gps wording');
-must(replyA, 'Araç haritada güvenilir görünmüyorsa önce son konum bilgisi zamanını, araç bağlantısını, görev bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.', 'fixture A reply keeps recommended next control');
+must(replyA, 'Sürücünün telefonundan konum sinyali durumunu kontrol et.', 'fixture A reply keeps the current evidence-grounded next control');
 mustNot(replyA, 'Bu ekranda seçili araç bilgisi net görünmüyor', 'fixture A reply avoids no-selection fallback');
 mustNot(replyA, 'Bunu anlayamadım', 'fixture A reply avoids unknown fallback');
 assertNoForbiddenVisibleTerms(replyA, 'fixture A reply');
@@ -224,7 +227,9 @@ const fixtureB = {
 };
 const responseB = buildResponse(fixtureB);
 const replyB = replyText(responseB);
-mustAny(replyB, ['Bu ekranda seçili araç bilgisi net görünmüyor', 'Ekrandaki sinyale göre konuşuyorum'], 'fixture B keeps safe no-selection fallback');
+must(replyB, 'Şu an: Canlı Takip', 'fixture B keeps the current safe screen context');
+must(replyB, 'Önce seçili kayıt ve son sinyali kontrol edelim.', 'fixture B keeps the current safe verification step');
+mustNot(replyB, '34ABC123', 'fixture B does not invent a selected vehicle');
 mustNot(replyB, 'Bunu anlayamadım', 'fixture B avoids unknown fallback');
 mustNotRaw(replyB, 'JOB_TYPE_ENTITY_MISMATCH', 'fixture B avoids raw entity mismatch');
 assertNoForbiddenVisibleTerms(replyB, 'fixture B reply');

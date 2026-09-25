@@ -1,5 +1,5 @@
 ﻿//web/src/layout/AppShell.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import NavDock from "./NavDock";
 import KvkkConsentGate from "../panels/shared/KvkkConsentGate";
 import TotpStepUpCard from "../panels/shared/TotpStepUpCard";
@@ -10,8 +10,9 @@ import FloatingCopilotDrawer from "../components/copilot/FloatingCopilotDrawer";
 import { BRAND_NAME } from "../config/brand.js";
 import { getStepUpProvider, isStepUpEnabled } from "../utils/stepUp";
 import { roleLabelForUser } from "../utils/labels";
+import { CopilotRouteContext } from "../copilot/routeContext";
 
-export default function AppShell({ path, children }) {
+export default function AppShell({ path, routeContext, children }) {
   const { me, logout } = useSession();
   const role = me?.role || "-";
   const roleDisplayLabel = roleLabelForUser(me || role);
@@ -23,6 +24,8 @@ export default function AppShell({ path, children }) {
   const shouldShowStepUpCard = isStepUpEnabled() && stepUpProvider !== "none";
   const [mobileNavPath, setMobileNavPath] = useState(null);
   const mobileNavOpen = mobileNavPath === path;
+  const mobileNavTriggerRef = useRef(null);
+  const previousMobileNavOpenRef = useRef(false);
 
   // Map and Copilot pages should be fluid (full width). Everything else is centered for readability.
   const fluidPath = String(path || "");
@@ -33,11 +36,27 @@ export default function AppShell({ path, children }) {
 
   useEffect(() => {
     if (!mobileNavOpen || typeof document === "undefined") return undefined;
+    function handleMobileNavKeyDown(event) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setMobileNavPath(null);
+      window.requestAnimationFrame(() => mobileNavTriggerRef.current?.focus());
+    }
+
+    document.addEventListener("keydown", handleMobileNavKeyDown);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
+      document.removeEventListener("keydown", handleMobileNavKeyDown);
       document.body.style.overflow = previousOverflow;
     };
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
+    if (previousMobileNavOpenRef.current && !mobileNavOpen && typeof window !== "undefined") {
+      window.requestAnimationFrame(() => mobileNavTriggerRef.current?.focus());
+    }
+    previousMobileNavOpenRef.current = mobileNavOpen;
   }, [mobileNavOpen]);
 
   const shellClasses = [
@@ -49,6 +68,7 @@ export default function AppShell({ path, children }) {
   ].filter(Boolean).join(" ");
 
   return (
+    <CopilotRouteContext.Provider value={routeContext}>
     <div className={shellClasses} data-role={role}>
       <NavDock
         role={role}
@@ -62,6 +82,7 @@ export default function AppShell({ path, children }) {
           <button
             type="button"
             className="btn sm shellTopMenu"
+            ref={mobileNavTriggerRef}
             onClick={() => setMobileNavPath((current) => (current === path ? null : path))}
             aria-expanded={mobileNavOpen}
             aria-controls="shell-nav-dock"
@@ -70,11 +91,21 @@ export default function AppShell({ path, children }) {
           >
             Menü
           </button>
-          <div className="shellTopBrand"><BrandMark compact subtitle="Operasyon paneli" /></div>
+          <div className="shellTopBrand" aria-label="SeferPakt">
+            <BrandMark size={40} variant="mark" className="shellTopCompactMark" />
+          </div>
           <div className="shellTopMeta">
             <div className="title">{shellHeadline}</div>
             <div className="muted">
-              {isSchool ? "Okul operasyonu" : isOrganization ? "Organizasyon operasyonu" : "Personel servis operasyonu"}
+              {isSchool
+                ? "Okul operasyonu"
+                : isOrganization
+                  ? "Organizasyon operasyonu"
+                  : role === "PARENT"
+                    ? "Veli servis takibi"
+                    : role === "SUPER_ADMIN"
+                      ? "Sistem yönetimi"
+                      : "Personel servis operasyonu"}
             </div>
             <div className="muted">
               {me?.email || "-"} • {roleDisplayLabel}
@@ -90,10 +121,11 @@ export default function AppShell({ path, children }) {
             <KvkkConsentGate />
             {isTabletOpsRole ? <TabletOpsQuickBar role={role} me={me} path={path} /> : null}
             {children}
-            <FloatingCopilotDrawer path={path} />
+            <FloatingCopilotDrawer path={path} routeContext={routeContext} />
           </div>
         </div>
       </div>
     </div>
+    </CopilotRouteContext.Provider>
   );
 }

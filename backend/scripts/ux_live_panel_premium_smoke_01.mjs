@@ -542,14 +542,24 @@ async function runRoomFinancialOperationsAdvancedAssertion(context, viewportName
     await page.waitForTimeout(250);
     result.inputDetailsOpened = await inputDetails.evaluate((element) => Boolean(element.open));
 
+    const comparisonSummary = page.locator("summary").filter({ hasText: "Karşılaştırma, senaryo ve dışa aktarım" }).first();
+    if (!(await comparisonSummary.isVisible({ timeout: 5000 }))) {
+      throw new Error("ROOM comparison details summary is not visible");
+    }
+    const comparisonDetails = comparisonSummary.locator("xpath=..");
+    if (!(await comparisonDetails.evaluate((element) => Boolean(element.open)))) {
+      await comparisonSummary.click({ timeout: 5000 });
+    }
+    await page.waitForTimeout(250);
+
     const visibleText = await getVisibleSurfaceText(page);
-    const externalReferenceCard = page.getByTestId("external-reference-card");
+    const externalReferenceCard = page.locator('[data-testid="external-reference-card"]:visible').first();
     await externalReferenceCard.locator("[data-testid=external-reference-no-data], [data-testid=external-reference-value]").first().waitFor({ state: "visible", timeout: 15000 });
     const externalReferenceText = await externalReferenceCard.innerText();
     result.externalReferenceVisible = await externalReferenceCard.isVisible();
-    result.externalReferenceNoDataVisible = await page.getByTestId("external-reference-no-data").isVisible();
+    result.externalReferenceNoDataVisible = await externalReferenceCard.getByTestId("external-reference-no-data").isVisible();
     result.externalReferenceValueVisible = (await externalReferenceCard.getAttribute("data-reference-state")) === "available"
-      && await page.getByTestId("external-reference-value").isVisible();
+      && await externalReferenceCard.getByTestId("external-reference-value").isVisible();
     result.externalReferenceRawTokensVisible = ["EXTERNAL_REFERENCE", "FUEL_DIESEL", "CURRENCY_PER_L", "NO_DATA", "providerKey", "valueMinor"].filter((token) => externalReferenceText.includes(token));
     result.rawFieldKeysVisible = rawFieldKeys.filter((key) => visibleText.includes(key));
     result.rawFieldKeyVisibleCount = result.rawFieldKeysVisible.length;
@@ -659,14 +669,24 @@ async function runCompanyFinancialOperationsAdvancedAssertion(context, viewportN
     await page.waitForTimeout(250);
     result.advancedDetailsOpened = await advancedDetails.evaluate((element) => Boolean(element.open));
 
+    const comparisonSummary = page.locator("summary").filter({ hasText: "Karşılaştırma, senaryo ve dışa aktarım" }).first();
+    if (!(await comparisonSummary.isVisible({ timeout: 5000 }))) {
+      throw new Error("COMPANY comparison details summary is not visible");
+    }
+    const comparisonDetails = comparisonSummary.locator("xpath=..");
+    if (!(await comparisonDetails.evaluate((element) => Boolean(element.open)))) {
+      await comparisonSummary.click({ timeout: 5000 });
+    }
+    await page.waitForTimeout(250);
+
     const visibleText = await getVisibleSurfaceText(page);
-    const externalReferenceCard = page.getByTestId("external-reference-card");
+    const externalReferenceCard = page.locator('[data-testid="external-reference-card"]:visible').first();
     await externalReferenceCard.locator("[data-testid=external-reference-no-data], [data-testid=external-reference-value]").first().waitFor({ state: "visible", timeout: 15000 });
     const externalReferenceText = await externalReferenceCard.innerText();
     result.externalReferenceVisible = await externalReferenceCard.isVisible();
-    result.externalReferenceNoDataVisible = await page.getByTestId("external-reference-no-data").isVisible();
+    result.externalReferenceNoDataVisible = await externalReferenceCard.getByTestId("external-reference-no-data").isVisible();
     result.externalReferenceValueVisible = (await externalReferenceCard.getAttribute("data-reference-state")) === "available"
-      && await page.getByTestId("external-reference-value").isVisible();
+      && await externalReferenceCard.getByTestId("external-reference-value").isVisible();
     result.externalReferenceRawTokensVisible = ["EXTERNAL_REFERENCE", "FUEL_DIESEL", "CURRENCY_PER_L", "NO_DATA", "providerKey", "valueMinor"].filter((token) => externalReferenceText.includes(token));
     result.rawFieldKeysVisible = rawFieldKeys.filter((key) => visibleText.includes(key));
     result.rawFieldKeyVisibleCount = result.rawFieldKeysVisible.length;
@@ -782,8 +802,16 @@ async function runExternalReferenceDataAvailableAssertion(context, viewportName,
     });
     await page.goto(`${WEB_BASE_URL}${route}`, { waitUntil: "domcontentloaded", timeout: 25000 });
     await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
-    await page.getByTestId("external-reference-value").waitFor({ state: "visible", timeout: 8000 });
-    const card = page.getByTestId("external-reference-card");
+    const comparisonSummary = page.locator("summary").filter({ hasText: "Karşılaştırma, senaryo ve dışa aktarım" }).first();
+    if (!(await comparisonSummary.isVisible({ timeout: 5000 }))) {
+      throw new Error(`${scope} comparison details summary is not visible`);
+    }
+    const comparisonDetails = comparisonSummary.locator("xpath=..");
+    if (!(await comparisonDetails.evaluate((element) => Boolean(element.open)))) {
+      await comparisonSummary.click({ timeout: 5000 });
+    }
+    await page.locator('[data-testid="external-reference-value"]:visible').first().waitFor({ state: "visible", timeout: 8000 });
+    const card = page.locator('[data-testid="external-reference-card"]:visible').first();
     const cardText = await card.innerText();
     result.availableStateVisible = (await card.getAttribute("data-reference-state")) === "available";
     result.valueVisible = cardText.includes("7,42 ₺/L");

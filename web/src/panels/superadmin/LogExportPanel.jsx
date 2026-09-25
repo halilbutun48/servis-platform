@@ -63,6 +63,22 @@ function summarizePreviewMeta(meta) {
   return parts.length ? parts.join(" • ") : "sistem kanıtı hazır";
 }
 
+function userFacingAction(action) {
+  const labels = {
+    AUTH_LOGIN_OK: "Giriş başarılı",
+    AUTH_LOGIN_FAIL: "Giriş başarısız",
+    AUTH_LOGIN_DEVICE_MISMATCH: "Girişte cihaz uyuşmazlığı",
+    AUTH_LOGIN_DEVICE_REQUIRED: "Girişte cihaz doğrulaması gerekli",
+    AUTH_LOGIN_DISABLED: "Devre dışı hesapla giriş denemesi",
+    AUTH_DRIVER_PIN_LOCKED: "Sürücü PIN'i kilitlendi",
+    AUTH_PASSWORD_CHANGED: "Şifre değiştirildi",
+    AUTH_TOTP_SETUP_ISSUED: "Ek doğrulama kurulumu oluşturuldu",
+    AUTH_STEP_UP_OK: "Ek doğrulama başarılı",
+    AUTH_STEP_UP_FAIL: "Ek doğrulama başarısız",
+  };
+  return labels[String(action || "").trim()] || (action ? "Sistem işlemi" : "-");
+}
+
 
 function basePathForKind(kind) {
   const k = String(kind || "").trim();
@@ -182,7 +198,7 @@ export default function LogExportPanel() {
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
-        <div className="panelTitle">İşlem kayıtlarını dışa aktar</div>
+        <h1 className="panelTitle">İşlem kayıtlarını dışa aktar</h1>
         <span className="pill" data-status="COUNT">{items.length} kayıt</span>
       </div>
 
@@ -235,16 +251,16 @@ export default function LogExportPanel() {
               {kind === "requests" ? (
                 <>
                   <label className="muted">
-                    pathLike
+                    İstek yolunu içeren
                     <input value={pathLike} onChange={(e) => setPathLike(e.target.value)} placeholder="ör: /api/shifts" />
                   </label>
                   <label className="muted">
-                    ip contains
+                    Ağ adresini içeren
                     <input value={ip} onChange={(e) => setIp(e.target.value)} placeholder="ör: 192.168" />
                   </label>
                   <label className="muted">
-                    status
-                    <input value={status} onChange={(e) => setStatus(e.target.value)} placeholder="200" />
+                    Durum kodu
+                    <input value={status} onChange={(e) => setStatus(e.target.value)} placeholder="ör: 200" />
                   </label>
                 </>
               ) : null}
@@ -252,23 +268,23 @@ export default function LogExportPanel() {
           ) : (
             <>
               <label className="muted">
-                Target Type
+                Kayıt türü
                 <select value={targetType} onChange={(e) => setTargetType(e.target.value)}>
-                  <option value="user">user</option>
-                  <option value="driver">driver</option>
-                  <option value="vehicle">vehicle</option>
-                  <option value="room">room</option>
-                  <option value="company">company</option>
-                  <option value="personel">personel</option>
-                  <option value="student">student</option>
+                  <option value="user">Kullanıcı</option>
+                  <option value="driver">Sürücü</option>
+                  <option value="vehicle">Araç</option>
+                  <option value="room">Taşımacılık Firması</option>
+                  <option value="company">Hizmet Alan Firma</option>
+                  <option value="personel">Personel</option>
+                  <option value="student">Öğrenci</option>
                 </select>
               </label>
               <label className="muted">
-                Target Id
-                <input value={targetId} onChange={(e) => setTargetId(e.target.value)} placeholder="id" />
+                Kayıt numarası
+                <input value={targetId} onChange={(e) => setTargetId(e.target.value)} placeholder="Kayıt numarası" />
               </label>
               <label className="muted">
-                Speed limit override (kmh)
+                Hız sınırı (km/s)
                 <input value={speedLimitKmh} onChange={(e) => setSpeedLimitKmh(e.target.value)} placeholder="örn: 80" />
               </label>
             </>
@@ -278,43 +294,43 @@ export default function LogExportPanel() {
         <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
           {!isBundle ? (
             <button className="btn sm" onClick={onPreview} disabled={busy}>
-              {busy ? "..." : "Preview"}
+              {busy ? "..." : "Önizlemeyi göster"}
             </button>
           ) : null}
           <button className="btn sm" onClick={onExport} disabled={busy}>
-            {busy ? "..." : "Export (Download)"}
+            {busy ? "..." : "Dışa aktar"}
           </button>
           {err ? <span className="muted" style={{ color: "crimson" }}>{err}</span> : null}
         </div>
 
         <div className="muted" style={{ marginTop: 8 }}>
-          Not: Bundle export varsayılan TXT’dir. Login logları AuditLog üzerinden tutulur (AUTH_LOGIN_*).
+          Not: Özet dışa aktarımı varsayılan metin biçimindedir. Giriş kayıtları denetim kayıtlarından okunur.
         </div>
       </div>
 
       {!isBundle ? (
         <div className="card" style={{ marginTop: 12 }}>
           <div className="muted" style={{ marginBottom: 8 }}>Önizleme (son 250)</div>
-          <div style={{ overflow: "auto" }}>
-            <table className="table">
+          <div className="tableWrap">
+            <table className="table pre18-admin-log-table">
               <thead>
                 <tr>
-                  <th>createdAt</th>
-                  <th>type</th>
-                  <th>info</th>
+                  <th>Tarih</th>
+                  <th>İşlem türü</th>
+                  <th>Ayrıntı</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((x) => (
                   <tr key={x.id || Math.random()}>
-                    <td style={{ whiteSpace: "nowrap" }}>{fmt(x.createdAt)}</td>
-                    <td style={{ whiteSpace: "nowrap" }}>{x.action || x.method || x.type || "-"}</td>
-                    <td style={{ fontFamily: "monospace", fontSize: 12 }}>
+                    <td data-label="Tarih">{fmt(x.createdAt)}</td>
+                    <td data-label="İşlem türü">{userFacingAction(x.action || x.method || x.type)}</td>
+                    <td data-label="Ayrıntı">
                       {kind === "requests"
-                        ? `${x.status} ${x.method} ${x.path} (${x.durationMs}ms) ip=${x.ip || ""} userId=${x.userId || ""}`
+                        ? `Durum: ${x.status || "-"} • Yöntem: ${x.method || "-"} • Yol: ${x.path || "-"} (${x.durationMs || 0} ms)${x.ip ? ` • Ağ adresi: ${x.ip}` : ""}${x.userId ? ` • Kullanıcı no: ${x.userId}` : ""}`
                         : kind === "login"
-                        ? `${x.action} userId=${x.entityId || ""} kanıt=${summarizePreviewMeta(x.meta)}`
-                        : `${x.action} ${x.entity}#${x.entityId || ""} actorUserId=${x.actorUserId || ""} kanıt=${summarizePreviewMeta(x.meta)}`}
+                        ? `İşlem: ${userFacingAction(x.action || x.method || x.type)} • Kullanıcı no: ${x.entityId || "-"} • Kanıt: ${summarizePreviewMeta(x.meta)}`
+                        : `İşlem: ${userFacingAction(x.action || x.method || x.type)} • Kayıt: ${x.entity || "-"} • Kayıt no: ${x.entityId || "-"}${x.actorUserId ? ` • İşlemi yapan kullanıcı: ${x.actorUserId}` : ""} • Kanıt: ${summarizePreviewMeta(x.meta)}`}
                     </td>
                   </tr>
                 ))}

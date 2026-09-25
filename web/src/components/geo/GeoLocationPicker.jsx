@@ -239,7 +239,7 @@ export default function GeoLocationPicker({
 
   return (
     <>
-        <div className="card" style={{ minHeight: compact ? 420 : 640 }}>
+        <div className="card geoLocationPicker" style={{ minHeight: compact ? 420 : 640 }}>
         <div className="topbar">
           <div>
             <div className="title">{title || "Konum seçici"}</div>
@@ -289,7 +289,7 @@ export default function GeoLocationPicker({
           </div>
         </div>
 
-        <div className="actionsRow" style={{ marginTop: 12, flexWrap: "wrap" }}>
+        <div className="actionsRow geoLocationActions" style={{ marginTop: 12, flexWrap: "wrap" }}>
           <button type="button" className="btn sm" onClick={onLocateMe} disabled={busy || locateMeBusy || !onLocateMe}>
             {locateMeBusy ? "Konum alınıyor..." : locateMeLabel}
           </button>
@@ -356,7 +356,7 @@ export default function GeoLocationPicker({
 
       {pickerOpen ? (
         <div className="modal-backdrop" style={{ padding: 20 }}>
-          <div className="modal" style={{ maxWidth: 1180, borderRadius: 18, border: "1px solid #22314f", background: "#121a2a", padding: 16 }}>
+          <div className="modal geoLocationPickerModal" style={{ maxWidth: 1180, borderRadius: 18, border: "1px solid #22314f", background: "#121a2a", padding: 16 }}>
             <div className="topbar" style={{ alignItems: "flex-start", gap: 12 }}>
               <div>
                 <div className="title">Büyük Haritada Konum İşaretle</div>

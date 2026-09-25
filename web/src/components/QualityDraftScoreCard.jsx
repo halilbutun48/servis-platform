@@ -131,7 +131,7 @@ export default function QualityDraftScoreCard({
             Bu skor kesin kalite puanı değildir.
           </div>
           <div className="panelMeta" style={{ marginTop: 4 }}>
-            Bu skor hakediş veya komisyon hesabını etkilemez.
+            Bu skor ödeme veya sözleşme hesabını etkilemez.
           </div>
         </div>
         <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>

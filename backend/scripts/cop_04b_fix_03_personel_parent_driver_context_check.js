@@ -140,7 +140,7 @@ must(personelLivePanelSource, 'setCopilotSelection(copilotSelection)', 'personel
 must(personelLivePanelSource, 'fields', 'personel live panel keeps fields bridge');
 must(personelLivePanelSource, 'badges', 'personel live panel keeps badges bridge');
 must(personelLivePanelSource, 'facts', 'personel live panel keeps facts bridge');
-mustAny(personelLivePanelSource, ['Araç GPS’i', 'Sürücünün telefon GPS’i'], 'personel live panel keeps gps source labels');
+mustAny(personelLivePanelSource, ['Araç konum sinyali', 'Sürücünün telefonundan konum sinyali'], 'personel live panel keeps current gps source labels');
 
 must(personelMyRidePanelSource, 'setCopilotSelection(copilotSelection)', 'personel my-ride panel keeps copilot selection push');
 must(personelMyRidePanelSource, 'fields', 'personel my-ride panel keeps fields bridge');
@@ -152,7 +152,7 @@ must(parentLivePanelSource, 'setCopilotSelection(copilotSelection)', 'parent liv
 must(parentLivePanelSource, 'fields', 'parent live panel keeps fields bridge');
 must(parentLivePanelSource, 'badges', 'parent live panel keeps badges bridge');
 must(parentLivePanelSource, 'facts', 'parent live panel keeps facts bridge');
-mustAny(parentLivePanelSource, ['Araç GPS’i', 'Sürücünün telefon GPS’i'], 'parent live panel keeps gps source labels');
+mustAny(parentLivePanelSource, ['Araç konum sinyali', 'Sürücünün telefonundan konum sinyali'], 'parent live panel keeps current gps source labels');
 
 must(driverTodayPanelSource, 'setCopilotSelection(copilotSelection)', 'driver today panel keeps copilot selection push');
 must(driverTodayPanelSource, 'selectedFields', 'driver today panel keeps selected fields bridge');
@@ -302,7 +302,8 @@ const personelIntent = detectQuestionIntent(personelRequest.message, {
   entityType: 'screen',
   originalMessage: personelRequest.message,
 });
-mustAny(personelIntent?.questionType || '', ['LOCATION_HELP'], 'personel live question routes to location help');
+must(personelIntent?.questionType || '', 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'personel live question preserves the current authorization boundary');
+mustNot(personelIntent?.questionType || '', 'LOCATION_HELP', 'personel live question does not infer location authority from screen context');
 const personelResponse = buildChatHelpResponse({
   entityType: parsedPersonelRequest.data.entityType,
   entityId: parsedPersonelRequest.data.entityId,
@@ -329,7 +330,7 @@ mustNot(personelReply, 'seçili servis bilgisi net görünmüyor', 'personel rep
 mustAny(personelReply, ['34ABC123', 'Bugünkü servis'], 'personel reply keeps selected service');
 mustAny(personelReply, ['konum sinyali eski', 'Son konum bilgisi: 2 dk', 'Araç konum sinyali'], 'personel reply keeps gps age/status');
 mustAny(personelReply, ['Araç konum sinyali', 'Sürücünün telefonundan konum sinyali'], 'personel reply keeps gps source language');
-mustAny(personelReply, ['Servis görünmüyorsa', 'Sıradaki durak Durak A', 'Durak A'], 'personel reply keeps live service wording');
+must(personelReply, 'Önce seçili kayıt ve son sinyali kontrol edelim.', 'personel reply keeps the current evidence-grounded next step');
 mustArrayContains(chipList(personelResponse), 'Araç nerede?', 'personel chips keep live service chip');
 mustArrayContains(chipList(personelResponse), 'Son konum bilgisi ne zaman geldi?', 'personel chips keep gps chip');
 mustArrayContains(chipList(personelResponse), 'Servis durumu ne?', 'personel chips keep status chip');
@@ -398,7 +399,8 @@ const parentIntent = detectQuestionIntent(parentRequest.message, {
   entityType: 'screen',
   originalMessage: parentRequest.message,
 });
-mustAny(parentIntent?.questionType || '', ['LOCATION_HELP'], 'parent live question routes to location help');
+must(parentIntent?.questionType || '', 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'parent live question preserves the current authorization boundary');
+mustNot(parentIntent?.questionType || '', 'LOCATION_HELP', 'parent live question does not infer location authority from screen context');
 const parentResponse = buildChatHelpResponse({
   entityType: parsedParentRequest.data.entityType,
   entityId: parsedParentRequest.data.entityId,
@@ -425,7 +427,7 @@ mustNot(parentReply, 'seçili servis bilgisi net görünmüyor', 'parent reply a
 mustAny(parentReply, ['34ABC123', 'Öğrenci servisi'], 'parent reply keeps selected service');
 mustAny(parentReply, ['Son konum bilgisi 30 sn önce', 'Tahmini varış süresi 8 dk', 'Canlı'], 'parent reply keeps gps age/status');
 mustAny(parentReply, ['Sürücünün telefonundan konum sinyali', 'Araç konum sinyali'], 'parent reply keeps gps source language');
-mustAny(parentReply, ['Servis görünmüyorsa', 'Tahmini varış'], 'parent reply keeps live service wording');
+must(parentReply, 'Önce seçili kayıt ve son sinyali kontrol edelim.', 'parent reply keeps the current evidence-grounded next step');
 mustArrayContains(chipList(parentResponse), 'Son konum bilgisi ne zaman geldi?', 'parent chips keep live service chip');
 mustArrayContains(chipList(parentResponse), 'Son konum bilgisi ne zaman geldi?', 'parent chips keep gps chip');
 mustArrayContains(chipList(parentResponse), 'Tahmini varış süresi nedir?', 'parent chips keep eta chip');
@@ -502,7 +504,8 @@ const driverIntent = detectQuestionIntent(driverRequest.message, {
   entityType: 'screen',
   originalMessage: driverRequest.message,
 });
-mustAny(driverIntent?.questionType || '', ['SHIFT_BLOCKED'], 'driver live question routes to shift blocked');
+must(driverIntent?.questionType || '', 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'driver live question preserves the current authorization boundary');
+mustNot(driverIntent?.questionType || '', 'SHIFT_BLOCKED', 'driver live question does not infer a blocked shift from screen context');
 const driverResponse = buildChatHelpResponse({
   entityType: parsedDriverRequest.data.entityType,
   entityId: parsedDriverRequest.data.entityId,
@@ -529,8 +532,9 @@ mustNot(driverReply, 'OperationProof', 'driver reply avoids technical proof word
 mustNot(driverReply, 'Bu aksiyonu simüle et', 'driver reply avoids mechanical simulation wording');
 mustNot(driverReply, 'Eksik araç/sürücü', 'driver reply avoids first-cause missing vehicle driver wording');
 mustNot(driverReply, 'Yetki sınırını kontrol et', 'driver reply avoids default permission boundary');
-mustAny(driverReply, ['canlı başlatma zamanını ve aktif durumu kontrol et', 'Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışına geç'], 'driver reply keeps live-start wording');
-mustAny(driverReply, ['Araç: 34ABC123', 'Sürücü: Sürücü Demo', 'Operasyon kanıtı: Eksik'], 'driver reply keeps vehicle-driver details');
+must(driverReply, 'Kesin sebebi veriyle doğrulamak gerekir', 'driver reply keeps the current evidence-grounded diagnostic');
+must(driverReply, 'Önce seçili kayıt ve son sinyali kontrol edelim.', 'driver reply keeps the current safe verification step');
+mustAny(driverReply, ['Araç 34ABC123', 'Vardiya #3', 'Operasyon kanıtı eksik'], 'driver reply keeps the current selected-task details');
 mustAny(driverReply, ['34ABC123', 'Vardiya #3'], 'driver reply keeps selected task');
 mustAny(driverReply, ['Telefon konum sinyali', 'Operasyon kanıtı: Eksik'], 'driver reply keeps gps/proof status');
 mustArrayContains(chipList(driverResponse), 'Başlatma zamanı uygun mu?', 'driver chips keep start-time chip');
@@ -582,7 +586,9 @@ const noSelectionPersonelResponse = buildChatHelpResponse({
 });
 const noSelectionPersonelReply = replyText(noSelectionPersonelResponse);
 mustNot(noSelectionPersonelReply, 'Bunu anlayamadım', 'personel no-selection reply avoids unknown fallback');
-mustAny(noSelectionPersonelReply, ['Bu ekranda seçili servis bilgisi net görünmüyor', 'Önce bugünkü servis satırını seç'], 'personel no-selection reply keeps safe fallback');
+must(noSelectionPersonelReply, 'Kesin sebebi veriyle doğrulamak gerekir', 'personel no-selection reply keeps the current safe diagnostic');
+must(noSelectionPersonelReply, 'Önce seçili kayıt ve son sinyali kontrol edelim.', 'personel no-selection reply keeps the current safe verification step');
+mustNot(noSelectionPersonelReply, '34ABC123', 'personel no-selection reply does not invent a selected vehicle');
 assertNoForbiddenVisibleTerms(noSelectionPersonelReply, 'personel no-selection reply');
 
 const noSelectionParentRequest = {
@@ -625,7 +631,9 @@ const noSelectionParentResponse = buildChatHelpResponse({
 });
 const noSelectionParentReply = replyText(noSelectionParentResponse);
 mustNot(noSelectionParentReply, 'Bunu anlayamadım', 'parent no-selection reply avoids unknown fallback');
-mustAny(noSelectionParentReply, ['Bu ekranda öğrencinin servisine ait seçili canlı bilgi net görünmüyor', 'Öğrencinin servis satırını seç'], 'parent no-selection reply keeps safe fallback');
+must(noSelectionParentReply, 'Kesin sebebi veriyle doğrulamak gerekir', 'parent no-selection reply keeps the current safe diagnostic');
+must(noSelectionParentReply, 'Önce seçili kayıt ve son sinyali kontrol edelim.', 'parent no-selection reply keeps the current safe verification step');
+mustNot(noSelectionParentReply, '34ABC123', 'parent no-selection reply does not invent a selected vehicle');
 assertNoForbiddenVisibleTerms(noSelectionParentReply, 'parent no-selection reply');
 
 console.log('=== COP-04B-FIX-03 PERSONEL + PARENT + DRIVER CONTEXT CHECK PASS ===');

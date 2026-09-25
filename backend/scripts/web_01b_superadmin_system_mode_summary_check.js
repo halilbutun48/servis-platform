@@ -46,7 +46,7 @@ function main() {
   include(systemBand, "Kalite taslak modda", "SystemModeSummaryBand quality chip missing");
   include(systemBand, "Ödeme kapalı", "SystemModeSummaryBand payment chip missing");
   include(systemBand, "Hakediş kapalı", "SystemModeSummaryBand hakediş chip missing");
-  include(systemBand, "Komisyon kapalı", "SystemModeSummaryBand commission chip missing");
+  include(systemBand, "Ödeme hazırlığı", "SystemModeSummaryBand payment-preparation chip missing");
   include(systemBand, "Saha testi bekliyor", "SystemModeSummaryBand field test chip missing");
   include(systemBand, "Ödeme başlatılmaz", "SystemModeSummaryBand non-final note missing");
   notInclude(systemBand, "raw", "SystemModeSummaryBand must not expose raw wording");

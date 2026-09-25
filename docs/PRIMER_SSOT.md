@@ -2,7 +2,57 @@
 
 Bu primer yaşayan hattın resmi özetidir.
 
-## Current frontier (2026-08-31)
+## PRE-#18 current-state overlay (2026-09-24)
+
+## PRE-#18 immutable-closure overlay (2026-09-25)
+
+- Combined PRE-#18 acceptance and the No-Surprise Repository Exit are GREEN: `487/487` repository-owned candidates are classified and `0` remain unexplained.
+- The final terminology / Sefer Abi residual is closed. Same-class raw domain-status, internal-field and internal-test identifiers are all `0`; the bounded public-runtime recheck is `PASS` with current-source match `PASS` and all four visible quality-status leakage counts at `0`.
+- Canonical gates remain green: product flow `18/18`, Premium UI `72/72`, KVKK `262/262`, role/data isolation `216/216`, `verify:repo 32/32`, and `verify:final PASS`.
+- `#18` has not started. This package is the exact immutable PRE-#18 closure step; proven-closed work must not be reopened without concrete newer regression evidence.
+
+Bu bölüm, aşağıdaki tarihsel milestone anlatılarının üzerinde duran güncel PRE-#18 kapanış özetidir. Tarihsel kayıtlar silinmez veya yeniden yazılmaz; güncel semantic, güvenlik, dokümantasyon ve yürütme kapısı bu bölümden okunur.
+
+### Kanonik Sefer Abi semantic zinciri
+
+`canonicalSemanticRequest.js` → `intentRouter.js` → `semanticIntentPlanner.js` → `toPublicQuestionType` → `helpComposer.js`
+
+- `canonicalSemanticRequest.js`: yapılandırılmış kullanıcı isteği ve bağlam yorumunun sahibidir.
+- `intentRouter.js`: yalnızca yetkili bağlam taşınması, compatibility ve E-block precedence/admission katmanıdır; birincil semantic karar sahibi değildir.
+- `semanticIntentPlanner.js`: tek typed semantic karar sahibidir.
+- `toPublicQuestionType`: tek canonical public-type adapter'ıdır.
+- `helpComposer.js`: response composition/presentation sahibidir; public type veya typed intent değiştiremez.
+- `SEMANTIC_DECISION_AUTHORITY_COUNT = 1` ve `POST_ADAPTER_TYPE_MUTATION_COUNT = 0` korunur. Yeni bir semantic owner yoktur.
+
+### Kapanan PRE-#18 semantic paketleri ve kanıt
+
+- Package B v2: `30/30` single-authority acceptance.
+- C1 v3: `59/59`; `SHIFT_START_READINESS → READINESS_CHECK` ve `RISK_RANKING / URGENT_ISSUES → RISK_LIST`.
+- C2: `117/117`; dynamic follow-up yalnızca post-answer suggestion/chip, gerekli clarification `CLARIFYING_QUESTION`, root-cause yanıtı evidence/possible cause/uncertainty/validation ayrımını korur.
+- C3 v2: focused `17/17`, Plan Review `103/103`; gerçek yetkili plan/karar nesnesi olmadan `PLAN_REVIEW` üretilmez.
+- Package D: continuation davranışı green; eski chip beklentisi stale expectation olarak sınıflandırılmıştır.
+- Package F: Operation Health runtime/regression `124/124`, `5229` assertion, empty reply `0`; kalan static guard tarihsel yapısal eşiktir.
+- No-browser semantic final seal: residual `0`; semantic priority `56/56`, generic help `15/15`, visible matrix `168/168`, screen context `29/29`, role isolation `216/216`, risk `88/88` ve exit `0`, all-roles reasoning `PASS`.
+
+### Yetki, bağlam ve güvenlik sınırı
+
+- Authenticated/server-authorized context, client hint'lerinden üstündür; geçersiz cross-role route/screen context reddedilir.
+- Null/deny/unknown bağlam önceki route/entity context'ini yeniden kullanmaz; stale entity, role, tenant ve raw unauthorized ID semantic karara taşınmaz.
+- COMPANY için `/company/shifts`, ROOM için `/room/shifts` geçerli yüzeylerdir; COMPANY + `/room/shifts` cross-role bağlamı geçersizdir.
+- Generic Help Model A route-bound context tüketmez veya response'a taşımaz.
+- Preview ve blocked E-block konuları (import/write, geocode, OSRM route draft, route review approval, route apply, fake success) yalnızca yetkili bağlamda mevcut read-only/blocked sözleşmeyi taşır; write, approval, dispatch, payment, DB mutation, route execution veya fake success açmaz.
+- Kullanıcıya görünen approval dili `Kullanıcı onayı` / `Onayınız gerekli` olmalıdır; internal enum/token'lar görünür UX sözlüğüne sızmaz.
+
+### Güncel kanıt ve sonraki kapılar
+
+- HEAD `e3bec6177f32263325bd14e876502faacac7a5b0`, branch `m90d1_web_lint_inventory`; `verify:repo` `PASS 32/32`, `verify:final` `PASS`.
+- KVKK `262/262`, role/data isolation `216/216`, presentation authority `PASS` with one authority, active/product unowned `0`, package ownership delta `0/0`.
+- M79 D1 `199/199` with score/floor `1.0/1.0`; AI semantic quality `122/122`; Copilot Context 14/21 is `PROVEN_SUPERSEDED_BY_CURRENT_ACCEPTANCE`; M90C6, M0 static compatibility, roadmap lock, public landing and product-flow smoke are `PASS`.
+- Exact current semantic identities are owned by the current-head/lifecycle authority, including `semanticIntentPlanner.js = 3BED61849BB8FFD7ED6A06652807CB0B46C07C38929880BECA882B7E3D882926`, `intentRouter.js = 01B619FE7B34DB5BA88B1BD925D210665BD3B7A06595E9D7B32812443228778D`, and `helpComposer.js = B1470807C086CB0FDB484225956510347A2DB4E26A2F8E0D737499BBDDB3BAE7`.
+- The documentation/SSOT reconciliation is the current completed PRE-#18 foundation stage. The canonical Premium UI closure proves `PREMIUM_UI = 72_OF_72_PROVEN`; all 72 states are backed by current rendered evidence.
+- Foundation Exit Gate is `GREEN PRESERVED`, ROOM/OTHER423 is `PROVEN_CLOSED`, and the current No-Surprise Repository Exit classification is green: the actual worktree, ownership, lifecycle, backup/recovery and transient-artifact state are classified. PRE-#18 is `FINAL CLOSURE READY`; #18 is not started, and commit/tag/push remain `NO`.
+
+## Historical frontier snapshot (2026-08-31; superseded by the PRE-#18 overlay above)
 
 - #1–#14 closed/proven; #16 is the current documentation architecture and codebase-index milestone.
 - #17 and #15 are not started. The canonical engineering navigation is [docs/INDEX.md](INDEX.md).

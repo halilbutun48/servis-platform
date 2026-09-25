@@ -117,7 +117,7 @@ export default function QualityReviewHistoryCard({
           <div className="panelSectionTitle">Kalite karar geçmişi</div>
           <div className="panelMeta" style={{ marginTop: 4 }}>Denetim izi</div>
           <div className="panelMeta" style={{ marginTop: 4 }}>Bu geçmiş kesin kalite puanı değildir.</div>
-          <div className="panelMeta" style={{ marginTop: 4 }}>Bu geçmiş hakediş veya komisyon hesabını etkilemez.</div>
+          <div className="panelMeta" style={{ marginTop: 4 }}>Bu geçmiş ödeme veya sözleşme hesabını etkilemez.</div>
           <div className="panelMeta" style={{ marginTop: 4 }}>
             Servis Kanıtı, Hizmet Kanıtı, Sürücünün telefon GPS’i, Araç GPS’i, Biniş kaydı, Operatör notu, Geri bildirim ve Şikayet sinyallerinin güvenli özetini gösterir.
           </div>

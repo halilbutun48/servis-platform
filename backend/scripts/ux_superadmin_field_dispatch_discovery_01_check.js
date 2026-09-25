@@ -128,12 +128,12 @@ function main() {
   must(panel, 'Rol kapsaması', "role coverage preserved");
   must(panel, 'Yüzey kapsaması', "surface coverage preserved");
   must(panel, 'Son saha kayıtları', "feedback records preserved");
-  must(panel, 'M84 bloklar', "history blockers preserved");
-  must(panel, 'M84 uyarılar', "history warnings preserved");
-  must(panel, 'M84 notları', "history notes preserved");
+  must(panel, 'Saha kabul blokları', "history blockers preserved");
+  must(panel, 'Saha kabul uyarıları', "history warnings preserved");
+  must(panel, 'Saha kabul notları', "history notes preserved");
   must(panel, 'Hazır vardiya', "capacity card preserved");
   must(panel, 'Aktif araç', "capacity card preserved");
-  must(panel, 'Driver kullanıcı', "capacity card preserved");
+  must(panel, 'Sürücü hesabı', "capacity card preserved");
   must(panel, 'Aktif sözleşme', "capacity card preserved");
 
   must(route, "/manifest", "route manifest endpoint preserved");

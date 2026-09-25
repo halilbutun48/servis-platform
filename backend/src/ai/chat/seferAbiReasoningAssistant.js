@@ -370,6 +370,7 @@ function detectSeferAbiReasoningIntentFamily({
   if (/(devam\s+et|aynı\s+kayıtta|ayni\s+kayitta|aynı\s+yerden\s+devam|ayni\s+yerden\s+devam|sürdür|surdur|buradan\s+devam|aynı\s+kayıt\s+için\s+devam|ayni\s+kayit\s+icin\s+devam)/.test(text)) return 'CONTINUE_FLOW';
   if (questionType === 'PRODUCT_OVERVIEW_HELP') return 'OVERVIEW_START';
   if (questionType === 'ROLE_EXPLANATION_HELP') return 'ROLE_START';
+  if (questionType === 'CONTINUE_FLOW') return 'CONTINUE_FLOW';
   if (questionType === 'SCREEN_EXPLANATION_HELP') return 'SCREEN_START';
   if (questionType === 'HOW_TO_HELP') return 'STEP_BY_STEP';
   if (questionType === 'FIELD_BUTTON_HELP') return 'FIELD_BUTTON';

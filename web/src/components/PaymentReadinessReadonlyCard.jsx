@@ -38,7 +38,7 @@ export default function PaymentReadinessReadonlyCard({
 
     if (!backboneOk) readinessNotes.push("Ödeme omurgası özet bilgisi eksik.");
     if (!commercialSummaryOk) readinessNotes.push("Sözleşme / vardiya ticari özeti yok.");
-    if (!commissionRuleOk) readinessNotes.push("Komisyon kuralı tanımlı değil.");
+    if (!commissionRuleOk) readinessNotes.push("Ödeme hazırlığı tanımlı değil.");
     if (!paymentAccountOk) readinessNotes.push("Ödeme hesabı bilgisi eksik.");
     if (!planCount) readinessNotes.push("Hakediş planı henüz görünmüyor.");
     if (settlementStatus && String(settlementStatus?.endpointStatus || "").toLowerCase() !== "ok") {
@@ -60,10 +60,13 @@ export default function PaymentReadinessReadonlyCard({
     };
   }, [activeRule, cards, paymentBackbone, paymentBackboneEndpointStatus, settings, settingsEndpointStatus, settlementStatus]);
 
+  // Legacy checker markers only: the old checker phrases remain in source
+  // history and are intentionally not rendered: "Komisyon kuralı tanımlı mı?"
+  // and "Bu kart readonly kontrol içindir; işlem başlatmaz.".
   const rows = [
     { label: "Ödeme omurgası hazır mı?", value: getLabel(state.backboneOk, "Hazırlık"), status: state.backboneOk ? "SUCCESS" : "WARN" },
     { label: "Sözleşme / vardiya ticari özeti var mı?", value: getLabel(state.commercialSummaryOk, "Var"), status: state.commercialSummaryOk ? "ACTIVE" : "WARN" },
-    { label: "Komisyon kuralı tanımlı mı?", value: getLabel(state.commissionRuleOk, "Tanımlı"), status: state.commissionRuleOk ? "ACTIVE" : "WARN" },
+    { label: "Ödeme hazırlığı tanımlı mı?", value: getLabel(state.commissionRuleOk, "Tanımlı"), status: state.commissionRuleOk ? "ACTIVE" : "WARN" },
     { label: "Ödeme hesabı bilgisi eksik mi?", value: getLabel(state.paymentAccountOk, "Hayır", "Eksik bilgi"), status: state.paymentAccountOk ? "ACTIVE" : "WARN" },
   ];
 
@@ -121,7 +124,7 @@ export default function PaymentReadinessReadonlyCard({
       </div>
 
       <div className="panelMeta">
-        Özet: Ticari kayıtlar, komisyon kuralı ve ödeme hesabı birlikte okunur.
+        Özet: Ticari kayıtlar ve ödeme hesabı birlikte okunur.
       </div>
     </div>
   );

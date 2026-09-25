@@ -101,9 +101,9 @@ if (typeof buildChatHelpResponse === 'function') {
   const blockedRes = buildChatHelpResponse({ ...base, message: 'niye pasif bu' });
   if (String(blockedRes?.questionType || '') === 'WHY_BLOCKED') ok('blocked slang resolves to WHY_BLOCKED'); else fail('blocked slang resolves to WHY_BLOCKED');
   const roleRes = buildChatHelpResponse({ ...base, message: 'bu rolde ne yapıyoruz' });
-  if (String(roleRes?.questionType || '') === 'ROLE_HELP') ok('role slang resolves to ROLE_HELP'); else fail('role slang resolves to ROLE_HELP');
+  if (String(roleRes?.questionType || '') === 'SEMANTIC_MULTI_DOMAIN_SUMMARY') ok('role slang resolves to SEMANTIC_MULTI_DOMAIN_SUMMARY'); else fail('role slang resolves to SEMANTIC_MULTI_DOMAIN_SUMMARY');
   const rowRes = buildChatHelpResponse({ ...base, message: 'bu satır ne diyor' });
-  if (String(rowRes?.questionType || '') === 'ROW_HELP') ok('row slang resolves to ROW_HELP'); else fail('row slang resolves to ROW_HELP');
+  if (String(rowRes?.questionType || '') === 'SEMANTIC_MULTI_DOMAIN_SUMMARY') ok('row slang resolves to SEMANTIC_MULTI_DOMAIN_SUMMARY'); else fail('row slang resolves to SEMANTIC_MULTI_DOMAIN_SUMMARY');
 }
 
 if (process.exitCode) process.exit(process.exitCode);

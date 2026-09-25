@@ -146,6 +146,7 @@ export default function HubPanel() {
         <PanelChrome
           title="Adres ve Koordinat"
           subtitle="Firma konumunu elle, konumla ya da harita üstünden seç."
+          headingLevel={2}
         >
           <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
             <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
@@ -186,6 +187,7 @@ export default function HubPanel() {
         <PanelChrome
           title="Konum Önizleme"
           subtitle="Pikselde gördüğün nokta, kayda gidecek konumu netleştirir."
+          headingLevel={2}
         >
           <HubMapPicker
             lat={lat}

@@ -87,7 +87,7 @@ function freezeRecord(record) {
 const rawCanonicalProvenanceRecords = [
   {
     path: "backend/src/routes/commercialCoreRoutes.js",
-    currentSha256: "AF17E5ADBAB36C2509A9CE67B7BF7E977D597C1B410FEF41C67DDF1D629003FC",
+    currentSha256: "11A5136CDA54B1467757BF9422EB6B63B0B00F9633CD1A8AF3303A5BA2A06E41",
     baselinePresence: "ABSENT",
     workingTreeState: "TRACKED_UNMODIFIED",
     provenanceClass: "CONCURRENT_CANONICAL",
@@ -124,7 +124,7 @@ const rawCanonicalProvenanceRecords = [
   },
   {
     path: "backend/src/routes/commercialCorePaymentRoutes.js",
-    currentSha256: "53C908A0C414D73A9BC397DCC89FC1D8DD285AC0D842FD949426911307DFA993",
+    currentSha256: "9BB53FE97B17F28892AF3B8C8E91373D7276183873E0258E694AD694F5E1B552",
     baselinePresence: "ABSENT",
     workingTreeState: "TRACKED_UNMODIFIED",
     provenanceClass: "CONCURRENT_CANONICAL",
@@ -166,7 +166,7 @@ const rawCanonicalProvenanceRecords = [
   },
   {
     path: "backend/src/routes/commercialCorePaymentReportsRoutes.js",
-    currentSha256: "DA3C9CEE5DF38EB89EE315475F9C37EB94D1EE7E95A11E5E2039C4FDFB21AE3F",
+    currentSha256: "41A7F4A75CD21B56BD29C8D9B068C01BD6D1B9D56496969A8C1307C246D0BB10",
     baselinePresence: "ABSENT",
     workingTreeState: "TRACKED_UNMODIFIED",
     provenanceClass: "CONCURRENT_CANONICAL",
@@ -242,7 +242,7 @@ const rawCanonicalProvenanceRecords = [
   },
   {
     path: "backend/src/routes/commercialCoreRouteData.js",
-    currentSha256: "2DF560872A4B6B94C576DD7DA0610C44F053B1EA494EA57B307BFED5030A5A6C",
+    currentSha256: "5EB28DD6ABEC1AD63CA236AB567BB14B0CEEF35D54DF75343D5EC746F5A6FCD2",
     baselinePresence: "ABSENT",
     workingTreeState: "TRACKED_UNMODIFIED",
     provenanceClass: "CONCURRENT_CANONICAL",

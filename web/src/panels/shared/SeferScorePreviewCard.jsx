@@ -1,3 +1,5 @@
+import { userFacingFactText, userFacingStatusText } from "../../utils/terminology";
+
 function compactText(value, fallback = "") {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   return text || String(fallback || "").trim();
@@ -34,7 +36,7 @@ function levelLabel(value) {
     CRITICAL: "Kritik",
     INSUFFICIENT_DATA: "Yetersiz veri",
   };
-  return map[key] || compactText(value, "-");
+  return map[key] || userFacingStatusText(value) || "-";
 }
 
 function confidenceLabel(value) {
@@ -45,7 +47,7 @@ function confidenceLabel(value) {
     MEDIUM: "Orta",
     HIGH: "Yüksek",
   };
-  return map[key] || compactText(value, "-");
+  return map[key] || userFacingStatusText(value) || "-";
 }
 
 function statusLabel(value) {
@@ -76,7 +78,7 @@ function toneForLevel(value) {
 }
 
 function SectionList({ title, items = [], tone = "muted", emptyText = "-" }) {
-  const rows = compactList(items, 8);
+  const rows = compactList(items, 8).map(userFacingFactText).filter(Boolean);
   return (
     <div style={{ marginTop: 12 }}>
       <div className="muted">{title}</div>
@@ -94,10 +96,10 @@ function SectionList({ title, items = [], tone = "muted", emptyText = "-" }) {
 }
 
 function SignalBreakdownItem({ label, signal }) {
-  const status = compactText(signal?.status || "", "UNKNOWN");
+  const status = userFacingStatusText(signal?.status || "UNKNOWN");
   const contribution = Number(signal?.contribution || 0);
   const weight = Number(signal?.weight || 0);
-  const reason = compactText(signal?.reason || "", "Sinyal okunamadı.");
+  const reason = userFacingFactText(compactText(signal?.reason || "", "Sinyal okunamadı."));
   return (
     <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.05)" }}>
       <div style={{ display: "flex", gap: 8, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
@@ -137,16 +139,16 @@ export default function SeferScorePreviewCard({
   const positiveReasons = Array.isArray(safePreview.positiveReasons) ? safePreview.positiveReasons : [];
   const riskReasons = Array.isArray(safePreview.riskReasons) ? safePreview.riskReasons : [];
   const missingSignals = Array.isArray(safePreview.missingSignals) ? safePreview.missingSignals : [];
-  const nextBestAction = compactText(
+  const nextBestAction = userFacingFactText(compactText(
     safePreview.nextBestAction
     || "Önce zamanında hizmet, GPS kanıtı, görev tamamlama, belge ve kalite sinyallerini topla.",
     "Önce zamanında hizmet, GPS kanıtı, görev tamamlama, belge ve kalite sinyallerini topla.",
-  );
-  const safeExplanation = compactText(
+  ));
+  const safeExplanation = userFacingFactText(compactText(
     safePreview.safeExplanation
     || "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.",
     "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.",
-  );
+  ));
   const scoreText = scoreToText(score, scoreMax);
   const confidenceTone = confidence === "HIGH" ? "ready" : confidence === "MEDIUM" ? "warning" : confidence === "LOW" ? "warning" : "muted";
 

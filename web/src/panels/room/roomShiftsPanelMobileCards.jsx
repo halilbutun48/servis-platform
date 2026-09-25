@@ -191,8 +191,7 @@ export function RoomPendingShiftCard({
         <Field label="Bitiş" value={fmtTR(shift.endAt)} />
       </div>
 
-      <ShiftCommercialSummary shift={shift} />
-      <ShiftLifecycle shift={shift} />
+      <ShiftLifecycle shift={shift} compact />
       <ShiftCardPrimaryAction
         label="Kabul Et"
         disabled={approveDisabled}
@@ -203,6 +202,7 @@ export function RoomPendingShiftCard({
         note={approveReason || null}
       />
       <ShiftCardDetails>
+        <ShiftCommercialSummary shift={shift} />
         <CardSection title="Teklif ayrıntıları">
           {isAgreement ? <div className="shiftCardSubtle">Sözleşmeli vardiya. Pazarlık kapalı.</div> : <ShiftOfferDetails shift={offerSummaryShift} />}
         </CardSection>
@@ -429,10 +429,10 @@ export function RoomAllShiftCard({
         <Field label="Bitiş" value={fmtTR(shift.endAt)} />
       </div>
 
-      <ShiftCommercialSummary shift={shift} />
-      <ShiftLifecycle shift={shift} />
+      <ShiftLifecycle shift={shift} compact />
       <ShiftCardPrimaryAction label={primaryLabel} disabled={busy} onClick={handlePrimaryAction} />
       <ShiftCardDetails>
+        <ShiftCommercialSummary shift={shift} />
         <CardSection title="Teklif ayrıntıları">
           {Number(shift?.agreementId) > 0 ? <div className="shiftCardSubtle">Sözleşmeli vardiya. Pazarlık kapalı.</div> : <ShiftOfferDetails shift={shift} />}
         </CardSection>

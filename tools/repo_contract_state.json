@@ -148,10 +148,6 @@
                                                                                                      "class":  "safe-candidate-review",
                                                                                                      "note":  "operation-health hot path; kontrollu cleanup adayi"
                                                                                                  },
-                                                         "backend/scripts/copilot_reasoning_answer_composer_01_check.js":  {
-                                                                                                                     "class":  "safe-candidate-review",
-                                                                                                                     "note":  "copilot answer-composer guard; controlled review candidate"
-                                                                                                                 },
                                                          "backend/src/finance/costScenarioForecast.js":  {
                                                                                                      "class":  "acceptance-sensitive / later",
                                                                                                      "note":  "#4 senaryo forecast/calculation owner; post-#4 kabulü öncesi split edilmez"
@@ -176,18 +172,10 @@
                                                                                                         "class":  "safe-candidate-review",
                                                                                                         "note":  "payment preview bridge; kontrollu iyilestirme adayi"
                                                                                                     },
-                                                       "web/src/panels/company/AgreementsPanel.jsx":  {
-                                                                                                      "class":  "safe-candidate-review",
-                                                                                                     "note":  "agreement bridge panel; controlled cleanup adayi"
-                                                                                                 },
                                                        "web/src/panels/company/OperationsPanel.jsx":  {
                                                                                                       "class":  "safe-candidate-review",
                                                                                                       "note":  "company operations panel; controlled cleanup adayi"
                                                                                                   },
-                                                       "web/src/panels/room/AgreementsPanel.jsx":  {
-                                                                                                     "class":  "safe-candidate-review",
-                                                                                                    "note":  "room agreement bridge panel; controlled cleanup adayi"
-                                                                                                },
                                                        "web/src/index.css":  {
                                                                                   "class":  "safe-candidate-review",
                                                                                   "note":  "nav dock premium polish; controlled cleanup adayi"
@@ -204,15 +192,14 @@
                                                                                                            "class":  "safe-candidate-review",
                                                                                                            "note":  "guided task engine static source; controlled cleanup adayi"
                                                                                                        },
-                                                       "backend/src/ai/chat/intentRouter.js":  {
-                                                                                                    "class":  "safe-candidate-review",
-                                                                                                    "note":  "guided-task routing grew past warning threshold; kontrollu cleanup adayi"
-                                                                                                },
-                                                       "backend/scripts/bench_gps_publish_only.js":  {
-                                                                                                           "class":  "justified-exception",
-                                                                                                           "note":  "benchmark harness; soak coverage lives here and line-count split is not worth the acceptance risk"
-                                                                                                       }
-                                                       ,
+                                                       "backend/src/ai/service.js":  {
+                                                                                         "class":  "safe-candidate-review",
+                                                                                         "note":  "current Sefer Abi semantic service; accepted authority, controlled cleanup adayi"
+                                                                                     },
+                                                       "web/src/panels/shared/CopilotPanel.jsx":  {
+                                                                                                      "class":  "safe-candidate-review",
+                                                                                                      "note":  "current screen-context Copilot panel; accepted authority, controlled cleanup adayi"
+                                                                                                  },
                                                        "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs":  {
                                                                                                                    "class":  "safe-candidate-review",
                                                                                                                    "note":  "mobile all-roles audit runner; controlled cleanup adayi"
@@ -245,10 +232,6 @@
                                                                                   "class":  "safe-candidate-review",
                                                                                   "note":  "sefer abi reasoning assistant check; controlled cleanup adayi"
                                                                                                          },
-                                                       "backend/src/ai/chat/seferAbiReasoningAssistant.js":  {
-                                                                                                             "class":  "safe-candidate-review",
-                                                                                                             "note":  "reasoning assistant runtime companion; controlled cleanup adayi"
-                                                                                                         },
                                                         "mobile/src/screens/driverPremiumUi.js":  {
                                                                                                        "class":  "safe-candidate-review",
                                                                                                       "note":  "premium mobile shell; controlled cleanup adayi"
@@ -256,14 +239,6 @@
                                                         "backend/scripts/cache_coalescing_and_backoff_01_check.js":  {
                                                                                                      "class":  "safe-candidate-review",
                                                                                                      "note":  "cache coalescing and backoff hot path; controlled cleanup adayi"
-                                                                                                 },
-                                                        "backend/scripts/request_storm_resilience_01_check.js":  {
-                                                                                                      "class":  "safe-candidate-review",
-                                                                                                      "note":  "request storm resilience hot path; controlled cleanup adayi"
-                                                                                                  },
-                                                       "backend/scripts/ai03b_semantic_visible_audit_01_check.js":  {
-                                                                                                     "class":  "safe-candidate-review",
-                                                                                                     "note":  "semantic visible audit runner; controlled cleanup adayi"
                                                                                                  },
                                                        "backend/scripts/security_kvkk_final_01_check.js":  {
                                                                                                      "class":  "acceptance-sensitive / later",
@@ -273,16 +248,63 @@
                                                                                                       "class":  "acceptance-sensitive / later",
                                                                                                       "note":  "premium smoke manual entrypoint; acceptance evidence only"
                                                                                                   },
-                                                        "web/src/components/copilot/FloatingCopilotDrawer.jsx":  {
-                                                                                                                     "class":  "safe-candidate-review",
-                                                                                                                     "note":  "Sefer Abi canli widget ve guvenli launcher konumlandirmasi; acceptance sonrasi kontrollu cleanup adayi"
-                                                                                                                 },
                                                          "backend/indexes/documentation_registry_v1.json":  {
                                                                                                                "class":  "safe-candidate-review",
                                                                                                                "note":  "documentation registry index; controlled cleanup adayi"
                                                                                                            }
+                                                         ,
+                                                         "backend/scripts/lib/packageOwnershipDeltaManifest.json":  {
+                                                                                                                       "class":  "acceptance-sensitive / later",
+                                                                                                                       "note":  "canonical package ownership authority; final closure identity and lifecycle evidence"
+                                                                                                                   },
+                                                         "backend/scripts/lib/pre_18_room_worker_pool.mjs":  {
+                                                                                                                   "class":  "acceptance-sensitive / later",
+                                                                                                                   "note":  "ROOM worker harness; accepted replay/runtime evidence"
+                                                                                                               },
+                                                         "backend/scripts/pre_18_luna_full_hybrid_surface_state_completion.mjs":  {
+                                                                                                                                        "class":  "acceptance-sensitive / later",
+                                                                                                                                        "note":  "PRE-18 durable browser completion harness; accepted closure evidence"
+                                                                                                                                    },
+                                                         "backend/scripts/pre_18_premium_ui_polish_01_browser.mjs":  {
+                                                                                                                          "class":  "acceptance-sensitive / later",
+                                                                                                                          "note":  "Premium UI acceptance harness; evidence-sensitive entrypoint"
+                                                                                                                      },
+                                                         "backend/src/ai/chat/canonicalSemanticRequest.js":  {
+                                                                                                                  "class":  "acceptance-sensitive / later",
+                                                                                                                  "note":  "canonical semantic request authority; current Sefer Abi contract"
+                                                                                                              },
+                                                         "backend/src/ai/chat/semanticIntentPlanner.js":  {
+                                                                                                             "class":  "acceptance-sensitive / later",
+                                                                                                             "note":  "semantic intent authority; current Sefer Abi contract"
+                                                                                                         },
+                                                         "backend/src/services/authorizedProductAwareness.js":  {
+                                                                                                                    "class":  "acceptance-sensitive / later",
+                                                                                                                    "note":  "role-scoped product awareness authority; accepted security boundary"
+                                                                                                                }
                                                          }
                            },
+    "m0StaticCompatibilityPolicy": {
+      "policyVersion": 1,
+      "purpose": "run current static milestone compatibility while preserving historical checks without treating superseded assertions as current product authority",
+      "historicalRetiredChecks": [
+        { "path": "backend/scripts/m71_2_copilot_route_bridge_smoke_check.js", "milestone": "M71", "lifecycle": "SUPERSEDED_CHECKER", "replacement": ["backend/scripts/m79_a3_copilot_screen_context_check.js", "backend/scripts/m79_d1_copilot_acceptance_pack.js"] },
+        { "path": "backend/scripts/m71_3_copilot_chat_binding_readiness_check.cjs", "milestone": "M71", "lifecycle": "SUPERSEDED_CHECKER", "replacement": ["backend/scripts/m79_a3_copilot_screen_context_check.js", "backend/scripts/m79_a5_copilot_chat_ux_check.js"] },
+        { "path": "backend/scripts/m71_4_copilot_route_context_check.js", "milestone": "M71", "lifecycle": "SUPERSEDED_CHECKER", "replacement": ["backend/scripts/m79_a3_copilot_screen_context_check.js", "backend/scripts/m79_d1_copilot_acceptance_pack.js"] },
+        { "path": "backend/scripts/m71_5_copilot_route_context_check.js", "milestone": "M71", "lifecycle": "SUPERSEDED_CHECKER", "replacement": ["backend/scripts/m79_a3_copilot_screen_context_check.js", "backend/scripts/m79_d1_copilot_acceptance_pack.js"] },
+        { "path": "backend/scripts/m71_6_copilot_selected_entity_first_check.js", "milestone": "M71", "lifecycle": "SUPERSEDED_CHECKER", "replacement": ["backend/scripts/m79_a3_copilot_screen_context_check.js", "backend/scripts/m79_d1_copilot_acceptance_pack.js"] },
+        { "path": "backend/scripts/m71_7_copilot_selected_sync_check.js", "milestone": "M71", "lifecycle": "SUPERSEDED_CHECKER", "replacement": ["backend/scripts/m79_a3_copilot_screen_context_check.js", "backend/scripts/m79_d1_copilot_acceptance_pack.js"] },
+        { "path": "backend/scripts/m71_9_floating_drawer_selection_carry_check.cjs", "milestone": "M71", "lifecycle": "SUPERSEDED_CHECKER", "replacement": ["backend/scripts/m79_a3_copilot_screen_context_check.js", "backend/scripts/m79_d1_copilot_acceptance_pack.js"] },
+        { "path": "backend/scripts/m71_10_shift_selection_guard_check.cjs", "milestone": "M71", "lifecycle": "HISTORICAL_RETIRED_EXPECTATION", "replacement": ["backend/scripts/m79_d1_copilot_acceptance_pack.js", "backend/scripts/m97_panel_operations_check.js"] },
+        { "path": "backend/scripts/m71_ui_contract_hotfix_check.js", "milestone": "M71", "lifecycle": "HISTORICAL_RETIRED_EXPECTATION", "replacement": ["backend/scripts/m82_2_web_contract_cache_check.js", "backend/scripts/m97_panel_operations_check.js"] },
+        { "path": "backend/scripts/m79_a4_copilot_quality_pack_check.js", "milestone": "M79", "lifecycle": "SUPERSEDED_CHECKER", "replacement": ["backend/scripts/m79_d1_copilot_acceptance_pack.js"] },
+        { "path": "backend/scripts/m79_b1_copilot_edge_cases_check.js", "milestone": "M79", "lifecycle": "SUPERSEDED_CHECKER", "replacement": ["backend/scripts/m79_a2_copilot_intent_quality_check.js", "backend/scripts/semantic_intent_adversarial_check.js", "backend/scripts/m79_d1_copilot_acceptance_pack.js"] },
+        { "path": "backend/scripts/m79_b2_copilot_followup_memory_check.js", "milestone": "M79", "lifecycle": "SUPERSEDED_CHECKER", "replacement": ["backend/scripts/m79_d1_copilot_acceptance_pack.js", "backend/scripts/m79_c4_copilot_primary_concern_check.js"] },
+        { "path": "backend/scripts/m79_b3_copilot_uncertainty_check.js", "milestone": "M79", "lifecycle": "SUPERSEDED_CHECKER", "replacement": ["backend/scripts/m79_d1_copilot_acceptance_pack.js", "backend/scripts/semantic_intent_adversarial_check.js"] },
+        { "path": "backend/scripts/m80_3_georeview_shifts_son_giris_yuku_check.js", "milestone": "M80", "lifecycle": "HISTORICAL_RETIRED_EXPECTATION", "replacement": ["backend/scripts/m82_2_web_contract_cache_check.js", "backend/scripts/m97_panel_operations_check.js"] },
+        { "path": "backend/scripts/m85_optional_payment_pilot_check.js", "milestone": "M85", "lifecycle": "HISTORICAL_RETIRED_EXPECTATION", "replacement": ["backend/scripts/m82_11_payment_readonly_surface_check.js"] },
+        { "path": "backend/scripts/m86_required_payment_rollout_check.js", "milestone": "M86", "lifecycle": "HISTORICAL_RETIRED_EXPECTATION", "replacement": ["backend/scripts/m82_11_payment_readonly_surface_check.js"] }
+      ]
+    },
     "shareablePackageHygiene":  {
                                     "policyVersion":  1,
                                     "goal":  "shareable-package-clean-export",

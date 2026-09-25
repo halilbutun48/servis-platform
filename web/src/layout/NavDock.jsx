@@ -72,9 +72,14 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
   return (
     <>
       {mobileOpen ? (
-        <button type="button" className="navDockBackdrop" onClick={handleMobileSelect} aria-label="Menüyü kapat" title="Menüyü kapat" />
+        <button type="button" className="navDockBackdrop" onClick={handleMobileSelect} aria-label="Menü dışını kapat" title="Menü dışını kapat" />
       ) : null}
       <div id="shell-nav-dock" className={`navDock${mobileOpen ? " navDock--mobileOpen" : " navDock--mobileClosed"}`} role="navigation" aria-label="Sol menü">
+        {mobileOpen ? (
+          <button type="button" className="navDockMobileClose" onClick={handleMobileSelect} aria-label="Menüyü kapat" title="Menüyü kapat">
+            Menüyü kapat
+          </button>
+        ) : null}
         <div className="navDockBrand"><BrandMark compact subtitle="Operasyon menüsü" /></div>
         <div className="navDockTitle">
           <div className="navDockBrandName">{BRAND_NAME}</div>

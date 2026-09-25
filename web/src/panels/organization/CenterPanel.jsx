@@ -102,8 +102,8 @@ export default function OrganizationCenterPanel() {
           <div>
             <div className="title">Hızlı Erişim</div>
             <div className="muted">
-              Harita ekranı organization tarafında da company canlı harita yeteneklerini kullanır:
-              rota sırası, sıradaki durak, dış navigasyon.
+              Harita ekranında organizasyona yetkili araçların canlı konumu, rota sırası,
+              sıradaki durak ve dış navigasyon birlikte görünür.
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

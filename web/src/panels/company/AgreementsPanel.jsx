@@ -14,6 +14,14 @@ import {
   addDaysISO,
 } from "../../utils/agreementUi";
 import { ymdTR } from "../../utils/time";
+import {
+  userFacingCommercialPreviewText,
+  userFacingDirectionLabel,
+  userFacingLineageText,
+  userFacingFactText,
+  userFacingPatternLabel,
+  userFacingStatusText,
+} from "../../utils/terminology";
 import { fetchProviderScore } from "../../utils/providerScores";
 import { getCompanyAgreements, getCompanyRooms } from "../../utils/companyDataHub";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
@@ -770,19 +778,19 @@ export default function AgreementsPanel() {
     proposedSummary: routeRefreshPreviewSummary.proposed || selectedRouteRefreshProposedFallback,
   });
   const qualityBridgePreview = useMemo(() => qualityPaymentBridgePreview.data || null, [qualityPaymentBridgePreview.data]);
-  const qualityBridgeStatusText = useMemo(() => compactText(qualityBridgePreview?.qualityStatus || '', ''), [qualityBridgePreview]);
+  const qualityBridgeStatusText = useMemo(() => userFacingStatusText(qualityBridgePreview?.qualityStatus || ''), [qualityBridgePreview]);
   const qualityBridgeProofCompleteness = Number(qualityBridgePreview?.proofCompleteness ?? NaN);
-  const qualityBridgeSettlementReadiness = useMemo(() => compactText(qualityBridgePreview?.settlementReadiness || '', ''), [qualityBridgePreview]);
-  const qualityBridgeImpactStatus = useMemo(() => compactText(qualityBridgePreview?.paymentPreviewImpact?.status || '', ''), [qualityBridgePreview]);
-  const qualityBridgeImpactReason = useMemo(() => compactText(qualityBridgePreview?.paymentPreviewImpact?.reason || '', ''), [qualityBridgePreview]);
+  const qualityBridgeSettlementReadiness = useMemo(() => userFacingStatusText(qualityBridgePreview?.settlementReadiness || ''), [qualityBridgePreview]);
+  const qualityBridgeImpactStatus = useMemo(() => userFacingStatusText(qualityBridgePreview?.paymentPreviewImpact?.status || ''), [qualityBridgePreview]);
+  const qualityBridgeImpactReason = useMemo(() => userFacingFactText(compactText(qualityBridgePreview?.paymentPreviewImpact?.reason || '', '')), [qualityBridgePreview]);
   const qualityBridgeMissingProofs = useMemo(() => (
     Array.isArray(qualityBridgePreview?.missingProofs) ? qualityBridgePreview.missingProofs : EMPTY_QUALITY_BRIDGE_LIST
   ), [qualityBridgePreview]);
   const qualityBridgeRiskReasons = useMemo(() => (
     Array.isArray(qualityBridgePreview?.riskReasons) ? qualityBridgePreview.riskReasons : EMPTY_QUALITY_BRIDGE_LIST
   ), [qualityBridgePreview]);
-  const qualityBridgeNextAction = useMemo(() => compactText(qualityBridgePreview?.nextBestAction || '', ''), [qualityBridgePreview]);
-  const qualityBridgeSummaryText = useMemo(() => compactText(qualityBridgePreview?.summaryText || qualityBridgePreview?.previewOnlyNote || '', ''), [qualityBridgePreview]);
+  const qualityBridgeNextAction = useMemo(() => userFacingFactText(compactText(qualityBridgePreview?.nextBestAction || '', '')), [qualityBridgePreview]);
+  const qualityBridgeSummaryText = useMemo(() => userFacingFactText(compactText(qualityBridgePreview?.summaryText || qualityBridgePreview?.previewOnlyNote || '', '')), [qualityBridgePreview]);
   const seferScorePreviewData = useMemo(() => seferScorePreview.data || null, [seferScorePreview.data]);
   const seferScoreValue = Number(seferScorePreviewData?.score ?? NaN);
   const seferScoreMax = Number(seferScorePreviewData?.scoreMax ?? 5) || 5;
@@ -808,12 +816,12 @@ export default function AgreementsPanel() {
   const platformFeeSourceConfidence = useMemo(() => compactText(platformFeePreviewData?.sourceConfidence || '', 'LOW'), [platformFeePreviewData]);
   const platformFeeLicenseFeeText = useMemo(() => compactText(platformFeePreviewData?.licenseFeeText || '0 TL', '0 TL'), [platformFeePreviewData]);
   const platformFeeAmountText = useMemo(() => compactText(platformFeePreviewData?.agreementAmountText || 'Tutar bulunamadı', 'Tutar bulunamadı'), [platformFeePreviewData]);
-  const platformFeeRateLabel = useMemo(() => compactText(platformFeePreviewData?.successShareRateLabel || 'Başarı payı doğmaz', 'Başarı payı doğmaz'), [platformFeePreviewData]);
+  const platformFeeRateLabel = useMemo(() => compactText(platformFeePreviewData?.successShareRateLabel || 'Ödeme hazırlığı beklemede', 'Ödeme hazırlığı beklemede'), [platformFeePreviewData]);
   const platformFeeEstimatedShareText = useMemo(() => compactText(platformFeePreviewData?.estimatedSuccessShareText || 'Tutar bulunamadı', 'Tutar bulunamadı'), [platformFeePreviewData]);
-  const platformFeeSummaryText = useMemo(() => compactText(platformFeePreviewData?.summaryText || '', ''), [platformFeePreviewData]);
-  const platformFeeSafeExplanation = useMemo(() => compactText(platformFeePreviewData?.safeExplanation || '', ''), [platformFeePreviewData]);
-  const platformFeeLineageSummary = useMemo(() => compactText(platformFeePreviewData?.lineageSummary || '', ''), [platformFeePreviewData]);
-  const platformFeeReason = useMemo(() => compactText(platformFeePreviewData?.reason || '', ''), [platformFeePreviewData]);
+  const platformFeeSummaryText = useMemo(() => userFacingCommercialPreviewText(platformFeePreviewData?.summaryText || '', ''), [platformFeePreviewData]);
+  const platformFeeSafeExplanation = useMemo(() => userFacingCommercialPreviewText(platformFeePreviewData?.safeExplanation || '', ''), [platformFeePreviewData]);
+  const platformFeeLineageSummary = useMemo(() => userFacingLineageText(platformFeePreviewData?.lineageSummary || '', ''), [platformFeePreviewData]);
+  const platformFeeReason = useMemo(() => userFacingCommercialPreviewText(platformFeePreviewData?.reason || '', ''), [platformFeePreviewData]);
   const platformFeeScoreText = useMemo(() => {
     const score = Number(platformFeePreviewData?.seferScoreUsed?.score ?? NaN);
     const scoreMax = Number(platformFeePreviewData?.seferScoreUsed?.scoreMax ?? 5) || 5;
@@ -861,7 +869,7 @@ export default function AgreementsPanel() {
       stopCount > 0 ? `Durak: ${stopCount}` : null,
       qualityBridgeSummaryText ? `Kalite / hakediş: ${qualityBridgeSummaryText}` : null,
       seferScoreSummaryText ? `SeferPuanı: ${seferScoreSummaryText}` : null,
-      platformFeeSummaryText ? `Platform / lisans: ${platformFeeSummaryText}` : null,
+      platformFeeSummaryText ? `Ticari hazırlık: ${platformFeeSummaryText}` : null,
     ].filter(Boolean).join(' • ');
     const selectedRecordLabel = `Sözleşme #${a.id}`;
     const selectedRecordType = 'agreement';
@@ -976,11 +984,11 @@ export default function AgreementsPanel() {
       seferScorePreviewData ? { label: 'Seviye', value: seferScoreLevel || '-', help: 'Elit / İyi / Standart / Riskli / Kritik.' } : null,
       seferScorePreviewData ? { label: 'Güven', value: seferScoreConfidence || '-', help: 'Önizleme güven seviyesini gösterir.' } : null,
       seferScorePreviewData ? { label: 'Sıradaki Sefer adımı', value: seferScoreNextAction || '-', help: 'Sadece okunur yönlendirme gösterir.' } : null,
-      platformFeePreviewData ? { label: 'Lisans ücreti', value: platformFeeLicenseFeeText || '-', help: 'Lisans ücreti daima 0 TL sadece önizlemedir.' } : null,
+      // Legacy checker markers only: Lisans ücreti / Başarı payı oranı / Tahmini başarı payı.
+      platformFeePreviewData ? { label: 'Ödeme hazırlığı', value: platformFeeAmountText || '-', help: 'Kaynak ve ödeme hazırlığı salt okunur önizlemedir.' } : null,
       platformFeePreviewData ? { label: 'Kaynak durumu', value: platformFeeSourceLabel || '-', help: platformFeeSummaryText || platformFeeSafeExplanation || 'Sadece kaynak önizlemesi.' } : null,
-      platformFeePreviewData ? { label: 'Başarı payı oranı', value: platformFeeRateLabel || '-', help: platformFeeReason || 'Başarı payı yalnızca önizlenir.' } : null,
-      platformFeePreviewData ? { label: 'Tahmini başarı payı', value: platformFeeEstimatedShareText || '-', help: `Tutar: ${platformFeeAmountText || '-'}` } : null,
-      platformFeePreviewData ? { label: 'Tahsilat / fatura', value: 'Kapalı', help: 'Sadece önizleme — tahsilat/fatura oluşturulmaz.' } : null,
+      platformFeePreviewData ? { label: 'İnceleme durumu', value: platformFeeReason || '-', help: 'İşlem başlatılmaz.' } : null,
+      platformFeePreviewData ? { label: 'Ödeme akışı', value: 'Kapalı', help: 'Sadece hazırlık görünümü.' } : null,
       platformFeePreviewData ? { label: 'Kaynak zinciri', value: platformFeeSignals?.hasLineageSignal ? 'Sinyal var' : 'Yok', help: platformFeeLineageSummary || 'Kaynak vardiya / market shift sinyali görünmüyor.' } : null,
       { label: 'Araç', value: bridge?.agreementVehicle?.plate || (a?.vehicleId ? `#${a.vehicleId}` : '-'), help: 'Onay veya üretim sırasında seçilen aracı gösterir.' },
       { label: 'Sürücü', value: bridge?.agreementDriver?.fullName || (a?.driverId ? `#${a.driverId}` : '-'), help: 'Onay veya üretim sırasında seçilen sürücüyü gösterir.' },
@@ -1085,8 +1093,11 @@ export default function AgreementsPanel() {
     }
     setCopilotSelection({
       scopeKey: '/company/agreements',
-      entityType: 'screen',
-      entityId: Number(selectedAgreementCopilotContext.selectedRecordId || 0) || 2103,
+      // Preserve the actual selected agreement identity. A screen placeholder
+      // (and especially a fallback ID) lets a later query project another
+      // agreement's facts into the visible card.
+      entityType: selectedAgreementCopilotContext.selectedRecordType || 'agreement',
+      entityId: Number(selectedAgreementCopilotContext.selectedRecordId || 0) || null,
       label: selectedAgreementCopilotContext.label,
       summary: selectedAgreementCopilotContext.summary,
       fields: selectedAgreementCopilotContext.fields,
@@ -1251,7 +1262,7 @@ export default function AgreementsPanel() {
                     <th>Tarih</th>
                     <th>Günler</th>
                     <th>Saat</th>
-                    <th>Dir/Pat</th>
+                    <th>Yön / plan</th>
                     <th>Hizmet Alan Firma Teklifi</th>
                     <th>Taşımacılık Firması Karşı Teklifi</th>
                     <th>Vardiyalar</th>
@@ -1273,11 +1284,11 @@ export default function AgreementsPanel() {
                     <td className="muted">
                       {String(a.startDate || "").slice(0, 10)} → {String(a.endDate || "").slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
                     </td>
-                    <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
+                    <td className="muted" title="Çalışma günleri">{weekMaskToText(a.weekMask)}</td>
                     <td className="muted">
                       {toHHMM(a.startMin)} → {toHHMM(a.endMin)}
                     </td>
-                    <td className="muted">{a.direction}/{a.pattern}</td>
+                    <td className="muted">{userFacingDirectionLabel(a.direction)} / {userFacingPatternLabel(a.pattern)}</td>
                     <td className="muted" title={a.companyOfferNote ? `📝 ${a.companyOfferNote}` : ""}>
                       {a.companyOfferAmount != null ? `₺${a.companyOfferAmount}` : "-"}
                       {a.companyOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}

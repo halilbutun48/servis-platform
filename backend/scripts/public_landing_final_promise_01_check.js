@@ -6,12 +6,24 @@ import { fileURLToPath } from "node:url";
 import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
 import { mustCurrentHeadCommittedState } from "./lib/guardValidationEnvironment.js";
+import { CANONICAL_PRESENTATION_PROVENANCE_BY_PATH } from "./lib/presentationProvenanceAuthority.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
 
-const approvedPublicLandingTerminologySha256 = "0C5C4FA0BD3239D86466BCC032FF693C946040B9940C1606D7F361C977FDBBD2";
+const publicLandingPath = "web/src/panels/public/PublicLandingPage.jsx";
+const sharedUiIndexCssPath = "web/src/index.css";
+const publicLandingIdentity = CANONICAL_PRESENTATION_PROVENANCE_BY_PATH.get(publicLandingPath);
+const sharedUiIndexCssIdentity = CANONICAL_PRESENTATION_PROVENANCE_BY_PATH.get(sharedUiIndexCssPath);
+if (!publicLandingIdentity?.acceptedIdentities?.rawSha256 || !sharedUiIndexCssIdentity?.acceptedIdentities?.rawSha256) {
+  throw new Error("FAIL public landing identity authority is missing an accepted raw identity");
+}
+const approvedPublicLandingTerminologySha256 = publicLandingIdentity.acceptedIdentities.rawSha256;
+// Shared PRE-#18 typography/layout ownership is intentionally exact-pinned
+// through the canonical presentation authority; arbitrary global CSS changes
+// remain outside the public-surface scope guard.
+const approvedSharedUiIndexCssSha256 = sharedUiIndexCssIdentity.acceptedIdentities.rawSha256;
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
@@ -182,7 +194,10 @@ must(read("backend/src/routes/companyOverview.js"), "Route ownership anchor for 
 mustCurrentHeadCommittedState({ label: "public landing current head committed state" });
 mustNoDiffExceptWithIdentity(
   ["web/src/index.css", "web/src/panels/public/PublicLandingPage.jsx"],
-  [{ path: "web/src/panels/public/PublicLandingPage.jsx", sha256: approvedPublicLandingTerminologySha256 }],
+  [
+    { path: "web/src/index.css", sha256: approvedSharedUiIndexCssSha256 },
+    { path: "web/src/panels/public/PublicLandingPage.jsx", sha256: approvedPublicLandingTerminologySha256 },
+  ],
   "public landing UI diff stays limited to the approved presentation path"
 );
 

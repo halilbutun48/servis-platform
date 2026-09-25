@@ -100,6 +100,11 @@ function isDifferentStopRequest(item = {}) {
 
 export default function CompanyOperationsPanel() {
   const { token, me } = useSession();
+  const scopedOperatorLabel = String(me?.companyKind || "").toUpperCase() === "ORGANIZATION"
+    ? "Organizasyon"
+    : String(me?.companyKind || "").toUpperCase() === "SCHOOL"
+      ? "Okul"
+      : "Hizmet Alan Firma";
   const [personels, setPersonels] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -553,7 +558,7 @@ export default function CompanyOperationsPanel() {
       />
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <MiniStat title="Personel" value={metricValue(personels.length)} note="Hizmet Alan Firma kapsamındaki personel kaydı" />
+        <MiniStat title="Personel" value={metricValue(personels.length)} note={`${scopedOperatorLabel} kapsamındaki personel kaydı`} />
         <MiniStat title="Servis durumu" value={metricValue(todayShiftCount)} note={`Aktif ${todayActiveCount} • Onaylı ${todayApprovedCount}`} />
         <MiniStat title="Değişiklik" value={metricValue(openRequestRows.length)} note="Açık veya onay bekleyen kayıtlar" />
         <MiniStat title="Servis dışı" value={metricValue(noBoardRows.length)} note="Bildirim akışından türetilir" />

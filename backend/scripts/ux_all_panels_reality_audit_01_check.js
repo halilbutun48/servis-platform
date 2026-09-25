@@ -27,6 +27,8 @@ const expectedCoverageSources = [
   "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
 ];
 const expectedIdentitySources = [
+  // The derived producer executes this canonical source producer, so its
+  // current identity is part of the evidence contract as well.
   "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
   ...expectedCoverageSources,
   "backend/scripts/ux_all_panels_reality_audit_01.mjs",
@@ -127,11 +129,10 @@ function main() {
     must(summary.stickyHeaderTabIssueCount === 0, "summary keeps sticky header / tab issues at 0");
     must(summary.emptyLoadingErrorUnreadableCount === 0, "summary keeps unreadable empty/loading/error surfaces at 0");
     must(summary.networkErrorCount === 0, "summary keeps network errors at 0");
-    // Driver Today is a read-only/CTA-light route in the canonical coverage set.
-    // Keep the checker aligned with the runner's current evidence instead of
-    // treating its two desktop/mobile rows as a product regression.
-    must(summary.primaryActionVisibleCount === 74, "summary keeps 74 visible primary-action rows");
-    must(summary.primaryActionMissingByDesignCount === 8, "summary keeps 8 by-design CTA-light rows");
+    // The canonical runner now records 76 actionable rows and six explicitly
+    // CTA-light rows. These are exact report totals, not a permissive range.
+    must(summary.primaryActionVisibleCount === 76, "summary keeps 76 visible primary-action rows");
+    must(summary.primaryActionMissingByDesignCount === 6, "summary keeps 6 by-design CTA-light rows");
     must(summary.launcherVisibleAuthCount === 76, "summary keeps launcher visible on all authenticated rows");
     must(summary.driverMobileDrawerRoutes?.length === 0, "summary lists no driver mobile drawer issue rows");
     must(summary.stickyHeaderRoutes?.length === 0, "summary lists no sticky-header rows");

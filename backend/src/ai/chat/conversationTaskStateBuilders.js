@@ -54,6 +54,17 @@ export function buildProductOverviewHelpReply({ message, userRole, user, roleMod
   ]).join(' ').trim();
 }
 
+// Generic product help is deliberately public and context-free.  It does not
+// consult a role playbook, screen definition, selected record, or saved task
+// state; route-bound help continues through buildProductOverviewHelpReply.
+export function buildStaticGenericProductHelpReply() {
+  return [
+    'SeferPakt, servis operasyonunu planlamak, takip etmek ve kanıtı okumak için kullanılan bir platformdur.',
+    'Vardiya, araç, sürücü, talep ve operasyon akışlarını ilgili roller için görünür ve izlenebilir hale getirir.',
+    'İstersen hangi rolde kullanacağını söyle; o rol için genel kullanımını da açıklayabilirim.',
+  ].join(' ');
+}
+
 export function buildRoleExplanationHelpReply({ message, userRole, user, roleMode, screenDefinition, screenContext }) {
   const roleKey = detectReferencedRole(message, userRole);
   const playbook = getSeferAbiReasoningRolePlaybook(roleKey, user);

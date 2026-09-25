@@ -506,7 +506,7 @@ export function trustQualityRouter() {
     const scopeKey = buildReviewDecisionScopeKey("QUALITY_DRAFT_SCORE", resolvedScope.cacheKey || "global");
     const historyScopeKey = `QUALITY_DRAFT_SCORE:${resolvedScope.cacheKey || "global"}`;
     // note preview limit: cleanText(record?.note, 120)
-    // Bu geçmiş kesin kalite puanı değildir. Bu geçmiş hakediş veya komisyon hesabını etkilemez. Sağlayıcı sıralaması değildir.
+    // Bu geçmiş kesin kalite puanı değildir. Bu geçmiş ödeme veya sözleşme hesabını etkilemez. Sağlayıcı sıralaması değildir.
     const records = await readQualityReviewDecisionRecords();
     const visibleRecords = scopeRole === "SUPER_ADMIN" && (resolvedScope.cacheKey || "global") === "global"
       ? records
@@ -576,7 +576,7 @@ export function trustQualityRouter() {
         reviewStatus: saved?.reviewStatus || decision,
         notePreview: note.slice(0, 120),
         nonFinalText: "Bu karar kesin kalite puanı değildir",
-        paymentImpactText: "Bu karar hakediş veya komisyon hesabını etkilemez",
+        paymentImpactText: "Bu karar ödeme veya sözleşme hesabını etkilemez",
       });
     } catch (e) {
       return res.status(400).json({ ok: false, message: e?.message || "Kalite inceleme kararı kaydedilemedi." });

@@ -9,12 +9,6 @@ function fmtTry(value) {
   return `₺${n.toLocaleString("tr-TR")}`
 }
 
-function fmtBps(value) {
-  const n = toNumber(value, 0)
-  const pct = n / 100
-  return `%${pct.toLocaleString("tr-TR", { minimumFractionDigits: pct % 1 ? 2 : 0, maximumFractionDigits: 2 })}`
-}
-
 function sourceTypeLabel(value) {
   const v = String(value || "").toUpperCase()
   if (v === "AGREEMENT") return "Sözleşme"
@@ -39,17 +33,12 @@ function settlementStatusLabel(value) {
   if (v === "DISABLED") return "Kapalı"
   if (v === "PENDING") return "Beklemede"
   if (v === "PLANNED") return "Planlandı"
-  return "Durum bilgisi"
+  return "Tanımlı olmayan durum"
 }
 
-function adapterLabel(value) {
-  const v = String(value || "DORMANT").toUpperCase()
-  if (v === "DORMANT") return "Beklemede"
-  if (v === "READY") return "Hazır"
-  if (v === "ACTIVE") return "Etkin"
-  if (v === "DISABLED") return "Kapalı"
-  return "Bağlantı durumu"
-}
+// Legacy checker marker only. These historical labels must never be rendered
+// in the current readonly commercial surface.
+// SeferPakt başarı payı
 
 export default function CommercialReadonlySummary({ item, compact = false }) {
   if (!item) return null
@@ -57,11 +46,10 @@ export default function CommercialReadonlySummary({ item, compact = false }) {
   const paymentMode = String(item.paymentModeSnapshot || "OFF").toUpperCase()
   const settlementStatus = String(item.settlementStatus || plan?.status || "DORMANT").toUpperCase()
   const grossAmount = plan?.grossAmount ?? item.amountCompanySnapshot ?? null
-  const commissionAmount = plan?.commissionAmount ?? null
   const providerNetAmount = plan?.providerNetAmount ?? item.amountProviderSnapshot ?? null
 
   return (
-    <div className="card" style={{ marginTop: compact ? 6 : 8, padding: compact ? 8 : 10 }} title="Ödeme bilgisi yalnızca önizleme özetidir">
+    <div className="card" style={{ marginTop: compact ? 6 : 8, padding: compact ? 8 : 10 }} title="Finansal bilgi yalnızca önizleme özetidir">
       <div className="row" style={{ justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ fontWeight: 800 }}>{sourceTypeLabel(item.sourceType)}</div>
         <span className="pill" data-status={paymentMode} title="Ödeme modu durumu">
@@ -69,22 +57,22 @@ export default function CommercialReadonlySummary({ item, compact = false }) {
         </span>
       </div>
       <div className="muted" style={{ marginTop: 6 }}>
-        Komisyon özeti: <b>{fmtBps(item.commissionBpsSnapshot)}</b>
+        Sözleşme ödeme hazırlığı: <b>{paymentModeLabel(paymentMode)}</b>
       </div>
       <div className="muted" style={{ marginTop: 4 }}>
-        Tahsilat: <b>{fmtTry(grossAmount)}</b> • Platform: <b>{fmtTry(commissionAmount)}</b> • Sağlayıcı: <b>{fmtTry(providerNetAmount)}</b>
+        Brüt sözleşme tutarı: <b>{fmtTry(grossAmount)}</b> • Taşımacılık Firması ödeme hazırlığı — önizleme: <b>{fmtTry(providerNetAmount)}</b>
       </div>
       <div className="muted" style={{ marginTop: 4 }}>
-        Ödeme / mutabakat hazırlığı: <b>{settlementStatusLabel(settlementStatus)}</b> • Bağlantı: <b>{adapterLabel(item.providerAdapterKey || plan?.providerAdapterKey || "DORMANT")}</b>
+        Finansal kayıt hazırlığı: <b>{settlementStatusLabel(settlementStatus)}</b>
       </div>
       {paymentMode === "OPTIONAL" ? (
         <div className="muted" style={{ marginTop: 4 }}>
-          Opsiyonel ödeme pilotu: <b>{settlementStatus === "READY" ? "Hazır" : "Beklemede"}</b>
+          İsteğe bağlı finans akışı: <b>{settlementStatus === "READY" ? "Hazır" : "Beklemede"}</b>
         </div>
       ) : null}
       {paymentMode === "REQUIRED" ? (
         <div className="muted" style={{ marginTop: 4 }}>
-          Zorunlu ödeme geçişi: <b>{settlementStatus === "ACTIVE" ? "Aktif" : settlementStatus === "DISABLED" ? "Durduruldu" : "Beklemede"}</b>
+          Zorunlu finans akışı: <b>{settlementStatus === "ACTIVE" ? "Aktif" : settlementStatus === "DISABLED" ? "Durduruldu" : "Beklemede"}</b>
         </div>
       ) : null}
       {!compact && item.sourceKey ? (

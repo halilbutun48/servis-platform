@@ -94,6 +94,7 @@ const screenRegistry = read("web/src/copilot/screenRegistry.js");
 const drawer = read("web/src/components/copilot/FloatingCopilotDrawer.jsx");
 const statusPalette = read("web/src/utils/statusPalette.js");
 const displayStatus = read("web/src/utils/displayStatus.js");
+const terminology = read("web/src/utils/terminology.js");
 const registryScripts = productExtensionsChecks.map((step) => step.script);
 const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
 const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
@@ -196,7 +197,8 @@ must(screenRegistry, 'path: "/superadmin/onboarding-review"', "screen registry i
 must(screenRegistry, 'path: "/superadmin/public-leads"', "screen registry includes public leads alias");
 must(drawer, 'SUPERADMIN_ONBOARDING_REVIEW', "copilot drawer route key includes onboarding review");
 must(statusPalette, "APPROVED_FOR_INVITE", "status palette supports invite-ready state");
-must(displayStatus, "APPROVED_FOR_INVITE", "display status supports invite-ready state");
+must(displayStatus, "userFacingStatusLabel", "display status delegates visible status labels");
+must(terminology, "APPROVED_FOR_INVITE", "terminology supports invite-ready state");
 
 mustNot(codeSurface, "create user", "code surface does not expose create user copy");
 mustNot(codeSurface, "send invite", "code surface does not expose send invite copy");

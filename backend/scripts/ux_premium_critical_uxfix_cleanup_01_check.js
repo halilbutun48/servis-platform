@@ -654,7 +654,9 @@ function main() {
 
   mustAcceptedPrismaManifest();
   const status = statusNames().filter((file) => !cleanupScopeFiles.includes(file) && !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
-  const approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
+  const approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
+    entryPath.startsWith("backend/src/routes/") || entryPath.startsWith("backend/src/services/")
+  );
   mustStatusEmptyOrExactlyWithIdentity(
     ["backend/src/routes", "backend/src/services"],
     approvedConcurrentBackendDiff,

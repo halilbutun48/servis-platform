@@ -590,6 +590,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
             canView={canView}
             scope="COMPANY"
             preview={preview}
+            regionName={preview?.regionName || preview?.snapshot?.regionName || null}
             refreshTick={refreshTick}
           />
         )}
@@ -672,6 +673,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
 
   return (
     <PanelChrome
+      className="pre18-finance-surface pre18-finance-room"
       title={scopeTitle}
       subtitle={meta.subtitle}
       actions={(
@@ -710,18 +712,21 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
         <MetricCard title="Veri güveni" value={confidenceValue || "Bilinmiyor"} note={modelStatusValue || "Model durumu"} tone={confidenceMetricTone} />
       </div>
 
-      <ExternalReferenceCard
-        token={token}
-        canView={canView}
-        scope="ROOM"
-        preview={preview}
-        refreshTick={refreshTick}
-      />
-
-      <CostScenarioWorkspacePanel scope="ROOM" embedded regionName={preview?.regionName || preview?.snapshot?.regionName || null} />
-
-      <AccountingExportPanel scope="ROOM" me={me} preview={preview} token={token} />
-
+      <details className="card pre18-finance-secondary" style={{ marginTop: 12 }}>
+        <summary className="panelSectionTitle">Karşılaştırma, senaryo ve dışa aktarım</summary>
+        <div style={{ display: "grid", gap: 12 }}>
+          <ExternalReferenceCard
+            token={token}
+            canView={canView}
+            scope="ROOM"
+            preview={preview}
+            regionName={preview?.regionName || preview?.snapshot?.regionName || null}
+            refreshTick={refreshTick}
+          />
+          <CostScenarioWorkspacePanel scope="ROOM" embedded regionName={preview?.regionName || preview?.snapshot?.regionName || null} />
+          <AccountingExportPanel scope="ROOM" me={me} preview={preview} token={token} />
+        </div>
+      </details>
       <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
         <details className="card" style={{ minWidth: 0 }} open={roomDetailsOpen} onToggle={(event) => setRoomDetailsOpen(event.currentTarget.open)}>
           <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Teklif detayları</summary>
@@ -790,8 +795,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
                 Yeni taslak
               </button>
             </div>
-          </details>
-
+      </details>
           {actionErr ? (
             <div className="card" style={{ marginTop: 10, border: "1px solid rgba(240,68,56,0.25)" }}>
               {actionErr}

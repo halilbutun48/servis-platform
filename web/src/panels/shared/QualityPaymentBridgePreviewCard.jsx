@@ -1,3 +1,5 @@
+import { userFacingFactText, userFacingStatusText } from "../../utils/terminology";
+
 function compactText(value, fallback = "") {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   return text || String(fallback || "").trim();
@@ -30,28 +32,7 @@ function normalizeStatus(value, fallback = "INSUFFICIENT_DATA") {
 }
 
 function statusLabel(value) {
-  const status = normalizeStatus(value);
-  const labels = {
-    READY: "Hazır",
-    MISSING_PROOF: "Kanıt eksik",
-    MISSING: "Eksik",
-    PARTIAL: "Kısmi",
-    RISKY: "Riskli",
-    INSUFFICIENT_DATA: "Yetersiz veri",
-    READY_FOR_REVIEW: "İncelemeye hazır",
-    NEEDS_PROOF: "Kanıt gerekli",
-    NEEDS_QUALITY_REVIEW: "Kalite incelemesi gerekli",
-    NO_IMPACT: "Etki yok",
-    PARTIAL_HOLD_RECOMMENDED: "Kısmi bekleme",
-    REVIEW_REQUIRED: "İnceleme gerekli",
-    REVIEWED: "İncelendi",
-    NEEDS_RECHECK: "Tekrar kontrol",
-    IGNORED_FOR_NOW: "Şimdilik beklemede",
-    CLEAR: "Temiz",
-    RISK: "Risk",
-    UNKNOWN: "Bilinmiyor",
-  };
-  return labels[status] || status.replace(/_/g, " ");
+  return userFacingStatusText(value) || "Yetersiz veri";
 }
 
 function statusTone(value) {
@@ -63,7 +44,7 @@ function statusTone(value) {
 }
 
 function ChipRow({ items = [], tone = "muted", emptyText = "-" }) {
-  const chips = compactList(items, 8);
+  const chips = compactList(items, 8).map(userFacingFactText).filter(Boolean);
   if (!chips.length) {
     return <div className="muted" style={{ marginTop: 6 }}>{emptyText}</div>;
   }
@@ -93,11 +74,11 @@ export default function QualityPaymentBridgePreviewCard({
   );
   const roomName = compactText(agreement?.room?.name || agreement?.roomName || "", "");
   const companyName = compactText(agreement?.company?.name || agreement?.companyName || "", "");
-  const previewOnlyNote = compactText(
+  const previewOnlyNote = userFacingFactText(compactText(
     safePreview.previewOnlyNote
     || "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.",
     "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.",
-  );
+  ));
   const qualityStatus = normalizeStatus(safePreview.qualityStatus, "INSUFFICIENT_DATA");
   const settlementReadiness = normalizeStatus(safePreview.settlementReadiness, "INSUFFICIENT_DATA");
   const impact = safePreview.paymentPreviewImpact && typeof safePreview.paymentPreviewImpact === "object" ? safePreview.paymentPreviewImpact : {};
@@ -106,12 +87,12 @@ export default function QualityPaymentBridgePreviewCard({
   const signals = safePreview.seferScoreSignalsPreview && typeof safePreview.seferScoreSignalsPreview === "object"
     ? safePreview.seferScoreSignalsPreview
     : {};
-  const nextBestAction = compactText(
+  const nextBestAction = userFacingFactText(compactText(
     safePreview.nextBestAction
     || "Eksik kanıt varsa önce tamamlanmalı.",
     "Eksik kanıt varsa önce tamamlanmalı.",
-  );
-  const evidenceSummary = compactText(safePreview.evidenceSummary || "", "");
+  ));
+  const evidenceSummary = userFacingFactText(compactText(safePreview.evidenceSummary || "", ""));
 
   const signalItems = [
     signals.onTimeSignal ? `Zaman: ${statusLabel(signals.onTimeSignal)}` : "",
@@ -152,7 +133,7 @@ export default function QualityPaymentBridgePreviewCard({
         <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
           <div className="muted">Kalite durumu</div>
           <div style={{ fontWeight: 900, marginTop: 4 }}>{statusLabel(qualityStatus)}</div>
-          <div className="muted" style={{ marginTop: 4 }}>{compactText(impact.reason || "", "Bu sadece önizlemedir.")}</div>
+          <div className="muted" style={{ marginTop: 4 }}>{userFacingFactText(compactText(impact.reason || "", "Bu sadece önizlemedir."))}</div>
         </div>
         <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
           <div className="muted">Kanıt tamlığı</div>
@@ -162,7 +143,7 @@ export default function QualityPaymentBridgePreviewCard({
         <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
           <div className="muted">Hakediş önizleme etkisi</div>
           <div style={{ fontWeight: 900, marginTop: 4 }}>{statusLabel(impact.status)}</div>
-          <div className="muted" style={{ marginTop: 4 }}>{compactText(impact.reason || "", "Bu sadece önizlemedir.")}</div>
+          <div className="muted" style={{ marginTop: 4 }}>{userFacingFactText(compactText(impact.reason || "", "Bu sadece önizlemedir."))}</div>
         </div>
         <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
           <div className="muted">Ödeme / mutabakat hazırlığı</div>

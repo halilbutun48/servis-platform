@@ -99,8 +99,8 @@ export default function ChatQualitySummary({ messages = [], currentScreenLabel =
         <div style={{ display: 'grid', gap: 4 }}>
           <div style={{ fontSize: 12, color: '#475467', fontWeight: 700 }}>En sık ölçülen yardım tipleri</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {summary.topLabels.map(([label, count]) => (
-              <span key={label} style={{ borderRadius: 999, padding: '4px 8px', border: '1px solid #d0d5dd', background: '#fff', fontSize: 12 }}>
+            {summary.topLabels.map(([label, count], index) => (
+              <span key={`${label}:${index}`} style={{ borderRadius: 999, padding: '4px 8px', border: '1px solid #d0d5dd', background: '#fff', fontSize: 12 }}>
                 {label} • {count}
               </span>
             ))}

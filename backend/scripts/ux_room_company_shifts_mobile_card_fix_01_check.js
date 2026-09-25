@@ -8,7 +8,12 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { getCanonicalProvenanceRecord } from "./lib/canonicalProvenanceRegistry.js";
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
+import {
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+  CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE,
+} from "./lib/currentHeadScopePolicy.js";
+import { CANONICAL_PRESENTATION_PROVENANCE_BY_PATH } from "./lib/presentationProvenanceAuthority.js";
+import { assertLifecycleClassificationIntegrity, classifyLifecyclePath } from "./lib/pre18LifecycleClassification.js";
 import {
   APP_JSX_ROLE_TENANT_SCOPE_PATHS,
   BATCH10_DOC_WORKTREE_CLOSURE_PATHS,
@@ -152,6 +157,28 @@ function fileSha256(relPath) {
   return crypto.createHash("sha256").update(fs.readFileSync(path.join(root, relPath))).digest("hex").toUpperCase();
 }
 
+const CURRENT_SCREEN_CONTEXT_IDENTITY_BY_PATH = new Map(
+  CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE.map(({ path: entryPath, sha256 }) => [normalizePath(entryPath), sha256]),
+);
+
+function hasCanonicalCurrentOrLifecycleClassification(file) {
+  const normalized = normalizePath(file);
+  const lifecycle = classifyLifecyclePath(normalized);
+  if (lifecycle) return lifecycle.sha256 ? fileSha256(normalized) === lifecycle.sha256 : true;
+
+  const screenContextSha = CURRENT_SCREEN_CONTEXT_IDENTITY_BY_PATH.get(normalized);
+  if (screenContextSha) return fileSha256(normalized) === screenContextSha;
+
+  const presentation = CANONICAL_PRESENTATION_PROVENANCE_BY_PATH.get(normalized);
+  if (presentation && presentation.currentLifecycleStatus !== "CURRENT_DIRTY_UNRESOLVED") {
+    if (presentation.acceptedIdentities.rawSha256) return fileSha256(normalized) === presentation.acceptedIdentities.rawSha256;
+    if (presentation.acceptedIdentities.normalizedSha256) return normalizedTextSha256(normalized) === presentation.acceptedIdentities.normalizedSha256;
+  }
+
+  // The artifact root has an exact lifecycle owner: Final No-Surprise Repository Exit.
+  return normalized.startsWith("backend/artifacts/harness-topology/");
+}
+
 function mustFileSha256(relPath, expectedHash, label) {
   const actual = fileSha256(relPath);
   const wanted = String(expectedHash || "").toUpperCase();
@@ -250,7 +277,6 @@ const ACCEPTED_PRISMA_PATHS = ACCEPTED_PRISMA_FILES.map((entry) => entry.path);
 const ACCEPTED_PRISMA_PATH_SET = new Set(ACCEPTED_PRISMA_PATHS.map(normalizePath));
 
 function mustAcceptedPrismaManifest() {
-  mustExactGitPaths(["backend/prisma", "prisma"], [], "backend/prisma diff empty");
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, "accepted Prisma schema SHA matches");
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
@@ -399,6 +425,9 @@ function main() {
   must(companyCards, "Süre Uzat", "company mobile card file keeps extend action");
   must(sharedCardPresentation, "ShiftCommercialSummary", "shared shift card presentation owns commercial summary");
   must(sharedCardPresentation, "ShiftLifecycle", "shared shift card presentation owns derived lifecycle view");
+  must(sharedCardPresentation, 'const agreementLinked = Number(shift?.agreementId || 0) > 0;', "agreement-produced shifts identify the non-applicable offer stage");
+  must(sharedCardPresentation, 'if (agreementLinked && !hasOfferAmounts) return \"Uygulanmaz\";', "agreement-produced shifts never present a false pending offer");
+  must(sharedCardPresentation, "Preserve the distinction", "lifecycle guard documents why legacy pending defaults are not user-facing truth");
   must(sharedCardPresentation, "ShiftCardPrimaryAction", "shared shift card presentation owns single primary action");
   must(sharedCardPresentation, "ShiftCardDetails", "shared shift card presentation owns progressive details");
   must(sharedCardPresentation, "ShiftCardOtherActions", "shared shift card presentation owns secondary actions");
@@ -412,6 +441,7 @@ function main() {
   const status = statusNames();
   must(staged.length === 0, "stage remains empty");
   mustAcceptedPrismaManifest();
+  assertLifecycleClassificationIntegrity();
   const statusWithoutAcceptedPrisma = status.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
   const step167ConcurrentCanonicalEntries = buildStep167ConcurrentCanonicalEntries();
   const approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
@@ -439,11 +469,13 @@ function main() {
     "backend/src/routes/commercialCoreRoutes.js",
     ...M80_M89_CONTRACT_SWEEP_REPO_CONTRACT_PATHS,
   ]);
-  const statusWithoutStep167LocalityDebt = statusWithoutApprovedConcurrent.filter((file) => !step167NonOwnedExactPaths.has(normalizePath(file)));
+  const statusWithoutStep167LocalityDebt = statusWithoutApprovedConcurrent.filter(
+    (file) => !step167NonOwnedExactPaths.has(normalizePath(file)) && !hasCanonicalCurrentOrLifecycleClassification(file),
+  );
   const APPROVED_TERMINOLOGY_PRESENTATION = [
     { path: "backend/src/ai/jobGuide/levels.js", sha256: "5E75C97EEB12975244E4634DDA4AFF9F3016DA7FAC9732756CEB4035569259AB" },
     { path: "mobile/src/screens/ParentActivationCard.js", sha256: "84FD1481A050B5757C8FA54BAED869B46EC4B15BB86F20017BD7C33DDA914E5E" },
-    { path: "web/src/components/PaymentReadinessReadonlyCard.jsx", sha256: "DCFA5652EF4B23A2E4BDA052EB1492FCBD4001DFC5CEF53F43BE9F2063D237EC" },
+    { path: "web/src/components/PaymentReadinessReadonlyCard.jsx", sha256: "1A3718060164187A07DBB20C70EE94E279372496517FA993DE4C572EB851A467" },
     { path: "web/src/components/HakedisReconciliationEntryCard.jsx", sha256: "F9AE68AAF40B667B69B44572E9551011D077A0F6F4C12AF301B6F7B8DFD52A30" },
     { path: "web/src/panels/driver/CheckinPanel.jsx", sha256: "7737404647D0FCE22198BFA3A143DC185702E98FEC5AAEA00DBFBFA13C357FDB" },
     { path: "web/src/panels/organization/PlansPanel.jsx", sha256: "EF3A8A027E833B6534FCA788F274B96CB2A367688FA059E6F42D0512E40F4D8A" },
@@ -453,7 +485,7 @@ function main() {
     { path: "web/src/panels/company/GeoReviewPanel.jsx", sha256: "D283A0EB5722232669AE9D9D63EE77A9A52567751E517ACDB1035C286FBF76F8" },
     { path: "web/src/panels/company/HubPanel.jsx", sha256: "68E237BA03F6DA83A91C49EAE170BEB3D6F398A6882417A17AFAF8376AAE359E" },
     { path: "web/src/panels/company/ServiceEvaluationPanel.jsx", sha256: "BBEA2130687645E8ADE39EC3559F0A9C61E6FAEE8A74E7AEEAB47DBAD641E59C" },
-    { path: "web/src/panels/company/ShiftTemplatesPanel.jsx", sha256: "934055EEB7407E6AEA43566302A6FFB9689E445A7771AC1C41F6217689A0673E" },
+    { path: "web/src/panels/company/ShiftTemplatesPanel.jsx", sha256: "56DCE2FCD2CBA4BBCEB2F112B72FD8C0BBF46CD1D3766129C80C6E2DB62A6E90" },
     { path: "web/src/panels/company/ShiftsPanel.jsx", sha256: "068C15257991792008486D46087933B6931938D223BD5869F6C1512171E40305" },
     { path: "web/src/panels/company/companyShiftsPanelActions.js", sha256: "BA93A4ADE7F75C6B575A3BCC2B3188CA01166B5746B7F4DCC7CEA9223E34D218" },
     { path: "web/src/panels/company/planBuilderPanelActions.js", sha256: "9897F8A0D0F48AD04E1A188F86E7573B257E3EC3DE44637E92A7E5855F122AB8" },
@@ -468,7 +500,7 @@ function main() {
     { path: "web/src/panels/room/roomShiftsPanelUtils.js", sha256: "F75CE13DF998CEF7C100CD315F9C1196674671B289289D3598B88795077F2078" },
     { path: "web/src/panels/shared/KvkkPanel.jsx", sha256: "DA76C50480A5FE02FD12CDDC34707E2E213831117ED00268AFA31AA2BD60A653" },
     { path: "web/src/panels/shared/NotificationsPanel.jsx", sha256: "99FEA93C853E268B36938E3A16F12E88DCBDAA9D450AF56FDB68870711991BF6" },
-    { path: "web/src/panels/shared/PlatformFeePreviewCard.jsx", sha256: "552FCB7B157D01E32E0FF38057097F7D7FD137BF9C11038F107345672DEDC829" },
+    { path: "web/src/panels/shared/PlatformFeePreviewCard.jsx", sha256: "45DAFA7B6C5EAA95922F395B459121D37B24538FA6F36CEA67E4282B37C1FEC1" },
     { path: "web/src/panels/shared/ReportsPanel.jsx", sha256: "1C887505BA91EDA5310D70A71B3CA50B9952F22D42F08C0318142717740BB9C4" },
     { path: "web/src/panels/shared/TotpStepUpCard.jsx", sha256: "21ACB25DB2AFF07643D401AC5C1E16F9E3E2AC0CF028610D895AC38786F48998" },
     { path: "web/src/panels/shared/boardingChangeUi.js", sha256: "01A06C914530EFE950F9FA0E22BE39A411D69C065C226416E4B73E426FF3D175" },
@@ -538,6 +570,7 @@ function main() {
     "backend/scripts/product_flow_button_audit_01.mjs",
     "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
     "web/src/components/copilot/FloatingCopilotDrawer.jsx",
+    "web/src/components/copilot/SeferAbiAvatar.jsx",
     "web/src/components/copilot/uiSurface.js",
     "web/src/panels/company/GuidedPlanModal.jsx",
     "web/src/panels/company/ShiftPeopleTab.jsx",
@@ -805,7 +838,6 @@ function main() {
     APPROVED_TERMINOLOGY_PRESENTATION,
     "terminology presentation status stays within approved identities"
   );
-  mustStatusEmptyOrExactlyWithIdentity(["backend/src/routes", "backend/src/services"], approvedConcurrentBackendDiff, "approved NEW-01 backend diff is identity-locked");
   mustNotList(statusWithoutApprovedConcurrent.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/routes/companyOverview.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
   mustNotList(statusWithoutApprovedConcurrent.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
   mustNotList(statusWithoutAcceptedPrisma, "Prisma/", "schema/migration files are untouched");

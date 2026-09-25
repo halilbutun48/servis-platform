@@ -210,6 +210,7 @@ const TOPIC_DEFINITIONS = Object.freeze([
     patterns: Object.freeze([
       'rotayı uygula',
       'rotayi uygula',
+      'bu rotayı şimdi uygula',
       'route apply',
       'günlük atamaya işle',
       'gunluk atamaya işle',

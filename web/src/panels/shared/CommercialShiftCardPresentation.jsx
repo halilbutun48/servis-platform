@@ -18,9 +18,16 @@ function offerDecisionLabel(value) {
 }
 
 function offerStatus(shift) {
+  const agreementLinked = Number(shift?.agreementId || 0) > 0;
+  const hasOfferAmounts = hasValue(shift?.companyOfferAmount) || hasValue(shift?.roomOfferAmount);
+  // Agreement-produced shifts do not enter the offer/negotiation stage. The
+  // backend keeps roomOfferDecision=PENDING as a legacy default, but exposing
+  // that value here falsely says an offer is waiting. Preserve the distinction
+  // between an inapplicable stage and a real pending offer.
+  if (agreementLinked && !hasOfferAmounts) return "Uygulanmaz";
   const decision = String(shift?.roomOfferDecision || shift?.offerDecision || "").toUpperCase();
   if (["ACCEPTED", "APPROVED"].includes(decision)) return "Tamamlandı";
-  if (hasValue(shift?.companyOfferAmount) || hasValue(shift?.roomOfferAmount)) return "İnceleniyor";
+  if (hasOfferAmounts) return "İnceleniyor";
   return "Bekliyor";
 }
 
@@ -48,8 +55,8 @@ export function ShiftCommercialSummary({ shift, restricted = false }) {
       <div className="shiftCardSectionTitle">Ticari özet</div>
       {companyAmount || roomAmount ? (
         <div className="shiftCardSummaryValues">
-          {companyAmount ? <span><b>Firma teklifi:</b> {companyAmount}</span> : null}
-          {roomAmount ? <span><b>Taşımacılık Firması teklifi:</b> {roomAmount}</span> : null}
+          {companyAmount ? <span><b>Hizmet Alan Firma teklifi:</b> {companyAmount}</span> : null}
+          {roomAmount ? <span><b>Taşımacılık Firması karşı teklifi:</b> {roomAmount}</span> : null}
         </div>
       ) : (
         <div className="shiftCardSubtle">Teklif bilgisi henüz oluşmadı.</div>
@@ -71,8 +78,8 @@ export function ShiftOfferDetails({ shift }) {
   }
   return (
     <div className="shiftCardInfoBlock">
-      {companyAmount ? <div className="shiftCardSubtle"><b>Firma teklifi:</b> {companyAmount}</div> : null}
-      {roomAmount ? <div className="shiftCardSubtle"><b>Taşımacılık Firması teklifi:</b> {roomAmount}</div> : null}
+      {companyAmount ? <div className="shiftCardSubtle"><b>Hizmet Alan Firma teklifi:</b> {companyAmount}</div> : null}
+      {roomAmount ? <div className="shiftCardSubtle"><b>Taşımacılık Firması karşı teklifi:</b> {roomAmount}</div> : null}
       {decision && !decisionAlreadyShownByStatus ? <div className="shiftCardSubtle"><b>Karar:</b> {decision}</div> : null}
       {shift?.companyOfferNote ? <div className="shiftCardSubtle"><b>Firma notu:</b> {shift.companyOfferNote}</div> : null}
       {shift?.roomOfferNote ? <div className="shiftCardSubtle"><b>Taşımacılık Firması notu:</b> {shift.roomOfferNote}</div> : null}
@@ -81,7 +88,7 @@ export function ShiftOfferDetails({ shift }) {
   );
 }
 
-export function ShiftLifecycle({ shift, restricted = false }) {
+export function ShiftLifecycle({ shift, restricted = false, compact = false }) {
   const steps = restricted
     ? [{ key: "operation", label: "Operasyon", value: operationStatus(shift) }]
     : [
@@ -91,17 +98,33 @@ export function ShiftLifecycle({ shift, restricted = false }) {
       { key: "hakedis", label: "Hakediş", value: hakedişStatus(shift) },
     ];
 
+  const operationStep = steps.find((step) => step.key === "operation") || steps[0];
+  const allSteps = (
+    <div className="shiftCardLifecycleSteps">
+      {steps.map((step) => (
+        <div className="shiftCardLifecycleStep" key={step.key} data-state={step.value}>
+          <span className="shiftCardLifecycleLabel">{step.label}</span>
+          <span className="shiftCardLifecycleValue">{step.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
-    <section className="shiftCardLifecycle" data-testid="shift-card-lifecycle" aria-label="İş akışı durumu">
+    <section className={`shiftCardLifecycle${compact ? " shiftCardLifecycle--compact" : ""}`} data-testid="shift-card-lifecycle" aria-label="İş akışı durumu">
       <div className="shiftCardSectionTitle">İş akışı durumu</div>
-      <div className="shiftCardLifecycleSteps">
-        {steps.map((step) => (
-          <div className="shiftCardLifecycleStep" key={step.key} data-state={step.value}>
-            <span className="shiftCardLifecycleLabel">{step.label}</span>
-            <span className="shiftCardLifecycleValue">{step.value}</span>
+      {compact ? (
+        <>
+          <div className="shiftCardLifecycleCompactValue">
+            <span>Operasyon</span>
+            <b>{operationStep?.value || "Bekliyor"}</b>
           </div>
-        ))}
-      </div>
+          <details className="shiftCardLifecycleDisclosure">
+            <summary>Tüm iş akışını göster</summary>
+            {allSteps}
+          </details>
+        </>
+      ) : allSteps}
     </section>
   );
 }

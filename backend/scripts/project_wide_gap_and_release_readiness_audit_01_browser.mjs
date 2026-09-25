@@ -92,7 +92,7 @@ async function schoolParentFlow(browser) {
     const createButton = schoolPage.getByRole("button", { name: "Veli kodu üret", exact: true });
     await createButton.waitFor({ state: "visible", timeout: 20000 });
     await createButton.click();
-    const accessField = schoolPage.getByPlaceholder("Henüz link üretilmedi.");
+    const accessField = schoolPage.getByPlaceholder("Henüz bağlantı üretilmedi.");
     await accessField.waitFor({ state: "visible", timeout: 20000 });
     await expect(accessField).toHaveValue(/accept-parent-invite/, { timeout: 20000 });
     accessLink = await accessField.inputValue();

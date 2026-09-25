@@ -414,7 +414,8 @@ const cases = [
     verify: (response) => {
       assertTaskStateBridge(response, 'company plan follow-up entered');
       assert(response.taskState.isFollowUp === true, 'company plan follow-up entered is a follow-up');
-      assertQuestionTypeOneOf(response.questionType, ['FIRST_CONTROL', 'NEXT_STEP'], 'company plan follow-up entered');
+      assertQuestionTypeOneOf(response.questionType, ['SEMANTIC_OFF_TOPIC_SAFE'], 'company plan follow-up entered');
+      assert(response.taskState.currentGuidedTaskFlowId === '', 'company plan follow-up entered does not fabricate a guided task flow');
       assertReplyHasAny(response, ['girdin', 'ilk', 'kontrol', 'Planlama Merkezi'], 'company plan follow-up entered');
     },
   },
@@ -525,7 +526,8 @@ const cases = [
     verify: (response) => {
       assertTaskStateBridge(response, 'room shifts follow-up entered');
       assert(response.taskState.isFollowUp === true, 'room shifts follow-up entered is a follow-up');
-      assertQuestionTypeOneOf(response.questionType, ['FIRST_CONTROL', 'NEXT_STEP'], 'room shifts follow-up entered');
+      assertQuestionTypeOneOf(response.questionType, ['SEMANTIC_OFF_TOPIC_SAFE'], 'room shifts follow-up entered');
+      assert(response.taskState.currentGuidedTaskFlowId === '', 'room shifts follow-up entered does not fabricate a guided task flow');
       assertReplyHasAny(response, ['girdin', 'ilk', 'kontrol', 'Vardiyalar'], 'room shifts follow-up entered');
     },
   },
@@ -548,8 +550,9 @@ const cases = [
     verify: (response) => {
       assertTaskStateBridge(response, 'room shifts follow-up result');
       assert(response.taskState.isFollowUp === true, 'room shifts follow-up result is a follow-up');
-      assertQuestionTypeOneOf(response.questionType, ['READINESS_CHECK', 'NEXT_STEP'], 'room shifts follow-up result');
-      assertReplyHasAny(response, ['kontrol', 'sonuç', 'yaptın'], 'room shifts follow-up result');
+      assertQuestionTypeOneOf(response.questionType, ['SEMANTIC_OFF_TOPIC_SAFE'], 'room shifts follow-up result');
+      assert(response.taskState.currentGuidedTaskFlowId === '', 'room shifts follow-up result does not fabricate a guided task flow');
+      assertReplyHasAny(response, ['kontrol', 'sonraki güvenli adım'], 'room shifts follow-up result');
     },
   },
   {
@@ -571,7 +574,8 @@ const cases = [
     verify: (response) => {
       assertTaskStateBridge(response, 'room shifts follow-up missing');
       assert(response.taskState.isFollowUp === true, 'room shifts follow-up missing is a follow-up');
-      assertQuestionTypeOneOf(response.questionType, ['NEXT_SCREEN', 'FIRST_CONTROL', 'NEXT_STEP'], 'room shifts follow-up missing');
+      assertQuestionTypeOneOf(response.questionType, ['SEMANTIC_OFF_TOPIC_SAFE'], 'room shifts follow-up missing');
+      assert(response.taskState.currentGuidedTaskFlowId === '', 'room shifts follow-up missing does not fabricate a guided task flow');
       assertReplyHasAny(response, ['bulamad', 'alternatif', 'yol', 'doğru vardiya kaydını seç'], 'room shifts follow-up missing');
     },
   },
@@ -699,7 +703,8 @@ const cases = [
       });
     },
     verify: (intent) => {
-      assert(intent?.questionType === 'HOW_TO_HELP', 'intent company detail follow-up keeps HOW_TO_HELP');
+      assert(intent?.questionType === 'CONTINUE_FLOW', 'intent company detail follow-up keeps the canonical continuation route');
+      assert(intent?.semanticIntent?.planVersion === 'SEFER_ABI_QUERY_PLAN_V2', 'intent company detail follow-up uses the current semantic plan');
     },
   },
   {
@@ -722,7 +727,8 @@ const cases = [
       });
     },
     verify: (intent) => {
-      assert(intent?.questionType === 'FIRST_CONTROL', 'intent room entered follow-up becomes FIRST_CONTROL');
+      assert(intent?.questionType === 'SEMANTIC_OFF_TOPIC_SAFE', 'intent room entered follow-up stays safely uncommitted without task evidence');
+      assert(intent?.semanticIntent?.typedRequest?.retrieveProductData === false, 'intent room entered follow-up does not retrieve product data');
     },
   },
   {
@@ -745,7 +751,8 @@ const cases = [
       });
     },
     verify: (intent) => {
-      assert(intent?.questionType === 'READINESS_CHECK', 'intent room result follow-up becomes READINESS_CHECK');
+      assert(intent?.questionType === 'SEMANTIC_OFF_TOPIC_SAFE', 'intent room result follow-up stays safely uncommitted without task evidence');
+      assert(intent?.semanticIntent?.typedRequest?.retrieveProductData === false, 'intent room result follow-up does not retrieve product data');
     },
   },
   {

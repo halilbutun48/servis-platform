@@ -2,6 +2,7 @@
 // web/src/panels/company/ShiftTemplatesPanel.jsx
 // Note: Templates are only slot/time/direction. Days + duration moved to Agreement create.
 import { useEffect, useMemo, useState } from "react";
+import { userFacingDirectionLabel } from "../../utils/terminology";
 
 export const TEMPLATE_PACKS = [
   {
@@ -397,8 +398,8 @@ export default function ShiftTemplatesPanel({
                       <div>
                         <div className="muted">Direction</div>
                         <select value={c1Direction} onChange={(e) => setC1Direction(e.target.value)}>
-                          <option value="INBOUND">INBOUND (Toplama → Toplanma Konumu)</option>
-                          <option value="OUTBOUND">OUTBOUND (Toplanma Konumu → Dağıtım)</option>
+                          <option value="INBOUND">{userFacingDirectionLabel("INBOUND")} (Toplama → Toplanma Konumu)</option>
+                          <option value="OUTBOUND">{userFacingDirectionLabel("OUTBOUND")} (Toplanma Konumu → Dağıtım)</option>
                         </select>
                       </div>
                     </div>
@@ -435,8 +436,8 @@ export default function ShiftTemplatesPanel({
                         <div>
                         <div className="muted">Direction</div>
                         <select value={c2Direction} onChange={(e) => setC2Direction(e.target.value)}>
-                            <option value="INBOUND">INBOUND (Toplama → Toplanma Konumu)</option>
-                            <option value="OUTBOUND">OUTBOUND (Toplanma Konumu → Dağıtım)</option>
+                            <option value="INBOUND">{userFacingDirectionLabel("INBOUND")} (Toplama → Toplanma Konumu)</option>
+                            <option value="OUTBOUND">{userFacingDirectionLabel("OUTBOUND")} (Toplanma Konumu → Dağıtım)</option>
                         </select>
                       </div>
                       </div>
@@ -581,4 +582,3 @@ export default function ShiftTemplatesPanel({
     </>
   );
 }
-

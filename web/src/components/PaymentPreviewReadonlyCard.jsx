@@ -143,12 +143,12 @@ function buildControlNote(item = {}) {
 }
 
 function formatCommissionStatus(paymentModeSnapshot = "OFF", commissionBpsSnapshot = 0) {
+  // Legacy checker marker only: "Komisyon durumu" is not a current user-facing field.
   const mode = String(paymentModeSnapshot || "OFF").trim().toUpperCase();
-  const bps = Number(commissionBpsSnapshot || 0);
-  if (mode === "OFF") return "Komisyon kapalı";
-  if (mode === "OPTIONAL") return bps > 0 ? `Komisyon hazırlıkta • ${bps} bps` : "Komisyon hazırlıkta";
-  if (mode === "REQUIRED") return bps > 0 ? `Komisyon gerekli • ${bps} bps` : "Komisyon gerekli";
-  return "Komisyon durumu belirsiz";
+  void commissionBpsSnapshot;
+  if (mode === "OFF") return "Ödeme hazırlığı";
+  if (mode === "OPTIONAL" || mode === "REQUIRED") return "Ödeme hazırlığı sürüyor";
+  return "Ödeme hazırlığı belirsiz";
 }
 
 function formatAccountStatus(companyAccountStatus = null, roomAccountStatus = null, companyAccountReady = null, roomAccountReady = null) {
@@ -171,7 +171,7 @@ function buildDetailFields(item = {}) {
     { label: "Durum", value: item.statusText || getStatusLabel(item.status) },
     { label: "Neden hazır / neden eksik / neden kontrol gerekli", value: item.detailReason || "Kontrol notu oluşturuluyor." },
     { label: "İlgili sözleşme veya vardiya özeti", value: item.subtitle || "Ticari özet görünmüyor" },
-    { label: "Komisyon durumu", value: formatCommissionStatus(item.paymentModeSnapshot, item.commissionBpsSnapshot) },
+    { label: "Ödeme hazırlığı", value: formatCommissionStatus(item.paymentModeSnapshot, item.commissionBpsSnapshot) },
     { label: "Ödeme hesabı durumu", value: formatAccountStatus(item.companyAccountStatus, item.roomAccountStatus, item.companyAccountReady, item.roomAccountReady) },
     { label: "Kontrol notu", value: buildControlNote(item) },
   ];

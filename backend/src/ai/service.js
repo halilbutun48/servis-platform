@@ -2,11 +2,113 @@ import { buildCopilotPayload, getShiftContext, getVehicleContext } from "./tools
 import { buildJobGuideResponse } from "./jobGuide/index.js";
 import { buildIfStuck, buildQuickActions } from "./jobGuide/quickActions.js";
 import { normalizeGuideLevel } from "./jobGuide/levels.js";
-import { getScreenDefinitionForUser } from "./jobGuide/screenCatalog.js";
+import { getScreenDefinitionForUser, resolveAuthorizedScreenContext } from "./jobGuide/screenCatalog.js";
 import { resolveChatContext } from "./chat/contextResolver.js";
-import { buildChatHelpResponse } from "./chat/helpComposer.js";
+import { buildChatHelpResponse, buildGenericProductHelpResponse } from "./chat/helpComposer.js";
 import { buildSeferAbiCostAnalysisResponse, detectCostAnalysisIntent } from "./chat/seferAbiCostAnalysisAssistant.js";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel, normalizeGpsFreshness } from "./chat/etaSanity.js";
+import { ACTIONABLE_EVENT_SOURCE_ID, buildActionableAnswer, buildActionableEventsForUser } from "../services/actionableEvents.js";
+import { buildAuthorizedProductAwarenessAnswer, buildAuthorizedReasoningAnswer, buildVisibleFactText, resolveAuthorizedProductDomains } from "../services/authorizedProductAwareness.js";
+import { isCurrentSituationDiagnosticQuestion } from "./chat/intentRouter.js";
+import { buildConversationRoutingResponse } from "./chat/conversationRouting.js";
+import { resolveSemanticIntent } from "./chat/semanticIntentPlanner.js";
+import { commitCanonicalConversationState, getCanonicalConversationState } from "./chat/canonicalConversationState.js";
+import { normalizeSeferAbiUserFacingPayload } from "./chat/userFacingLanguageNormalizer.js";
+
+function roleGlobalActionableFallbackAllowed(semanticPlan, _conversationState) {
+  if (!semanticPlan || semanticPlan.planStatus !== "READY") return false;
+  // A role-global actionable queue is a last resort.  A narrower valid task
+  // owns the turn even when its honest result is NO_DATA, UNKNOWN, or
+  // INSUFFICIENT_EVIDENCE; those terminal states are not permission to answer
+  // a different question from the role-global queue.
+  if (["CURRENT_SCREEN", "SELECTED_RECORD", "NONE"].includes(semanticPlan.scopeTarget)) return false;
+  if (semanticPlan.comparisonSpec || semanticPlan.entities?.length > 1 || semanticPlan.activeEntitySet?.length > 1) return false;
+  if (semanticPlan.typedRequest?.generalInformationIntent || semanticPlan.typedRequest?.generalCreativeIntent) return false;
+  if (semanticPlan.clarificationNeed || semanticPlan.family === "STYLE") return false;
+  // A terminal result from the *current* narrower request returns before this
+  // fallback site.  A terminal result from an earlier turn must not suppress
+  // a new, explicit ROLE_GLOBAL request in the same authorized conversation.
+  // This admission point therefore reasons only about the frozen current plan.
+  return semanticPlan.scopeTarget === "ROLE_GLOBAL";
+}
+
+function hasScreenIdentityHint(screenContext = {}, entityType = "", entityId = null) {
+  return Boolean(
+    String(screenContext?.path || "")
+    || Number(screenContext?.id || screenContext?.entityId || (entityType === "screen" ? entityId : 0)) > 0,
+  );
+}
+
+function copyClientSelectionHints(screenContext = {}) {
+  return {
+    selectedLabel: String(screenContext?.selectedLabel || screenContext?.selectedRecordLabel || ""),
+    selectedEntityType: String(screenContext?.selectedEntityType || ""),
+    selectedEntityId: Number(screenContext?.selectedEntityId || 0) || null,
+    selectedRelatedEntityType: String(screenContext?.selectedRelatedEntityType || ""),
+    selectedRelatedEntityId: Number(screenContext?.selectedRelatedEntityId || 0) || null,
+    selectedEntitySet: Array.isArray(screenContext?.selectedEntitySet) ? screenContext.selectedEntitySet : [],
+  };
+}
+
+export function resolveIncomingCopilotScreenContext({ user, screenContext, entityType, entityId } = {}) {
+  if (!hasScreenIdentityHint(screenContext, entityType, entityId)) return null;
+  const requestedId = entityType === "screen" && Number(entityId) > 0
+    ? Number(entityId)
+    : Number(screenContext?.id || screenContext?.entityId || 0) || null;
+  const resolved = resolveAuthorizedScreenContext(user, screenContext || {}, requestedId);
+  if (!resolved.screen) {
+    const error = new Error("SCREEN_CONTEXT_NOT_AUTHORIZED");
+    error.status = 400;
+    error.code = "SCREEN_CONTEXT_NOT_AUTHORIZED";
+    error.screenContextStatus = resolved.status;
+    throw error;
+  }
+  return {
+    ...copyClientSelectionHints(screenContext),
+    id: Number(resolved.screen.id),
+    path: resolved.screen.path,
+    label: resolved.screen.label,
+    role: resolved.effectiveRoleKey,
+    companyKind: String(user?.companyKind || "").toUpperCase(),
+    catalogRoleKey: resolved.screen.catalogRoleKey,
+  };
+}
+
+function buildGenericProductHelpProjection({ message, semanticPlan }) {
+  const reply = buildGenericProductHelpResponse({ message });
+  return {
+    ok: true,
+    copilotVersion: "ROUND-10-GENERIC-PRODUCT-HELP",
+    generatedAt: new Date().toISOString(),
+    intent: "CHAT_HELP",
+    intentLabel: "Genel ürün yardımı",
+    provider: "local-static-product-help",
+    providerSummary: "context-free-generic-product-help",
+    mode: "RULE_BASED",
+    // Keep this projection context-free. Authenticated identity and persisted
+    // route-bound context remain internal to the lifecycle owner for a later,
+    // freshly authorized contextual request.
+    scope: { summary: "Genel ürün açıklaması; ekran, kayıt, rol veya tenant verisi kullanılmadı." },
+    reply,
+    summary: reply,
+    contextSummary: "Bu tur, kayıt veya mevcut ekran bağlamı kullanmadan genel ürün açıklaması verdi.",
+    questionType: "GENERIC_PRODUCT_HELP",
+    activeTopic: "GENERIC_PRODUCT_HELP",
+    assistantIntent: "GENERIC_PRODUCT_HELP",
+    authorizedDomainMap: [],
+    authorizedRecords: [],
+    retrievedFacts: [],
+    responseSections: [{ title: "SeferPakt", body: reply }],
+    dataSources: ["statik ürün yardım sözleşmesi"],
+    reasoning: "Genel ürün yardımı, yetkili kayıt veya route-bound bağlam okumadan yanıtlandı.",
+    semanticPlan,
+    conversationRoute: "GENERIC_PRODUCT_HELP",
+    dialogueTopic: "GENERIC_PRODUCT_HELP",
+    authorizedProductContext: null,
+    readOnly: true,
+    quickActions: [],
+  };
+}
 
 function intentLabel(intent) {
   const map = {
@@ -35,6 +137,286 @@ function describeEntity(context) {
     return `${context.label || "Ekran"} • ${context.roleLabel || context.roleKey || "rol"}`;
   }
   return `${context.type || "entity"} #${context.id || "-"}`;
+}
+
+function visibleContextText(screenContext) {
+  return buildVisibleFactText(screenContext);
+}
+
+function buildVisibleContextDiagnosticResponse({ user, entityType, entityId, screenContext, message }) {
+  if (!isCurrentSituationDiagnosticQuestion(message)) return null;
+  const text = visibleContextText(screenContext);
+  const normalized = text.toLocaleLowerCase("tr-TR");
+  const liveSurface = /\/map\b|\/live\b|canlı takip|canli takip|konum sinyali|tahmini süre|tahmini varış/i.test(text);
+  const gpsOffline = /çevrim dışı|cevrim disi|offline|konum sinyali yok|sinyal yok|gps.*(?:yok|çevrim dışı|cevrim disi)/i.test(text);
+  const etaUnavailable = /tahmini süre[^•]{0,80}(hesaplanamıyor|hesaplanmiyor|yok|görünmüyor|gorunmuyor)|eta[^•]{0,80}(hesaplanamıyor|hesaplanmiyor|yok|güvenilir değil|guvenilir degil)/i.test(text)
+    || (/eta yok|tahmini süre yok/i.test(normalized));
+  if (!liveSurface || (!gpsOffline && !etaUnavailable)) return null;
+  const selected = screenContext?.selectedLabel || screenContext?.selectedRecordLabel || "seçili kayıt";
+  const parts = [];
+  if (gpsOffline) parts.push("Konum/GPS sinyali çevrim dışı; araçtan güncel konum alınamıyor.");
+  else if (etaUnavailable) parts.push("Güncel konum verisiyle ilgili bir eksik sinyal var.");
+  if (etaUnavailable) parts.push("Bu nedenle tahmini süre şu anda hesaplanamıyor.");
+  parts.push("Güvenli sonraki adım: önce araç cihazının ve konum bağlantısının durumunu kontrol et; güncel konum geldikten sonra tahmini süreyi yeniden doğrula.");
+  return {
+    ok: true,
+    copilotVersion: "ROUND-3-VISIBLE-CONTEXT-DIAGNOSTIC",
+    generatedAt: new Date().toISOString(),
+    intent: "CHAT_HELP",
+    intentLabel: "Mevcut durum teşhisi",
+    entityType,
+    entityId: Number(entityId),
+    entityLabel: screenContext?.label || "Sefer Abi",
+    provider: "local-visible-context",
+    providerSummary: "current-authorized-visible-runtime-context",
+    mode: "RULE_BASED",
+    scope: {
+      role: String(user?.role || ""),
+      roomId: user?.roomId ?? null,
+      companyId: user?.companyId ?? null,
+      summary: "Yalnızca ekrandaki yetkili canlı kayıt bağlamı kullanıldı.",
+    },
+    reply: `${selected} için ${parts.join(" ")}`.trim(),
+    summary: parts.join(" "),
+    contextSummary: text,
+    questionType: "ROOT_CAUSE",
+    activeTopic: "CURRENT_SITUATION_DIAGNOSTIC",
+    assistantIntent: "CURRENT_SITUATION_DIAGNOSTIC",
+    dataSources: ["seçili canlı araç bağlamı", "vardiya kaydı", "konum/GPS sinyali", "tahmini süre durumu"],
+    retrievedFacts: [
+      gpsOffline ? "Konum/GPS sinyali çevrim dışı" : "Konum sinyalinde eksik veri",
+      "Araçtan güncel konum alınamıyor",
+      etaUnavailable ? "Tahmini süre hesaplanamıyor" : "Tahmini süre doğrulanamıyor",
+    ],
+    reasoning: "Tahmini süre güncel konum sinyaline bağlıdır; sinyal alınamadığında süre güvenilir biçimde hesaplanamaz.",
+    priority: "Operasyonel takip önceliği",
+    safeNextStep: "Araç cihazı ve konum bağlantısını kontrol et; güncel konum geldikten sonra tahmini süreyi yeniden doğrula.",
+    roleBoundary: "Yalnızca kullanıcının yetkili mevcut ekran ve seçili kayıt sinyalleri kullanıldı.",
+    quickActions: [],
+    responseSections: [
+      { title: "Gördüğüm durum", body: parts.slice(0, 2).join(" ") },
+      { title: "Şimdi ne yapmalıyım?", body: "Araç cihazı ve konum bağlantısını kontrol et; güncel konum geldikten sonra tahmini süreyi yeniden doğrula." },
+    ],
+    followUpPrompt: "Devamını anlat",
+  };
+}
+
+function buildCrossDriverBoundaryResponse({ user, entityType, entityId, screenContext, message }) {
+  const role = String(user?.role || "").toUpperCase();
+  const text = String(message || "").toLocaleLowerCase("tr-TR");
+  if (role !== "DRIVER" || !/(başka|baska|diğer|diger).*(sürücü|surucu)|sürücülerin|suruculerin/.test(text)) return null;
+  return {
+    ok: true,
+    copilotVersion: "ROUND-3-AUTHORIZATION-BOUNDARY",
+    generatedAt: new Date().toISOString(),
+    intent: "CHAT_HELP",
+    assistantIntent: "AUTHORIZATION_BOUNDARY",
+    intentLabel: "Yetki sınırı",
+    entityType,
+    entityId: Number(entityId),
+    entityLabel: screenContext?.label || "Sefer Abi",
+    provider: "local-authorization-boundary",
+    providerSummary: "cross-driver-read-denied-before-retrieval",
+    mode: "RULE_BASED",
+    scope: { role, summary: "Sadece sürücünün kendi yetkili kayıtları okunabilir." },
+    reply: "Başka sürücülerin sorunlarını paylaşamam. Güvenlik ve yetki sınırı gereği yalnızca kendi vardiya, rota, konum ve görev durumunu açıklayabilirim.",
+    summary: "Başka sürücülerin verileri bu oturum için yetkili değil.",
+    questionType: "AUTHORIZATION_BOUNDARY",
+    activeTopic: "AUTHORIZATION_BOUNDARY",
+    authorizedRecords: [],
+    dataSources: [],
+    retrievedFacts: [],
+    reasoning: "Başka sürücülere ait kayıtlar sorgulanmadan önce yetki sınırında durduruldu.",
+    safeNextStep: "İstersen kendi bugünkü vardiya ve rota durumunu sorabilirsin.",
+    responseSections: [{ title: "Şimdi ne yapabilirim?", body: "Yalnızca kendi bugünkü vardiya ve rota durumunu açıklayabilirim." }],
+    roleBoundary: "Başka sürücülere ait kayıtlar okunmadı.",
+    readOnly: true,
+    quickActions: [],
+  };
+}
+
+function buildCrossPersonBoundaryResponse({ user, entityType, entityId, screenContext, message }) {
+  const role = String(user?.role || "").toUpperCase();
+  const text = String(message || "").toLocaleLowerCase("tr-TR");
+  if (role !== "PERSONEL" || !/(başka|baska|diğer|diger).*(personel|kiş|kis|çalışan|calisan).*(servis|vardiya|konum|durum)|personellerin.*(servis|vardiya|konum)/.test(text)) return null;
+  return {
+    ok: true,
+    copilotVersion: "ROUND-4-AUTHORIZATION-BOUNDARY",
+    generatedAt: new Date().toISOString(),
+    intent: "CHAT_HELP",
+    assistantIntent: "AUTHORIZATION_BOUNDARY",
+    intentLabel: "Yetki sınırı",
+    entityType,
+    entityId: Number(entityId),
+    entityLabel: screenContext?.label || "Sefer Abi",
+    provider: "local-authorization-boundary",
+    providerSummary: "cross-person-read-denied-before-retrieval",
+    mode: "RULE_BASED",
+    scope: { role, summary: "Sadece personelin kendi yetkili servis kayıtları okunabilir." },
+    reply: "Başka personellerin servis veya konum bilgilerini paylaşamam. Bu oturumda yalnızca kendi yetkili servis, vardiya ve görev durumunu açıklayabilirim.",
+    summary: "Başka personellere ait veriler bu oturum için yetkili değil.",
+    questionType: "AUTHORIZATION_BOUNDARY",
+    activeTopic: "AUTHORIZATION_BOUNDARY",
+    authorizedRecords: [],
+    dataSources: [],
+    retrievedFacts: [],
+    reasoning: "Başka personele ait kayıtlar okunmadan önce yetki sınırında durduruldu.",
+    safeNextStep: "İstersen kendi servis durumunu veya bugünkü vardiyanı sorabilirsin.",
+    responseSections: [{ title: "Şimdi ne yapabilirim?", body: "Yalnızca kendi servis ve vardiya durumunu açıklayabilirim." }],
+    roleBoundary: "Başka personele ait kayıtlar okunmadı.",
+    readOnly: true,
+    quickActions: [],
+  };
+}
+
+function buildCrossChildBoundaryResponse({ user, entityType, entityId, screenContext, message }) {
+  const role = String(user?.role || "").toUpperCase();
+  const text = String(message || "").toLocaleLowerCase("tr-TR");
+  if (role !== "PARENT" || !/(başka|baska|diğer|diger).*(çocuk|cocuk|öğrenci|ogrenci|veli|aile).*(servis|araç|arac|konum|vardiya|durum)|çocukların|cocuklarin|öğrencilerin|ogrencilerin/.test(text)) return null;
+  return {
+    ok: true,
+    copilotVersion: "ROUND-4-AUTHORIZATION-BOUNDARY",
+    generatedAt: new Date().toISOString(),
+    intent: "CHAT_HELP",
+    assistantIntent: "AUTHORIZATION_BOUNDARY",
+    intentLabel: "Yetki sınırı",
+    entityType,
+    entityId: Number(entityId),
+    entityLabel: screenContext?.label || "Sefer Abi",
+    provider: "local-authorization-boundary",
+    providerSummary: "cross-child-read-denied-before-retrieval",
+    mode: "RULE_BASED",
+    scope: { role, summary: "Sadece velinin yetkili çocuk kayıtları okunabilir." },
+    reply: "Başka çocukların servis veya konum bilgilerini paylaşamam. Bu oturumda yalnızca size bağlı ve yetkili çocuğunuzun servis durumunu açıklayabilirim.",
+    summary: "Başka çocuklara ait veriler bu oturum için yetkili değil.",
+    questionType: "AUTHORIZATION_BOUNDARY",
+    activeTopic: "AUTHORIZATION_BOUNDARY",
+    authorizedRecords: [],
+    dataSources: [],
+    retrievedFacts: [],
+    reasoning: "Başka çocuklara ait kayıtlar okunmadan önce veli yetki sınırında durduruldu.",
+    safeNextStep: "İstersen kendi çocuğunuzun araç, sürücü, durak ve tahmini süre durumunu sorabilirsiniz.",
+    responseSections: [{ title: "Şimdi ne yapabilirim?", body: "Yalnızca size bağlı ve yetkili çocuğunuzun servis durumunu açıklayabilirim." }],
+    roleBoundary: "Başka çocuklara ait kayıtlar okunmadı.",
+    readOnly: true,
+    quickActions: [],
+  };
+}
+
+function buildProductAwarenessResponse({ awareness, user, entityType, entityId, screenContext }) {
+  if (!awareness) return null;
+  const authorized = resolveAuthorizedProductDomains(user);
+  const authorizationBoundary = awareness.authorizationBoundary === true || awareness.domain === "AUTHORIZATION_BOUNDARY";
+  const domainLabel = {
+    OFFERS: "teklif",
+    AGREEMENTS: "sözleşme",
+    SHIFTS: "vardiya",
+    VEHICLES: "araç",
+    DRIVERS: "sürücü",
+    PERSONNEL: "personel/öğrenci",
+    BUDGET: "bütçe ve maliyet",
+    FINANCE: "mutabakat ve mali önizleme",
+    NOTIFICATIONS: "bildirim",
+    OPERATIONS: "operasyon",
+    ORGANIZATION_PLANS: "organizasyon planı",
+    TENANT_ACCESS: "tenant erişim",
+    AUTHORIZATION_BOUNDARY: "yetki sınırı",
+  }[awareness.domain] || "kayıt";
+  return {
+    ok: true,
+    copilotVersion: "ROUND-3-AUTHORIZED-PRODUCT-AWARENESS",
+    generatedAt: new Date().toISOString(),
+    intent: "CHAT_HELP",
+    intentLabel: authorizationBoundary ? "Yetki sınırı" : "Yetkili ürün bilgisi",
+    entityType,
+    entityId: Number(entityId),
+    entityLabel: screenContext?.label || "Sefer Abi",
+    provider: "local-authorized-product-read",
+    providerSummary: awareness.source,
+    mode: "RULE_BASED",
+    scope: {
+      role: String(user?.role || ""),
+      companyKind: String(user?.companyKind || ""),
+      roomId: user?.roomId ?? null,
+      companyId: user?.companyId ?? null,
+      summary: "Sorgu için role/company-kind/tenant kapsamlı salt okunur alan okuması yapıldı.",
+    },
+    reply: awareness.reply,
+    summary: awareness.reply,
+    contextSummary: authorizationBoundary ? "İstenen ürün alanı mevcut rol/company-kind yetki kapsamı dışında bırakıldı." : `${awareness.count} yetkili ${domainLabel} kaydı salt okunur kapsamda değerlendirildi.`,
+    questionType: `AUTHORIZED_DOMAIN_${awareness.domain}`,
+    activeTopic: awareness.domain,
+    authorizedDomain: awareness.domain,
+    authorizedDomainMap: authorized.domains,
+    authorizedRecords: awareness.records,
+    authorizedRecordCount: awareness.count,
+    assistantIntent: `AUTHORIZED_DOMAIN_${awareness.domain}`,
+    dataSources: awareness.dataSources,
+    retrievedFacts: awareness.retrievedFacts,
+    reasoning: awareness.reasoning,
+    semanticPlan: awareness.semanticPlan || null,
+    queryPlanExecution: awareness.queryPlanExecution || null,
+    synthesis: awareness.synthesis || null,
+    styleApplied: awareness.styleApplied || null,
+    authorizedProductContext: awareness.semanticPlan?.dialogueTopic === "PRODUCT"
+      && !["AUTHORIZATION_NEGATIVE"].includes(awareness.semanticPlan?.conversationRoute)
+      && awareness.semanticPlan?.family !== "AUTHORIZATION_BOUNDARY"
+      ? { semanticPlan: awareness.semanticPlan, screenPath: screenContext?.path || null }
+      : null,
+    priority: awareness.priority,
+    safeNextStep: awareness.nextAction,
+    nextAction: awareness.nextAction,
+    responseSections: [
+      { title: "Özet", body: awareness.reply },
+      { title: "Neden böyle söyledim", body: awareness.reasoning },
+      { title: "Şimdi ne yapmalıyım?", body: awareness.nextAction },
+    ],
+    roleBoundary: awareness.roleBoundary || (authorizationBoundary ? awareness.reply : "Yalnızca kullanıcının mevcut yetki ve tenant kapsamındaki kayıtlar kullanıldı."),
+    readOnly: true,
+    quickActions: [],
+    followUpPrompt: "Devamını anlat",
+  };
+}
+
+function applyRequestedStyleToAnswer(answer) {
+  const style = answer?.semanticPlan?.requestedStyle;
+  const source = String(answer?.reply || "").trim();
+  // The authorized awareness layer may already have transformed the settled
+  // answer.  Style is presentation-only and must be idempotent at the final
+  // response boundary; otherwise the same prefix/content is applied twice.
+  if (!style || !source || answer?.styleApplied === style) return answer;
+  let reply = source;
+  const sentences = source.split(/(?<=[.!?])\s+/u).map((part) => part.trim()).filter(Boolean);
+  const firstSentence = sentences[0] || source;
+  const colonTail = firstSentence.match(/^[^:]{24,}:\s*(.+)$/u)?.[1]?.trim();
+  const factualCore = colonTail && /(?:#\d+|\b(?:Teklif|Vardiya|Araç|Sözleşme)\b)/u.test(colonTail) ? colonTail : firstSentence;
+  const compactCore = factualCore.length <= 260
+    ? factualCore
+    : factualCore.split(/\s*[;•]\s*/u).filter(Boolean).slice(0, 2).join("; ");
+  const oneSentence = `${compactCore.replace(/[.!?]+$/u, "").trim()}.`;
+  const requestedSentenceCount = Number(answer?.semanticPlan?.typedRequest?.presentationItemCount || 0);
+  const sentenceLimited = requestedSentenceCount > 0
+    ? sentences.slice(0, requestedSentenceCount).join(" ") || oneSentence
+    : oneSentence;
+  if (["SHORT_SUMMARY", "SINGLE_SENTENCE", "RESULT_ONLY", "SHORTEN"].includes(style)) reply = sentenceLimited;
+  if (style === "BULLET_STEPS") {
+    const parts = source.split(/(?<=[.!?])\s+/u).map((part) => part.trim()).filter(Boolean);
+    reply = parts.map((part, index) => `${index + 1}) ${part}`).join(" ");
+  }
+  if (style === "CHILD_FRIENDLY") reply = `Basitçe: ${source}`;
+  if (style === "EVIDENCE_FIRST") reply = `Kanıt odaklı kısa yanıt: ${source}`;
+  if (style === "RESULT_FIRST") reply = `Sonuç: ${source}`;
+  if (style === "REPHRASED") reply = `Başka türlü söyleyeyim: ${oneSentence}`;
+  if (style === "EXPANDED") {
+    const details = String(answer?.reasoning || "").trim();
+    const nextAction = String(answer?.nextAction || answer?.safeNextStep || "").trim();
+    reply = [source, details && !source.includes(details) ? `Ayrıntı: ${details}` : "", nextAction ? `Sonraki güvenli adım: ${nextAction}` : ""].filter(Boolean).join(" ");
+  }
+  answer.reply = reply;
+  answer.summary = reply;
+  answer.styleApplied = style;
+  if (Array.isArray(answer.responseSections) && answer.responseSections[0]) answer.responseSections[0].body = reply;
+  return answer;
 }
 
 function buildScopeSummary(user, entityType, entityId) {
@@ -760,8 +1142,286 @@ function enrichDecisionLayer(intent, context, base) {
   };
 }
 
-export async function runCopilotFoundation({ intent, entityType, entityId, user, jobType, guideLevel, screenContext, message, conversationState }) {
+export async function runCopilotFoundation(args = {}) {
+  const authorizedScreenContext = resolveIncomingCopilotScreenContext({
+    user: args.user,
+    screenContext: args.screenContext,
+    entityType: args.entityType,
+    entityId: args.entityId,
+  });
+  const canonicalState = getCanonicalConversationState({ user: args.user, screenContext: authorizedScreenContext, authSessionId: args.authSessionId });
+  const rawPayload = await runCopilotFoundationInternal({
+    ...args,
+    screenContext: canonicalState.screenContext,
+    conversationState: canonicalState,
+  });
+  const payload = normalizeSeferAbiUserFacingPayload(rawPayload);
+  commitCanonicalConversationState({
+    user: args.user,
+    screenContext: canonicalState.screenContext,
+    message: args.message,
+    payload,
+    authSessionId: args.authSessionId,
+  });
+  return payload;
+}
+
+async function runCopilotFoundationInternal({ intent, entityType, entityId, user, jobType, guideLevel, screenContext, message, conversationState }) {
   if (intent === "CHAT_HELP") {
+    // Interpret natural language once.  Every later stage receives this same
+    // typed request; authorization and retrieval may reject it, but neither
+    // may silently reinterpret its task, entity target, or context scope.
+    const semanticPlan = resolveSemanticIntent({ message, user, conversationState, screenContext });
+    const costRequest = detectCostAnalysisIntent({ message, screenContext, conversationState });
+    const requestedDomains = semanticPlan.requestedDomains || [];
+    const financialScreen = /\/(?:room|company|school|organization)\/(?:financial-operations|operations)\b/i.test(String(screenContext?.path || ""));
+    const explicitRoleGlobal = semanticPlan.scopeTarget === "ROLE_GLOBAL"
+      || semanticPlan.typedRequest?.scopeTarget === "ROLE_GLOBAL"
+      || semanticPlan.primaryTask === "ROLE_GLOBAL";
+    const costDomainAllowed = semanticPlan.authorizationDecision?.status === "ALLOW"
+      && (
+        requestedDomains.some((domain) => ["BUDGET", "FINANCE"].includes(domain))
+        || (costRequest.isCostAnalysis && requestedDomains.some((domain) => ["VEHICLES", "OPERATIONS", "PERSONNEL", "ORGANIZATION_PLANS"].includes(domain)))
+        || (costRequest.isCostAnalysis && financialScreen && ["COMPANY", "ROOM", "SCHOOL", "ORGANIZATION"].includes(String(user?.companyKind || user?.role || "").toUpperCase()))
+      );
+    // A financial follow-up can be intentionally terse (for example,
+    // "10 kişi daha gelirse?").  The current screen and the immediately
+    // preceding cost conversation keep it inside the same read-only owner;
+    // it must not be downgraded to off-topic before cost analysis sees it.
+    if (costRequest.isCostAnalysis && costDomainAllowed && !explicitRoleGlobal) {
+      const resolved = await resolveChatContext({ entityType, entityId, user, screenContext, conversationState });
+      return buildSeferAbiCostAnalysisResponse({
+        baseResponse: {
+          ok: true,
+          generatedAt: new Date().toISOString(),
+          intent,
+          intentLabel: intentLabel(intent),
+          entityType,
+          entityId: Number(entityId),
+          entityLabel: resolved.entityLabel,
+          provider: "local-foundation",
+          providerSummary: "cost-analysis-authorized-route",
+          mode: "RULE_BASED",
+          scope: resolved.scope,
+          screenPath: screenContext?.path || null,
+          screenLabel: screenContext?.label || null,
+        },
+        user,
+        message,
+        screenContext,
+        conversationState,
+        resolvedEntityType: resolved.resolvedEntityType,
+        resolvedEntityId: resolved.resolvedEntityId,
+        scope: resolved.scope,
+      });
+    }
+    const conversationRoute = {
+      route: semanticPlan.conversationRoute,
+      dialogueTopic: semanticPlan.dialogueTopic,
+      reason: semanticPlan.routingReason,
+      primaryTask: semanticPlan.primaryTask,
+      styleModifier: semanticPlan.styleModifier,
+      productContextHint: semanticPlan.productContextHint,
+      topicTransition: semanticPlan.topicTransition,
+      suspendProductContext: semanticPlan.suspendProductContext,
+      retrieveProductData: semanticPlan.retrieveProductData,
+    };
+    if (conversationRoute.route === "GENERIC_PRODUCT_HELP") {
+      return buildGenericProductHelpProjection({ message, semanticPlan });
+    }
+    if (["OFF_TOPIC_SAFE", "GENERAL_KNOWLEDGE", "LIVE_EXTERNAL_DATA", "UNCLEAR_OR_AMBIGUOUS"].includes(conversationRoute.route)) {
+      const reply = buildConversationRoutingResponse({ route: conversationRoute.route, message, semanticPlan, routingReason: conversationRoute.reason });
+      const priorProductContext = conversationState?.authorizedProductContext || null;
+      return {
+        ok: true,
+        copilotVersion: "ROUND-10-CONVERSATION-ROUTER",
+        generatedAt: new Date().toISOString(),
+        intent: "CHAT_HELP",
+        intentLabel: "Konuşma yönlendirmesi",
+        entityType,
+        entityId: Number(entityId),
+        entityLabel: screenContext?.label || "Sefer Abi",
+        provider: "local-conversation-router",
+        providerSummary: conversationRoute.route,
+        mode: "RULE_BASED",
+        scope: {
+          role: String(user?.role || ""),
+          companyKind: String(user?.companyKind || ""),
+          roomId: user?.roomId ?? null,
+          companyId: user?.companyId ?? null,
+          summary: "Konuşma konusu ürün kapsamından ayrıldı; yetkili ürün kaydı okunmadı.",
+        },
+        reply,
+        summary: reply,
+        contextSummary: "Bu turda ürün kaydı okunmadı; önceki aynı-auth ürün bağlamı korunuyor.",
+        questionType: conversationRoute.route,
+        activeTopic: conversationRoute.dialogueTopic,
+        assistantIntent: conversationRoute.route,
+        authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
+        authorizedRecords: [],
+        retrievedFacts: [],
+        responseSections: [{ title: "Yanıt", body: reply }],
+        dataSources: ["konuşma yönlendirme sınıflandırması", "mevcut auth kapsamı"],
+        reasoning: "Konu dışı, canlı dış veri veya belirsiz referans ürün-domain yürütmesine sokulmadı.",
+        semanticPlan,
+        conversationRoute: conversationRoute.route,
+        dialogueTopic: conversationRoute.dialogueTopic,
+        authorizedProductContext: priorProductContext,
+        roleBoundary: "Önceki yetkili ürün bağlamı aynı auth kapsamı içinde korunuyor; bu turda ürün verisi okunmadı.",
+        readOnly: true,
+        quickActions: [],
+        followUpPrompt: conversationRoute.route === "UNCLEAR_OR_AMBIGUOUS" ? "Bir kayıt veya alan adı ver." : "İstersen yetkili ürün görevine geri dönebiliriz.",
+      };
+    }
+    // Cross-owner requests must reach the canonical semantic authorization gate.
+    // The legacy role-specific boundary replies remain available only for non-
+    // tenant-negative paths; otherwise they would bypass the typed plan and its
+    // before-retrieval authorization decision.
+    if (conversationRoute.route !== "AUTHORIZATION_NEGATIVE") {
+      const crossPersonBoundary = buildCrossPersonBoundaryResponse({ user, entityType, entityId, screenContext, message });
+      if (crossPersonBoundary) return crossPersonBoundary;
+      const crossChildBoundary = buildCrossChildBoundaryResponse({ user, entityType, entityId, screenContext, message });
+      if (crossChildBoundary) return crossChildBoundary;
+      const crossDriverBoundary = buildCrossDriverBoundaryResponse({ user, entityType, entityId, screenContext, message });
+      if (crossDriverBoundary) return crossDriverBoundary;
+    }
+
+    // Financial questions have a dedicated read-only assistant and must reach
+    // its canonical cost/scenario owners before the generic priority fallback.
+    // The typed authorization decision remains the gate for this early route.
+    const reasoningAnswer = await buildAuthorizedReasoningAnswer({
+      user,
+      message,
+      screenContext,
+      conversationState,
+      semanticPlan,
+    });
+    if (reasoningAnswer) {
+      applyRequestedStyleToAnswer(reasoningAnswer);
+      const authorized = resolveAuthorizedProductDomains(user);
+      return {
+        ok: true,
+        copilotVersion: "ROUND-3-AUTHORIZED-REASONING",
+        generatedAt: new Date().toISOString(),
+        intent: "CHAT_HELP",
+        intentLabel: "Yetkili durum değerlendirmesi",
+        entityType,
+        entityId: Number(entityId),
+        entityLabel: screenContext?.label || "Sefer Abi",
+        provider: "local-authorized-reasoning",
+        providerSummary: reasoningAnswer.source,
+        mode: "RULE_BASED",
+        scope: {
+          role: String(user?.role || ""),
+          companyKind: String(user?.companyKind || ""),
+          roomId: user?.roomId ?? null,
+          companyId: user?.companyId ?? null,
+          summary: "Yetki, company-kind ve tenant kapsamı korunarak birden fazla salt-okunur alan birlikte değerlendirildi.",
+        },
+        reply: reasoningAnswer.reply,
+        summary: reasoningAnswer.reply,
+        contextSummary: `${reasoningAnswer.retrievedFacts?.length || reasoningAnswer.records.length} farklı bulgu ve yetkili kayıt birlikte değerlendirildi.`,
+        questionType: reasoningAnswer.topic,
+        activeTopic: reasoningAnswer.topic,
+        assistantIntent: reasoningAnswer.intent || reasoningAnswer.topic,
+        authorizedDomainMap: authorized.domains,
+        authorizedRecords: reasoningAnswer.records,
+        responseSections: [
+          { title: "Özet", body: reasoningAnswer.reply },
+          { title: "Neden böyle söyledim", body: reasoningAnswer.reasoning || "Yetkili kayıtlar birlikte değerlendirildi." },
+          { title: "Şimdi ne yapmalıyım?", body: reasoningAnswer.nextAction },
+        ],
+        dataSources: reasoningAnswer.dataSources,
+        retrievedFacts: reasoningAnswer.retrievedFacts,
+        reasoning: reasoningAnswer.reasoning,
+        styleApplied: reasoningAnswer.styleApplied || null,
+        semanticPlan: reasoningAnswer.semanticPlan || null,
+        authorizedProductContext: reasoningAnswer.semanticPlan?.dialogueTopic === "PRODUCT"
+          && !["AUTHORIZATION_NEGATIVE"].includes(reasoningAnswer.semanticPlan?.conversationRoute)
+          && reasoningAnswer.semanticPlan?.family !== "AUTHORIZATION_BOUNDARY"
+          ? { semanticPlan: reasoningAnswer.semanticPlan, screenPath: screenContext?.path || null }
+          : null,
+        queryPlanExecution: reasoningAnswer.queryPlanExecution || null,
+        synthesis: reasoningAnswer.synthesis || null,
+        priority: reasoningAnswer.priority,
+        safeNextStep: reasoningAnswer.safeNextStep || reasoningAnswer.nextAction,
+        nextAction: reasoningAnswer.nextAction,
+        roleBoundary: reasoningAnswer.topic === "AUTHORIZATION_BOUNDARY"
+          ? reasoningAnswer.reply
+          : "Yalnızca kullanıcının mevcut yetki ve tenant kapsamındaki kayıtlar kullanıldı.",
+        privacyBoundary: reasoningAnswer.topic === "FIELD_PRIVACY_BOUNDARY",
+        readOnly: true,
+        quickActions: [],
+        followUpPrompt: "Devamını anlat",
+      };
+    }
+
+    const visibleContextPlan = semanticPlan;
+    const retainedProductResult = Boolean(conversationState?.lastSettledResult?.semanticPlan || conversationState?.authorizedProductContext?.semanticPlan);
+    const visibleContextDiagnostic = (!retainedProductResult || ["CURRENT_SITUATION", "LOCATION_GPS", "ETA"].includes(visibleContextPlan.family))
+      ? buildVisibleContextDiagnosticResponse({ user, entityType, entityId, screenContext, message })
+      : null;
+    if (visibleContextDiagnostic) return visibleContextDiagnostic;
+
+    const productAwareness = await buildAuthorizedProductAwarenessAnswer({ user, message, screenContext, conversationState, semanticPlan });
+    const productAwarenessResponse = buildProductAwarenessResponse({
+      awareness: productAwareness,
+      user,
+      entityType,
+      entityId,
+      screenContext,
+    });
+    if (productAwarenessResponse) return applyRequestedStyleToAnswer(productAwarenessResponse);
+
+    let actionableSource = null;
+    try {
+      actionableSource = await buildActionableEventsForUser(user);
+    } catch {
+      // The established screen-scoped assistant remains available if the
+      // read-only cross-panel snapshot is temporarily unavailable.
+    }
+    const actionableAnswer = actionableSource && roleGlobalActionableFallbackAllowed(semanticPlan, conversationState)
+      ? buildActionableAnswer({ message, snapshot: actionableSource })
+      : null;
+    if (actionableAnswer) {
+      return {
+        ok: true,
+        copilotVersion: "ROUND-2-ACTIONABLE-EVENTS",
+        generatedAt: new Date().toISOString(),
+        intent,
+        intentLabel: intentLabel(intent),
+        entityType,
+        entityId: Number(entityId),
+        entityLabel: screenContext?.label || "Sefer Abi",
+        provider: "local-foundation",
+        providerSummary: ACTIONABLE_EVENT_SOURCE_ID,
+        mode: "RULE_BASED",
+        scope: {
+          role: String(user?.role || ""),
+          roomId: user?.roomId ?? null,
+          companyId: user?.companyId ?? null,
+          summary: buildScopeSummary(user, entityType, entityId),
+        },
+        reply: actionableAnswer.reply,
+        summary: actionableAnswer.reply,
+        contextSummary: `${actionableSource.summary.total} yetkili aksiyon kaydı aynı kaynakta okundu.`,
+        questionType: `ACTIONABLE_${actionableAnswer.topic}`,
+        activeTopic: actionableAnswer.topic,
+        bestNextAction: actionableAnswer.nextAction,
+        nextAction: actionableAnswer.nextAction,
+        responseSections: [
+          { title: "Özet", body: actionableAnswer.reply },
+          { title: "Şimdi ne yapmalıyım?", body: actionableAnswer.nextAction },
+        ],
+        actionableEventSource: actionableSource.source,
+        actionableEvents: actionableSource.events,
+        actionableEventSummary: actionableSource.summary,
+        actionableEventIds: actionableAnswer.eventIds,
+        roleBoundary: "Yalnızca bu kullanıcının yetkili güncel kayıtları kullanıldı.",
+        quickActions: [],
+        followUpPrompt: "Devamını anlat",
+      };
+    }
     const resolved = await resolveChatContext({ entityType, entityId, user, screenContext, conversationState });
     let baseResponse;
     try {

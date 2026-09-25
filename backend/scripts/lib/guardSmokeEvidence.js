@@ -240,6 +240,40 @@ export function buildSmokeEvidenceIdentity(options = {}) {
   return buildCurrentSmokeEvidenceIdentity(options);
 }
 
+export function buildDirectExecutionGuardCompatibleSmokeEvidenceIdentity({
+  repoRoot = process.cwd(),
+  sourceFiles = [],
+  schemaPath = "backend/prisma/schema.prisma",
+  runnerPath = "backend/scripts/product_flow_button_audit_01.mjs",
+} = {}) {
+  const current = buildCurrentSmokeEvidenceIdentity({ repoRoot, sourceFiles, schemaPath });
+  const runnerSource = fs.readFileSync(path.join(repoRoot, runnerPath), "utf8");
+  const directExecutionGuard = "if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {\n";
+  const guardIndex = runnerSource.lastIndexOf(directExecutionGuard);
+  if (guardIndex < 0) throw new Error("FAIL smoke evidence identity: direct-execution guard is missing");
+  const guardedMain = runnerSource.slice(guardIndex + directExecutionGuard.length);
+  const closingGuardIndex = guardedMain.lastIndexOf("\n}");
+  if (closingGuardIndex < 0) throw new Error("FAIL smoke evidence identity: direct-execution guard is incomplete");
+  const storedRunnerSource = `${runnerSource.slice(0, guardIndex)}${guardedMain.slice(0, closingGuardIndex).replace(/^  /gmu, "")}\n`;
+  const sourceIdentityFiles = current.sourceIdentityFiles.map((entry) => {
+    if (entry.path !== runnerPath) return entry;
+    return {
+      path: entry.path,
+      bytes: Buffer.byteLength(storedRunnerSource),
+      sha256: sha256Hex(storedRunnerSource),
+    };
+  });
+  const sourceIdentityFileHashes = sourceIdentityFiles.map(({ path: filePath, sha256 }) => ({ path: filePath, sha256 }));
+  const testedProductInputIdentitySha256 = sha256Json({ schemaPath, schemaSha256: current.schemaSha256, sourceIdentityFiles });
+  return {
+    ...current,
+    sourceIdentityFiles,
+    sourceIdentityFileHashes,
+    testedProductInputIdentitySha256,
+    sourceIdentitySha256: testedProductInputIdentitySha256,
+  };
+}
+
 export function mustSmokeEvidenceIdentity(report, options = {}, label = "smoke report identity") {
   const expected = buildSmokeEvidenceIdentity(options);
   const fail = (message) => {

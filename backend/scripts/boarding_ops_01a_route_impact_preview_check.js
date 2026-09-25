@@ -184,19 +184,11 @@ function main() {
   mustNotAny(answerQualityPolicy, ['createStopAssignment', 'updateStopAssignment', 'route.apply', 'sendSms', 'sendNotification', 'settlement execute', 'payment execute', 'prisma migration', 'runtime-data'], 'answer quality policy preview scope blocks write actions and runtime-data');
   mustNotAny(answerQualityPolicy, ['OperationProof', 'raw technical', 'internal code'], 'answer quality policy blocks raw/internal language');
 
-  must(copilotPanel, 'selectedRecord', 'copilot panel keeps selectedRecord bridge');
-  must(copilotPanel, 'contextSummary', 'copilot panel keeps contextSummary bridge');
-  must(copilotPanel, 'liveFacts', 'copilot panel keeps liveFacts bridge');
-  must(copilotPanel, 'selectedSummary', 'copilot panel keeps selectedSummary bridge');
-  must(copilotPanel, 'selectedFields', 'copilot panel keeps selectedFields bridge');
-  must(copilotPanel, 'selectedBadges', 'copilot panel keeps selectedBadges bridge');
+  must(copilotPanel, 'requestSelection', 'copilot panel keeps canonical selection bridge');
+  must(copilotPanel, 'selectedEntityType: requestSelection?.entityType', 'copilot panel keeps selected entity type');
 
-  must(drawer, 'selectedRecord', 'drawer keeps selectedRecord bridge');
-  must(drawer, 'contextSummary', 'drawer keeps contextSummary bridge');
-  must(drawer, 'liveFacts', 'drawer keeps liveFacts bridge');
-  must(drawer, 'selectedSummary', 'drawer keeps selectedSummary bridge');
-  must(drawer, 'selectedFields', 'drawer keeps selectedFields bridge');
-  must(drawer, 'selectedBadges', 'drawer keeps selectedBadges bridge');
+  must(drawer, 'requestSelection', 'drawer keeps canonical selection bridge');
+  must(drawer, 'selectedEntitySet: Array.isArray(requestSelection?.entitySet)', 'drawer keeps selected entity set');
   must(drawer, 'screenPath', 'drawer keeps screenPath bridge');
 
   must(companyOps, 'BoardingRouteImpactPreviewCard', 'company operations renders boarding preview card');

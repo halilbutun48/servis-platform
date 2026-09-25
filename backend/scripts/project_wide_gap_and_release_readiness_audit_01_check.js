@@ -56,11 +56,11 @@ function expectFailure(label, fn) {
   throw new Error(`FAIL ${label}: expected failure`);
 }
 
-function assertSchoolNavText(nav) {
-  if (!nav.includes('const companyPeopleAccessPath = isSchool ? "/school/parents"')) {
+function assertSchoolNavText(nav, roleNavigation) {
+  if (!nav.includes("getRoleNavigation") || !roleNavigation.includes('{ label: "Veli Erişimi", path: "/school/parents" }')) {
     throw new Error("School Veli Erişimi does not resolve to /school/parents");
   }
-  if (nav.includes('isSchool ? base + "/personel-access"')) {
+  if (roleNavigation.includes('isSchool ? base + "/personel-access"')) {
     throw new Error("School Veli Erişimi still points at the dead personel-access route");
   }
 }
@@ -149,8 +149,9 @@ function assertSchoolParentStaticContract() {
   const auth = read("backend/src/routes/auth.js");
   const parent = read("backend/src/routes/parent.js");
   const schema = read("backend/prisma/schema/identity.prisma");
+  const roleNavigation = read("web/src/utils/roleNavigation.js");
 
-  assertSchoolNavText(nav);
+  assertSchoolNavText(nav, roleNavigation);
   must(true, "School menu resolves Veli Erişimi to /school/parents");
   must(true, "School menu does not reuse the dead personel-access route");
   must(app.includes('if (path === "/school/parents")'), "App registers the School parent route");
@@ -186,8 +187,8 @@ function assertNoUnexpectedDirtyPaths() {
 
 function assertNegativeSensitivity() {
   expectFailure("negative dead School menu route is rejected", () => {
-    const fixture = read("web/src/layout/NavDock.jsx").replace('isSchool ? "/school/parents"', 'isSchool ? "/school/personel-access"');
-    assertSchoolNavText(fixture);
+    const fixture = read("web/src/utils/roleNavigation.js").replace('{ label: "Veli Erişimi", path: "/school/parents" }', '{ label: "Veli Erişimi", path: "/school/personel-access" }');
+    assertSchoolNavText(read("web/src/layout/NavDock.jsx"), fixture);
   });
   expectFailure("negative wrong CompanyKind is rejected", () => {
     const fixture = read("backend/src/routes/schoolParentInvites.js").replace('company.kind !== "SCHOOL"', 'company.kind !== "COMPANY"');

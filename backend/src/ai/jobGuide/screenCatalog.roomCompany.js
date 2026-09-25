@@ -2,6 +2,20 @@ import { pickTerms } from "./glossary.js";
 import { button, screen } from "./screenCatalog.shared.js";
 
 export const ROOM = [
+  screen(1100, "/room", "Taşımacılık Firması Merkezi", {
+    menuPurpose: "Oda operasyonunun genel durumunu ve öncelikli işlerini görmek için kullanılır.",
+    forWhom: "Taşımacılık firması operasyonunu yöneten kullanıcı içindir.",
+    firstStep: "Önce güncel operasyon ve açık risk özetini oku.",
+    nextStep: "Bir kayıt seçip vardiya, araç veya saha ayrıntısına geç.",
+    doNotDo: "Genel özeti seçili kayıt yerine kullanarak işlem kararı verme.",
+    stepByStep: ["Güncel özet ve açık sorunları oku.", "Öncelikli kaydı seç.", "Bağlı vardiya, araç ve sürücü ayrıntısını doğrula."],
+    screenMenus: [
+      { label: "Canlı Takip", path: "/room/map", purpose: "Araç ve durakların canlı durumunu kontrol etmek için açılır." },
+      { label: "Vardiyalar", path: "/room/shifts", purpose: "İşin atama ve zaman bağını doğrulamak için açılır." },
+      { label: "Araçlar", path: "/room/vehicles", purpose: "Araç ve konum sinyalini kontrol etmek için açılır." },
+    ],
+    chatQuestions: ["Şu anda hangi sorunlar var?", "Önce hangisini çözmeliyim?", "Bugün işler nasıl gidiyor?"],
+  }),
   screen(1101, "/room/map", "Canlı Takip", {
     menuPurpose: "Araçların ve işlerin canlı durumunu hızlıca görmek için kullanılır.",
     forWhom: "Oda operasyonunu yöneten kullanıcı içindir.",

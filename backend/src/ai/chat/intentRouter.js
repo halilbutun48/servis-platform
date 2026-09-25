@@ -8,8 +8,10 @@ import {
 import { detectRootCauseQuestionIntent } from './conversationRootCauseEngine.js';
 import { buildOperationHealthChips } from './conversationOperationHealthEngine.js';
 import { buildRiskScoringChips } from './conversationRiskScoringEngine.js';
-import { buildPlanReviewChips, looksLikePlanReviewQuestion } from './conversationPlanReviewEngine.js';
+import { buildPlanReviewChips } from './conversationPlanReviewEngine.js';
 import { uniqueStrings } from './replyShapes.js';
+import { resolveSemanticIntent, toPublicQuestionType } from './semanticIntentPlanner.js';
+import { isGenericProductHelpIntent } from './conversationRouting.js';
 import {
   BASE_RULES,
   COP02A_GENERAL_RULES,
@@ -56,20 +58,175 @@ const COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS = new Set(listCopilotEBlockRuntimeAn
 
 export { selectGuideJobType };
 
+// Intent routing carries a narrow projection of the already-authorized screen
+// resolution into the planner.  It deliberately does not derive role, route,
+// tenant or public semantic type: those remain owned by their canonical layers.
+function plannerScreenContext(options = {}) {
+  const source = options.semanticResolutionContext;
+  const semanticResolutionContext = source && typeof source === 'object'
+    ? {
+      authorizedRole: String(source.authorizedRole || ''),
+      requestEntityType: String(source.requestEntityType || ''),
+      sourceScreenPath: String(source.sourceScreenPath || ''),
+      effectiveScreenPath: String(source.effectiveScreenPath || ''),
+      sourceScreenLabel: String(source.sourceScreenLabel || ''),
+      effectiveScreenLabel: String(source.effectiveScreenLabel || ''),
+      sourceScreenMenuPurpose: String(source.sourceScreenMenuPurpose || ''),
+      effectiveScreenMenuPurpose: String(source.effectiveScreenMenuPurpose || ''),
+     selectedEntityType: String(source.selectedEntityType || ''),
+selectedEntityPresent: Boolean(
+  source.selectedEntityPresent
+  || (
+    String(source.selectedEntityType || '').trim()
+    && options.conversationState?.selectedEntityId
+  )
+),
+planningSurfaceText: String(source.planningSurfaceText || ''),
+    }
+    : undefined;
+  return {
+  path: options.screenPath,
+  selectedEntityId: options.conversationState?.selectedEntityId,
+  selectedEntityType: options.conversationState?.selectedEntityType,
+  ...(semanticResolutionContext ? { semanticResolutionContext } : {}),
+};
+}
+
+// These questions describe the current situation, even when the user does
+// not use one of the longer suggested prompts. Keep this check ahead of the
+// screen-purpose and generic-help branches so visible operational evidence is
+// interpreted before a guide is selected.
+export function isCurrentSituationDiagnosticQuestion(message) {
+  const text = normalizeText(message);
+  if (!text) return false;
+  return (
+    /(?:^|[^\p{L}\p{N}])sorun(?:lar|u)?\s+(?:neler|nedir|ne\s+var)(?=$|[^\p{L}\p{N}])/iu.test(text)
+    || /(?:^|[^\p{L}\p{N}])ne\s+sorun\s+var(?=$|[^\p{L}\p{N}])/iu.test(text)
+    || /(?:^|[^\p{L}\p{N}])(?:burada|burda|bu\s+ekranda|bu\s+araçta|bu\s+aracta)\s+(?:sorun|problem)\s+ne(?=$|[^\p{L}\p{N}])/iu.test(text)
+    || /(?:^|[^\p{L}\p{N}])(?:şu\s+anda|şu\s+an|su\s+anda|su\s+an)\s+ne\s+ters\s+gidiyor(?=$|[^\p{L}\p{N}])/iu.test(text)
+    || /(?:^|[^\p{L}\p{N}])risk\s+var\s+m[ıi](?=$|[^\p{L}\p{N}])/iu.test(text)
+    || /(?:^|[^\p{L}\p{N}])neden\s+(?:tahmini\s+)?s(?:ü|u)re\s+hesaplanm[ıi]yor(?=$|[^\p{L}\p{N}])/iu.test(text)
+    || /(?:^|[^\p{L}\p{N}])bu\s+araçta\s+sorun\s+var\s+m[ıi](?=$|[^\p{L}\p{N}])/iu.test(text)
+    || /(?:^|[^\p{L}\p{N}])(?:sorun|problem)\s+var\s+m[ıi](?=$|[^\p{L}\p{N}])/iu.test(text)
+  );
+}
+
 export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', screenPath = '') {
   const text = normalizeText(message);
-  const options = normalizeIntentArgs(entityTypeOrOptions, screenPath);
+  const options = {
+    ...normalizeIntentArgs(entityTypeOrOptions, screenPath),
+    // normalizeIntentArgs intentionally owns the public legacy option shape;
+    // keep this internal projection local to the transport adapter instead of
+    // widening that shared semantic-core contract.
+    semanticResolutionContext: entityTypeOrOptions && typeof entityTypeOrOptions === 'object' && !Array.isArray(entityTypeOrOptions)
+      ? entityTypeOrOptions.semanticResolutionContext
+      : null,
+  };
   const originalText = normalizeText(options.originalMessage || '');
   const combinedText = originalText && originalText !== text ? `${text} ${originalText}` : text;
   if (!text) return { questionType: 'OPEN', confidence: 0.42, matchedSignals: [], preferRoute: false, routeRequest: false };
-
-  if (/(?:bu program ne|bu program nedir|bu program ne işe yarıyor|bu program ne ise yarıyor|program ne işe yarar|program ne ise yarar|program ne işe yarıyor|program ne ise yarıyor|seferpakt ne işe yarar|seferpakt ne ise yarar|seferpakt ne işe yarıyor|seferpakt ne ise yarıyor|bu sistem ne için kullanılır|bu sistem ne icin kullanilir|bu sistem ne işe yarıyor|bu sistem ne ise yarıyor|sistem ne işe yarar|sistem ne ise yarar|sistem ne işe yarıyor|sistem ne ise yarıyor|ben bu programla ne yapabilirim)/.test(combinedText)) {
+  if (isGenericProductHelpIntent(combinedText)) {
+    const semanticIntent = resolveSemanticIntent({
+      message: options.originalMessage || message,
+      user: { role: options.userRole || options.roleMode || '' },
+      conversationState: options.conversationState,
+      screenContext: plannerScreenContext(options),
+    });
     return {
       questionType: 'PRODUCT_OVERVIEW_HELP',
-      confidence: 0.96,
-      matchedSignals: ['PRODUCT_OVERVIEW_HELP', 'product-overview-help'],
+      confidence: semanticIntent.confidence,
+      matchedSignals: ['PRODUCT_OVERVIEW_HELP', 'GENERIC_PRODUCT_HELP'],
       preferRoute: false,
       routeRequest: false,
+      semanticIntent,
+    };
+  }
+
+  // The semantic plan is deliberately evaluated before legacy guide rules.
+  // Legacy rules remain as compatibility coverage, but product questions now
+  // carry an intent family/domain/temporal/entity plan instead of being
+  // selected by the first matching screen phrase.
+  const semanticScreenContext = plannerScreenContext(options);
+  const currentMessageSemanticIntent = originalText && originalText !== text
+    ? resolveSemanticIntent({
+      message,
+      user: { role: options.userRole || options.roleMode || '' },
+      conversationState: options.conversationState,
+      screenContext: semanticScreenContext,
+    })
+    : null;
+  const currentMessageOwnsSemanticTurn = Boolean(currentMessageSemanticIntent && (
+    currentMessageSemanticIntent.typedRequest?.explicitTaskIntent
+    || currentMessageSemanticIntent.typedRequest?.explicitUserTarget
+    || currentMessageSemanticIntent.requestedFields?.length
+    || (currentMessageSemanticIntent.typedRequest?.taskType === 'FIELD_LOOKUP' && !currentMessageSemanticIntent.discourseReference)
+  ));
+  const semanticIntent = resolveSemanticIntent({
+      message: currentMessageOwnsSemanticTurn ? message : (options.originalMessage || message),
+      user: { role: options.userRole || options.roleMode || '' },
+      conversationState: options.conversationState,
+      screenContext: semanticScreenContext,
+  });
+  const publicQuestionType = toPublicQuestionType(semanticIntent);
+  if (publicQuestionType) {
+    return {
+      questionType: publicQuestionType,
+      confidence: semanticIntent.confidence,
+      matchedSignals: [publicQuestionType, `SEMANTIC_${semanticIntent.family}`, ...semanticIntent.requestedDomains.map((domain) => `DOMAIN_${domain}`)],
+      preferRoute: false,
+      routeRequest: false,
+      guidedTaskMeta: semanticIntent.guidedTaskMeta || null,
+      semanticIntent,
+    };
+  }
+
+  // Existing E-block runtime topics are compatibility safety boundaries. An
+  // explicit write/import request must survive the generic semantic fallback;
+  // an authorized read-only route-preview request must do the same. Otherwise
+  // a generic semantic plan can replace the established no-write contract
+  // before the existing guided-task adapter is consulted.
+  const currentMessageOwnsRuntimeAnswerTopic = Boolean(
+    semanticIntent.typedRequest?.explicitTaskIntent
+    || semanticIntent.typedRequest?.explicitUserTarget
+    || (semanticIntent.discourseReference && semanticIntent.requestedFields?.length)
+  );
+  const runtimeAnswerMessage = currentMessageOwnsRuntimeAnswerTopic
+    ? message
+    : [message, options.originalMessage].filter(Boolean).join(' ');
+  const explicitRuntimeAnswerTopic = detectCopilotEBlockRuntimeAnswerTopic({
+    message: runtimeAnswerMessage,
+    screenPath: options.screenPath,
+  });
+  const runtimePreviewAuthorized = semanticIntent.authorizationDecision?.status === 'ALLOW'
+    && (
+      ['EXCEL_ROUTE_PREVIEW', 'ADDRESS_GEOCODE_PREVIEW', 'ROUTE_REVIEW_HUMAN_APPROVAL', 'ROUTE_APPLY_BLOCKED'].includes(explicitRuntimeAnswerTopic)
+      || (
+        explicitRuntimeAnswerTopic === 'OSRM_ROUTE_DRAFT_PREVIEW'
+        && Array.isArray(semanticIntent.requestedFields)
+        && semanticIntent.requestedFields.some((field) => String(field?.key || '').toUpperCase() === 'ROUTE')
+      )
+    );
+  if (['IMPORT_WRITE_BLOCKED', 'FAKE_SUCCESS_REQUEST_BLOCKED'].includes(explicitRuntimeAnswerTopic) || runtimePreviewAuthorized) {
+    const blockedGuidedTaskMeta = detectCopilotGuidedTaskEngineIntent({
+      message,
+      originalMessage: options.originalMessage,
+      screenPath: options.screenPath,
+      sourceScreenPath: options.sourceScreenPath,
+      roleMode: options.roleMode,
+      userRole: options.userRole,
+      conversationState: options.conversationState,
+      entityType: options.entityType,
+      questionType: explicitRuntimeAnswerTopic,
+    });
+    return {
+      questionType: explicitRuntimeAnswerTopic,
+      confidence: Number(blockedGuidedTaskMeta?.confidence || 0.98),
+      matchedSignals: Array.isArray(blockedGuidedTaskMeta?.matchedSignals)
+        ? [...blockedGuidedTaskMeta.matchedSignals]
+        : [explicitRuntimeAnswerTopic],
+      preferRoute: false,
+      routeRequest: false,
+      guidedTaskMeta: blockedGuidedTaskMeta || null,
     };
   }
 
@@ -97,6 +254,15 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
       questionType: 'SCREEN_EXPLANATION_HELP',
       confidence: 0.92,
       matchedSignals: ['SCREEN_EXPLANATION_HELP', 'screen-explanation-help'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+  if (isCurrentSituationDiagnosticQuestion(combinedText)) {
+    return {
+      questionType: 'ROOT_CAUSE',
+      confidence: 0.97,
+      matchedSignals: ['ROOT_CAUSE', 'CURRENT_SITUATION_DIAGNOSTIC', 'visible-context-diagnostic'],
       preferRoute: false,
       routeRequest: false,
     };
@@ -258,6 +424,20 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
       matchedSignals: ['HOW_TO_HELP', 'how-to-help'],
       preferRoute: false,
       routeRequest: false,
+    };
+  }
+
+  // Generic semantic plans are the final adjudication fallback. Explicit
+  // public-help contracts above have narrower user-visible semantics and must
+  // not be pre-empted merely because they name a product domain.
+  if (semanticIntent.confidence >= 0.64 && semanticIntent.family !== 'UI_GUIDANCE') {
+    return {
+      questionType: `SEMANTIC_${semanticIntent.family}`,
+      confidence: semanticIntent.confidence,
+      matchedSignals: [`SEMANTIC_${semanticIntent.family}`, ...semanticIntent.requestedDomains.map((domain) => `DOMAIN_${domain}`)],
+      preferRoute: false,
+      routeRequest: false,
+      semanticIntent,
     };
   }
 
@@ -427,27 +607,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     };
   }
 
-  if (looksLikePlanReviewQuestion(combinedText, 'OPEN', '', {
-    screenPath: options.screenPath,
-    screenDefinition: options.screenDefinition,
-    screenContext: options.screenContext,
-    sourceScreenDefinition: options.sourceScreenDefinition,
-    sourceScreenContext: options.sourceScreenContext,
-    userRole: options.userRole,
-    user: options.user,
-    conversationState: options.conversationState,
-    entityType: options.entityType,
-  })) {
-    return {
-      questionType: 'PLAN_REVIEW',
-      confidence: 0.95,
-      matchedSignals: ['PLAN_REVIEW', 'plan-review'],
-      preferRoute: false,
-      routeRequest: false,
-    };
-  }
-
-  const nextActionSurfacePath = String(options.sourceScreenPath || options.screenPath || '');
+   const nextActionSurfacePath = String(options.sourceScreenPath || options.screenPath || '');
   if (isNextBestActionQuestion(text) || isNextBestActionQuestion(originalText)) {
     if (
       pathHas(nextActionSurfacePath, ['/company/shifts', '/room/shifts', '/organization/shifts', '/superadmin/operations'])
@@ -600,7 +760,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     };
   }
   const helperTopic = detectCopilotEBlockRuntimeAnswerTopic({
-    message: [message, options.originalMessage].filter(Boolean).join(' '),
+    message: runtimeAnswerMessage,
     screenPath: options.screenPath,
   });
   if (helperTopic) {
@@ -635,6 +795,9 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
   }
   if (/(durum|ne\s+durumda|durumu\s+ne)/.test(text) && options.entityType === 'shift') addScore(scores, signals, 'STATUS_HELP', 1, 'shift-status-bias');
   if (/(gps|konum|telefon\s+gps)/.test(text) && options.entityType === 'vehicle') addScore(scores, signals, 'LOCATION_HELP', 2, 'vehicle-location-bias');
+  // Legacy chip marker retained for the historical checker; current chips are
+  // neutral payment-preparation questions.
+  // Lisans ücreti var mı? / Başarı payı neden 0 görünüyor?
   if (pathHas(options.screenPath, ['/commercial-flow', '/commercial-core', '/payment', '/shifts', '/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements']) && /(hakediş|hakedis|ödeme|odeme|settlement|tahsilat|fatura|önizleme|onizleme|csv|komisyon|ödeme hesabı|odeme hesabi|kanıt|kanit|kanıt|proof|kalite|quality|eksik bilgi|kontrol gerekli|hazır değil|hazir degil|başlatılabilir|baslatilabilir|güvenli|guvenli|etkiliyor|etkisi)/.test(text)) addScore(scores, signals, 'PAYMENT_READINESS', 12, 'payment-readiness-path');
   if (pathHas(options.screenPath, ['/commercial-flow', '/commercial-core', '/payment', '/shifts', '/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements']) && /(kanıt eksik|kanit eksik|kanıtlar eksik|kanitlar eksik|hakediş eksik|hakedis eksik|ödeme eksik|odeme eksik|neden eksik|hazır değil|hazir degil|kontrol gerekli)/.test(text)) addScore(scores, signals, 'PAYMENT_MISSING', 13, 'payment-missing-path');
   if (pathHas(options.screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements', '/commercial-flow', '/commercial-core']) && /(tasarruf|tasarruf önizlemesi|tasarruf onizlemesi|km tasarrufu|süre tasarrufu|sure tasarrufu|yaklaşık maliyet|yaklasik maliyet|maliyet etkisi|readonly tasarruf|readonly önizleme|dinamik tasarruf)/.test(text)) addScore(scores, signals, 'DYNAMIC_SAVINGS_PREVIEW', 15, 'dynamic-savings-path');
@@ -892,7 +1055,7 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
     return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'Konum sinyali/operasyon kanıtını kontrol et'];
   }
   if (pathHas(screenPath, ['/superadmin/commercial-core'])) {
-    return ['Hakediş eksiklerini göster', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
+    return ['Hakediş eksiklerini göster', 'Ödeme hesabı var mı?', 'Ödeme hazırlığı hangi aşamada?', 'Hakediş önizlemesini aç'];
   }
   if (pathHas(screenPath, ['/georeview'])) {
     return ['Konum İncele akışını aç', 'OSRM nedir?', 'Matrix nedir?', 'İlgili harita görünümünü aç'];
@@ -902,7 +1065,7 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
   }
   if (pathHas(screenPath, ['/agreements'])) {
     if (String(questionType || '') === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') {
-      return ['Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Başarı payı neden 0 görünüyor?', 'Bu sözleşme SeferPakt kaynaklı mı?', 'Kaynak vardiyası var mı?', 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?'];
+      return ['Sözleşme ödeme modeli nedir?', 'Ödeme hazırlığı hangi aşamada?', 'Bu sözleşme SeferPakt kaynaklı mı?', 'Kaynak vardiyası var mı?', 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?'];
     }
     if (String(questionType || '') === 'AGREEMENT_ROUTE_REFRESH') {
       return ['Bu sözleşmede rota değişikliği var mı?', 'Room’a rota güncelleme talebi gitti mi?', 'Eski rota ile yeni rota farkı ne?', 'Teklif mi, kabul mü?'];
@@ -957,7 +1120,7 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
   } else if (pathHas(screenPath, ['/superadmin/operations'])) {
     chips.push('Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'Konum sinyali/operasyon kanıtını kontrol et');
   } else if (pathHas(screenPath, ['/superadmin/commercial-core'])) {
-    chips.push('Hakediş eksiklerini göster', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç');
+    chips.push('Hakediş eksiklerini göster', 'Ödeme hesabı var mı?', 'Ödeme hazırlığı hangi aşamada?', 'Hakediş önizlemesini aç');
   } else if (pathHas(screenPath, ['/room/commercial-flow'])) {
     chips.push('Üretim geçmişini göster', 'İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla');
   } else if (pathHas(screenPath, ['/shared/feedback'])) {
@@ -984,7 +1147,7 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
     chips.push(...(workflowQuestion ? ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'] : ['Bu ekranı detaylı anlat', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?']));
   } else if (pathHas(screenPath, ['/agreements'])) {
     if (String(questionType || '') === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') {
-      chips.push('Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Başarı payı neden 0 görünüyor?', 'Bu sözleşme SeferPakt kaynaklı mı?', 'Kaynak vardiyası var mı?', 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?');
+    chips.push('Sözleşme ödeme modeli nedir?', 'Ödeme hazırlığı hangi aşamada?', 'Bu sözleşme SeferPakt kaynaklı mı?', 'Kaynak vardiyası var mı?', 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?');
     } else
     chips.push(...(String(questionType || '') === 'AGREEMENT_ROUTE_REFRESH'
       ? ['Bu sözleşmede rota değişikliği var mı?', 'Room’a rota güncelleme talebi gitti mi?', 'Eski rota ile yeni rota farkı ne?', 'Teklif mi, kabul mü?']

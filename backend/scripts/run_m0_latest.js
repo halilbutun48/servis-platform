@@ -24,6 +24,26 @@ const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
 const scriptsDir = __dirname;
 const HIGH_SEGMENT = Number.MAX_SAFE_INTEGER;
+const contractStatePath = path.join(repoRoot, "tools", "repo_contract_state.json");
+
+function loadStaticCompatibilityPolicy() {
+  const state = JSON.parse(fs.readFileSync(contractStatePath, "utf8"));
+  const entries = state?.m0StaticCompatibilityPolicy?.historicalRetiredChecks;
+  if (!Array.isArray(entries)) return new Map();
+  const policy = new Map();
+  for (const entry of entries) {
+    const relativePath = String(entry?.path || "").replace(/\\/g, "/").replace(/^\.\//, "").trim();
+    if (!relativePath || relativePath.includes("*") || relativePath.includes("..")) {
+      throw new Error(`Invalid M0 static compatibility policy path: ${relativePath}`);
+    }
+    if (!["HISTORICAL_RETIRED_EXPECTATION", "SUPERSEDED_CHECKER"].includes(entry?.lifecycle)) {
+      throw new Error(`Invalid M0 static compatibility lifecycle: ${relativePath}`);
+    }
+    if (policy.has(relativePath)) throw new Error(`Duplicate M0 static compatibility policy path: ${relativePath}`);
+    policy.set(relativePath, entry);
+  }
+  return policy;
+}
 
 function normalizeText(value) {
   return String(value || "")
@@ -208,6 +228,7 @@ function runNode(file, env) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const scripts = discoverScripts();
+  const staticCompatibilityPolicy = loadStaticCompatibilityPolicy();
   const latest = scripts
     .map((file) => parseMilestoneKey(file))
     .filter(Boolean)
@@ -237,6 +258,14 @@ async function main() {
   const results = [];
   for (const item of selected) {
     const name = path.basename(item.file);
+    const relativePath = path.relative(repoRoot, item.file).replace(/\\/g, "/");
+    const compatibility = item.kind === "static" ? staticCompatibilityPolicy.get(relativePath) : null;
+    if (compatibility) {
+      console.log(`\n--- ${name} (${item.kind}, ${compatibility.lifecycle}) ---`);
+      console.log(`SKIP historical compatibility check; replacement: ${compatibility.replacement.join(", ")}`);
+      results.push({ name, kind: item.kind, status: "SKIP" });
+      continue;
+    }
     const shouldRun =
       (item.kind === "static" && wantsStatic) ||
       (item.kind === "integration" && wantsIntegration && okHealth);

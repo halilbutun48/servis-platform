@@ -248,7 +248,9 @@ async function runRole(browser, role, viewport = { width: 1440, height: 900 }, v
     report.mascotOpenClosePassCount += 1;
     if (viewportName === "desktop" && role === "ROOM") {
       await mascot.click();
-      await page.getByRole("button", { name: "Tam ekranda aç", exact: true }).click();
+      await drawer.waitFor({ state: "visible", timeout: 5000 });
+      await drawer.locator(".copilotDrawerMore > summary").click();
+      await drawer.getByRole("button", { name: "Tam ekranda aç", exact: true }).click();
       await page.waitForTimeout(900);
       const fullBody = await page.locator("body").innerText();
       record(role, "quick-full-continuity", page.url().includes("/room/copilot") && fullBody.includes("Sefer Abi") && fullBody.includes("Canlı Takip"));

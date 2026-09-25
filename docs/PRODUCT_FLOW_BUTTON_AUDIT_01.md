@@ -57,7 +57,7 @@ Bu artifact'ler commit dışı bırakılır.
 - Review-only kuyrukta `İncelemeye al`, `Ek bilgi gerekli`, `Invite için uygun`, `Reddet`, `Notları kaydet` butonları kontrol edilir; `Sadece inceleme` pill'i görünür chrome'da yer alır ve empty-state fallback PASS kabul edilir.
 - Commercial core'da `Hakediş` tabı ve `Bu kart readonly kontrol içindir; işlem başlatmaz.` sınırı görünür kalır.
 - Company agreements yüzeyinde detay kartı ve safe boundary görünür; preview button current fixture set'te yüzeye çıkmasa da güvenli empty-state PASS kabul edilir.
-- Room shifts yüzeyinde pending kuyruk boşsa kabul/reddet aksiyonları disabled placeholder olarak görünür; preview modal harita ve Leaflet ipucu ile açılır.
+- Room shifts yüzeyinde pending kuyruk boşsa kabul/reddet aksiyonları disabled placeholder olarak görünür; kuyruk doluysa gerçek pending aksiyonları korunur. Dispatch/apply yalnızca oda kapsamı ve kapasite bölme durumu gerçekten hazır olduğunda gösterilir; preview modal harita ve Leaflet ipucu ile açılır.
 - Room agreements preview butonu görünür kalır ve current fixture set'te modal açılır; safe boundary görünür kalır.
 - Personel canlı yüzeyinde navigasyon butonları görünür kalır.
 - Parent canlı yüzeyinde fallback/no-vehicle modunda request ve refresh görünür kalır; çocuk/navigasyon/no-show butonları disabled placeholder olarak görünür.

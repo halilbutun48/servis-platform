@@ -283,7 +283,7 @@ async function main() {
     const detectedTopic = helperMod.detectCopilotEBlockRuntimeAnswerTopic({ message: sample.message, screenPath: sample.screenPath });
     must(detectedTopic, sample.topic, `${sample.label} helper detector resolves runtime-answer topic`);
 
-    const intent = intentRouterMod.detectQuestionIntent(sample.message, { entityType: 'screen', screenPath: sample.screenPath, roleMode: 'OPERATIONS', originalMessage: sample.message });
+    const intent = intentRouterMod.detectQuestionIntent(sample.message, { entityType: 'screen', screenPath: sample.screenPath, roleMode: 'OPERATIONS', userRole: 'COMPANY', role: 'COMPANY', originalMessage: sample.message });
     must(intent.questionType, sample.topic, `${sample.label} intent router resolves runtime-answer topic`);
     assert(Number(intent.confidence) >= 0.9, `${sample.label} intent confidence stays high`);
 
@@ -345,7 +345,14 @@ async function main() {
 
   const followUpIntent = intentRouterMod.detectQuestionIntent(
     'Bu kayıt için elimde yeterli sinyal yok',
-    { entityType: 'screen', screenPath: '/company/copilot', roleMode: 'OPERATIONS', originalMessage: 'Eksik adresleri sen tamamla.' },
+    {
+      entityType: 'screen',
+      screenPath: '/company/copilot',
+      roleMode: 'OPERATIONS',
+      userRole: 'COMPANY',
+      role: 'COMPANY',
+      originalMessage: 'Eksik adresleri sen tamamla.',
+    },
   );
   must(followUpIntent.questionType, 'ADDRESS_GEOCODE_PREVIEW', 'follow-up original message keeps address helper topic');
 

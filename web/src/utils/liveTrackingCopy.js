@@ -146,7 +146,7 @@ export function getLiveTrackingNextActionText(eta, role = "personel") {
   const copy = copyFor(role);
   const act = String(eta?.nextAction || "").toUpperCase();
   if (!eta) return copy.routeNextActionNoRoute;
-  if (act === "CONTACT_ROOM") return "Rota tamamlandı; atlanan durak için oda ile görüşün.";
+  if (act === "CONTACT_ROOM") return "Rota tamamlandı; atlanan durak için Taşımacılık Firması ile görüşün.";
   if (act === "WAIT_GPS_UPDATE") return copy.routeNextActionWaitingGps;
   if (act === "NO_ACTIVE_ROUTE") return copy.routeNextActionNoRoute;
   return "";

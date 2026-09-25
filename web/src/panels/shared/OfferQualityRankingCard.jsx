@@ -146,10 +146,23 @@ function SignalChips({ title, items = [], tone = "neutral", emptyText = "Yok" })
   );
 }
 
-function RowCard({ row }) {
+function RowCard({ row, compact = false }) {
   const rowTone = toneForStatus(row?.riskLevel === "Yüksek" ? "RISKY" : row?.riskLevel === "Orta" ? "REVIEW_NEEDED" : row?.riskLevel);
   const roomScoreTone = row?.roomScore?.ready ? "good" : "neutral";
   const safeDriveTone = row?.safeDrive?.risky ? "danger" : row?.safeDrive?.reviewNeeded ? "warn" : row?.safeDrive?.ready ? "good" : "neutral";
+  const secondarySummary = (
+    <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
+      <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <Pill label="Hizmet Alan Firma" value={row?.amountCompany != null ? `${formatTRY(row.amountCompany)} ₺` : "-"} tone="neutral" />
+        <Pill label="Taşımacılık Firması" value={row?.amountRoom != null ? `${formatTRY(row.amountRoom)} ₺` : "-"} tone="neutral" />
+        <Pill label="Fiyat" value={row?.priceSignal?.value || "-"} tone={row?.priceSignal?.tone || "neutral"} title={row?.priceSignal?.reason || row?.priceSignal?.value || "-"} />
+      </div>
+      <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <Pill label="Puan" value={row?.roomScore?.ready ? row.roomScore.summaryLabel : "Bekleniyor"} tone={roomScoreTone} />
+        <Pill label="Konum cihazı" value={row?.safeDrive?.statusText || "Bekleniyor"} tone={safeDriveTone} />
+      </div>
+    </div>
+  );
   return (
     <div
       className="card"
@@ -164,38 +177,43 @@ function RowCard({ row }) {
           <div style={{ fontWeight: 900 }}>
             {row?.roomName || "Taşımacılık Firması"} {row?.roomId ? `(#${row.roomId})` : ""}
           </div>
-          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <Pill label="Kalite" value={row?.qualityLabel || "-"} tone={rowTone} />
-            <Pill label="Risk" value={row?.riskLevel || "-"} tone={rowTone} />
-            <Pill label="Güven" value={fmtPercent(row?.confidence)} tone={row?.confidence >= 70 ? "good" : row?.confidence >= 45 ? "warn" : "neutral"} />
-            <Pill label="Karar" value={row?.offerStatus || "-"} tone="neutral" />
+          <div className="row pre18-primary-status-row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <span data-pre18-primary-status="true"><Pill label="Kalite" value={row?.qualityLabel || "-"} tone={rowTone} /></span>
+            <span data-pre18-primary-status="true"><Pill label="Risk" value={row?.riskLevel || "-"} tone={rowTone} /></span>
+            {!compact ? <span data-pre18-primary-status="true"><Pill label="Güven" value={fmtPercent(row?.confidence)} tone={row?.confidence >= 70 ? "good" : row?.confidence >= 45 ? "warn" : "neutral"} /></span> : null}
+            <span data-pre18-primary-status="true"><Pill label="Karar" value={row?.offerStatus || "-"} tone="neutral" /></span>
           </div>
         </div>
 
-        <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
-          <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            <Pill label="Hizmet Alan Firma" value={row?.amountCompany != null ? `${formatTRY(row.amountCompany)} ₺` : "-"} tone="neutral" />
-            <Pill label="Taşımacılık Firması" value={row?.amountRoom != null ? `${formatTRY(row.amountRoom)} ₺` : "-"} tone="neutral" />
-            <Pill label="Fiyat" value={row?.priceSignal?.value || "-"} tone={row?.priceSignal?.tone || "neutral"} title={row?.priceSignal?.reason || row?.priceSignal?.value || "-"} />
+        {compact ? <details className="pre18-secondary-disclosure pre18-row-secondary-disclosure"><summary>Fiyat ve güven ayrıntıları</summary>{secondarySummary}</details> : secondarySummary}
+      </div>
+
+      {compact ? (
+        <details className="pre18-secondary-disclosure">
+          <summary>Karşılaştırma ve diğer ayrıntılar</summary>
+          <div className="muted" style={{ marginTop: 10, lineHeight: 1.5 }}>
+            {compactList(row?.comparisonSummary || [], 4).join(" • ") || "Karşılaştırma özeti bekleniyor."}
           </div>
-          <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            <Pill label="Puan" value={row?.roomScore?.ready ? row.roomScore.summaryLabel : "Bekleniyor"} tone={roomScoreTone} />
-            <Pill label="Konum cihazı" value={row?.safeDrive?.statusText || "Bekleniyor"} tone={safeDriveTone} />
+          <SignalChips title="Pozitif sinyaller" items={row?.positiveSignals || []} tone="good" emptyText="Pozitif sinyal görünmüyor." />
+          <SignalChips title="Eksik sinyaller" items={row?.missingSignals || []} tone="warn" emptyText="Eksik sinyal görünmüyor." />
+          <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.03)" }}>
+            <div className="muted">Son kontrol</div>
+            <div style={{ fontWeight: 800, marginTop: 4 }}>{row?.nextReviewStep || "Karar kullanıcıdadır."}</div>
           </div>
-        </div>
-      </div>
-
-      <div className="muted" style={{ marginTop: 10, lineHeight: 1.5 }}>
-        {compactList(row?.comparisonSummary || [], 4).join(" • ") || "Karşılaştırma özeti bekleniyor."}
-      </div>
-
-      <SignalChips title="Pozitif sinyaller" items={row?.positiveSignals || []} tone="good" emptyText="Pozitif sinyal görünmüyor." />
-      <SignalChips title="Eksik sinyaller" items={row?.missingSignals || []} tone="warn" emptyText="Eksik sinyal görünmüyor." />
-
-      <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.03)" }}>
-        <div className="muted">Son kontrol</div>
-        <div style={{ fontWeight: 800, marginTop: 4 }}>{row?.nextReviewStep || "Karar kullanıcıdadır."}</div>
-      </div>
+        </details>
+      ) : (
+        <>
+          <div className="muted" style={{ marginTop: 10, lineHeight: 1.5 }}>
+            {compactList(row?.comparisonSummary || [], 4).join(" • ") || "Karşılaştırma özeti bekleniyor."}
+          </div>
+          <SignalChips title="Pozitif sinyaller" items={row?.positiveSignals || []} tone="good" emptyText="Pozitif sinyal görünmüyor." />
+          <SignalChips title="Eksik sinyaller" items={row?.missingSignals || []} tone="warn" emptyText="Eksik sinyal görünmüyor." />
+          <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.03)" }}>
+            <div className="muted">Son kontrol</div>
+            <div style={{ fontWeight: 800, marginTop: 4 }}>{row?.nextReviewStep || "Karar kullanıcıdadır."}</div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -214,6 +232,7 @@ export default function OfferQualityRankingCard({
   safeDriveInput = null,
   token = "",
   maxRows = 4,
+  compact = false,
   className = "card",
   style = {},
 }) {
@@ -281,10 +300,13 @@ export default function OfferQualityRankingCard({
   const topRows = ranking.rows.slice(0, Math.max(1, Math.min(6, Number(maxRows || 4) || 4)));
   const hasRows = topRows.length > 0;
   const rowCountLabel = `${ranking.offerCount || 0} teklif`;
+  const visibleSummaryText = !hasRows && /Karşılaştırılacak teklif yok/i.test(String(ranking.summaryText || ""))
+    ? "Teklif verisi hazır olduğunda kalite özeti burada gösterilir."
+    : ranking.summaryText || "Teklif karşılaştırması hazır.";
 
   return (
     <div
-      className={className}
+      className={`${className}${compact ? " pre18-offer-quality-compact" : ""}`}
       style={{
         display: "grid",
         gap: 12,
@@ -302,33 +324,49 @@ export default function OfferQualityRankingCard({
           </div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          <Pill label="Kapsam" value={ranking.scopeLabel || "Teklif karşılaştırması"} tone="neutral" />
-          <Pill label="Kayıt" value={rowCountLabel} tone={ranking.offerCount > 0 ? "good" : "neutral"} />
-          <Pill label="Kalite" value={ranking.qualityLabel || "-"} tone={ranking.riskLevel === "Yüksek" ? "danger" : ranking.confidence >= 70 ? "good" : "warn"} />
-          <Pill label="Risk" value={ranking.riskLevel || "-"} tone={ranking.riskLevel === "Yüksek" ? "danger" : ranking.riskLevel === "Orta" ? "warn" : "neutral"} />
-          <Pill label="Güven" value={fmtPercent(ranking.confidence)} tone={ranking.confidence >= 70 ? "good" : ranking.confidence >= 45 ? "warn" : "neutral"} />
+          <span data-pre18-primary-status="true"><Pill label="Kapsam" value={ranking.scopeLabel || "Teklif karşılaştırması"} tone="neutral" /></span>
+          <span data-pre18-primary-status="true"><Pill label="Kayıt" value={rowCountLabel} tone={ranking.offerCount > 0 ? "good" : "neutral"} /></span>
+          <span data-pre18-primary-status="true"><Pill label="Kalite" value={hasRows ? (ranking.qualityLabel || "-") : "Veri bekleniyor"} tone={ranking.riskLevel === "Yüksek" ? "danger" : ranking.confidence >= 70 ? "good" : "warn"} /></span>
+          <span data-pre18-primary-status="true"><Pill label="Risk" value={ranking.riskLevel || "-"} tone={ranking.riskLevel === "Yüksek" ? "danger" : ranking.riskLevel === "Orta" ? "warn" : "neutral"} /></span>
+          {!compact ? <span data-pre18-primary-status="true"><Pill label="Güven" value={fmtPercent(ranking.confidence)} tone={ranking.confidence >= 70 ? "good" : ranking.confidence >= 45 ? "warn" : "neutral"} /></span> : null}
         </div>
       </div>
 
-      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-        <Pill label="Kanıt" value={ranking.proofSummary || "Bekleniyor"} tone={toneForStatus(loadedProofSummary?.status || loadedProofSummary?.reviewStatus || "INFO")} />
-        <Pill label="Taslak" value={ranking.draftScoreSummary || "Bekleniyor"} tone={toneForStatus(loadedDraftScoreSummary?.status || "INFO")} />
-        <Pill label="İnceleme" value={ranking.reviewDecisionSummary || "Bekleniyor"} tone={toneForStatus(loadedReviewDecisionSummary?.reviewStatus || loadedReviewDecisionSummary?.status || "INFO")} />
-        <Pill label="Konum cihazı" value={ranking.safeDriveSummary || "Bekleniyor"} tone={ranking.riskLevel === "Yüksek" ? "danger" : ranking.riskLevel === "Orta" ? "warn" : "good"} />
-        <Pill label="Otomatik seçim" value={ranking.autoSelectionBlocked ? "Kapalı" : "Açık"} tone={ranking.autoSelectionBlocked ? "good" : "warn"} />
-        <Pill label="Otomatik kabul" value={ranking.autoAcceptBlocked ? "Kapalı" : "Açık"} tone={ranking.autoAcceptBlocked ? "good" : "warn"} />
+      <div className="row pre18-secondary-status-row" style={{ gap: 8, flexWrap: "wrap" }}>
+        {compact ? (
+          <details className="pre18-secondary-disclosure">
+            <summary>Kalite kanıtı ve işlem kuralları</summary>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+              <Pill label="Kanıt" value={ranking.proofSummary || "Bekleniyor"} tone={toneForStatus(loadedProofSummary?.status || loadedProofSummary?.reviewStatus || "INFO")} />
+              <Pill label="Taslak" value={ranking.draftScoreSummary || "Bekleniyor"} tone={toneForStatus(loadedDraftScoreSummary?.status || "INFO")} />
+              <Pill label="İnceleme" value={ranking.reviewDecisionSummary || "Bekleniyor"} tone={toneForStatus(loadedReviewDecisionSummary?.reviewStatus || loadedReviewDecisionSummary?.status || "INFO")} />
+              <Pill label="Konum cihazı" value={ranking.safeDriveSummary || "Bekleniyor"} tone={ranking.riskLevel === "Yüksek" ? "danger" : ranking.riskLevel === "Orta" ? "warn" : "good"} />
+              <Pill label="Otomatik seçim" value={ranking.autoSelectionBlocked ? "Kapalı" : "Açık"} tone={ranking.autoSelectionBlocked ? "good" : "warn"} />
+              <Pill label="Otomatik kabul" value={ranking.autoAcceptBlocked ? "Kapalı" : "Açık"} tone={ranking.autoAcceptBlocked ? "good" : "warn"} />
+            </div>
+          </details>
+        ) : (
+          <>
+            <Pill label="Kanıt" value={ranking.proofSummary || "Bekleniyor"} tone={toneForStatus(loadedProofSummary?.status || loadedProofSummary?.reviewStatus || "INFO")} />
+            <Pill label="Taslak" value={ranking.draftScoreSummary || "Bekleniyor"} tone={toneForStatus(loadedDraftScoreSummary?.status || "INFO")} />
+            <Pill label="İnceleme" value={ranking.reviewDecisionSummary || "Bekleniyor"} tone={toneForStatus(loadedReviewDecisionSummary?.reviewStatus || loadedReviewDecisionSummary?.status || "INFO")} />
+            <Pill label="Konum cihazı" value={ranking.safeDriveSummary || "Bekleniyor"} tone={ranking.riskLevel === "Yüksek" ? "danger" : ranking.riskLevel === "Orta" ? "warn" : "good"} />
+            <Pill label="Otomatik seçim" value={ranking.autoSelectionBlocked ? "Kapalı" : "Açık"} tone={ranking.autoSelectionBlocked ? "good" : "warn"} />
+            <Pill label="Otomatik kabul" value={ranking.autoAcceptBlocked ? "Kapalı" : "Açık"} tone={ranking.autoAcceptBlocked ? "good" : "warn"} />
+          </>
+        )}
       </div>
 
       <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.03)", lineHeight: 1.5 }}>
         <div className="muted">Kalite / güven / konum cihazı / kanıt-biniş doğrulaması / operasyon riski</div>
-        <div style={{ fontWeight: 800, marginTop: 4 }}>{ranking.summaryText || "Teklif karşılaştırması hazır."}</div>
+        <div style={{ fontWeight: 800, marginTop: 4 }}>{visibleSummaryText}</div>
         <div className="muted" style={{ marginTop: 4 }}>
           {ranking.summaryNote || "Salt okunur karşılaştırma satırı; otomatik seçim ve otomatik kabul kapalıdır."}
         </div>
       </div>
 
       <div style={{ display: "grid", gap: 10 }}>
-        {hasRows ? topRows.map((row) => <RowCard key={row.id} row={row} />) : (
+        {hasRows ? topRows.map((row) => <RowCard key={row.id} row={row} compact={compact} />) : (
           <div className="muted" style={{ padding: 12, borderRadius: 12, border: "1px dashed rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.01)" }}>
             Karşılaştırılacak teklif yok. Salt okunur kalite satırı boş görünüyor.
           </div>

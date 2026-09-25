@@ -30,7 +30,7 @@ Bu bounded corrective, #15 ve #17 kapandıktan sonra Sefer Abi’nin görsel kim
 
 Gerçek karakter içi blink, gaze, nefes, baş ve yüz mikro-hareketleri için mevcut tek PNG asset yeterli değildir. Bu nedenle bugünkü ürün baseline’ı dürüstçe şu moddur:
 
-`SEFER_ABI_TEMPORARY_BASELINE_VISUAL_MODE = CANONICAL_STATIC_PORTRAIT_WITH_STATE_UI`
+`SEFER_ABI_CHARACTER_LEVEL_MOTION = BOUNDED_CSS_STATE_ANIMATION`
 
 Canonical PNG sakin/statik portre olarak kalır; lifecycle anlamı yalnızca mevcut durum halkası, renk, ışık ve durum işareti gibi UI sinyalleriyle gösterilir. Bu geçici görünüm gerçek karakter animasyonu olarak sunulmaz. Detached eye/mouth/face katmanı, whole-PNG bobbing veya CSS ile gerçek Live2D taklidi production’da kullanılmaz.
 

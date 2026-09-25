@@ -23,11 +23,29 @@ import {
   isCommercialPaymentSecurityCheckerPath,
   isM80M89ContractSweepRepoContractPath,
   mustDiffEmptyOrExactlyWithIdentity,
+  mustStatusEmptyOrExactlyWithIdentity,
   mustStatusSubsetWithIdentity,
   isBatch11IndexWorktreeScopePath,
 } from "./lib/guardGitScope.js";
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF, CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS, CURRENT_HEAD_APPROVED_SCHEMA } from "./lib/currentHeadScopePolicy.js";
+import {
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS,
+  CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE,
+  CURRENT_HEAD_APPROVED_SCHEMA,
+  CURRENT_HEAD_COMMERCIAL_SPLIT_ROUTE_IDENTITY,
+} from "./lib/currentHeadScopePolicy.js";
 import { assertProductExtensionsIncludes, productExtensionsCheckScripts } from "./lib/productExtensionsRegistry.js";
+import { evaluatePresentationIdentity, getPresentationIdentityProjection } from "./lib/presentationProvenanceAuthority.js";
+import {
+  ACTIVE_CURRENT_HARNESS_PATHS,
+  ACTIVE_CURRENT_SOURCE_PATHS,
+  RATIFIED_CURRENT_HARNESS_PATHS,
+  DURABLE_CURRENT_CHECKER_PATHS,
+  RECOVERED_DURABLE_CHECKER_PATHS,
+  getActiveCurrentHarnessEntry,
+  classifyLifecyclePath,
+  assertLifecycleClassificationIntegrity,
+} from "./lib/pre18LifecycleClassification.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -230,6 +248,7 @@ function productExtensionsSmokePaths() {
   const selfSecurityGuardPath = normalizePath("backend/scripts/security_kvkk_final_01_check.js");
   const outOfScopeCurrentHeadHelperPaths = new Set(
   [
+    "backend/scripts/run_repo_check_chain.js",
     "backend/scripts/current_head_scope_policy_01_check.js",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
@@ -241,6 +260,8 @@ function productExtensionsSmokePaths() {
     "backend/scripts/lib/guardValidationEnvironment.js",
     "backend/scripts/lib/productExtensionsRegistry.js",
     "backend/scripts/lib/guardTextIntegrity.js",
+    // Exact lifecycle policy registry used by this checker and audit trace.
+    "backend/scripts/lib/pre18LifecycleClassification.js",
     "backend/scripts/run_backend_lint.js",
     "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
     "backend/scripts/m82_9_dormant_payment_backbone_check.js",
@@ -265,9 +286,9 @@ function buildExpectedShaMap(entries) {
 
 const batch09ApprovedConcurrentWorktreeEntries = [
   { path: "backend/README.md", sha256: "0E5C4A471BB7CD0B361C7EC6FB33899CABD810D8CB3892913F66FE26BE8F8AE7" },
-  { path: "backend/scripts/canonical_provenance_registry_01_check.js", sha256: "367A0ECC128DEE9B5B8BD9B969518CFF390DF0F16D1FFC30B3C1A5216F01644C" },
-  { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "1C1BBD98F393540BA2A65DEC3675DA5A1A8BCF1E916A4DA8ACCF4D73D78ABF7D" },
-  { path: "backend/scripts/ux_all_panels_reality_audit_01_check.js", sha256: "BEEAF0DC2D090B374F6E67AF157FCC9E461A575586CC955CF377182C194A0E6D" },
+  { path: "backend/scripts/canonical_provenance_registry_01_check.js", sha256: "4E9EEE56CE5C55C30C367485E17C2DDA39FF2A1862D93CBC52A0F408526A8BB2" },
+  { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "B6F499F84BA876C552FA7352E62A8FF53BFC247F3631BCC3E72049C07BE74C92" },
+  { path: "backend/scripts/ux_all_panels_reality_audit_01_check.js", sha256: "918F2D60DE76DBFC25E410BF0E4DB5045812A57A33D35E2BC7F72CE647421FF1" },
   { path: "backend/src/bootstrap/rateLimits.js", sha256: "92C93F276B04E5B4A3179E5F93D6396A37FA968000AA2FCEAE1E1F51752E0135" },
   { path: "backend/src/middleware/apiRequestLog.js", sha256: "5F27CA48608B10C6DDCD35F9D1C1E146D6AD432EAD63C90CF117F0EA3A051EE3" },
   { path: "backend/src/middleware/asyncHandler.js", sha256: "F206378CE995B6B15A3C340F81E8F8B16EDA65638558EF46F1F373ABBF166F0C" },
@@ -276,7 +297,7 @@ const batch09ApprovedConcurrentWorktreeEntries = [
 const batch09ApprovedConcurrentWorktreeShas = buildExpectedShaMap(batch09ApprovedConcurrentWorktreeEntries);
 
 const batch09CommercialSplitRouteEntries = Object.freeze(
-  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
+  CURRENT_HEAD_COMMERCIAL_SPLIT_ROUTE_IDENTITY.filter(({ path: entryPath }) =>
     normalizePath(entryPath).startsWith("backend/src/routes/commercialCore"),
   ),
 );
@@ -291,11 +312,14 @@ const batch09ProvenanceClosureShas = buildExpectedShaMap(batch09ProvenanceClosur
 const coreGuardInfraIdentityEntries = [
   {
     path: "backend/scripts/current_head_scope_policy_01_check.js",
-    sha256: "0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F",
+    sha256: "1B9D790AF2740A338DCC46FB4C317D468073C0D66A166BE254B11F71FECDE2D6",
   },
   {
     path: "backend/scripts/lib/currentHeadScopePolicy.js",
-    sha256: "56F431E518A1D44D34143320A4B8811E018C079051E25EAFD03C788840147277",
+    // Current-head exact identity pin includes bounded backend-context,
+    // screen-context, semantic-priority (including C1/C2) and operation-health
+    // precedence acceptance families. The guard remains hash-exact and strict.
+    sha256: "AA88D5E818D414B84CEB4C19EE107FDE73B18E0D26797C58A1979B3A99A078C3",
   },
   {
     path: "backend/scripts/lib/prismaSchemaIdentity.js",
@@ -315,11 +339,11 @@ const coreGuardInfraIdentityEntries = [
   },
   {
     path: "backend/scripts/lib/guardSmokeEvidence.js",
-    sha256: "D8233D3711D5C4CFE7F41F0B06DE717C6CC67F86F9D21991E19933A4DB5AE28F",
+    sha256: "69813A6DDA24454AC25CF412CDF9CDBB3DD1E825A1FC5FB7D88609A32A224680",
   },
   {
     path: "backend/scripts/lib/guardValidationEnvironment.js",
-    sha256: "5F909C62C9E376D5FCA38A3E28D30646D4C61CDABB537FE2A5DFDA9C0D8A42DE",
+    sha256: "F894AD74F40A38EDD878B1387423785B48FAEB5F4F224C31668B208B94D95B38",
   },
   {
     path: "backend/scripts/run_product_extensions_check_chain.js",
@@ -344,6 +368,21 @@ function isCoreGuardInfraPath(file) {
 }
 
 const currentClosureCorrectiveEntries = [
+  { path: "backend/src/ai/chat/canonicalConversationState.js", sha256: "4AA67996BD7A5F956C767C406929E243279A83BAC75DE9B509959E76877A20E2" },
+  { path: "backend/src/ai/chat/conversationTaskStateDynamicQuestions.js", sha256: "1E534ABB11B9D7A31A0293E32A556F86CB3F07BA2785A60A796CD310647E7556" },
+  { path: "backend/src/services/actionableEvents.js", sha256: "0809B33DA5E3FA2F1F0B7240764F9773AB4E670A02CFAAE86E2E8019A4A79853" },
+  { path: "web/src/components/CollapsibleSection.jsx", sha256: "4D8DD2BAC0BF931650C1BD3A093086B8906818607542C6D8F5E4643D5D6490FB" },
+  { path: "web/src/components/map/ReadableMiniRouteMap.jsx", sha256: "4450A81C7A710D558E78D61469745B9CD28789BB4ABC04E6A4E96D3FC6EB0097" },
+  { path: "web/src/utils/displayStatus.js", sha256: "DB0EE1A4D57EC9F7A9F6194C9495B470A65146536335E47A5F9BF9034B39C0AF" },
+  { path: "web/src/utils/roleNavigation.js", sha256: "37E838A9F962F17C768151F8D8D74B2B99556E6AABAF0953C2B99615117C5397" },
+  { path: "web/src/utils/terminology.js", sha256: "B34B51C6F2A55BBDEADDF3286C1CCFDFF8138EC5AE519286649B73AB8AFAC069" },
+  { path: "backend/src/ai/jobGuide/screenCatalog.roomCompany.js", sha256: "AE7599896A005DD25E0B4D8D26ABC75BE1C793612B66BFB815EE20E3C83A603E" },
+  { path: "backend/src/services/queryPlanExecutor.js", sha256: "34F65FD7F3971C60E47A7BF4F9963F9EB40243AE77E045B89CAD0B9B008158AA" },
+  { path: "web/src/components/CommercialReadonlySummary.jsx", sha256: "DE176A4AB0297680CD5C59B1530E5A876C85EA28CCC8A21DE9FE0CA76F399B36" },
+  { path: "web/src/components/OperationsCommandCenter.jsx", sha256: "D5F1181D8414BC49BF700A7688FAFD9FBE74539F78A16FB67BDCBEFA24088961" },
+  { path: "web/src/components/map/MapView.jsx", sha256: "DFD648AC0D68FC40DA11FD1FE60D3969D1DFE05C811B4504B0E48B052D293311" },
+  { path: "web/src/panels/company/PassengerLinksPanel.jsx", sha256: "A80115478963A14CC95AE20821E008E3E158F45D80122408EF20491AEDA3C844" },
+  { path: "web/src/utils/dashboardBulk.js", sha256: "73856CA9042F631909914290F28BEFCFD9538DCFEBFEF2D10987773F3F48E175" },
   { path: "backend/scripts/sefer_abi_room_fuel_province_coverage_01_acceptance.mjs", sha256: "09B9A61CC245A24C51B53E10E6EF9A56E2B52A148CB55F90303B6A1ECDE03310" },
   { path: "backend/src/externalCost/externalCostReferenceService.js", sha256: "EADD157A8C93448EDD3C9E9A4F3D93BFCD3235CBBCEE0AB3282370ABFAADE436" },
   { path: "backend/src/externalCost/providerFactory.js", sha256: "1CC8266F1B519443C440AB4A7F7AE53BCCFC8A9C6A016E9670D62BD430392EA2" },
@@ -351,13 +390,25 @@ const currentClosureCorrectiveEntries = [
   { path: "backend/src/externalCost/referenceLayers.js", sha256: "3687A4C373798BF6138F93476EBFCD59B22F4993973ADCBD37F3CA048D0801F8" },
   { path: "backend/src/externalCost/epdkBulletinProvider.js", sha256: "6883D0C607AFE0FEDFD0D9B1F1B50DC32139F9A0C50388A2AFB753780F93CFD1" },
   { path: "backend/src/finance/costScenarioForecast.js", sha256: "C1401ACE7AA006874F5FCB28ECCC969E0949BAF30AD43654316364AF9E79491F" },
-  { path: "web/src/panels/shared/CostScenarioWorkspacePanel.jsx", sha256: "470F9F8227C631E84E760A60A2A1C75645C16CD489291E858936BA9183851031" },
+  { path: "web/src/panels/shared/CostScenarioWorkspacePanel.jsx", sha256: "31617B1E30A373558FF7BE1545FDAC29679407B5CC07B072F4EC0871C4EE7FDC" },
+  { path: "backend/src/ai/chat/authorizationGate.js", sha256: "8556F409BA3C4835CBB8043396A88BFD14DA905DEBACA2694F94E5D138F0E82B" },
+  { path: "backend/src/ai/chat/fieldPrivacyPolicy.js", sha256: "EF87634FBA829AF4C0CEB84AEE9A338C4B629B3158BF20504F06A403849D68A0" },
+  { path: "backend/src/ai/chat/userFacingLanguageNormalizer.js", sha256: "C9B1161D0EFD2474CDFD3416230826AF0ACEA820D4EA762ADF54029D13CAECB4" },
+  { path: "backend/src/ai/schemas.js", sha256: "D85A8A6DC4BA320AF5D7EE67DFC78A4282C93BE73CB982415AA0F72DB5D49895" },
+  { path: "backend/src/services/authorizedProductAwareness.js", sha256: "154CB640CC7634D04209E77F1392A98350A60A901396041F3C8505C49612E4C7" },
+  { path: "web/src/components/geo/GeoLocationPicker.jsx", sha256: "F009CD05537C062E4151BE4E439BE8CAE501F2C78BD3A963198A699020DFD569" },
+  { path: "web/src/components/geo/HubMapPicker.jsx", sha256: "E5A6E4EEF74785594E8DDCAD2F35C174A106CADABDBCD6164D807033FEEBC310" },
+  { path: "web/src/panels/shared/CommercialShiftCardPresentation.jsx", sha256: "28E28A317E689BF960F99F67561727E35A2E6EA76E851551FD0525668B41034E" },
+  { path: "web/src/panels/shared/QualityPaymentBridgePreviewCard.jsx", sha256: "404B091C5A6AAB47CFE4F1AD4AEF5DECCAF0C12C514CD3DC66B30D146AACAFBF" },
+  { path: "web/src/panels/shared/SeferScorePreviewCard.jsx", sha256: "970F0896A33F7440F73E5B4E9A1FF2866D10C2E28C61F0D51CD60C5FE1B1D37A" },
+  { path: "web/src/utils/copilotSelection.js", sha256: "0F40C84BA2210176488BF475D6073C3D5E4713556ADFE12A2FB5BB54ABFDA38B" },
+  { path: "web/vite.config.js", sha256: "D6525E52EB61C4034A9C17F82537E2D127C95B017DDCB4ACE46B4E6029695A73" },
 ];
 const currentClosureCorrectiveShas = buildExpectedShaMap(currentClosureCorrectiveEntries);
 
 const pausedMilestoneWorktreeEntries = [
   { path: "backend/scripts/sefer_abi_cost_analysis_assistant_01_acceptance.mjs", sha256: "D02E2152766A74B53F8C9E90FC46655B0986CEC46DFB5154629A6AB50A864033" },
-  { path: "backend/src/ai/chat/seferAbiCostAnalysisAssistant.js", sha256: "867B28C7E2E69137C3DE2E25EEEDF985A1892FAF9A1A0CAEF492C04FCC9CCEC2" },
+  { path: "backend/src/ai/chat/seferAbiCostAnalysisAssistant.js", sha256: "489186419993453D8D3C27FADEE49EB43EE6765D1DAC41A473E113B39815B526" },
 ];
 const pausedMilestoneWorktreeShas = buildExpectedShaMap(pausedMilestoneWorktreeEntries);
 
@@ -434,6 +485,11 @@ const projectGapReadinessExactPaths = new Set(
 );
 
 const securityDocWorktreeEntries = [
+  { path: "docs/CHECKLIST_SSOT.md", sha256: "F2154830B61C9DDAA4B14E6808B6815643E40B2A13C4F0F3E669DF1F91DA72CE" },
+  { path: "docs/INDEX.md", sha256: "A28D8ED9FBC6E257D02D0C47486D1A0DE2AAB624050DFA30EB0283B21E13F169" },
+  { path: "docs/MILESTONE_REGISTRY_V1.md", sha256: "0A8DAEA2DEDF71C5847FF5B4405C6FF211ACA4AF0D148F4EE347794AE2C54A4E" },
+  { path: "docs/NEXT_BACKLOG_V1.md", sha256: "005EBCA3B7EF33B675436CE0F881D1C0034216142FBD9AD9BED5A93B731F7E99" },
+  { path: "tools/PRIMER_SNAPSHOT.md", sha256: "F503DCB3F72B08775572BB1020119CCF451B3797BDBC18D763DE9A1E40550F35" },
   { path: "docs/UX_PANEL_INVENTORY_02A_AUDIT.md", sha256: "039246CFBD967E9AA63CBCED301A9AE4FB58F0DB4946A8CFE3C4C7BEB15E7B19" },
   { path: "docs/MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md", sha256: "A7EF3D0DB003D206845EBDBF3DFF52B82839A993966BE10618C32EC7A418889E" },
   { path: "docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md", sha256: "36D7BCC36F1F2772524EC66B07A2A1363CA584ECAADD19C7FD4F7A750CF4A988" },
@@ -445,159 +501,103 @@ function isSecurityOwnedStatusPath(file) {
   return securityOwnedExactPaths.has(normalized) || isAppJsxRoleTenantScopePath(normalized);
 }
 
-const terminologyPresentationEntries = [
-  { path: "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md", sha256: "A703F64918702224F518ED3D6F4B80C9202F32ADD8E2F94022022BECA239E504" },
-  { path: "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md", sha256: "AA5C4CFFCF87D89F30B65680589EC3C2CB6B5003B66EC487CF26F6B330AA78D5" },
-  { path: "backend/scripts/_m91_route_preview_checks.js", sha256: "6C75E26FE4A66F5455EE95433C9E979C81364AA9227D25C27E504D0B07C9A1AB" },
-  { path: "backend/scripts/m97_a_room_operation_panel_check.js", sha256: "3A6B0A1661EB031B0DC4BA60F75CB84A8BF9B090A39D36318493DA70EE0A70D9" },
-  { path: "backend/scripts/m97_panel_operations_check.js", sha256: "6D2A01359E0DAE2A98F8C8E2FF298ABD6412581D872265BE831E97CCA39E3A74" },
-  { path: "backend/src/ai/chat/conversationNextBestActionEngine.js", sha256: "82516EBDCBBAAC3A55720BE5964AA22B9445AD7F34B3ED71CD73750C93742F89" },
-  { path: "backend/src/ai/chat/conversationPlanReviewEngine.js", sha256: "7B1448F9D8C541752D2465AFBDA8975049A1EAA68EE0D79FD5F593FB49F990C1" },
-  { path: "backend/src/ai/chat/conversationRiskScoringEngine.js", sha256: "D0E21A934786272637BEA2E8829F8927AE3A9F0569FE0205A6295D9243F7FBA9" },
-  { path: "backend/src/ai/chat/conversationRootCauseEngine.js", sha256: "CBC5B263197B38BB02ABE2711EE80F7A0A573F5C908B11317B1DC4E2695416FA" },
-  { path: "backend/src/ai/chat/conversationTaskStateBuilders.js", sha256: "054C67A0FCB07EE54FD7C7A642F9E6080E547126307620787420A37C574ADACB" },
-  { path: "backend/src/ai/chat/conversationTaskStateShared.js", sha256: "E2A9332B326726D209B4FEAD880DC74AD62FAE5077BC4474FA8B29757C5902F8" },
-  { path: "backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js", sha256: "5133BC61EF9503AE31E13190E385FCE58D01B8E2F931B1E7E67A256DB752FBB7" },
-  { path: "backend/src/ai/chat/copilotGuidedTaskEngine.js", sha256: "3DE44F99FACA4D50B60E8727DDC8F47A16AD8A835255515340FC7DC172371A25" },
-  { path: "backend/src/ai/chat/replyShapes.js", sha256: "2BB1C0C9DD849117EA1A7D0E37E77AE3FF20BE8223114893E38F68CD27CD634C" },
-  { path: "backend/src/ai/chat/seferAbiReasoningAssistant.js", sha256: "3C5C91BB8C2E165C4F25885D96FEE7573A35B480D5FE79FB86D1D8A58951BD06" },
-  { path: "backend/src/ai/chat/supplierOfferCollect.js", sha256: "FDB2F570EA959A82AD7C34270BDB73D51D69522CEE81517DE65F9C225C0B9196" },
-  { path: "mobile/src/app/kvkkVisibilityMatrixState.js", sha256: "048B0B913E9B3CC878171DEC6085A85C6EF0D16669B3D7054E209AD5C18AE1A3" },
-  { path: "mobile/src/app/notificationState.js", sha256: "3F7683D6C8EF4743CF70E2A65C059F60360C79EA5F6A9A820D69E9925B2A4BC3" },
-  { path: "mobile/src/lib/roleSurface.js", sha256: "EBFB4FEA201F3342C8593BC3170292545C9AE8F4DF62EB5B14EE8B5D74B2F9B2" },
-  { path: "mobile/src/screens/DriverAvailabilityCard.js", sha256: "3CA4DFC7700E313936DEACD0253B92979C17C32F5709D115013472B325F0FB4D" },
-  { path: "mobile/src/screens/DriverTaskSummaryCard.js", sha256: "383F2EB7ADD7B061082742E036496F5621C4700D074A323C0751B0C184B9E9D5" },
-  { path: "web/src/components/AgreementOpsBridgeCard.jsx", sha256: "AFDD26D1161EB49691AD99B4759D687A68DA3474F7CF23978E61027E016E84CC" },
-  { path: "web/src/components/HakedisReconciliationEntryCard.jsx", sha256: "F9AE68AAF40B667B69B44572E9551011D077A0F6F4C12AF301B6F7B8DFD52A30" },
-  { path: "web/src/components/PanelFeedbackEntryCard.jsx", sha256: "9A12E8D2AF97F597C5E20A1D0D5C4451D23B94BDE6C5D8F5059FCA9554C185AA" },
-  { path: "web/src/components/PaymentPreviewReadonlyCard.jsx", sha256: "DF1B97A17E3AD95AA9C4211979D5ED599A53F9B9B22F8F313C3AAEB4120D4EB7" },
-  { path: "web/src/components/ProviderScoreBadge.jsx", sha256: "D6D6040C8F32F2878D58AA4C70C0076668D34DFAB251220E13280A3F7FB0FA29" },
-  { path: "web/src/components/ShiftReassignModal.jsx", sha256: "39E7175C89660CAAC5B38E01FF34C92B7BE0A894653B5DC11BFA754EA48EA06A" },
-  { path: "web/src/components/TabletOpsQuickBar.jsx", sha256: "75EC308D8EFBDA0968836B65314424E0550C5531BE74994D7F252739F87FDEE7" },
-  { path: "web/src/components/public/PublicLeadCaptureModal.jsx", sha256: "CDEA6F178FADE481C7493D7120D09A8473941277F7A5A416789D94A9C52C008E" },
-  { path: "web/src/copilot/screenRegistry.js", sha256: "8DBD885C95760A7AF22547222E33FDE559662EB70D8A981DBC92161711B93463" },
-  { path: "web/src/layout/AppShell.jsx", sha256: "1855A096B971C355004AF9193DB585DEA08985246B3A778233F5688D792C0F78" },
-  { path: "web/src/layout/NavDock.jsx", sha256: "13B8D58A5A7DE358EDC7E7D9C0D6B9C54F05A51394E2F5DF72DF6307D7D13D75" },
-  { path: "web/src/panels/company/AgreementWizard.jsx", sha256: "C4A8E949F5E6D08BBBD4377E4DAC675E157F93AB5E3F14DADC11996C212B5D69" },
-  { path: "web/src/panels/company/AgreementsPanel.jsx", sha256: "E2CDE19CAAC5DA1F66A34DF9366CBFD1775A3D93135421E2A232C6B344C01385" },
-  { path: "web/src/panels/company/CommercialFlowPanel.jsx", sha256: "4A6203A2E00491F212244661AE1D3C6927D016C696CD58E2E4A6E515D59B47C7" },
-  { path: "web/src/panels/company/CompanyShiftsPanelIntro.jsx", sha256: "01287DBE39ABBC9230B6EB8374349D41754E7DA8665ED720CDCAD9F41B3BDB18" },
-  { path: "web/src/panels/company/CompanyShiftsPanelTrackView.jsx", sha256: "2776ADDD4CCD64A5B41C636196BE609569A05D3958CFB7997E79FB6D1860C95B" },
-  { path: "web/src/panels/company/OperationsPanel.jsx", sha256: "CACA1085258C8729B2DE3F86CE1BA198C6354FD18A9F579F0415D05151EF0AC0" },
-  { path: "web/src/panels/company/WorkflowPanel.jsx", sha256: "51307B906EF7DD100457B1D20DB8C9A5334346BB637D50A989935C960AE7E633" },
-  { path: "web/src/panels/company/companyAgreementsOverviewSection.jsx", sha256: "148A6DF5ADC12C6EA41B80165B9A95E6446F3480B03D6FC5D1C25B89945B4DE9" },
-  { path: "web/src/panels/company/companyShiftsPanelMobileCards.jsx", sha256: "60187450BB9784FEF006F578E62FEBC73CF397A4C3B54AC6030C80FD443A62A3" },
-  { path: "web/src/panels/company/companyShiftsPanelRows.jsx", sha256: "B07A8F54B897DB829E43F51B63CB6B254122504A8B99D9C400A827371D058431" },
-  { path: "web/src/panels/company/companyShiftsPanelSections.jsx", sha256: "DC75C0A30D93349F5362D7312B1E379E475ACA0D3619D3C2EB701A54EE20871F" },
-  { path: "web/src/panels/company/companyShiftsPanelSummaryCells.jsx", sha256: "9E9A2CBEC80267BA1C26B1D927F9BD0CD52EB4727F42D66316D95D51EB6D10A2" },
-  { path: "web/src/panels/personel/LivePanel.jsx", sha256: "D73D0C93507094953BD1EEEAE6FA57CF656CDC662534F384199F132342B766F1" },
-  { path: "web/src/panels/personel/MyRidePanel.jsx", sha256: "32F6236954D5A600FFD56A5D80BF83B61373AB5756CB2516F50D24156E876429" },
-  { path: "web/src/panels/room/AgreementsPanel.jsx", sha256: "A95D9BC43959CC0ED6417B2376CA9BB5A20B4F05D99B5A93BAEEF9824799D309" },
-  { path: "web/src/panels/room/CheckinPanel.jsx", sha256: "82018D28BD380E16B1A0434A8BF6728FC36BDDC6D43D76FC2640BED3E4354663" },
-  { path: "web/src/panels/room/CommercialFlowPanel.jsx", sha256: "5EF329EB1A70B3EA2D33F227DAECE0919B815AEEC2B4C62531ECBE92E3C049F8" },
-  { path: "web/src/panels/room/MapPanel.jsx", sha256: "AB49A5566EDD95B31EE03FC42AD352E45C17E5EEA616188965212DC78376C6C0" },
-  { path: "web/src/panels/room/OffersPanel.jsx", sha256: "72D0CFC54D1C2983BD97E00BC7BADA008CECF09797BA3C92EE4FE470700ED203" },
-  { path: "web/src/panels/room/OperationHealthPanel.jsx", sha256: "597E1D7B915FF732A768AB4662D7623961A2557BEE815B7D8CB56FDEAC0FD068" },
-  { path: "web/src/panels/room/VehiclesPanel.jsx", sha256: "6AF5573297F292976419FF0BC5635EEB06A9CEA7BC023AAD0EE11D0B7AB4D14D" },
-  { path: "web/src/panels/room/roomAgreementsBridgeSection.jsx", sha256: "E4253C757A7072B1213E44C089B49B47C79EFE05119672D85C01A8FDC3322A5C" },
-  { path: "web/src/panels/room/roomAgreementsPanelSections.jsx", sha256: "7D0E6F5D5F9EFC80FCD6F87BC98EB562923714B18F94C1C1DAE72B9A62FCDDB1" },
-  { path: "web/src/panels/room/roomOperationsBoard.jsx", sha256: "BC9010A1FFAFBE73F69F2FF8E5BBA1E8AA52CEA9024393321E3BE013AB25640B" },
-  { path: "web/src/panels/room/roomShiftsPanelActions.js", sha256: "0E048187178FCEDADE083C859F9EAA0F3E6D02EA8B33412971E90B3756CD2EF1" },
-  { path: "web/src/panels/shared/AgreementRouteChangePreviewCard.jsx", sha256: "B0E4C08F73A539847163509D67528B2136835F76C66A1C2C2F9E81C316979447" },
-  { path: "web/src/panels/shared/BoardingChangeRequestEntryCard.jsx", sha256: "29E8187256F8E92A46D0828FF2F483CB8CEDA47492671D92A102AF5DDFC843A6" },
-  { path: "web/src/panels/shared/CopilotPanel.jsx", sha256: "E49964BF976DFEAC565ECF080098B86318FD122C79E93F4770455E4D2139D72D" },
-  { path: "web/src/panels/shared/OfferQualityRankingCard.jsx", sha256: "D31D936C3DF191571E1CB15B42AA01269424744270ECF23B334B3D3D96F00D41" },
-  { path: "web/src/panels/shared/SafeDriveSummaryCard.jsx", sha256: "E32862CD035CC336980F091F6975E71878010210159E676E888DE332B72708B2" },
-  { path: "web/src/panels/superadmin/CompaniesPanel.jsx", sha256: "BC811B33D764D56ACC2C0D22ABA6F725A9E65DE824E2180E7CEF840B6E786FF4" },
-  { path: "web/src/panels/superadmin/PublicLeadReviewPanel.jsx", sha256: "1B8C958B5864FDCE7E670D9A5A8B8D4146CF0ACFDECE697BF374FA1581C9C4EF" },
-  { path: "web/src/panels/superadmin/RegionsPanel.jsx", sha256: "3FEA849F097B082E6F57CE5E2F04657738452AA7E8291A3AC83B04161CB1F21B" },
-  { path: "web/src/panels/superadmin/RoomsPanel.jsx", sha256: "85A442A7B1E0E82297D3BC91FEB13FF7136466BF930BB7A37BAD590AABA15165" },
-  { path: "web/src/panels/superadmin/SuperAdminPanel.jsx", sha256: "FED964C43B0632A12F34246181620D14B3630A480588B55878BFFF537AB2DBDE" },
-  { path: "web/src/panels/superadmin/TelematicsHubPanel.jsx", sha256: "17FC6BA18D89C94DA5E348E6955DECB9E5AAB04203CFD99D92E21AAEA2798FAE" },
-  { path: "web/src/panels/superadmin/UsersPanel.jsx", sha256: "903ED1F7B0CA5CA7F20F8823E3ED06EDF5EF271F073DD930B8DEF44FA7538C4B" },
-  { path: "web/src/utils/copilotPanelHelpers.js", sha256: "454F51E8450AE9A8F08BC166874EE9458D68AC677B9B2E37D96076600105CF97" },
-  { path: "web/src/utils/labels.js", sha256: "EBC0D0470AF8484D4AC5139176B09BAC9CA247D30915B7C30FD81D9BCC063282" },
-  { path: "web/src/utils/safeDriveSummary.js", sha256: "EBAF201CD46BD87B66FE83CE57B16479FD5DCB5F3AA2D88F5ECE1E9C3C4E4707" },
-  { path: "backend/scripts/m80_final_sert_kabul_yuk_guveni_check.js", sha256: "5ECF7CC55FB48028250ECB09F40104013C5F5ED08341620751EB5E8CD7ECE4E8" },
-  { path: "backend/src/ai/jobGuide/levels.js", sha256: "5E75C97EEB12975244E4634DDA4AFF9F3016DA7FAC9732756CEB4035569259AB" },
-  { path: "backend/src/ai/jobGuide/screenCatalog.js", sha256: "45FF585D95A4DF8C64ABE6DFA403ACE53D130B78CBAB27B35599CE12FDBF04D5" },
-  { path: "docs/BUG_ROUTE_IMPACT_PREVIEW_BUTTON_01.md", sha256: "069127242E08DE3A762DCD22447F60D484485D5CE6008A4C8B1CF30409CF3C75" },
-  { path: "mobile/src/screens/ParentActivationCard.js", sha256: "84FD1481A050B5757C8FA54BAED869B46EC4B15BB86F20017BD7C33DDA914E5E" },
-  { path: "web/src/components/PaymentReadinessReadonlyCard.jsx", sha256: "DCFA5652EF4B23A2E4BDA052EB1492FCBD4001DFC5CEF53F43BE9F2063D237EC" },
-  { path: "web/src/panels/company/CheckinPanel.jsx", sha256: "EE5AFE21578A32E69AA8748E38A1976329EE98088EDBFA0449625A957B9C9588" },
-  { path: "web/src/panels/company/GeoReviewPanel.jsx", sha256: "D283A0EB5722232669AE9D9D63EE77A9A52567751E517ACDB1035C286FBF76F8" },
-  { path: "web/src/panels/company/GuidedPlanModal.jsx", sha256: "83EF5FC0F31A9FD5894AC77ADDED79AA3393E40619D7CCE14BD2D24B23735389" },
-  { path: "web/src/panels/company/HubPanel.jsx", sha256: "68E237BA03F6DA83A91C49EAE170BEB3D6F398A6882417A17AFAF8376AAE359E" },
-  { path: "web/src/panels/company/MapPanel.jsx", sha256: "286215AB696E6FE48063DB1A788AB70FE6055E4DCF73D8F9464FBF1761AAAEBF" },
-  { path: "web/src/panels/company/PersonelAccessPanel.jsx", sha256: "EBB8050CBB35330E2A96F7A9321673220FDB87271FB101F737B0A8879CC8600A" },
-  { path: "web/src/panels/company/ServiceEvaluationPanel.jsx", sha256: "BBEA2130687645E8ADE39EC3559F0A9C61E6FAEE8A74E7AEEAB47DBAD641E59C" },
-  { path: "web/src/panels/company/ShiftPeopleTab.jsx", sha256: "A0A065404FE7EF996E5F3D1ADEB496882B561648A28F50A8D1F7957FDEA57FE2" },
-  { path: "web/src/panels/company/ShiftTemplatesPanel.jsx", sha256: "934055EEB7407E6AEA43566302A6FFB9689E445A7771AC1C41F6217689A0673E" },
-  { path: "web/src/panels/company/ShiftsPanel.jsx", sha256: "9C37254ACA2907EA15C575BD91D5A020DE27991F0BCC1FC1FA62179165368BF5" },
-  { path: "web/src/panels/company/companyAgreementsMobileCards.jsx", sha256: "7C912C134C0E7495D5A4C5970246D310FCE8F64D70F987D8302EC7141D84EA9E" },
-  { path: "web/src/panels/company/companyShiftsPanelActions.js", sha256: "BA93A4ADE7F75C6B575A3BCC2B3188CA01166B5746B7F4DCC7CEA9223E34D218" },
-  { path: "web/src/panels/company/companyShiftsPanelCards.jsx", sha256: "609A195CEF5DD173B9399535D19134C966E5173CE12000AD47E443103D618C17" },
-  { path: "web/src/panels/company/companyShiftsPanelFilters.jsx", sha256: "2606B60E3524B61287C619D4587CE28E137B4E1FAE0249E5ACCC48FEAC86C9B4" },
-  { path: "web/src/panels/company/guidedPlanModalActions.js", sha256: "6D1ECC91CBDFE38F679B158DF764887DEEDB0799A67545A45C0C0E25B30A0496" },
-  { path: "web/src/panels/company/guidedPlanModalCards.jsx", sha256: "B8E7107F8DD19EF48AD6CE714471C5D49995C3B50250C3C9F30EF42AE531D9EB" },
-  { path: "web/src/panels/company/guidedPlanModalDestinationCards.jsx", sha256: "6F3A63C50F70ECA5CA88F7C4189CDC6A53C3BF4A147FAAF6AF0C0AEFE0A90DAE" },
-  { path: "web/src/panels/company/guidedPlanModalSections.jsx", sha256: "2FE8C218EEB7E90A67D1290B9065B6463C8E0FADE4F4E28FB6B842CF8C77E803" },
-  { path: "web/src/panels/company/planBuilderPanelActions.js", sha256: "417AD19AA369CC0874E22FABCE5AACE7B467538A7F394F83F4B3C8430EAB8243" },
-  { path: "web/src/panels/company/planBuilderPanelSections.jsx", sha256: "B6C0BC2E56DCD8C932F8D7F63BBAE4166E234C13059B7651A8B75D68A380E855" },
-  { path: "web/src/panels/company/shiftPeopleTabSections.jsx", sha256: "809972D1C88F11846344BBB500BDA863BF9F67A79EAA713D35DDEDC784BD4FCF" },
-  { path: "web/src/panels/company/shiftsPanelOfferUtils.js", sha256: "A4979AD7BD0B3CAFA40D7DF750262CB985B04A589E264967FBF7AEBE41030B88" },
-  { path: "web/src/panels/driver/RoutePanel.jsx", sha256: "D0C8902F2E44354C4384E4C0BE80670DF27B6A76589AFF971F283D208C381F10" },
-  { path: "web/src/panels/driver/CheckinPanel.jsx", sha256: "7737404647D0FCE22198BFA3A143DC185702E98FEC5AAEA00DBFBFA13C357FDB" },
-  { path: "web/src/panels/organization/CenterPanel.jsx", sha256: "AA242BEB3D7E8B4CC64EE2685E0014832288E4EDE4EE931D63BDC405C8427DE0" },
-  { path: "web/src/panels/organization/PlansPanel.jsx", sha256: "EF3A8A027E833B6534FCA788F274B96CB2A367688FA059E6F42D0512E40F4D8A" },
-  { path: "web/src/panels/organization/organizationPlansShared.jsx", sha256: "4BC15C534A9399FFBB56C31AE256DAA5339D792CCB37A3211519DCE9E19D572C" },
-  { path: "web/src/panels/public/PublicLandingPage.jsx", sha256: "0C5C4FA0BD3239D86466BCC032FF693C946040B9940C1606D7F361C977FDBBD2" },
-  { path: "web/src/panels/public/PassengerLivePanel.jsx", sha256: "79E4AEAF56B106F966E923701CD07B85A97C8959A47F477872426B60F91944DF" },
-  { path: "web/src/panels/room/HubPanel.jsx", sha256: "5D862BDA535D75AB91F788C63D9AD9B0F33DEB93BC288162D62E3F7845BA0C4E" },
-  { path: "web/src/panels/room/ShiftsPanel.jsx", sha256: "7C4258644A9E5998059BDD07FA57682C297A826FEC9C6BAFE431B4FB7846EC4A" },
-  { path: "web/src/panels/room/roomShiftsMainSections.jsx", sha256: "54492ACB7BDA42CBD10122A5891C6D12E44B271C06CF0B9B7ACD45F37D6FB854" },
-  { path: "web/src/panels/room/roomShiftsPanelCards.jsx", sha256: "676EBDF58A97169715581AC857EB51DEA3280BE6DD9CE26D1A363F4C3B059BDF" },
-  { path: "web/src/panels/room/roomShiftsPanelMobileCards.jsx", sha256: "012306CE28A65467D41605957CE82006374386301FA82594F32626C7A7F24878" },
-  { path: "web/src/panels/room/roomShiftsPanelRows.jsx", sha256: "1A5FF81F47851A7EB44AA20E55BEEDE70F5F5275D68CBB4BFDEF8E87CE702549" },
-  { path: "web/src/panels/room/roomShiftsPanelSections.jsx", sha256: "BA8DDA6EA8F2E65776FBD68E58E749097D6E1B3DD98E42D72BCED3F379509B38" },
-  { path: "web/src/panels/room/roomShiftsPanelUtils.js", sha256: "C5E8FB2C0E1BE186BF027A491CA9187B7C719DFC8F2FF9E78D811F973AB16279" },
-  { path: "web/src/panels/room/roomVehiclesPanelCards.jsx", sha256: "33CB799B71B0848FA6BE8A31E44063A35E7F2A5E86C1CDD134959967E0BEC278" },
-  { path: "web/src/panels/room/roomVehiclesPanelRows.jsx", sha256: "A710286C91187E486089002B578F6EC930CAFE97049A4141F5614CFBDEE3ECD6" },
-  { path: "web/src/panels/room/roomVehiclesPanelSections.jsx", sha256: "185BEFC7E0BDF848924ADF20E89738DC7AAF6407985B73BE1C146EA81E714C51" },
-  { path: "web/src/panels/school/OperationsPanel.jsx", sha256: "294EB887ED6BE3174C3B50BD0752B4A7CA1E15623C60CA1B74270C9FE54F3A49" },
-  { path: "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx", sha256: "90EFEEA553153BE1170D80629F996AB034871E8404AFDB32EA20C23CBFA328CF" },
-  { path: "web/src/panels/shared/KvkkPanel.jsx", sha256: "DA76C50480A5FE02FD12CDDC34707E2E213831117ED00268AFA31AA2BD60A653" },
-  { path: "web/src/panels/shared/NotificationsPanel.jsx", sha256: "99FEA93C853E268B36938E3A16F12E88DCBDAA9D450AF56FDB68870711991BF6" },
-  { path: "web/src/panels/shared/PanelKvkkHint.jsx", sha256: "F344E3219052F87F20DB5685FA957EB4A6311DC54A8334D9C6815E89785F490F" },
-  { path: "web/src/panels/shared/PlatformFeePreviewCard.jsx", sha256: "552FCB7B157D01E32E0FF38057097F7D7FD137BF9C11038F107345672DEDC829" },
-  { path: "web/src/panels/shared/ReportsPanel.jsx", sha256: "1C887505BA91EDA5310D70A71B3CA50B9952F22D42F08C0318142717740BB9C4" },
-  { path: "web/src/panels/shared/TotpStepUpCard.jsx", sha256: "21ACB25DB2AFF07643D401AC5C1E16F9E3E2AC0CF028610D895AC38786F48998" },
-  { path: "web/src/panels/shared/boardingChangeUi.js", sha256: "01A06C914530EFE950F9FA0E22BE39A411D69C065C226416E4B73E426FF3D175" },
-  { path: "web/src/panels/shared/operationsDigestUtils.js", sha256: "7C5921796E17B9708151EA7954FD9B4438591701962588C9DFE98A9F83383DF8" },
-  { path: "web/src/panels/superadmin/AuditLogsPanel.jsx", sha256: "4080933AB0053F690096C6130853F3A5936A12F0A05699B6F94097FA09C53F6E" },
-  { path: "web/src/panels/superadmin/CommercialCorePanel.jsx", sha256: "3A0392D66E6AF3AAA70DEC456A435B0A78A4828EDB9FF11F1554F1E0FB13E123" },
-  { path: "web/src/panels/superadmin/TrustQualityPanel.jsx", sha256: "E2952D8C02511E6AD7EFA584AC50C39479C3ED73C3B8026DCB8A75EC8107DB73" },
-  { path: "web/src/panels/superadmin/commercialCorePanelShared.jsx", sha256: "C74EC10A9D85848E4229C360420D916A95DBCE5CDEC9E5276937D27C59361460" },
-  { path: "web/src/utils/agreementCopilotFacts.js", sha256: "8075D1C3974CBA678B825942C0E2521C3DB0B111657191C44A01B6B2F7F9D798" },
-  { path: "web/src/utils/agreementPrefill.js", sha256: "E0C991B62E4B2AB6443E81B5DDCBF221704A1AE68C19FB7C0B1DFEFEB0D1E5DC" },
-  { path: "web/src/utils/copilotFacts.js", sha256: "C785418E29AC3394B2A00CCD2FC6E841B73B176A1D5CA139E08C25DCAED70DBB" },
-  { path: "web/src/utils/notificationV1.js", sha256: "43569BC18C0BCE72FA2DADE75C119DDFF335171E8B496B978C095D93460FE123" },
-  { path: "web/src/utils/offerQualityRanking.js", sha256: "00BDAF985F08A5DE968E1448158225403AECD5EAE6B670C5BF8CD9E9535CB7F6" },
-  { path: "web/src/components/RoutePreviewModal.jsx", sha256: "741450855189B83C6C1A267919A66A8B4FB4E714D385ECA7A984E0EDEEE8A96A" },
-  { path: "web/src/lib/markers/vehicleMarkerC.js", sha256: "8C7EA82D00D4E0C9A8D823855629292B894937D60545FBC1C428D0373550B964" },
-  { path: "web/src/panels/driver/MapPanel.jsx", sha256: "22ABBF2931D9C5D671DFE9D493BDE898092442D0BB9F1E63D166CD2EA01891BD" },
-  { path: "web/src/panels/driver/TodayPanel.jsx", sha256: "ACB5EB64D24F958A725D751EBE2F1DDAA2F6818D50605B0849F55CB828E11F02" },
-  { path: "web/src/utils/gpsSource.js", sha256: "39B5EC94B2FFC9C95F9312DA277A818AA82CE908C410F6200F916DF144C3958F" },
-  { path: "web/src/utils/gpsSourceVisibility.js", sha256: "0270F4C469D502D01D54BB045A9901826B036BEFF2486FF11B11CE87A62FBC8C" },
-];
-const terminologyPresentationShas = buildExpectedShaMap(terminologyPresentationEntries);
+const currentHeadScreenContextAuthorityShas = buildExpectedShaMap(
+  CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE,
+);
+
+function isApprovedCurrentHeadScreenContextAuthorityPath(file) {
+  const normalized = normalizePath(file);
+  const expectedSha = currentHeadScreenContextAuthorityShas.get(normalized);
+  if (!expectedSha) return false;
+  const actualSha = fileSha256(normalized);
+  must(actualSha === expectedSha, `approved screen-context authority identity mismatch: ${normalized}`);
+  return true;
+}
+
+function isLifecycleDeferredPresentationPath(file) {
+  const normalized = normalizePath(file);
+  const projection = getPresentationIdentityProjection(normalized, {
+    consumer: "KVKK",
+    algorithm: "NORMALIZED_TEXT_SHA256",
+  });
+  if (!projection.inPresentationScope || projection.record?.currentLifecycleStatus !== "SUPERSEDED_ORPHAN_SOURCE") return false;
+  must(projection.record.owner === "SUPERSEDED_ORPHAN_REVIEW", `lifecycle owner missing: ${normalized}`);
+  must(projection.record.authorizationState === "LIFECYCLE_DEFERRED_SUPERSEDED_ORPHAN", `lifecycle authorization missing: ${normalized}`);
+  must(/^[A-F0-9]{64}$/.test(normalizedTextSha256(normalized)), `lifecycle source identity unreadable: ${normalized}`);
+  return true;
+}
 
 function isTerminologyPresentationPath(file) {
   const normalized = normalizePath(file);
-  const expectedSha = terminologyPresentationShas.get(normalized);
+  const projection = getPresentationIdentityProjection(normalized, {
+    consumer: "KVKK",
+    algorithm: "NORMALIZED_TEXT_SHA256",
+  });
+  if (!projection.inPresentationScope || projection.record?.currentLifecycleStatus === "SUPERSEDED_ORPHAN_SOURCE") return false;
+  const result = evaluatePresentationIdentity(normalized, {
+    consumer: "KVKK",
+    algorithm: "NORMALIZED_TEXT_SHA256",
+    actualSha256: normalizedTextSha256(normalized),
+  });
+  must(result.accepted, `canonical presentation identity mismatch: ${normalized} (${result.reason})`);
+  return true;
+}
+
+const currentPre18IdentityEntries = [
+  // Current PRE-#18/product-flow acceptance owners are exact-pinned. These
+  // entries permit the verified working-tree snapshot without allowing a
+  // wildcard or an unreviewed follow-up mutation.
+  { path: "docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md", sha256: "4B0870AF0EE5BC409D34188B575538983CE0A3C1AA825BDD88F3CDA74D23E4C4" },
+  { path: "backend/scripts/pre_18_major_findings_corrective_01_browser.mjs", sha256: "F27DA7B7B2CA9E6C00E451F5154D16E041717DA29AD037F01CDC5774D683D348" },
+  { path: "backend/scripts/pre_18_premium_ui_polish_01_browser.mjs", sha256: "79CA5112CB91663F76EA4369B0DE3094C39FAC61F572CBE2A389053B4CEDF9C8" },
+  { path: "backend/scripts/pre_18_premium_ui_polish_01_check.js", sha256: "375E8833814295F5A74BC12776DC00E49EB099D047E094502683306EE2BCA600" },
+  { path: "backend/scripts/lib/presentationProvenanceAuthority.js", sha256: "C17DB91FB830062BF59F5C6450CB60F4DA52E3172E7C66656CD9A3596775E4DF" },
+  { path: "web/src/components/copilot/SeferAbiAvatar.jsx", sha256: "03C32A1EA79FB8B57500FA5C6103694A326D324AFB7E3F4147709A5C487C83EA" },
+  { path: "backend/scripts/pre_18_presentation_provenance_authority_01_check.mjs", sha256: "73338F16CE1D634E124950C5B5DDBDB70FFFC5587297B2E393A19E9AD9361DA1" },
+  { path: "backend/scripts/pre_18_agreement_wizard_unreachable_defensive_branch_check.mjs", sha256: "696B68BEF3533C7535C82693FA9AA516C87476BA2F615EB39B62169CA10ED6AF" },
+  { path: "backend/scripts/pre_18_final_two_presentation_residual_reachability_01.mjs", sha256: "8E592425CFBE271C001C241C9E37581C3FBFD2B19142323E62DC5F4FD5A3B2F7" },
+  { path: "backend/scripts/pre_18_backend_security_context_acceptance_check.mjs", sha256: "4EB2B93C95735942F285326E5EF05AAC034802537309BA0E5BEDD6670A99B7ED" },
+  { path: "backend/scripts/pre_18_semantic_reasoning_source_identity_acceptance_check.mjs", sha256: "B04E56682FC9E742254FA18EDC84ADDD1D5F0E26C7004818D516B1E9009C5C08" },
+  { path: "backend/scripts/pre_18_semantic_priority_acceptance_check.mjs", sha256: "DF92212AE1C8D6EA697D108F11FE9FF9F6CE8F3049112EB43BB05DFEC88FE5C9" },
+  { path: "backend/scripts/pre_18_operation_health_profile_precedence_acceptance_check.mjs", sha256: "827FEA3C457AC22688408C88B5546934A4626678A501AF83E249574F535446B8" },
+  { path: "backend/scripts/pre_18_harness_gate_policy_projection_check.mjs", sha256: "FC7ECFF4539079B795D66D478D77D534593A3B626A438F6A39B28F3887341799" },
+  { path: "backend/scripts/pre_18_screen_context_authority_acceptance_check.mjs", sha256: "9202BAD50835C367208BA09348C97366F3E2F4FB895804D8A7FB4A6F255A5A7B" },
+  { path: "backend/scripts/pre_18_semantic_gate_scope_calibration_check.mjs", sha256: "DF765A9C8645815C02228FDB783B5D80C95996055E3A0F0EDD3C40371F91E235" },
+  { path: "backend/scripts/pre_18_panelchrome_source_identity_acceptance_check.mjs", sha256: "1A08FC1F2FE1CF349F807CF61B8A2F76FC4F22FE6FDF9D5919F354375F3EC41D" },
+  { path: "backend/scripts/pre_18_generic_product_help_safety_acceptance_check.mjs", sha256: "F972165308458FF22287C98380592A63D82F9C874B88941FDE713F2839F0C69C" },
+  { path: "backend/scripts/pre_18_package_b_v2_semantic_ownership_acceptance_check.mjs", sha256: "65F7C972E30F29FFE2FFC30B8FE84A2FD9E26973BF17B23F28C97CB01D86D002" },
+  { path: "backend/scripts/pre_18_package_c1_v3_start_readiness_remap_acceptance_check.mjs", sha256: "54B71CB4E5A45FFB26125EF3E218765010CC0739CB3B8366D2BE815FCD349FFF" },
+  { path: "backend/scripts/pre_18_package_c2_semantic_contract_acceptance_check.mjs", sha256: "96BAD3A7762870C41DB329D3971174AB1ACB1236F4259DC33AA016205CCE50D3" },
+  { path: "backend/scripts/pre_18_package_c3_v2_plan_review_acceptance_check.mjs", sha256: "E1422950EBC4D4534392C360DF6DB5056ADE67E159F8AEB48A05BF6E5FBB0C64" },
+  { path: "docs/PRE_18_PREMIUM_UI_POLISH_01.md", sha256: "8477B3536E2F6B890476FD920C5B39D63DF96E11CF5F271EF223666CCE4927A6" },
+  { path: "docs/SEFER_ABI_PREMIUM_CHARACTER_CORRECTIVE_01.md", sha256: "4848520BCAD5BF0BB106C5BB56E58500CFD902B2F0EA4631013E1C162D6FD4CB" },
+];
+const currentPre18IdentityShas = buildExpectedShaMap(currentPre18IdentityEntries);
+assertLifecycleClassificationIntegrity([
+  ...currentPre18IdentityEntries.map(({ path: entryPath }) => entryPath),
+  ...ACTIVE_CURRENT_SOURCE_PATHS,
+  ...RATIFIED_CURRENT_HARNESS_PATHS,
+  ...DURABLE_CURRENT_CHECKER_PATHS,
+  ...RECOVERED_DURABLE_CHECKER_PATHS,
+  ...ACTIVE_CURRENT_HARNESS_PATHS,
+  ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS,
+]);
+
+function isCurrentPre18IdentityPath(file) {
+  const normalized = normalizePath(file);
+  const expectedSha = currentPre18IdentityShas.get(normalized);
   if (!expectedSha) return false;
   const actualSha = normalizedTextSha256(normalized);
-  must(actualSha === expectedSha, `terminology presentation identity mismatch: ${normalized}`);
+  must(actualSha === expectedSha, `current PRE-#18 identity mismatch: ${normalized}`);
+  return true;
+}
+
+function isActiveCurrentHarnessPath(file) {
+  const normalized = normalizePath(file);
+  const entry = getActiveCurrentHarnessEntry(normalized);
+  if (!entry) return false;
+  const actualSha = normalizedTextSha256(normalized);
+  must(actualSha === entry.sha256, `active current harness identity mismatch: ${normalized}`);
   return true;
 }
 
@@ -623,9 +623,40 @@ function classifySecurityKvkkStatusPath(file) {
   const normalized = normalizePath(file);
   if (normalized === selfSecurityGuardPath) return "SELF_SECURITY_GUARD";
   if (projectGapReadinessExactPaths.has(normalized)) return "PROJECT_GAP_READINESS_14";
-  if (isTerminologyPresentationPath(normalized)) return "APPROVED_TERMINOLOGY_PRESENTATION";
-  if (isBatch13FoundationOwnerPath(normalized)) return "BATCH13_FOUNDATION_OWNER";
+  if (isApprovedCurrentHeadScreenContextAuthorityPath(normalized)) return "APPROVED_CURRENT_HEAD_PRODUCT";
   if (isApprovedCurrentHeadBackendPath(normalized) || isApprovedCurrentHeadSchemaPath(normalized)) return "APPROVED_CURRENT_HEAD_PRODUCT";
+  const lifecycle = classifyLifecyclePath(normalized);
+  if (lifecycle?.category === "DURABLE_CURRENT_CHECKER") {
+    if (lifecycle.identityMode !== "CONTRACT_SELF") {
+      const actual = normalizedTextSha256(normalized);
+      must(actual === lifecycle.sha256, `recovered durable checker identity mismatch: ${normalized}`);
+    }
+    return "DURABLE_CURRENT_CHECKER";
+  }
+  if (lifecycle?.category === "ACTIVE_CURRENT_SOURCE") {
+    const actual = normalizedTextSha256(normalized);
+    must(actual === lifecycle.sha256, `active current source identity mismatch: ${normalized}`);
+    return "ACTIVE_CURRENT_SOURCE";
+  }
+  if (lifecycle?.category === "UNOWNED_CURRENT_CHANGE") return "UNOWNED_CURRENT_CHANGE";
+  if (lifecycle?.category === "HISTORICAL_NONAUTHORITATIVE") return "HISTORICAL_NONAUTHORITATIVE";
+  if (lifecycle?.category === "LIFECYCLE_DEFERRED_TO_NO_SURPRISE_EXIT") return "LIFECYCLE_DEFERRED_TO_NO_SURPRISE_EXIT";
+  if (isLifecycleDeferredPresentationPath(normalized)) return "LIFECYCLE_DEFERRED_PRESENTATION_SOURCE";
+  if (isTerminologyPresentationPath(normalized)) return "APPROVED_TERMINOLOGY_PRESENTATION";
+  if (ACTIVE_CURRENT_SOURCE_PATHS.includes(normalized)) {
+    if (isCurrentPre18IdentityPath(normalized)) return "ACTIVE_CURRENT_SOURCE";
+    const expected = currentClosureCorrectiveShas.get(normalized);
+    if (expected) {
+      const actual = normalizedTextSha256(normalized);
+      must(actual === expected, `active current source identity mismatch: ${normalized}`);
+      return "ACTIVE_CURRENT_SOURCE";
+    }
+  }
+  if (RATIFIED_CURRENT_HARNESS_PATHS.includes(normalized) && isCurrentPre18IdentityPath(normalized)) return "ACTIVE_CURRENT_HARNESS";
+  if (DURABLE_CURRENT_CHECKER_PATHS.includes(normalized) && isCurrentPre18IdentityPath(normalized)) return "DURABLE_CURRENT_CHECKER";
+  if (isActiveCurrentHarnessPath(normalized)) return "ACTIVE_CURRENT_HARNESS";
+  if (isCurrentPre18IdentityPath(normalized)) return "CURRENT_PRE_18_PRODUCT_FLOW";
+  if (isBatch13FoundationOwnerPath(normalized)) return "BATCH13_FOUNDATION_OWNER";
   if (isCoreGuardInfraPath(normalized)) return "CORE_GUARD_INFRA";
   if (currentClosureCorrectiveShas.has(normalized)) {
     const expected = currentClosureCorrectiveShas.get(normalized);
@@ -683,6 +714,11 @@ function classifySecurityKvkkStatusPath(file) {
   if (outOfScopeTestInfraPaths.has(normalized)) return "OUT_OF_SCOPE_TEST_INFRA";
   if (normalized !== selfSecurityGuardPath && productExtensionsCheckerPaths().has(normalized)) return "OUT_OF_SCOPE_CHECKER_INFRA";
   if (productExtensionsSmokePaths().has(normalized)) return "OUT_OF_SCOPE_TEST_INFRA";
+  if (normalized === "backend/scripts/lib/pre18LifecycleClassification.js") {
+    const actual = normalizedTextSha256(normalized);
+    must(actual === "C7F61D9137232E7C625E5D6FC479D05779C8F072835B9E33712462B0F9867F94", "lifecycle classification registry identity");
+    return "OUT_OF_SCOPE_CURRENT_HEAD_HELPER";
+  }
   if (outOfScopeCurrentHeadHelperPaths.has(normalized)) return "OUT_OF_SCOPE_CURRENT_HEAD_HELPER";
   if (isSecurityOwnedStatusPath(normalized)) return "ROLE_TENANT_SECURITY_OWNED";
   if (normalized.startsWith("backend/src/routes/")) return "PROTECTED_ROUTE";
@@ -1473,6 +1509,13 @@ function main() {
       "PROJECT_GAP_READINESS_14",
       "ROLE_TENANT_SECURITY_OWNED",
       "APPROVED_TERMINOLOGY_PRESENTATION",
+      "LIFECYCLE_DEFERRED_PRESENTATION_SOURCE",
+      "HISTORICAL_NONAUTHORITATIVE",
+      "LIFECYCLE_DEFERRED_TO_NO_SURPRISE_EXIT",
+      "ACTIVE_CURRENT_HARNESS",
+      "ACTIVE_CURRENT_SOURCE",
+      "DURABLE_CURRENT_CHECKER",
+      "CURRENT_PRE_18_PRODUCT_FLOW",
       "RUNTIME_DATA",
     ]);
     const failures = [];
@@ -1494,8 +1537,8 @@ function main() {
       [...approvedCurrentHeadRouteEntries],
       "route diff not empty",
     ));
-  addCase(cases, "service diff stays empty", () =>
-    mustDiffEmptyOrExactlyWithIdentity(["backend/src/services"], approvedCurrentHeadServiceEntries, "service diff not empty"));
+  addCase(cases, "service status stays exact", () =>
+    mustStatusEmptyOrExactlyWithIdentity(["backend/src/services"], approvedCurrentHeadServiceEntries, "service status not exact"));
   addCase(cases, "prisma diff stays empty", () => must(gitLines(["diff", "--name-only", "--", "prisma"]).length === 0, "prisma diff not empty"));
   addCase(cases, "backend prisma diff stays empty", () => mustAcceptedPrismaManifest());
   addCase(cases, "debug.log stays absent", () => must(!fs.existsSync(paths.debugLog), "debug.log exists"));

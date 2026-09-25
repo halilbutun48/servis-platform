@@ -3,8 +3,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium } from "@playwright/test";
-import { buildSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
+import { buildDirectExecutionGuardCompatibleSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
+import { captureScreenshot, withLaunchedBrowser, withSeededBrowserContext } from "./lib/pre_18_shared_browser_lifecycle.mjs";
 import {
   revealFirstVisibleShiftCardDetails,
   revealFirstVisibleShiftOtherActions,
@@ -186,8 +186,7 @@ async function screenshot(page, scenario, viewportName, stage) {
   const fileName = `${makeSlug([scenario.role])}-${makeSlug([scenario.label])}-${viewportName}-${stage}.png`;
   const relPath = path.join("screenshots", viewportName, fileName).replace(/\\/g, "/");
   const absPath = path.join(screenshotRoot, viewportName, fileName);
-  await ensureDir(path.dirname(absPath));
-  await page.screenshot({ path: absPath, fullPage: false });
+  await captureScreenshot(page, absPath, { fullPage: false });
   return relPath;
 }
 
@@ -663,6 +662,7 @@ async function handleRoomShifts(page, result) {
   result.checks.dispatchApplyVisible = await isVisible(page, "button", "Önizlemeyi Uygula: Böl & Onayla");
   result.checks.dispatchApplyHintVisible = await textVisible(page, "Önizleme ile aynı bölme planı uygulanır; seçtiğin araç ve şoför eşleşmeleri kullanılır.");
   result.checks.dispatchApplyStateVisible = await textVisible(page, "Tüm öneriler hazır. Önizlemeyi uygulayabilirsin.");
+  result.checks.dispatchApplyExpectedVisible = await textVisible(page, "Bölme modu aktif");
   await waitForShiftCardContent(page);
   await revealFirstVisibleShiftCardDetails(page);
   await revealFirstVisibleShiftOtherActions(page);
@@ -681,16 +681,23 @@ async function handleRoomShifts(page, result) {
   result.checks.pendingEmptyVisible = await textVisible(page, "Bekleyen talep yok.");
   result.checks.approveButtonVisible = await isVisible(page, "button", "Kabul Et");
   result.checks.rejectButtonVisible = await isVisible(page, "button", "Reddet");
+  result.checks.pendingQueueActionsVisible = result.checks.approveButtonVisible && result.checks.rejectButtonVisible;
 
-  if (!result.checks.previewButtonVisible || !result.checks.dispatchApplyVisible) {
+  if (!result.checks.previewButtonVisible || (result.checks.dispatchApplyExpectedVisible && !result.checks.dispatchApplyVisible)) {
     result.status = bumpStatus(result.status, "BLOCKER");
-    result.notes.push("Room shifts preview or dispatch-apply control is missing.");
+    result.notes.push("Room shifts preview is missing or the dispatch/apply control is missing from an active split-required state.");
     return;
   }
 
-  if ((!result.checks.approveButtonVisible || !result.checks.rejectButtonVisible) && result.checks.pendingEmptyVisible) {
+  if (!result.checks.dispatchApplyExpectedVisible && !result.checks.dispatchApplyVisible) {
+    result.notes.push("Dispatch/apply is not expected: the current ROOM fixture has no assigned split-required state; the UI keeps the action gated by room scope and capacity.");
+  }
+
+  if (result.checks.pendingEmptyVisible && !result.checks.pendingQueueActionsVisible) {
     result.status = bumpStatus(result.status, "PASS-");
     result.notes.push("Room shifts pending approval actions are absent because the pending queue is empty in this fixture set.");
+  } else if (!result.checks.pendingEmptyVisible && result.checks.pendingQueueActionsVisible) {
+    result.notes.push("Room shifts pending approval actions are visible because the current fixture contains pending records.");
   }
 
   const approveButton = await firstVisibleLocator(page, "button", "Kabul Et");
@@ -836,8 +843,11 @@ async function handleRoomAgreements(page, result) {
 
   result.checks.detailExpandedVisible = await textVisible(page, "Sözleşmeye bağlı vardiya");
   result.checks.detailPreviewBoundaryVisible = await textVisible(page, "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.");
+  const noGeneratedShiftVisible = await textVisible(page, "Bu sözleşmeye bağlı üretilmiş vardiya henüz yok.")
+    || await textVisible(page, "Bu sözleşmeye bağlı vardiya henüz yok.");
+  result.checks.emptyCanonicalStateVisible = result.checks.emptyCanonicalStateVisible || noGeneratedShiftVisible;
 
-  if (previewButton) {
+  if (previewButton && !result.checks.emptyCanonicalStateVisible) {
     const previewDisabled = await previewButton.isDisabled().catch(() => false);
     if (previewDisabled) {
       result.status = bumpStatus(result.status, "PASS-");
@@ -854,7 +864,9 @@ async function handleRoomAgreements(page, result) {
       }
     }
   } else {
-    result.notes.push("Room agreements route preview button is not exposed in the empty canonical fixture; read-only boundaries remain visible.");
+    result.notes.push(result.checks.emptyCanonicalStateVisible
+      ? "Room agreements keeps an explicit no-generated-shift state; route preview is correctly unavailable until a shift exists."
+      : "Room agreements route preview button is not exposed in the empty canonical fixture; read-only boundaries remain visible.");
   }
 }
 
@@ -1109,109 +1121,103 @@ async function main() {
   const rootPkg = JSON.parse(await fs.readFile(path.join(repoRoot, "package.json"), "utf8"));
   const playwrightVersionSpec = rootPkg.devDependencies?.["@playwright/test"] || "unknown";
 
-  const browser = await chromium.launch({
+  let report = null;
+  await withLaunchedBrowser({
     headless: HEADLESS,
     slowMo: SLOW_MO,
     env: {
       ...process.env,
       CHROME_LOG_FILE: chromiumDebugLogPath,
     },
-  });
-  const browserVersion = browser.version();
-  const evidenceIdentity = buildSmokeEvidenceIdentity({
-    repoRoot,
-    sourceFiles: [...COVERAGE_SOURCES, "backend/scripts/product_flow_button_audit_01.mjs"],
-  });
+  }, async (browser) => {
+    const browserVersion = browser.version();
+    const evidenceIdentity = buildDirectExecutionGuardCompatibleSmokeEvidenceIdentity({
+      repoRoot,
+      sourceFiles: [...COVERAGE_SOURCES, "backend/scripts/product_flow_button_audit_01.mjs"],
+      runnerPath: "backend/scripts/product_flow_button_audit_01.mjs",
+    });
 
-  const report = {
-    generatedAt: new Date().toISOString(),
-    ...evidenceIdentity,
-    repoRoot,
-    artifactRoot: path.relative(repoRoot, artifactRoot).replace(/\\/g, "/"),
-    webBaseUrl: WEB_BASE_URL,
-    apiBaseUrl: API_BASE_URL,
-    headless: HEADLESS,
-    slowMo: SLOW_MO,
-    playwrightVersion: playwrightVersionSpec,
-    browserVersion,
-    viewports: VIEWPORTS.map(({ name, width, height }) => ({ name, width, height })),
-    coverageSources: COVERAGE_SOURCES,
-    routeCount: 0,
-    screenshotCount: 0,
-    consoleErrorCount: 0,
-    pageErrorCount: 0,
-    statusCounts: { PASS: 0, "PASS-": 0, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
-    routes: [],
-    authResults: [],
-    totalLoginFailures: 0,
-    success: true,
-  };
+    report = {
+      generatedAt: new Date().toISOString(),
+      ...evidenceIdentity,
+      repoRoot,
+      artifactRoot: path.relative(repoRoot, artifactRoot).replace(/\\/g, "/"),
+      webBaseUrl: WEB_BASE_URL,
+      apiBaseUrl: API_BASE_URL,
+      headless: HEADLESS,
+      slowMo: SLOW_MO,
+      playwrightVersion: playwrightVersionSpec,
+      browserVersion,
+      viewports: VIEWPORTS.map(({ name, width, height }) => ({ name, width, height })),
+      coverageSources: COVERAGE_SOURCES,
+      routeCount: 0,
+      screenshotCount: 0,
+      consoleErrorCount: 0,
+      pageErrorCount: 0,
+      statusCounts: { PASS: 0, "PASS-": 0, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
+      routes: [],
+      authResults: [],
+      totalLoginFailures: 0,
+      success: true,
+    };
 
-  for (const group of ROUTE_GROUPS) {
-    let authState = { role: group.role, token: null, loginInfo: null, error: null };
-    let sharedStorageState = null;
-    if (group.auth) {
-      authState = await loginRole(group.role);
-      report.authResults.push(authState);
-      if (authState.error) {
-        report.totalLoginFailures += 1;
-        console.log(`AUTH ${group.role}: ${authState.error}`);
-      } else {
-        console.log(`AUTH ${group.role}: ok`);
+    for (const group of ROUTE_GROUPS) {
+      let authState = { role: group.role, token: null, loginInfo: null, error: null };
+      let sharedStorageState = null;
+      if (group.auth) {
+        authState = await loginRole(group.role);
+        report.authResults.push(authState);
+        if (authState.error) {
+          report.totalLoginFailures += 1;
+          console.log(`AUTH ${group.role}: ${authState.error}`);
+        } else {
+          console.log(`AUTH ${group.role}: ok`);
+        }
+      }
+
+      for (const viewport of VIEWPORTS) {
+        const contextOptions = {
+          viewport: { width: viewport.width, height: viewport.height },
+          deviceScaleFactor: viewport.deviceScaleFactor,
+          isMobile: viewport.isMobile,
+          hasTouch: viewport.hasTouch,
+          locale: "tr-TR",
+          timezoneId: "Europe/Istanbul",
+          geolocation: { latitude: 41.0082, longitude: 28.9784 },
+          permissions: ["geolocation"],
+        };
+
+        if (sharedStorageState) {
+          contextOptions.storageState = sharedStorageState;
+        }
+
+        const initialStorage = {};
+        if (authState.token) initialStorage.token = authState.token;
+        if (authState.loginInfo?.deviceId) {
+          initialStorage.personel_servis_browser_device_id = String(authState.loginInfo.deviceId);
+        }
+
+        await withSeededBrowserContext(browser, contextOptions, initialStorage, async ({ context }) => {
+          for (const scenario of group.routes) {
+            const page = await context.newPage();
+            const row = await runScenario(page, { ...scenario, role: group.role, token: authState.token }, viewport.name, report.routes);
+            report.routeCount += 1;
+            report.screenshotCount += row.screenshots.length;
+            report.consoleErrorCount += row.consoleErrors.length;
+            report.pageErrorCount += row.pageErrors.length;
+            report.statusCounts[row.status] = (report.statusCounts[row.status] || 0) + 1;
+            report.success = report.success && !["BLOCKER", "NOT-FOUND", "AUTH-BLOCKED"].includes(row.status);
+            console.log(`${row.status} [${group.role}/${viewport.name}] ${scenario.route} -> ${scenario.label}`);
+            await page.close().catch(() => {});
+          }
+
+          if (viewport.name === "desktop") {
+            sharedStorageState = await context.storageState().catch(() => null);
+          }
+        });
       }
     }
-
-    for (const viewport of VIEWPORTS) {
-      const contextOptions = {
-        viewport: { width: viewport.width, height: viewport.height },
-        deviceScaleFactor: viewport.deviceScaleFactor,
-        isMobile: viewport.isMobile,
-        hasTouch: viewport.hasTouch,
-        locale: "tr-TR",
-        timezoneId: "Europe/Istanbul",
-        geolocation: { latitude: 41.0082, longitude: 28.9784 },
-        permissions: ["geolocation"],
-      };
-
-      if (sharedStorageState) {
-        contextOptions.storageState = sharedStorageState;
-      }
-
-      const context = await browser.newContext(contextOptions);
-
-      if (authState.token) {
-        await context.addInitScript((token) => {
-          localStorage.setItem("token", token);
-        }, authState.token);
-      }
-      if (authState.loginInfo?.deviceId) {
-        await context.addInitScript((deviceId) => {
-          localStorage.setItem("personel_servis_browser_device_id", String(deviceId));
-        }, String(authState.loginInfo.deviceId));
-      }
-
-      for (const scenario of group.routes) {
-        const page = await context.newPage();
-        const row = await runScenario(page, { ...scenario, role: group.role, token: authState.token }, viewport.name, report.routes);
-        report.routeCount += 1;
-        report.screenshotCount += row.screenshots.length;
-        report.consoleErrorCount += row.consoleErrors.length;
-        report.pageErrorCount += row.pageErrors.length;
-        report.statusCounts[row.status] = (report.statusCounts[row.status] || 0) + 1;
-        report.success = report.success && !["BLOCKER", "NOT-FOUND", "AUTH-BLOCKED"].includes(row.status);
-        console.log(`${row.status} [${group.role}/${viewport.name}] ${scenario.route} -> ${scenario.label}`);
-        await page.close().catch(() => {});
-      }
-
-      if (viewport.name === "desktop") {
-        sharedStorageState = await context.storageState().catch(() => null);
-      }
-
-      await context.close().catch(() => {});
-    }
-  }
-
-  await browser.close().catch(() => {});
+  });
 
   const md = renderMarkdown(report);
   await fs.writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
@@ -1233,25 +1239,27 @@ async function main() {
   }
 }
 
-main().catch(async (error) => {
-  try {
-    await ensureDir(artifactRoot);
-    await relocateRepoDebugLogIfPresent({ repoDebugLogPath, artifactRoot, chromiumDebugLogPath });
-    const failureReport = {
-      generatedAt: new Date().toISOString(),
-      repoRoot,
-      artifactRoot: path.relative(repoRoot, artifactRoot).replace(/\\/g, "/"),
-      webBaseUrl: WEB_BASE_URL,
-      apiBaseUrl: API_BASE_URL,
-      headless: HEADLESS,
-      slowMo: SLOW_MO,
-      error: error?.stack || error?.message || String(error),
-    };
-    await fs.writeFile(reportJsonPath, `${JSON.stringify(failureReport, null, 2)}\n`, "utf8");
-    await fs.writeFile(reportMdPath, `# PRODUCT FLOW BUTTON AUDIT 01\n\nAudit runner failed before completion.\n\n\`\`\`\n${failureReport.error}\n\`\`\`\n`, "utf8");
-  } catch {
-    // ignore secondary write failures
-  }
-  console.error(error?.stack || String(error));
-  process.exit(1);
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  main().catch(async (error) => {
+    try {
+      await ensureDir(artifactRoot);
+      await relocateRepoDebugLogIfPresent({ repoDebugLogPath, artifactRoot, chromiumDebugLogPath });
+      const failureReport = {
+        generatedAt: new Date().toISOString(),
+        repoRoot,
+        artifactRoot: path.relative(repoRoot, artifactRoot).replace(/\\/g, "/"),
+        webBaseUrl: WEB_BASE_URL,
+        apiBaseUrl: API_BASE_URL,
+        headless: HEADLESS,
+        slowMo: SLOW_MO,
+        error: error?.stack || error?.message || String(error),
+      };
+      await fs.writeFile(reportJsonPath, `${JSON.stringify(failureReport, null, 2)}\n`, "utf8");
+      await fs.writeFile(reportMdPath, `# PRODUCT FLOW BUTTON AUDIT 01\n\nAudit runner failed before completion.\n\n\`\`\`\n${failureReport.error}\n\`\`\`\n`, "utf8");
+    } catch {
+      // ignore secondary write failures
+    }
+    console.error(error?.stack || String(error));
+    process.exit(1);
+  });
+}

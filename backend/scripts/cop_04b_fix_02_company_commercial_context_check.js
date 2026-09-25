@@ -109,7 +109,8 @@ must(auditDoc, 'Ödeme başlatılmaz.', 'audit doc keeps readonly payment bounda
 must(auditDoc, 'Bunu anlayamadım', 'audit doc keeps fallback reference');
 must(auditDoc, 'selected context parity', 'audit doc keeps selected parity wording');
 
-must(agreementsPanelSource, "entityType: 'screen'", 'agreements panel keeps safe screen entity type');
+must(agreementsPanelSource, "entityType: selectedAgreementCopilotContext.selectedRecordType || 'agreement'", 'agreements panel preserves the explicit agreement entity type');
+must(agreementsPanelSource, 'entityId: Number(selectedAgreementCopilotContext.selectedRecordId || 0) || null', 'agreements panel preserves the explicit agreement entity id');
 must(agreementsPanelSource, 'selectedAgreementCopilotContext', 'agreements panel keeps agreement bridge context');
 must(agreementsPanelSource, 'buildAgreementCopilotFacts', 'agreements panel keeps agreement facts helper');
 must(commercialCorePanelSource, "entityType: 'screen'", 'commercial core panel keeps safe screen entity type');
@@ -128,7 +129,7 @@ must(agreementFactsSource, 'Bugün üretim: Var', 'agreement facts helper keeps 
 
 must(factsSource, 'buildCommercialCoreCopilotFacts', 'copilot facts keeps commercial core helper');
 must(factsSource, 'selectedRecordStatus: compactText(`${previewStatus} • Eksik bilgi ${missingCount} • Ödeme hesabı: ${accountText} • ${csvBoundary} • Servis kanıtı: ${serviceProofText}`', 'copilot facts keeps zero-missing commercial status');
-must(factsSource, 'Eksik bilgi 0 görünüyor; ödeme hesabı, komisyon durumu ve hizmet/onay sinyalini kontrol et.', 'copilot facts keeps zero-missing guidance');
+must(factsSource, 'Eksik bilgi 0 görünüyor; ödeme hesabı ve hizmet/onay sinyalini kontrol et.', 'copilot facts keeps zero-missing guidance');
 must(factsSource, 'Ödeme başlatılmaz.', 'copilot facts keeps readonly payment boundary');
 must(factsSource, 'selectedRecordStatus', 'copilot facts keeps selected record status bridge');
 
@@ -136,7 +137,7 @@ must(helpComposerSource, 'asksContractOrReadinessWorkflow', 'help composer keeps
 must(helpComposerSource, 'buildContractProductionSignalState', 'help composer keeps contract production bridge helper');
 must(helpComposerSource, 'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.', 'help composer keeps positive contract production wording');
 must(helpComposerSource, 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.', 'help composer keeps negative contract production wording');
-must(helpComposerSource, 'Hakediş önizleme, ödeme hesabı, komisyon ve hizmet/onay sinyalini kontrol et.', 'help composer keeps payment readiness wording');
+must(helpComposerSource, 'Hakediş önizleme, ödeme hesabı ve hizmet/onay sinyalini kontrol et.', 'help composer keeps payment readiness wording');
 must(helpComposerSource, 'Bu ekrandaki veriye göre bu vardiya başlayamıyor.', 'help composer keeps shift wording elsewhere');
 mustNotRaw(helpComposerSource, 'OperationProof', 'help composer avoids visible technical proof wording');
 
@@ -154,7 +155,7 @@ must(answerPolicySource, 'Üretim geçmişini göster', 'answer policy keeps con
 must(answerPolicySource, 'Bugünkü vardiyaları göster', 'answer policy keeps contract today chip');
 must(answerPolicySource, 'Eksik bilgi ne?', 'answer policy keeps payment chip');
 must(answerPolicySource, 'Ödeme hesabı var mı?', 'answer policy keeps payment account chip');
-must(answerPolicySource, 'Komisyon durumu ne?', 'answer policy keeps payment commission chip');
+must(answerPolicySource, 'Ödeme hazırlığı hangi aşamada?', 'answer policy keeps payment-preparation chip');
 must(answerPolicySource, 'Hakediş önizlemesini aç', 'answer policy keeps payment preview chip');
 must(answerPolicySource, 'Bunu sor', 'answer policy keeps generic chip block');
 must(answerPolicySource, 'Aynı kayıt için devam et', 'answer policy keeps continuation block');
@@ -276,7 +277,9 @@ const agreementIntent = detectQuestionIntent(agreementRequest.message, {
   entityType: 'screen',
   originalMessage: agreementRequest.message,
 });
-mustAny(agreementIntent?.questionType || '', ['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'], 'agreement request routes to contract production');
+must(agreementIntent?.questionType || '', 'SEMANTIC_OFF_TOPIC_SAFE', 'agreement request preserves the current safe semantic route');
+mustNot(agreementIntent?.questionType || '', 'CONTRACT_TO_SHIFT', 'agreement request does not revive the retired contract-to-shift route');
+mustNot(agreementIntent?.questionType || '', 'CONTRACT_SHIFT_TODAY', 'agreement request does not revive the retired contract-today route');
 
 const agreementResponse = buildChatHelpResponse({
   entityType: parsedAgreementRequest.data.entityType,
@@ -384,7 +387,9 @@ const commercialIntent = detectQuestionIntent(commercialRequest.message, {
   entityType: 'screen',
   originalMessage: commercialRequest.message,
 });
-mustAny(commercialIntent?.questionType || '', ['PAYMENT_READINESS', 'PAYMENT_MISSING'], 'commercial request routes to payment readiness');
+must(commercialIntent?.questionType || '', 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'commercial request preserves the current authorization boundary');
+mustNot(commercialIntent?.questionType || '', 'PAYMENT_READINESS', 'commercial request does not infer payment authority from screen context');
+mustNot(commercialIntent?.questionType || '', 'PAYMENT_MISSING', 'commercial request does not infer payment state from screen context');
 
 const commercialResponse = buildChatHelpResponse({
   entityType: parsedCommercialRequest.data.entityType,
@@ -410,10 +415,9 @@ const commercialResponse = buildChatHelpResponse({
 const commercialReply = String(commercialResponse?.reply || commercialResponse?.summary || '');
 mustNot(commercialReply, 'Bunu anlayamadım', 'commercial reply avoids unknown fallback');
 mustAny(commercialReply, ['Eksik bilgi 0 görünüyor', 'Eksik bilgi 0'], 'commercial reply keeps zero-missing wording');
-mustAny(commercialReply, ['ödeme hesabı', 'ödeme hesabını', 'ödeme hesabı, komisyon durumu ve hizmet/onay sinyalini'], 'commercial reply keeps payment account wording');
-mustAny(commercialReply, ['komisyon', 'komisyon durumu'], 'commercial reply keeps commission wording');
-mustAny(commercialReply, ['hizmet/onay', 'servis kanıtı', 'operasyon kanıtı'], 'commercial reply keeps proof wording');
-mustAny(commercialReply, ['Ödeme başlatılmaz', 'ödeme başlatılmaz'], 'commercial reply keeps readonly payment boundary');
+must(commercialReply, 'Kesin sebebi veriyle doğrulamak gerekir', 'commercial reply keeps the current evidence-grounded diagnostic');
+must(commercialReply, 'Ödeme başlatılmaz.', 'commercial reply keeps the current readonly payment boundary');
+mustNot(commercialReply, 'komisyon durumu', 'commercial reply does not infer an unverified commission state');
 mustNotRaw(commercialReply, 'agreement', 'commercial reply avoids visible agreement term');
 mustNotRaw(commercialReply, 'contractShiftGeneration', 'commercial reply avoids technical contract token');
 mustNotRaw(commercialReply, 'OperationProof', 'commercial reply avoids technical proof wording');
@@ -426,10 +430,10 @@ mustNotRaw(commercialReply, 'debug', 'commercial reply avoids debug token');
 mustNotRaw(commercialReply, 'write', 'commercial reply avoids write token');
 mustNotRaw(commercialReply, 'execute', 'commercial reply avoids execute token');
 mustNotRaw(commercialReply, 'settlement execute', 'commercial reply avoids settlement execute token');
-mustArrayContains(commercialResponse?.contextualSuggestedChips || commercialResponse?.suggestedChips || [], 'Eksik bilgi ne?', 'commercial chips keep missing info');
-mustArrayContains(commercialResponse?.contextualSuggestedChips || commercialResponse?.suggestedChips || [], 'Ödeme hesabı var mı?', 'commercial chips keep payment account');
-mustArrayContains(commercialResponse?.contextualSuggestedChips || commercialResponse?.suggestedChips || [], 'Komisyon durumu ne?', 'commercial chips keep commission');
-mustArrayContains(commercialResponse?.contextualSuggestedChips || commercialResponse?.suggestedChips || [], 'Hakediş önizlemesini aç', 'commercial chips keep preview');
+mustArrayContains(commercialResponse?.contextualSuggestedChips || commercialResponse?.suggestedChips || [], 'Talep durumu', 'commercial chips keep the current safe follow-up');
+mustArrayContains(commercialResponse?.contextualSuggestedChips || commercialResponse?.suggestedChips || [], 'Teklif filtresi', 'commercial chips keep the current safe filter follow-up');
+mustArrayContains(commercialResponse?.contextualSuggestedChips || commercialResponse?.suggestedChips || [], 'Tedarikçi dönüşü', 'commercial chips keep the current safe supplier follow-up');
+mustArrayContains(commercialResponse?.contextualSuggestedChips || commercialResponse?.suggestedChips || [], 'Seçili teklif', 'commercial chips keep the current selected-offer follow-up');
 mustArrayNotContains(commercialResponse?.contextualSuggestedChips || commercialResponse?.suggestedChips || [], 'Bunu sor', 'commercial chips avoid generic self-question');
 mustArrayNotContains(commercialResponse?.contextualSuggestedChips || commercialResponse?.suggestedChips || [], 'Aynı kayıt için devam et', 'commercial chips avoid generic continuation');
 mustArrayNotContains(commercialResponse?.contextualSuggestedChips || commercialResponse?.suggestedChips || [], 'Ekran rehberini aç', 'commercial chips avoid generic screen guide');

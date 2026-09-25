@@ -96,6 +96,31 @@ function assertNoForbiddenVisibleTerms(actual, label) {
   }
 }
 
+function hasAccessibleSuggestionsContract(source) {
+  const region = String(source || '').match(/<section className="copilotContextSuggestions"[\s\S]*?<\/section>/)?.[0] || '';
+  return Boolean(region)
+    && /suggestions\.length\s*\?\s*\(/.test(source)
+    && /className="copilotContextSuggestionsToggle"/.test(region)
+    && /aria-expanded=\{suggestionsOpen\}/.test(region)
+    && /aria-controls=\{suggestionPanelId\}/.test(region)
+    && /onClick=\{\(\) => setSuggestionsOpen\(\(previous\) => !previous\)\}/.test(region)
+    && /className="copilotSuggestionWrap" hidden=\{!suggestionsOpen\}/.test(region)
+    && /suggestions\.map\(\(chip, index\) =>[\s\S]*?onClick=\{\(\) => ask\(chip\)\}/.test(region);
+}
+
+function hasStarterHelperWiring(drawer, helper) {
+  return /import\s*\{\s*buildCopilotStarterChips\b/.test(drawer)
+    && /function buildSuggestions\([\s\S]*?return buildCopilotStarterChips\(/.test(drawer)
+    && /const suggestions = useMemo\(\(\) => buildSuggestions\(currentPath, selection, screenContext, me\)/.test(drawer)
+    && /export function buildCopilotStarterChips\s*\(/.test(helper);
+}
+
+function hasApprovedPersonelChipCopy(chips) {
+  const normalized = chipTextList(chips).map(normalize);
+  return normalized.includes(normalize('Son konum bilgisi ne zaman geldi?'))
+    && !normalized.includes(normalize('Son GPS ne zaman geldi?'));
+}
+
 console.log('=== UX-COPILOT-SMART-CHIPS-01 CHECK ===');
 
 const pkg = read('package.json');
@@ -121,11 +146,26 @@ must(guide, 'check:uxcopilotsmartchips01', 'script guide exposes check:uxcopilot
 must(auditDoc, 'UX-COPILOT-SMART-CHIPS-01 starter chip polish', 'audit doc keeps smart chips note');
 must(drawerSource, 'buildCopilotStarterChips', 'drawer uses starter chip helper');
 must(drawerSource, 'copilotSuggestionWrap', 'drawer renders starter chip wrap');
-must(drawerSource, 'messages.length === 0', 'drawer shows starter chips in empty state');
-must(drawerSource, 'showSuggestions && messages.length > 0', 'drawer keeps optional suggestions separate');
+if (hasAccessibleSuggestionsContract(drawerSource)) ok('drawer exposes an accessible collapsible suggestion region');
+else fail('drawer exposes an accessible collapsible suggestion region');
+if (hasStarterHelperWiring(drawerSource, helperSource)) ok('current starter helper feeds route-aware drawer suggestions');
+else fail('current starter helper feeds route-aware drawer suggestions');
 mustNot(drawerSource, 'askRef.current("");', 'drawer does not auto-ask on empty open');
 mustNot(drawerSource, 'if (!messages.length) askRef.current("");', 'drawer does not auto-ask on empty open');
 must(helperSource, 'export function buildCopilotStarterChips', 'copilot facts exports starter chip helper');
+
+const suggestionsRegionRemoved = drawerSource.replace(/\{suggestions\.length\s*\?\s*\([\s\S]*?<\/section>\s*\)\s*:\s*null\}/, '');
+if (!hasAccessibleSuggestionsContract(suggestionsRegionRemoved)) ok('negative control rejects a missing suggestions region');
+else fail('negative control rejects a missing suggestions region');
+const starterHelperDisconnected = drawerSource.replace('return buildCopilotStarterChips({', 'return [];');
+if (!hasStarterHelperWiring(starterHelperDisconnected, helperSource)) ok('negative control rejects a disconnected starter helper');
+else fail('negative control rejects a disconnected starter helper');
+const suggestionsCannotOpen = drawerSource.replace(
+  'onClick={() => setSuggestionsOpen((previous) => !previous)}',
+  'onClick={() => setSuggestionsOpen(false)}',
+);
+if (!hasAccessibleSuggestionsContract(suggestionsCannotOpen)) ok('negative control rejects permanently inaccessible suggestions');
+else fail('negative control rejects permanently inaccessible suggestions');
 
 const { buildCopilotStarterChips } = await import(pathToFileURL(path.join(root, 'web/src/utils/copilotFacts.js')).href);
 
@@ -188,10 +228,10 @@ const companyAgreements = buildCopilotStarterChips({
   },
 });
 assertExactChips(companyAgreements, [
-  'Lisans ücreti var mı?',
-  'Bu sözleşmeden SeferPakt pay alacak mı?',
-  'Mevcut sözleşmeden pay alınır mı?',
-  'Başarı payı neden 0 görünüyor?',
+  'Sözleşme ödeme modeli nedir?',
+  'Ödeme hazırlığı hangi aşamada?',
+  'Bu sözleşmenin kaynak durumu ne?',
+  'Ödeme hesabı hazır mı?',
 ], 'company agreements starter chips');
 assertNoForbiddenVisibleTerms(companyAgreements, 'company agreements starter chips');
 
@@ -206,7 +246,7 @@ const companyCommercial = buildCopilotStarterChips({
 assertExactChips(companyCommercial, [
   'Bu hakediş neden hazır değil?',
   'Ödeme hesabı eksik mi?',
-  'Komisyon durumu ne?',
+  'Ödeme hazırlığı hangi aşamada?',
   'Hakediş önizlemesini açıkla',
 ], 'commercial core starter chips');
 assertNoForbiddenVisibleTerms(companyCommercial, 'commercial core starter chips');
@@ -224,11 +264,16 @@ const personelLiveSelected = buildCopilotStarterChips({
 });
 assertExactChips(personelLiveSelected, [
   'Servis neden görünmüyor?',
-  'Son GPS ne zaman geldi?',
+  'Son konum bilgisi ne zaman geldi?',
+  'Sürücünün telefonundan konum sinyali devrede mi?',
   'Araç nerede?',
-  'Sürücünün telefon GPS’i devrede mi?',
 ], 'personel live selected service starter chips');
 assertNoForbiddenVisibleTerms(personelLiveSelected, 'personel live selected service starter chips');
+if (hasApprovedPersonelChipCopy(personelLiveSelected)) ok('personel starter chips use the approved location wording');
+else fail('personel starter chips use the approved location wording');
+const stalePersonelChipCopy = personelLiveSelected.map((chip) => chip === 'Son konum bilgisi ne zaman geldi?' ? 'Son GPS ne zaman geldi?' : chip);
+if (!hasApprovedPersonelChipCopy(stalePersonelChipCopy)) ok('negative control rejects the stale PERSONEL GPS chip copy');
+else fail('negative control rejects the stale PERSONEL GPS chip copy');
 
 const personelLiveNoService = buildCopilotStarterChips({
   screenPath: '/personel/live',

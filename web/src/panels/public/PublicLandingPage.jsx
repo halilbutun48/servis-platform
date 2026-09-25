@@ -80,16 +80,16 @@ const TRUST_ITEMS = [
 
 const FAQ = [
   {
-    q: "Lisans ücreti var mı?",
-    a: "Hayır. Public modelde lisans ücreti yok; mevcut sözleşmelerden pay alınmaz. Yeni/yenilenen SeferPakt kaynaklı işlerde yalnızca kaliteye bağlı salt okunur başarı payı önizlenebilir.",
+    q: "SeferPakt ödeme modeli nedir?",
+    a: "SeferPakt bu ürün modelinde ek pay almaz; sözleşme ve ödeme hazırlığı ayrı okunur.",
   },
   {
     q: "Mevcut sözleşmelerden pay alınıyor mu?",
-    a: "Hayır. Mevcut, manuel, pilot, legacy veya kaynak zinciri belirsiz sözleşmeler başarı payı doğurmaz.",
+    a: "Hayır. Mevcut veya yeni sözleşmelerde SeferPakt ek payı hesaplanmaz.",
   },
   {
-    q: "SeferPakt başarı payı ne zaman doğar?",
-    a: "Yalnızca kaynak vardiya / market zinciri kanıtlı yeni veya yenilenen SeferPakt işlerinde, politika bazlı salt okunur önizleme olarak görünür.",
+    q: "Sözleşme ve ödeme bilgileri nasıl okunur?",
+    a: "Sözleşme tutarı, kaynak bilgisi ve ödeme hazırlığı ayrı sinyaller olarak gösterilir; kullanıcı onayı olmadan tahsilat veya ödeme işlemi başlatılmaz.",
   },
   {
     q: "Sefer Abi otomatik işlem yapar mı?",

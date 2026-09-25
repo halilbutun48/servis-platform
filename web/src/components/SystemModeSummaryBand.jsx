@@ -18,7 +18,7 @@ export default function SystemModeSummaryBand({
         <span className="system-mode-summary-chip">Kalite taslak modda</span>
         <span className="system-mode-summary-chip">Ödeme kapalı</span>
         <span className="system-mode-summary-chip">Hakediş kapalı</span>
-        <span className="system-mode-summary-chip">Komisyon kapalı</span>
+        <span className="system-mode-summary-chip">Ödeme hazırlığı</span>
         <span className="system-mode-summary-chip">Saha testi bekliyor</span>
       </div>
 

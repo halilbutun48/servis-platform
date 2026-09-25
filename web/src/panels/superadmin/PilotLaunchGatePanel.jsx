@@ -466,7 +466,7 @@ export default function PilotLaunchGatePanel() {
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <SummaryCard title="Hazır vardiya" value={String(prepCounters.readyShifts || 0)} note="Yakın penceredeki kabul edilen / aktif vardiyalar" />
             <SummaryCard title="Aktif araç" value={String(prepCounters.activeVehicles || 0)} note="Sahaya çıkabilecek aktif araç sayısı" />
-            <SummaryCard title="Driver kullanıcı" value={String(prepCounters.driverUsers || 0)} note="Mobil tur için giriş yapabilecek sürücü hesabı" />
+            <SummaryCard title="Sürücü hesabı" value={String(prepCounters.driverUsers || 0)} note="Mobil tur için giriş yapabilecek sürücü hesabı" />
             <SummaryCard title="Aktif sözleşme" value={String(prepCounters.activeAgreements || 0)} note="Operasyonla ilişkili aktif / kabul edilen sözleşme görünürlüğü" />
           </div>
         </div>
@@ -685,9 +685,9 @@ export default function PilotLaunchGatePanel() {
         <Row title="Kabul özetleri" text={acceptanceSummary} />
         <Row title="Gözlemleme sağlık özeti" text={healthSummaryText} />
         <Row title="Sürüm / cihaz uygunluk özeti" text={buildText} />
-        <Row title="M84 bloklar" text={(feedbackPacket?.blockers || []).join(" • ") || "Aktif kritik saha bloğu görünmüyor."} />
-        <Row title="M84 uyarılar" text={(feedbackPacket?.warnings || []).join(" • ") || "Tekrarlayan uyarı görünmüyor."} />
-        <Row title="M84 notları" text={(feedbackPacket?.notes || []).join(" • ") || "Henüz M84 notu yok."} />
+        <Row title="Saha kabul blokları" text={(feedbackPacket?.blockers || []).join(" • ") || "Aktif kritik saha bloğu görünmüyor."} />
+        <Row title="Saha kabul uyarıları" text={(feedbackPacket?.warnings || []).join(" • ") || "Tekrarlayan uyarı görünmüyor."} />
+        <Row title="Saha kabul notları" text={(feedbackPacket?.notes || []).join(" • ") || "Henüz saha kabul notu yok."} />
       </TabPanel>
     </div>
   );

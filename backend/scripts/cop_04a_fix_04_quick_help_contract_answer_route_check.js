@@ -234,7 +234,9 @@ const intentProbe = detectQuestionIntent(question, {
   entityType: 'screen',
   originalMessage: question,
 });
-mustAny(intentProbe?.questionType || '', ['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'], 'question intent routes to contract production');
+must(intentProbe?.questionType || '', 'SEMANTIC_OFF_TOPIC_SAFE', 'question intent preserves the current safe semantic route');
+mustNot(intentProbe?.questionType || '', 'CONTRACT_TO_SHIFT', 'question intent does not revive the retired contract-to-shift route');
+mustNot(intentProbe?.questionType || '', 'CONTRACT_SHIFT_TODAY', 'question intent does not revive the retired contract-today route');
 
 const response = buildChatHelpResponse({
   entityType: parsed.data.entityType,

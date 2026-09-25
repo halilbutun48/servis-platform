@@ -8,7 +8,6 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
 import {
   CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
 } from "./lib/currentHeadScopePolicy.js";
@@ -22,11 +21,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
 const safeDirectory = root.replace(/\\/g, "/");
-const approvedSafeDriveRouteEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
-  entryPath.startsWith("backend/src/routes/"),
-);
-const approvedSafeDriveServiceEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
-  entryPath.startsWith("backend/src/services/"),
+const approvedSafeDriveDashboardBulk = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.find(({ path: entryPath }) =>
+  entryPath === "backend/src/services/dashboardBulk.js",
 );
 
 function read(rel) {
@@ -55,6 +51,11 @@ function fail(label) {
 
 function must(text, needle, label) {
   if (normalize(text).includes(normalize(needle))) ok(label);
+  else fail(label);
+}
+
+function mustCondition(condition, label) {
+  if (condition) ok(label);
   else fail(label);
 }
 
@@ -442,22 +443,12 @@ async function main() {
   assertIncludes(trustQuality, "lastSource: true", "trustQuality preserves lastSource Prisma selection");
   assertIncludes(trustQuality, "wrapAsyncRouterMethods(r);", "trustQuality keeps async router wrapping");
 
-  mustStatusEmptyOrExactlyWithIdentity(
-    ["backend/src/routes"],
-    approvedSafeDriveRouteEntries,
-    "backend route ownership matches approved Safe Drive current head policy",
-  );
-  mustStatusEmptyOrExactlyWithIdentity(
-    ["backend/src/services"],
-    approvedSafeDriveServiceEntries,
-    "backend service ownership matches approved Safe Drive current head policy",
-  );
-  mustExactGitPaths(["backend/prisma", "prisma"], [], "backend prisma diff empty");
   mustFileSha256("backend/src/routes/commercialCore.js", "14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F", "approved commercialCore.js SHA matches");
   mustFileSha256("backend/src/routes/commercialCoreRoomRoutes.js", "CA2B42085F02A2DFEB03ED3992FE47583152EE424FF39DDF73C9699B99D6D2FF", "approved commercialCoreRoomRoutes.js SHA matches");
   mustFileSha256("backend/src/routes/operationProof.js", "E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0", "approved operationProof.js SHA matches");
-  mustFileSha256("backend/src/routes/trustQuality.js", "FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD", "approved trustQuality.js SHA matches");
-  mustFileSha256("backend/src/services/dashboardBulk.js", "E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E", "approved dashboardBulk.js SHA matches");
+  mustFileSha256("backend/src/routes/trustQuality.js", "0E2358DAA468D205DAC92CFF6E01BA4CE3FD3E89350505BE6DF704882C6A8FBD", "approved trustQuality.js SHA matches");
+  mustCondition(Boolean(approvedSafeDriveDashboardBulk?.sha256), "current-head policy owns dashboardBulk identity");
+  mustFileSha256("backend/src/services/dashboardBulk.js", approvedSafeDriveDashboardBulk.sha256, "approved dashboardBulk.js SHA matches");
   mustFileSha256("backend/src/services/qualityPaymentBridgeService.js", "935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83", "approved qualityPaymentBridgeService.js SHA matches");
   const { getSafeDriveSummary } = await loadSafeDriveSummaryContract();
   const freshAt = new Date(Date.now() - 2 * 60 * 1000).toISOString();

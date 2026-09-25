@@ -140,10 +140,10 @@ mustAny(doc, [
   'web/src/panels/school/OperationsPanel.jsx',
 ], 'audit doc keeps representative panel inventory references');
 
-must(copilotPanel, 'selectedSummary', 'CopilotPanel keeps selectedSummary bridge');
-must(copilotPanel, 'selectedFields', 'CopilotPanel keeps selectedFields bridge');
-must(copilotPanel, 'selectedBadges', 'CopilotPanel keeps selectedBadges bridge');
-must(copilotPanel, 'structuredFacts', 'CopilotPanel keeps structuredFacts bridge');
+must(copilotPanel, 'requestSelection', 'CopilotPanel keeps canonical selection bridge');
+must(copilotPanel, 'selectedEntityType: requestSelection?.entityType', 'CopilotPanel keeps selected entity-type bridge');
+must(copilotPanel, 'selectedEntityId: Number(requestSelection?.entityId', 'CopilotPanel keeps selected entity-id bridge');
+must(copilotPanel, 'captureCopilotUiSurface', 'CopilotPanel keeps the canonical UI-surface bridge');
 must(copilotPanel, 'screenContext', 'CopilotPanel keeps screenContext bridge');
 must(copilotSelection, 'setCopilotSelection', 'copilot selection store keeps setter');
 must(copilotSelection, 'readCopilotSelection', 'copilot selection store keeps reader');

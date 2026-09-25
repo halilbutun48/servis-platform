@@ -27,7 +27,7 @@ const financeOwnedRouteEntries = Object.freeze(
   CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => financeOwnedRoutePaths.has(path))
 );
 const concurrentRuntimeRouteEntries = Object.freeze([
-  { path: 'backend/src/routes/trustQuality.js', sha256: 'FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD' },
+  { path: 'backend/src/routes/trustQuality.js', sha256: '0E2358DAA468D205DAC92CFF6E01BA4CE3FD3E89350505BE6DF704882C6A8FBD' },
   { path: 'backend/src/routes/admin.js', sha256: '61A3D7CF98653E6E413E787BCBFD9D8DD9AECE77A7663DCA78E9CE446D2C5DA4' },
   { path: 'backend/src/routes/agreements.js', sha256: '90CED5678F26B47AE69CE985D6D436B70DF8886B523ECA8988E51BE53ECD2B9A' },
   { path: 'backend/src/routes/auth.js', sha256: 'A137B997660215DBD2C5E8AA24593BD96F319CF784322C65D3628B8C9F4AACF3' },

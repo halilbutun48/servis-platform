@@ -119,6 +119,14 @@ async function visit(browser, { name, identifier, route, contextualHome, scenari
   if (contextualHome) await body.getByText(contextualHome, { exact: true }).first().waitFor({ state: "visible", timeout: 20000 });
   if (scenarioTestId) {
     const scenario = page.getByTestId(scenarioTestId);
+    await scenario.waitFor({ state: "attached", timeout: 20000 });
+    for (let attempt = 0; attempt < 3 && !(await scenario.isVisible()); attempt += 1) {
+      const disclosure = scenario.locator("xpath=ancestor::details[1]");
+      if (await disclosure.count() && !(await disclosure.evaluate((node) => node.open))) {
+        await disclosure.locator(":scope > summary").click({ force: true });
+      }
+      await page.waitForTimeout(500);
+    }
     await scenario.waitFor({ state: "visible", timeout: 20000 });
   }
   const pageText = await body.innerText();
@@ -131,9 +139,21 @@ async function visit(browser, { name, identifier, route, contextualHome, scenari
   if (name === "COMPANY" || name === "ROOM") record(`${name} separate scenario nav absent`, !navText.includes("Maliyet Senaryoları"));
 
   const copilotFab = page.getByRole("button", { name: /Sefer Abi’ye Sor/i });
+  await copilotFab.waitFor({ state: "visible", timeout: 20000 });
   await copilotFab.click();
   const composer = page.locator(".copilotComposer");
-  await composer.waitFor({ state: "visible", timeout: 10000 });
+  // React can finish the role shell one paint after the FAB click on a fresh
+  // page.  Keep this bounded to the real composer and retry only if the first
+  // click did not open it; a second click on an already-open drawer would
+  // close it and hide a genuine UI regression.
+  try {
+    await composer.waitFor({ state: "visible", timeout: 10000 });
+  } catch (error) {
+    if (await composer.isVisible().catch(() => false)) throw error;
+    await page.waitForTimeout(750);
+    await copilotFab.click();
+    await composer.waitFor({ state: "visible", timeout: 10000 });
+  }
   for (const item of messages) {
     const assistant = await askInDrawer(page, item.message, item.screenshotKey);
     const reasoningText = await assistant.innerText();

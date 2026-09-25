@@ -24,7 +24,11 @@ The engineering principle is **İÇERİDE GÜÇLÜ / DIŞARIDA BASİT**: canonic
 
 ## Current frontier
 
-At the current repository frontier, #1–#14 and #16 are closed according to the current milestone evidence; #17 is the active role-based navigation/task-home milestone and #15 remains next/not started. The canonical gap disposition is in [the #14 gap register](PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_GAP_REGISTER.json): six discovered gaps, one fixed in #14, five deferred to their locked owners, and no unresolved blocker or critical.
+### PRE-#18 immutable closure
+
+PRE-#18 acceptance and the No-Surprise Repository Exit are GREEN at the current frontier. The final terminology / Sefer Abi residual and bounded public-runtime recheck are closed (`PUBLIC_RUNTIME_CURRENT_SOURCE_MATCH = PASS`, visible missing/unknown/weak raw-status counts `0`). `487/487` repository-owned candidates are classified with no unexplained state. `#18` has not started; this is the exact immutable closure stage, and proven-closed work is reopened only for concrete newer regression evidence.
+
+At the current repository frontier, #1–#14 and #16 are closed according to the current milestone evidence; #17 remains the role-based navigation/task-home owner and #15 remains a locked future owner. PRE-#18 acceptance and documentation/SSOT reconciliation are green at the current HEAD: `verify:repo` and `verify:final` pass, KVKK is `262/262`, role/data isolation is `216/216`, and active/product unowned is `0`. Foundation Exit is `GREEN PRESERVED`, ROOM/OTHER423 is `PROVEN_CLOSED`, and the No-Surprise Repository Exit classification is green. PRE-#18 is `FINAL CLOSURE READY`; #18 is not started. The canonical gap disposition is in [the #14 gap register](PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_GAP_REGISTER.json): six discovered gaps, one fixed in #14, five deferred to their locked owners, and no unresolved blocker or critical.
 
 Future ownership is explicit: #15 terminology sweep, #18 UI anchors, #19 natural-language form preparation, #20 optimizer/disruption recovery, #21 safe actions, #22–#29 voice, #30–#33 proactive/autopilot, #35/#38 production security, #36 physical-device proof, and #38 production hardening are not current implementation claims. #17’s current navigation/task-home and single Sefer Abi entry are documented in [the #17 owner map](ROLE_BASED_SIMPLE_NAVIGATION_AND_TASK_HOME_01.md); its future boundaries remain explicitly excluded.
 

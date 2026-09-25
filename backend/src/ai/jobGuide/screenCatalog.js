@@ -1,5 +1,5 @@
 import { pickTerms } from "./glossary.js";
-import { button, inferGuideKeyFromScreen, screen } from "./screenCatalog.shared.js";
+import { button, screen } from "./screenCatalog.shared.js";
 import { COMPANY, ROOM } from './screenCatalog.roomCompany.js';
 
 // Copilot role/task matrix route anchors:
@@ -11,15 +11,6 @@ import { COMPANY, ROOM } from './screenCatalog.roomCompany.js';
 // /parent/live
 // /school/operations
 // /organization/operations
-
-function firstNonEmpty(...values) {
-  for (const value of values) {
-    if (value == null) continue;
-    const text = String(value).trim();
-    if (text) return text;
-  }
-  return '';
-}
 
 const SCHOOL = COMPANY.map((x) => ({
   ...x,
@@ -215,22 +206,6 @@ function roleLabelForKey(key) {
   if (key === 'ORGANIZATION') return 'Organizasyon';
   if (key === 'SUPER_ADMIN') return 'Süper Yönetici';
   return key;
-}
-
-function buildSafeUnknownScreenDefinition(user, screenContext = {}, entityId = null) {
-  const roleKey = resolveRoleGuideKey(user, screenContext);
-  const rawPath = String(screenContext?.path || '').split('?')[0] || '';
-  const fallbackId = entityId != null ? Number(entityId) : (screenContext?.entityId != null ? Number(screenContext.entityId) : null);
-  return {
-    type: 'screen',
-    id: Number.isFinite(fallbackId) ? fallbackId : null,
-    roleKey,
-    roleLabel: roleLabelForKey(roleKey),
-    label: firstNonEmpty(screenContext?.label, 'Bu ekran'),
-    path: rawPath,
-    menuPurpose: 'Bu ekran için detaylı rehber henüz katalogda yok; görünen başlık ve panel bilgisine göre yardımcı olabilirim.',
-    isSafeFallback: true,
-  };
 }
 
 const DRIVER = [
@@ -587,7 +562,7 @@ const SUPER_ADMIN = [
       { label: 'Güven ve Kalite', path: '/superadmin/trust-quality', reason: 'Kalite sinyalini birlikte okumak için.' },
       { label: 'Loglar', path: '/shared/logs', reason: 'Hakediş önizleme hareketini karşılaştırmak için.' },
     ],
-    chatQuestions: ['Bu hakediş neden hazır değil?', 'Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?'],
+    chatQuestions: ['Bu hakediş neden hazır değil?', 'Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Ödeme hazırlığı hangi aşamada?'],
   }),
   screen(6114, '/superadmin/regions', 'İller ve Bölgeler', {
     menuPurpose: 'Bölge, kapsam ve atama sınırlarını görmek için kullanılır.',
@@ -695,55 +670,83 @@ const SUPER_ADMIN = [
 
 const SCREEN_CATALOG = { ROOM, COMPANY, SCHOOL, ORGANIZATION, DRIVER, PERSONEL, PARENT, SUPER_ADMIN };
 
-export function resolveRoleGuideKey(user, screenContext = {}) {
-  const hinted = inferGuideKeyFromScreen(screenContext);
-  if (hinted) return hinted;
-  const role = String(user?.role || '');
+export function resolveRoleGuideKey(user) {
+  const role = String(user?.role || '').toUpperCase();
   if (role === 'COMPANY') {
     const kind = String(user?.companyKind || '').toUpperCase();
     if (kind === 'SCHOOL') return 'SCHOOL';
     if (kind === 'ORGANIZATION') return 'ORGANIZATION';
     return 'COMPANY';
   }
-  return role || 'ROOM';
+  return role || '';
 }
 
-export function listScreensForUser(user, screenContext = {}) {
-  const key = resolveRoleGuideKey(user, screenContext);
+function catalogEntriesForAuthenticatedUser(user) {
+  const effectiveRoleKey = resolveRoleGuideKey(user);
+  if (!effectiveRoleKey) return [];
+  if (effectiveRoleKey !== 'SUPER_ADMIN') {
+    return (SCREEN_CATALOG[effectiveRoleKey] || []).map((entry) => ({ entry, catalogRoleKey: effectiveRoleKey }));
+  }
+  const seen = new Set();
+  return Object.entries(SCREEN_CATALOG)
+    .flatMap(([catalogRoleKey, entries]) => entries.map((entry) => ({ entry, catalogRoleKey })))
+    .filter(({ entry }) => {
+      const key = `${entry.id}|${entry.path}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function withAuthenticatedRole(entry, effectiveRoleKey, catalogRoleKey) {
+  if (!entry || !effectiveRoleKey) return null;
+  return {
+    type: 'screen',
+    id: Number(entry.id || 0),
+    roleKey: effectiveRoleKey,
+    roleLabel: roleLabelForKey(effectiveRoleKey),
+    catalogRoleKey,
+    ...entry,
+  };
+}
+
+export function resolveAuthorizedScreenContext(user, screenContext = {}, entityId = null) {
+  const effectiveRoleKey = resolveRoleGuideKey(user);
+  const entries = catalogEntriesForAuthenticatedUser(user);
+  const rawPath = String(screenContext?.path || '');
+  const requestedId = entityId != null ? Number(entityId) : Number(screenContext?.id || screenContext?.entityId || 0);
+  if (!effectiveRoleKey) return { status: 'UNAUTHORIZED', effectiveRoleKey: '', screen: null };
+  if (rawPath) {
+    const found = entries.find(({ entry }) => entry.path === rawPath) || null;
+    return {
+      status: found ? 'FOUND' : 'UNKNOWN',
+      effectiveRoleKey,
+      screen: found ? withAuthenticatedRole(found.entry, effectiveRoleKey, found.catalogRoleKey) : null,
+    };
+  }
+  if (Number.isInteger(requestedId) && requestedId > 0) {
+    const matches = entries.filter(({ entry }) => Number(entry.id) === requestedId);
+    const found = matches.length === 1 ? matches[0] : null;
+    return {
+      status: found ? 'FOUND' : 'UNKNOWN',
+      effectiveRoleKey,
+      screen: found ? withAuthenticatedRole(found.entry, effectiveRoleKey, found.catalogRoleKey) : null,
+    };
+  }
+  return { status: 'EMPTY', effectiveRoleKey, screen: null };
+}
+
+export function listScreensForUser(user) {
+  const key = resolveRoleGuideKey(user);
   return (SCREEN_CATALOG[key] || []).map((x) => ({ id: x.id, path: x.path, label: x.label }));
 }
 
 export function getScreenDefinitionForUser(user, screenContext = {}, entityId = null) {
-  const key = resolveRoleGuideKey(user, screenContext);
-  const list = SCREEN_CATALOG[key] || [];
-  const rawPath = String(screenContext?.path || '').split('?')[0] || '';
-  const foundByPath = rawPath ? list.find((x) => x.path === rawPath) || null : null;
-  if (foundByPath) {
-    return {
-      type: 'screen',
-      id: Number(foundByPath.id || 0),
-      roleKey: key,
-      roleLabel: roleLabelForKey(key),
-      ...foundByPath,
-    };
-  }
-  if (!rawPath && entityId != null) {
-    const foundById = list.find((x) => Number(x.id) === Number(entityId)) || null;
-    if (foundById) {
-      return {
-        type: 'screen',
-        id: Number(foundById.id || 0),
-        roleKey: key,
-        roleLabel: roleLabelForKey(key),
-        ...foundById,
-      };
-    }
-  }
-  return buildSafeUnknownScreenDefinition(user, screenContext, entityId);
+  return resolveAuthorizedScreenContext(user, screenContext, entityId).screen;
 }
 
-export function buildRoleHelpSummary(user, screenContext = {}) {
-  const key = resolveRoleGuideKey(user, screenContext);
+export function buildRoleHelpSummary(user, _screenContext = {}) {
+  const key = resolveRoleGuideKey(user);
   const list = SCREEN_CATALOG[key] || [];
   const first = list[0] || null;
   return {

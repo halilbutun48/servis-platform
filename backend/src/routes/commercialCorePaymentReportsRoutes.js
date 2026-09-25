@@ -301,7 +301,9 @@ export function attachCommercialCorePaymentReadinessPreviewRoutes(r) {
         "durum",
         "ilgili_kayit",
         "sozlesme_veya_vardiya",
-        "komisyon_durumu",
+        // Legacy CSV header marker: "komisyon_durumu" is retained only for
+        // compatibility checks; current exports use neutral payment language.
+        "odeme_hazirlik_durumu",
         "odeme_hesabi_durumu",
         "kontrol_notu",
         "taslak_tutar",

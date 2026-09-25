@@ -178,7 +178,7 @@ export default function CompanyCheckinPanel() {
           <div>
             <h3 style={{ margin: 0 }}>{me?.companyKind === "SCHOOL" ? "Öğrenci / Personel biniş kayıtları" : "Personel biniş kayıtları"}</h3>
             <div className="muted" style={{ marginTop: 6 }}>
-              M42 isteğe bağlı paneli: vardiya içi kişi listesi üzerinden QR/NFC erişim kodu üret, iptal et ve canlı biniş/iniş olaylarını izle.
+              İsteğe bağlı özellik: vardiya içi kişi listesi üzerinden QR/NFC erişim kodu üret, iptal et ve canlı biniş/iniş olaylarını izle.
             </div>
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -241,7 +241,7 @@ export default function CompanyCheckinPanel() {
         <div className="card" style={{ overflowX: "auto" }}>
           <h3 style={{ marginTop: 0 }}>Vardiya kişileri</h3>
           <div className="muted" style={{ marginBottom: 10 }}>
-            QR/NFC üretimi seçili vardiyadaki kişi listesiyle sınırlı tutulur. Token yalnızca üretildiği anda görünür. QR çıktısı da aynı kartta gösterilir.
+            QR/NFC üretimi seçili vardiyadaki kişi listesiyle sınırlı tutulur. Erişim kodu yalnızca üretildiği anda görünür. QR çıktısı da aynı kartta gösterilir.
           </div>
           <table className="tbl" style={{ whiteSpace: "nowrap" }}>
             <thead>

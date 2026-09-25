@@ -209,8 +209,8 @@ function buildMapModel(request = null, preview = null) {
     oldStopLabel: firstText(preview?.oldStopLabel, getStopLabel(currentPoint, "")),
     newStopLabel: firstText(preview?.newStopLabel, getStopLabel(requestedPoint, "")),
     routeNote: routePoints.length >= 2
-      ? "Leaflet mini-harita: rota çizgisi ve duraklar tile arka plan üzerinde gösterilir."
-      : "Leaflet mini-harita: koordinat varsa tekil nokta tile arka planında gösterilir.",
+      ? "Mini harita: rota çizgisi ve duraklar harita üzerinde gösterilir."
+      : "Mini harita: koordinat varsa konum harita üzerinde gösterilir.",
     legendItems: routePoints.length > 1
       ? [
         { label: "S", text: "Başlangıç" },

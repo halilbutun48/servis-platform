@@ -260,6 +260,7 @@ export default function FinancialOperationsCompanyPreview({
 
   return (
     <PanelChrome
+      className="pre18-finance-surface pre18-finance-company"
       title={meta.title}
       subtitle={meta.subtitle}
       actions={(
@@ -344,15 +345,14 @@ export default function FinancialOperationsCompanyPreview({
         )}
       </div>
 
-      {externalReferenceCard}
-
-      {scenarioPanel ? (
-        <div data-testid="company-contextual-scenario">
-          {scenarioPanel}
+      <details className="card pre18-finance-secondary" style={{ marginTop: 12 }}>
+        <summary className="panelSectionTitle">Karşılaştırma, senaryo ve dışa aktarım</summary>
+        <div style={{ display: "grid", gap: 12 }}>
+          {externalReferenceCard}
+          {scenarioPanel ? <div data-testid="company-contextual-scenario">{scenarioPanel}</div> : null}
+          {accountingExportPanel}
         </div>
-      ) : null}
-
-      {accountingExportPanel}
+      </details>
 
       <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
         <details className="card" style={{ minWidth: 0 }} open={budgetDetailsOpen} onToggle={(event) => setBudgetDetailsOpen(event.currentTarget.open)}>

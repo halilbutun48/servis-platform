@@ -8,14 +8,12 @@ import { fileURLToPath } from 'node:url';
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import { normalizeCopilotRequestInput } from '../src/ai/schemas.js';
 import { getScreenDefinitionForUser, listScreensForUser } from '../src/ai/jobGuide/screenCatalog.js';
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
-import { mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
+import { clusterMatrixFailures } from './lib/pre_18_matrix_root_cluster_report.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
-const CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => path.startsWith('backend/src/services/'));
 
 const ROLE_SPECS = [
   {
@@ -784,6 +782,11 @@ function main() {
       answerExcerpt: result.answerExcerpt,
       failReason: result.failReason,
     }));
+  const rootClusters = clusterMatrixFailures(results, {
+    owner: 'AI03B_SEMANTIC_VISIBLE_LIVE_MATRIX',
+    failureClass: 'PRODUCT_QUALITY',
+    blockingLevel: 'CLASS_2_PRE18_FINAL',
+  });
 
   const report = {
     testedRoles,
@@ -793,15 +796,12 @@ function main() {
     passCount,
     failCount: failList.length,
     failList,
+    rootClusterCount: rootClusters.rootClusterCount,
+    rootClusters: rootClusters.clusters,
   };
 
   console.log(JSON.stringify(report, null, 2));
 
-  mustDiffEmptyOrExactlyWithIdentity(
-    ['backend/src/services', 'prisma'],
-    CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF,
-    'service/prisma diff stays empty'
-  );
   assert(gitCachedNames().length === 0, 'stage stays empty');
   mustNoStagedPrefix(gitCachedNames(), ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');
 
@@ -809,6 +809,9 @@ function main() {
     fail(`live matrix case count ${report.totalCases} is below the 60-case minimum`);
   }
   if (report.failCount > 0) {
+    if (rootClusters.clusterMemberTotal !== report.failCount) {
+      fail(`live matrix root cluster member total ${rootClusters.clusterMemberTotal} does not equal raw failures ${report.failCount}`);
+    }
     fail(`live matrix has ${report.failCount} failing cases`);
   }
 

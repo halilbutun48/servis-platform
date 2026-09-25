@@ -11,7 +11,10 @@ import {
   CANONICAL_PROVENANCE_REGISTRY_ID,
   CANONICAL_PROVENANCE_REGISTRY_VERSION,
 } from "./lib/canonicalProvenanceRegistry.js";
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
+import {
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+  CURRENT_HEAD_COMMERCIAL_SPLIT_ROUTE_IDENTITY,
+} from "./lib/currentHeadScopePolicy.js";
 import { gitExec, gitStatusEntries } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,7 +25,7 @@ const REQUEST_URL_PATH = "backend/src/lib/requestUrl.js";
 const REQUIRED_CANONICAL_PATHS = Object.freeze([...CANONICAL_PROVENANCE_PATHS]);
 const REQUEST_URL_RECORD = CANONICAL_PROVENANCE_RECORDS.find((record) => record.path === REQUEST_URL_PATH) ?? null;
 const APPROVED_CURRENT_HEAD_MAP = new Map(
-  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.map((entry) => [
+  [...CURRENT_HEAD_COMMERCIAL_SPLIT_ROUTE_IDENTITY, ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF].map((entry) => [
     normalizePath(entry.path),
     String(entry.sha256 || "").trim().toUpperCase(),
   ])

@@ -399,8 +399,8 @@ export default function ObservabilityPanel() {
           <Card title="Kısa yorum" wide>
             <div className="panelBody">Bu ekran canlı sağlık, risk ve son olayları tek yerde okutur.</div>
             <ul className="panelMeta" style={{ marginTop: 8, paddingLeft: 18 }}>
-              {overviewBullets.map((item) => (
-                <li key={item}>{item}</li>
+              {overviewBullets.map((item, index) => (
+                <li key={`overview:${index}`}>{item}</li>
               ))}
             </ul>
           </Card>
@@ -410,7 +410,7 @@ export default function ObservabilityPanel() {
               {readableAdminText(queueIncident?.title || "Kuyruk alarmı yok")} • {technicalStateLabel(queueAlarm?.alarmLevel || "OK")}
             </div>
             <ul className="panelMeta" style={{ marginTop: 8, paddingLeft: 18 }}>
-              {riskBullets.length ? riskBullets.map((item) => <li key={item}>{item}</li>) : <li>Ek risk notu yok.</li>}
+              {riskBullets.length ? riskBullets.map((item, index) => <li key={`risk:${index}`}>{item}</li>) : <li>Ek risk notu yok.</li>}
             </ul>
           </Card>
           <Card title="Sıradaki doğru kontrol" wide>
@@ -522,7 +522,7 @@ export default function ObservabilityPanel() {
             <div className="panelMeta">Henüz olay türü tanımı yok.</div>
           ) : (
             <ul style={{ margin: 0, paddingLeft: 18 }} className="panelMeta">
-              {eventTypes.map((item) => <li key={item}>{eventTypeLabel(item)}</li>)}
+              {eventTypes.map((item, index) => <li key={`event-type:${index}`}>{eventTypeLabel(item)}</li>)}
             </ul>
           )}
         </Card>

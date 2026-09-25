@@ -6,6 +6,16 @@ import { runCopilotFoundation } from "../ai/service.js";
 import { ENV } from "../env.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { httpError } from "../errors/http.js";
+import prisma from "../prisma.js";
+
+async function buildCopilotUserContext(user) {
+  if (String(user?.role || "") !== "COMPANY" || !user?.companyId) return user;
+  const company = await prisma.company.findUnique({
+    where: { id: Number(user.companyId) },
+    select: { kind: true },
+  });
+  return { ...user, companyKind: company?.kind || null };
+}
 
 export function aiRouter() {
   const r = express.Router();
@@ -38,9 +48,11 @@ export function aiRouter() {
         throw httpError(403, "FORBIDDEN", "Forbidden");
       }
 
+      const copilotUser = await buildCopilotUserContext(req.user);
       const payload = await runCopilotFoundation({
         ...parsed.data,
-        user: req.user,
+        user: copilotUser,
+        authSessionId: [req.auth?.userId, req.auth?.iat, req.auth?.sv, req.auth?.pwdChangeOnly ? "pwd" : "full"].filter(Boolean).join(":"),
       });
 
       await audit(req, {

@@ -76,6 +76,7 @@ function main() {
   const doc = read("docs/ROOM_VEHICLE_DRIVER_UPPERCASE_NORMALIZATION_01.md");
   const drivers = read("web/src/panels/room/DriversPanel.jsx");
   const vehicles = read("web/src/panels/room/VehiclesPanel.jsx");
+  const vehicleActions = read("web/src/panels/room/roomVehiclesPanelActions.js");
   const vehicleCards = read("web/src/panels/room/roomVehiclesPanelCards.jsx");
   const vehicleSections = read("web/src/panels/room/roomVehiclesPanelSections.jsx");
   const driverRoute = read("backend/src/routes/drivers.js");
@@ -107,12 +108,12 @@ function main() {
 
   mustContains(vehicles, "upperTr(", "VehiclesPanel keeps uppercase helper");
   mustContains(vehicles, "upperTrOrNull(", "VehiclesPanel keeps null-safe uppercase helper");
-  mustContains(vehicles, "plate: upperTr(plate)", "VehiclesPanel normalizes create plate");
-  mustContains(vehicles, "body.brand = upperTr(brand)", "VehiclesPanel normalizes create brand");
-  mustContains(vehicles, "body.model = upperTr(model)", "VehiclesPanel normalizes create model");
-  mustContains(vehicles, "body.color = upperTr(color)", "VehiclesPanel normalizes create color");
-  mustContains(vehicles, "body.vin = upperTr(vin)", "VehiclesPanel normalizes create vin");
-  mustContains(vehicles, "body.note = upperTr(note)", "VehiclesPanel normalizes create note");
+  mustContains(vehicleActions, "plate: upperTr(ctx.plate)", "VehiclesPanel normalizes create plate");
+  mustContains(vehicleActions, "body.brand = upperTr(ctx.brand)", "VehiclesPanel normalizes create brand");
+  mustContains(vehicleActions, "body.model = upperTr(ctx.model)", "VehiclesPanel normalizes create model");
+  mustContains(vehicleActions, "body.color = upperTr(ctx.color)", "VehiclesPanel normalizes create color");
+  mustContains(vehicleActions, "body.vin = upperTr(ctx.vin)", "VehiclesPanel normalizes create vin");
+  mustContains(vehicleActions, "body.note = upperTr(ctx.note)", "VehiclesPanel normalizes create note");
   mustContains(vehicles, "plate: upperTr(editForm.plate)", "VehiclesPanel normalizes edit plate");
   mustContains(vehicles, "brand: upperTrOrNull(editForm.brand)", "VehiclesPanel normalizes edit brand");
   mustContains(vehicles, "model: upperTrOrNull(editForm.model)", "VehiclesPanel normalizes edit model");
@@ -124,7 +125,6 @@ function main() {
   mustContains(vehicleSections, 'toLocaleUpperCase("tr-TR")', "room vehicle sections plate input uppercases");
 
   mustContains(driverRoute, "const upperTr = (value)", "drivers route keeps uppercase helper");
-  mustContains(driverRoute, "const upperTrOrNull = (value)", "drivers route keeps null-safe uppercase helper");
   mustContains(driverRoute, "fullName: normalizedFullName", "drivers route normalizes create fullName");
   mustContains(driverRoute, "deviceInfo: normalizedDeviceInfo", "drivers route normalizes create deviceInfo");
   mustContains(driverRoute, "const v = upperTr(b.fullName)", "drivers route normalizes update fullName");

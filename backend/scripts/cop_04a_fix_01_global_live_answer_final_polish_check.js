@@ -141,7 +141,7 @@ must(facts, 'Şimdi: Bu ekranda somut operasyon sağlığı sinyali görünmüyo
 must(facts, 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını aç ve açık sorunları sırala.', 'facts keeps operation-health direct next step');
 must(facts, 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.', 'facts keeps contract no-signal wording');
 must(facts, 'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.', 'facts keeps contract positive signal wording');
-must(facts, 'Eksik bilgi 0 görünüyor; ödeme hesabı, komisyon durumu ve hizmet/onay sinyalini kontrol et.', 'facts keeps payment zero-missing wording');
+must(facts, 'Eksik bilgi 0 görünüyor; ödeme hesabı ve hizmet/onay sinyalini kontrol et.', 'facts keeps payment zero-missing wording');
 must(facts, 'Sürücünün telefon GPS’i', 'facts keeps driver gps language');
 must(facts, 'araç görünürlüğü', 'facts keeps vehicle visibility language');
 mustNotRaw(facts, 'OperationProof', 'facts avoids technical proof wording');

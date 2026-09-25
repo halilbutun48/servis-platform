@@ -10,6 +10,7 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import ListSelectionBanner from "../../components/ListSelectionBanner";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
 import OfferQualityRankingCard from "../shared/OfferQualityRankingCard";
+import { useSession } from "../../state/session";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -132,6 +133,7 @@ const FILTERS = [
 ];
 
 export default function RoomOffersPanel() {
+  const { me } = useSession();
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -259,6 +261,11 @@ export default function RoomOffersPanel() {
   useEffect(() => {
     let alive = true;
     (async () => {
+      const canReadProviderScores = ["COMPANY", "SCHOOL", "ORGANIZATION", "SUPER_ADMIN"].includes(String(me?.role || "").toUpperCase());
+      if (!canReadProviderScores) {
+        if (alive) setRoomScores({});
+        return;
+      }
       if (!roomScoreIds.length) {
         if (alive) setRoomScores({});
         return;
@@ -274,7 +281,7 @@ export default function RoomOffersPanel() {
     return () => {
       alive = false;
     };
-  }, [roomScoreIds]);
+  }, [me?.role, roomScoreIds]);
 
   function setPackageSelection(offerIds, checked = true) {
     const ids = Array.from(new Set((offerIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)));
@@ -295,10 +302,28 @@ export default function RoomOffersPanel() {
       return;
     }
     const shift = focusedOffer?.shift || {};
+    const explicitlySelectedOfferIds = Array.from(new Set(selectedIds))
+      .filter((id) => Number.isFinite(id) && id > 0);
+    // A pair of visible offer cards is an unambiguous comparison set on this
+    // screen. Preserve an explicit multi-select when present; otherwise pass
+    // the exact two-card UI set so "iki teklif" is never collapsed to the
+    // focused card or an entity count.
+    const comparisonOfferIds = explicitlySelectedOfferIds.length >= 2
+      ? explicitlySelectedOfferIds
+      : filtered.length === 2
+        ? filtered.map((offer) => Number(offer?.id || 0)).filter((id) => Number.isFinite(id) && id > 0)
+        : [Number(focusedOffer?.id || 0)].filter((id) => id > 0);
     setCopilotSelection({
       scopeKey: '/room/offers',
-      entityType: 'shift',
-      entityId: Number(focusedOffer?.shiftId || shift?.id || 1102) || 1102,
+      entityType: 'offer',
+      entityId: Number(focusedOffer?.id || 0) || 0,
+      relatedEntityType: 'shift',
+      relatedEntityId: Number(focusedOffer?.shiftId || shift?.id || 0) || 0,
+      entitySet: comparisonOfferIds.map((id) => ({
+        type: 'offer',
+        id,
+        source: explicitlySelectedOfferIds.length >= 2 ? 'UI_SELECTION_SET' : comparisonOfferIds.length === 2 ? 'UI_VISIBLE_UNAMBIGUOUS_SET' : 'UI_FOCUSED_RECORD',
+      })),
       label: `Teklif #${focusedOffer.id}`,
       summary: [displayStatusLabel(String(focusedOffer?.status || '').toUpperCase()), companyName(shift), shift?.status ? `Vardiya ${displayStatusLabel(String(shift.status).toUpperCase())}` : null].filter(Boolean).join(' • '),
       fields: [
@@ -313,7 +338,7 @@ export default function RoomOffersPanel() {
       ],
       facts: { screenType: 'OFFERS', stage: String(focusedOffer?.status || '').toUpperCase(), nextBestAction: 'Önce teklif durumu ile tutarları birlikte oku. Sonra gerekiyorsa vardiyaya geç.' },
     });
-  }, [focusedOffer]);
+  }, [focusedOffer, selectedIds, filtered]);
 
   function selectFocusedPackage() {
     if (!focusedPackageIds.length) return;
@@ -507,7 +532,7 @@ export default function RoomOffersPanel() {
   return (
     <div className="wrap wrap--fluid">
       <div className="card">
-        <div className="title">Teklifler (Gelen Teklifler)</div>
+        <h1 className="title">Teklifler (Gelen Teklifler)</h1>
         <div className="muted">Hizmet Alan Firma tarafının gönderdiği market vardiya teklifleri.</div>
       </div>
 
@@ -520,6 +545,7 @@ export default function RoomOffersPanel() {
         roomScores={roomScores}
         summaryParams={{ role: "ROOM", scopeLabel: "Taşımacılık Firması teklif karşılaştırması" }}
         maxRows={4}
+        compact
         style={{ padding: 14 }}
       />
 
@@ -592,7 +618,7 @@ export default function RoomOffersPanel() {
         const canQuickApprove = String(o.status) === "ACCEPTED" && ["REQUESTED"].includes(String(shift?.status || ""));
 
         return (
-          <div className="card" key={o.id} onClick={() => setFocusedOfferId(Number(o.id) || 0)} style={rowSelectionStyle(Number(focusedOfferId || 0) === Number(o.id || 0))}>
+          <div className="card pre18-room-offer-card" key={o.id} onClick={() => setFocusedOfferId(Number(o.id) || 0)} style={rowSelectionStyle(Number(focusedOfferId || 0) === Number(o.id || 0))}>
             <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontWeight: 700 }}>
@@ -614,13 +640,6 @@ export default function RoomOffersPanel() {
                 </label>
                 {pill(o.status)}
                 {pill(shift?.status)}
-                <button type="button" className="btn sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusedOfferId(Number(o.id) || 0); goShift(o.shiftId); }}>
-                  Shift’e Git
-                </button>
-                <button type="button" className="btn sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusedOfferId(Number(o.id) || 0); setPreviewModal({ open: true, shiftId: Number(o.shiftId) || null }); }}>
-                  Harita Önizle
-                </button>
-
                 {String(o.status || "").toUpperCase() === "COUNTERED" ? (
                   <button type="button" className="btn" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusedOfferId(Number(o.id) || 0); acceptCounterOffer(o.id); }} title="Kabul et → ilgili bekleyen talebe geç → araç ve sürücü seç">
                     Kabul Et ve Bekleyen Taleplere Geç
@@ -635,46 +654,55 @@ export default function RoomOffersPanel() {
               </div>
             </div>
 
-            <hr />
-
-            <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
-              <div className="muted">
-                Hizmet Alan Firma: <b>{formatTRY(o.amountCompany)}</b>
-              </div>
-              <div className="muted">
-                Taşımacılık Firması: <b>{formatTRY(o.amountRoom)}</b>
-              </div>
-            </div>
-
-            {o.noteCompany ? <div className="muted">Not (Hizmet Alan Firma): {o.noteCompany}</div> : null}
-            {o.noteRoom ? <div className="muted">Not (Taşımacılık Firması): {o.noteRoom}</div> : null}
-
-            {canCounter ? (
-              <>
-                <hr />
-                <div className="row" style={{ gap: 8, alignItems: "end", flexWrap: "wrap" }}>
-                  <div className="col" style={{ minWidth: 160 }}>
-                    <label className="muted">Karşı Teklif (TL)</label>
-                    <input
-                      value={c.amountRoom ?? ""}
-                      onChange={(e) => setCounter(o.id, { amountRoom: e.target.value })}
-                      placeholder="örn 12500"
-                    />
+            <details className="pre18-offer-secondary" onClick={(e) => e.stopPropagation()}>
+              <summary>Teklif ayrıntılarını göster</summary>
+              <div className="pre18-offer-secondary-body">
+                <div className="row pre18-offer-secondary-values" style={{ gap: 12, flexWrap: "wrap" }}>
+                  <div className="muted">
+                    Hizmet Alan Firma: <b>{formatTRY(o.amountCompany)}</b>
                   </div>
-                  <div className="col" style={{ flex: 1, minWidth: 220 }}>
-                    <label className="muted">Not</label>
-                    <input
-                      value={c.noteRoom ?? ""}
-                      onChange={(e) => setCounter(o.id, { noteRoom: e.target.value })}
-                      placeholder="opsiyonel"
-                    />
+                  <div className="muted">
+                    Taşımacılık Firması: <b>{formatTRY(o.amountRoom)}</b>
                   </div>
-                  <button className="btn" disabled={busy} onClick={() => onCounter(o.id)}>
-                    Karşı Teklif Gönder
+                </div>
+
+                {o.noteCompany ? <div className="muted">Not (Hizmet Alan Firma): {o.noteCompany}</div> : null}
+                {o.noteRoom ? <div className="muted">Not (Taşımacılık Firması): {o.noteRoom}</div> : null}
+
+                <div className="pre18-offer-secondary-actions">
+                  <button type="button" className="btn sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusedOfferId(Number(o.id) || 0); goShift(o.shiftId); }}>
+                    Vardiyaya Git
+                  </button>
+                  <button type="button" className="btn sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusedOfferId(Number(o.id) || 0); setPreviewModal({ open: true, shiftId: Number(o.shiftId) || null }); }}>
+                    Harita Önizle
                   </button>
                 </div>
-              </>
-            ) : null}
+
+                {canCounter ? (
+                  <div className="pre18-offer-counter">
+                    <div className="col">
+                      <label className="muted">Karşı Teklif (TL)</label>
+                      <input
+                        value={c.amountRoom ?? ""}
+                        onChange={(e) => setCounter(o.id, { amountRoom: e.target.value })}
+                        placeholder="örn. 12500"
+                      />
+                    </div>
+                    <div className="col">
+                      <label className="muted">Not</label>
+                      <input
+                        value={c.noteRoom ?? ""}
+                        onChange={(e) => setCounter(o.id, { noteRoom: e.target.value })}
+                        placeholder="İsteğe bağlı"
+                      />
+                    </div>
+                    <button className="btn" disabled={busy} onClick={() => onCounter(o.id)}>
+                      Karşı Teklif Gönder
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </details>
           </div>
         );
       })}

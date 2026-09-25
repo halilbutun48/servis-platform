@@ -152,7 +152,19 @@ function contextText(screenContext, conversationState) {
 
 function isFollowUpMessage(message, conversationState) {
   const previous = conversationState?.costAnalysisState || conversationState?.costReasoning || null;
-  return Boolean(previous?.lastIntentFamily && FOLLOW_UP_PATTERN.test(String(message || "").trim()));
+  if (previous?.lastIntentFamily && FOLLOW_UP_PATTERN.test(String(message || "").trim())) return true;
+  // The floating drawer intentionally sends a compact recent-message window
+  // rather than a mutable cost object.  Preserve cost continuity from that
+  // canonical conversation evidence so a terse follow-up is not reclassified
+  // as off-topic after a route-bound cost answer.
+  const recent = Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages : [];
+  const hasCostTurn = recent.some((item) => {
+    const text = normalizeText(item?.text);
+    return item?.role === "user"
+      ? Boolean(familyFromText(text))
+      : /(?:SONUÇ|NEDEN|KANIT|FİNANSAL ETKİ|OPERASYON ETKİSİ|EKSİK VERİ|GÜVEN SEVİYESİ|maliyet|senaryo|teklif)/iu.test(text);
+  });
+  return hasCostTurn && FOLLOW_UP_PATTERN.test(String(message || "").trim());
 }
 
 function continuationTypeFromText(message) {
@@ -194,7 +206,12 @@ export function detectCostAnalysisIntent({ message = "", screenContext = null, c
   const screen = contextText(screenContext, conversationState);
   const previous = conversationState?.costAnalysisState || conversationState?.costReasoning || null;
   const followUp = isFollowUpMessage(message, conversationState);
-  const family = familyFromText(text) || (followUp ? String(previous?.lastIntentFamily || "") : "");
+  const recent = Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages : [];
+  const recentFamily = [...recent].reverse()
+    .filter((item) => item?.role === "user")
+    .map((item) => familyFromText(normalizeText(item?.text)))
+    .find(Boolean) || "";
+  const family = familyFromText(text) || (followUp ? String(previous?.lastIntentFamily || recentFamily || "") : "");
   const continuationType = continuationTypeFromText(message);
   const financialScreen = FINANCIAL_PATH_PATTERN.test(screen) || /(?:bütçe|butce|servis maliyeti|teklif ve kârlılık|teklif ve karlilik)/.test(screen);
   const isCostAnalysis = Boolean(family) || (financialScreen && /(?:maliyet|bütçe|butce|teklif|kâr|kar|senaryo|veri|güven|guven|referans|pahalı|pahali|risk|tasarruf|alternatif|araç|arac)/.test(text));

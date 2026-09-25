@@ -294,7 +294,7 @@ function runCase(testCase) {
 }
 
 const companyPlanFixture = buildScreenFixture({
-  path: '/company/operations',
+  path: '/company/planning-center',
   label: 'Planlama Merkezi',
   menuPurpose: 'Planlama Merkezi yeni işi kurma ve vardiya planlama akışını yönetir.',
   firstStep: 'Plan bilgilerini kontrol et.',
@@ -302,7 +302,7 @@ const companyPlanFixture = buildScreenFixture({
 });
 
 const companyPlanSelectedFixture = buildScreenFixture({
-  path: '/company/operations',
+  path: '/company/planning-center',
   label: 'Planlama Merkezi',
   selectedLabel: 'Seçili plan',
   selectedSummary: 'Seçili plan hazır.',
@@ -387,9 +387,8 @@ const cases = [
     role: 'COMPANY',
     fixture: companyPlanFixture,
     message: 'Bunu nasıl yapacağım?',
-    mustIncludeAny: ['Bekleyen işleri kontrol et', 'Operasyon özetinde', 'açık veya riskli işleri'],
-    mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:'],
-    allowedQuestionTypes: ['NEXT_STEP', 'NEXT_ACTION', 'SCREEN_EXPLANATION_HELP'],
+    mustIncludeAny: ['Netleştirelim:', 'Alternatif:', 'Planlama Merkezi'],
+    allowedQuestionTypes: ['CLARIFYING_QUESTION'],
   },
   {
     kind: 'help',
@@ -397,9 +396,9 @@ const cases = [
     role: 'COMPANY',
     fixture: companyPlanFixture,
     message: 'Hangisini seçeyim?',
-    mustIncludeAny: ['Planlama Merkezi', 'planlama merkezi', 'vardiya'],
-    mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:'],
-    allowedQuestionTypes: ['SCREEN_PURPOSE', 'SCREEN_EXPLANATION_HELP'],
+    mustIncludeAll: ['Teklifi hangi açıdan kıyaslayayım: fiyat, süre, risk veya sözleşme uygunluğu?'],
+    mustIncludeAny: ['Netleştirelim:', 'Alternatif:'],
+    allowedQuestionTypes: ['CLARIFYING_QUESTION'],
   },
   {
     kind: 'help',
@@ -409,7 +408,7 @@ const cases = [
     message: 'Bu ne?',
     mustIncludeAny: ['Planlama Merkezi', 'planlama merkezi', 'vardiya'],
     mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:'],
-    allowedQuestionTypes: ['SCREEN_PURPOSE', 'SCREEN_EXPLANATION_HELP'],
+    allowedQuestionTypes: ['SEMANTIC_MULTI_DOMAIN_SUMMARY'],
   },
   {
     kind: 'help',
@@ -448,7 +447,7 @@ const cases = [
     message: 'Devamını anlat',
     mustIncludeAny: ['devam', 'Devam', 'aç'],
     mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:'],
-    allowedQuestionTypes: ['HOW_TO_HELP', 'DETAIL_FLOW'],
+    allowedQuestionTypes: ['CONTINUE_FLOW'],
   },
   {
     kind: 'help',
@@ -469,7 +468,7 @@ const cases = [
     message: 'Bu ne?',
     mustIncludeAny: ['Bu ekran, teklifleri', 'fiyat, süre, risk', 'sözleşme uygunluğu'],
     mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:'],
-    allowedQuestionTypes: ['SCREEN_PURPOSE', 'SCREEN_EXPLANATION_HELP'],
+    allowedQuestionTypes: ['SEMANTIC_COMMERCIAL_SUMMARY'],
   },
   {
     kind: 'help',
@@ -479,7 +478,7 @@ const cases = [
     message: 'Bunu başlatayım mı?',
     mustIncludeAny: ['Vardiyalar', 'vardiya', 'operasyon'],
     mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:'],
-    allowedQuestionTypes: ['DETAIL_FLOW', 'SCREEN_EXPLANATION_HELP'],
+    allowedQuestionTypes: ['CLARIFYING_QUESTION'],
   },
   {
     kind: 'help',
@@ -487,9 +486,9 @@ const cases = [
     role: 'ROOM',
     fixture: roomShiftsFixture,
     message: 'Bunu nasıl yapacağım?',
-    mustIncludeAny: ['Vardiya engeli', 'ilk kontrol', 'Vardiyalar ekranı'],
-    mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:'],
-    allowedQuestionTypes: ['NEXT_STEP', 'FIRST_CONTROL', 'SCREEN_EXPLANATION_HELP'],
+    mustIncludeAll: ['Hangi vardiya için bakayım: canlı başlatma mı, araç-sürücü kontrolü mü, yoksa eksik bilgi mi?'],
+    mustIncludeAny: ['Netleştirelim:', 'Alternatif:'],
+    allowedQuestionTypes: ['CLARIFYING_QUESTION'],
   },
   {
     kind: 'help',
@@ -526,9 +525,9 @@ const cases = [
     role: 'PERSONEL',
     fixture: personelLiveFixture,
     message: 'Niye yok?',
-    mustIncludeAny: ['Personel Canlı', 'servis durumu', 'canlı takip'],
+    mustIncludeAll: ['Kesin sebebi veriyle doğrulamak gerekir', 'en olası nedenler'],
     mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:'],
-    allowedQuestionTypes: ['SCREEN_PURPOSE', 'SCREEN_EXPLANATION_HELP'],
+    allowedQuestionTypes: ['ROOT_CAUSE'],
   },
   {
     kind: 'help',
@@ -536,9 +535,9 @@ const cases = [
     role: 'PERSONEL',
     fixture: personelLiveFixture,
     message: 'Bu ne?',
-    mustIncludeAny: ['Personel Canlı', 'servis durumu', 'canlı takip'],
+    mustIncludeAny: ['seçili servis bilgisi net görünmüyor', 'Son konum bilgisi', 'araç bağlantısını'],
     mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:'],
-    allowedQuestionTypes: ['SCREEN_PURPOSE', 'SCREEN_EXPLANATION_HELP'],
+    allowedQuestionTypes: ['SEMANTIC_MULTI_DOMAIN_SUMMARY'],
   },
   {
     kind: 'help',
@@ -556,9 +555,9 @@ const cases = [
     role: 'PARENT',
     fixture: parentLiveFixture,
     message: 'Gelmedi mi?',
-    mustIncludeAny: ['Son konum bilgisi', 'araç bağlantısı', 'tahmini varış süresi'],
-    mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:'],
-    allowedQuestionTypes: ['SCREEN_PURPOSE', 'SCREEN_EXPLANATION_HELP'],
+    mustIncludeAll: ['Hangi öğrenci servisi için bakayım: servisin konumunu mu, geliş saatini mi, yoksa bağlı vardiyayı mı?'],
+    mustIncludeAny: ['Netleştirelim:', 'Alternatif:'],
+    allowedQuestionTypes: ['CLARIFYING_QUESTION'],
   },
   {
     kind: 'help',
@@ -568,7 +567,7 @@ const cases = [
     message: 'Bu ne?',
     mustIncludeAny: ['Bu ekranda öğrencinin servisine ait seçili canlı bilgi net görünmüyor', 'Servis görünmüyorsa son konum bilgisi, araç bağlantısı ve tahmini varışı kontrol et'],
     mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:'],
-    allowedQuestionTypes: ['SCREEN_PURPOSE', 'SCREEN_EXPLANATION_HELP'],
+    allowedQuestionTypes: ['SEMANTIC_MULTI_DOMAIN_SUMMARY'],
   },
   {
     kind: 'help',
@@ -613,9 +612,9 @@ const cases = [
     role: 'SUPER_ADMIN',
     fixture: genericBareFixture,
     message: 'Bu ne?',
-    mustIncludeAny: ['Sistem durumu bandını', 'Ödeme, hakediş', 'sahaya çıkış'],
+    mustIncludeAny: ['sistem genelini üst seviyede görmek için kullanılır', 'Sistem özet ve denetim alanı'],
     mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:', 'Ekranın amacını mı, seçili kaydı mı netleştireyim?'],
-    allowedQuestionTypes: ['SCREEN_PURPOSE', 'SCREEN_EXPLANATION_HELP'],
+    allowedQuestionTypes: ['SEMANTIC_CURRENT_SITUATION'],
   },
   {
     kind: 'assistant',

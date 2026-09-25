@@ -5,7 +5,7 @@ import { useAutoReload } from "../../live/useAutoReload";
 import { PRESET_TEMPLATES } from "./ShiftTemplatesPanel";
 import { getPath, navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
-import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { clearCopilotSelection, resolveExplicitCopilotRecord, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
 import { getCompanyAgreements, getCompanyRooms, getCompanyShifts, getCompanyVehicles } from "../../utils/companyDataHub";
@@ -754,14 +754,8 @@ loadRef.current = load;
   }, [agreementConversionByShift, otherItems, contractItems, pendingItems, marketItems, items]);
 
   const copilotShift = useMemo(() => {
-    if (copilotShiftId) {
-      return items.find((s) => Number(s?.id || 0) === copilotShiftId) || null;
-    }
-    if (trackTab === "market") return marketItems[0] || null;
-    if (trackTab === "pending") return pendingItems[0] || null;
-    if (trackTab === "contract") return contractItems[0] || null;
-    return otherItems[0] || null;
-  }, [trackTab, items, copilotShiftId, marketItems, pendingItems, contractItems, otherItems]);
+    return resolveExplicitCopilotRecord(items, copilotShiftId);
+  }, [items, copilotShiftId]);
 
   const copilotShiftSummary = useMemo(() => {
     if (!copilotShift) return "";

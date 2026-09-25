@@ -173,7 +173,7 @@ export default function QualityReviewDecisionCard({
             Bu karar kesin kalite puanı değildir.
           </div>
           <div className="panelMeta" style={{ marginTop: 4 }}>
-            Bu karar hakediş veya komisyon hesabını etkilemez.
+            Bu karar ödeme veya sözleşme hesabını etkilemez.
           </div>
         </div>
         {!loading ? (

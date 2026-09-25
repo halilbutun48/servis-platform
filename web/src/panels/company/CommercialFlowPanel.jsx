@@ -24,6 +24,12 @@ function fmtTR(iso) {
   });
 }
 
+function visibleAmountLabel(value) {
+  return String(value || "-")
+    .replace(/\bOda\b/gi, "Taşımacılık Firması")
+    .replace(/\bFirma\b/g, "Hizmet Alan Firma");
+}
+
 
 function pickCount(...values) {
   for (const value of values) {
@@ -288,7 +294,7 @@ export default function CompanyCommercialFlowPanel() {
       fields: [
         { label: 'Karşı Taraf', value: selectedItem?.counterparty || '-', help: 'Bu kaydın karşı tarafındaki taşımacılık firması veya operasyon birimini gösterir.' },
         { label: 'Akış', value: selectedItem?.flowLabel || '-', help: 'Kayıdın market, kabul veya operasyon tarafında olup olmadığını gösterir.' },
-        { label: 'Tutar', value: selectedItem?.amountLabel || '-', help: 'Teklif tutarını veya ticari özet bedelini gösterir.' },
+        { label: 'Tutar', value: visibleAmountLabel(selectedItem?.amountLabel), help: 'Teklif tutarını veya ticari özet bedelini gösterir.' },
         { label: 'Son Güncelleme', value: fmtTR(selectedItem?.updatedAt), help: 'Bu ticari kaydın en son ne zaman değiştiğini gösterir.' },
         { label: 'Sonraki Adım', value: selectedItem?.nextStep || '-', help: 'Bu kayıttan sonra hangi operasyon veya ticari adıma geçileceğini anlatır.' },
       ],
@@ -317,7 +323,7 @@ export default function CompanyCommercialFlowPanel() {
   }
 
   return (
-    <div className="companyActionClarityScope" style={{ display: "grid", gap: 14 }}>
+    <div className="companyActionClarityScope pre18-commercial-flow" style={{ display: "grid", gap: 14 }}>
       <PanelChrome
         title="Ticari Akışım"
         subtitle="Hizmet Alan Firma için ticari görünüm artık gerçek market tekliflerinden beslenir. Vardiya üstündeki eski taşımacılık firması teklif alanları burada referans alınmaz."
@@ -353,17 +359,16 @@ export default function CompanyCommercialFlowPanel() {
               </div>
             </div>
 
-            <div style={{ overflowX: "auto" }}>
+            <div className="tableWrap companyCommercialFlowTable" data-responsive-table="true">
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ textAlign: "left" }}>
                     <th>Karşı Taraf</th>
                     <th>Akış</th>
-                    <th>Tutar</th>
+                    <th>Teklif / tutar</th>
                     <th>Durum</th>
                     <th>Son Güncelleme</th>
                     <th>Sonraki Adım</th>
-                    <th>Aksiyon</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -371,19 +376,14 @@ export default function CompanyCommercialFlowPanel() {
                     <tr key={item.id} onClick={() => setSelectedId(item.id)} style={{ cursor: "pointer", background: String(effectiveSelectedId || "") === String(item.id) ? "rgba(61, 122, 255, 0.10)" : "transparent" }}>
                       <td>{item.counterparty}</td>
                       <td>{item.flowLabel}</td>
-                      <td>{item.amountLabel}</td>
+                      <td>{visibleAmountLabel(item.amountLabel)}</td>
                       <td><StatusBadge value={item.statusLabel} /></td>
                       <td>{fmtTR(item.updatedAt)}</td>
                       <td>{item.nextStep}</td>
-                      <td>
-                        <button type="button" className="btn primary" onClick={() => { setSelectedId(item.id); const target = resolveCommercialFlowTarget(item, agreementByShiftId); openShifts(target.section, item.shiftId); }}>
-                          {resolveCommercialFlowTarget(item, agreementByShiftId).buttonLabel}
-                        </button>
-                      </td>
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={7} className="panelMeta" style={{ padding: "8px 0" }}>
+                      <td colSpan={6} className="panelMeta" style={{ padding: "8px 0" }}>
                         Bu filtrede firma kapsamına düşen ticari kayıt yok. Kural: pazarlık Market'te, operasyon hazırlığı Bekleyen Taleplerde, onaylı işler Liste'de.
                       </td>
                     </tr>
@@ -402,13 +402,13 @@ export default function CompanyCommercialFlowPanel() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div>Akış: <b>{selectedItem.flowLabel || "-"}</b></div>
                 <div>Durum: <b><StatusBadge value={selectedItem.statusLabel} /></b></div>
-                <div>Tutar: <b>{selectedItem.amountLabel || "-"}</b></div>
+                <div>Tutar: <b>{visibleAmountLabel(selectedItem.amountLabel)}</b></div>
                 <div>Sonraki adım: <b>{selectedItem.nextStep || "-"}</b></div>
                 <div>Son güncelleme: <b>{fmtTR(selectedItem.updatedAt)}</b></div>
                 <div className="panelMeta" style={{ marginTop: 4 }}>
                   Bağlı bölüm: <b>{selectedTarget?.label || "-"}</b>
                 </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div data-pre18-primary-action="true" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button type="button" className="btn primary" onClick={() => openShifts(selectedTarget?.section || selectedItem.section || "market", selectedItem.shiftId)}>
                     {selectedTarget?.buttonLabel || "Bağlı bölüme git"}
                   </button>

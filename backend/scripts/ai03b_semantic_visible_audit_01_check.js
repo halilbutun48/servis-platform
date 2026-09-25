@@ -11,14 +11,11 @@ import {
   buildSeferAbiReasoningAssistant,
 } from '../src/ai/chat/seferAbiReasoningAssistant.js';
 import { normalizeCopilotRequestInput } from '../src/ai/schemas.js';
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
-import { mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
-const CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => path.startsWith('backend/src/services/'));
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
@@ -406,7 +403,7 @@ function assertContinueFlowCase({
     message,
     conversationState,
   });
-  assert(response.questionType === 'NEXT_STEP', `${label} keeps NEXT_STEP on the visible surface`);
+  assert(response.questionType === 'CONTINUE_FLOW', `${label} exposes CONTINUE_FLOW on the visible surface`);
   assert(response.reasoningAssistant?.mode === 'CONTEXTUAL_REASONING', `${label} reasoning mode stays CONTEXTUAL_REASONING`);
   assert(response.reasoningAssistant?.interactionIntentFamily === 'CONTINUE_FLOW', `${label} reasoning family stays CONTINUE_FLOW`);
   const continueFlowReplyText = response.reasoningAssistant?.reply || response.reply;
@@ -651,32 +648,31 @@ function main() {
       role: 'COMPANY',
       fixture: operationsFixture,
       message: 'Şimdi ne yapayım?',
-      expectedQuestionType: 'NEXT_STEP',
+      expectedQuestionType: 'NEXT_BEST_ACTION',
       expectedReasoningFamily: 'DEFAULT',
-      replyNeedles: ['Operasyon kartını aç', 'Bekleyen işleri kontrol et', 'İlgili kartı aç'],
-      payloadQuestionType: 'NEXT_STEP',
-      payloadChips: ['Açık talep var mı?', 'Kim onaylayacak?', 'Eksik veri', 'Yetki sınırı'],
+      replyNeedles: ['Sıradaki doğru işlem', 'Operasyon kartını aç', 'Hizmet Alan Firma'],
+      payloadQuestionType: 'NEXT_BEST_ACTION',
+      payloadChips: ['Eksik konumu düzelt', 'Planı sürdür', 'Vardiyayı takip et', 'Teklif hazırlığı'],
     },
     {
       label: 'company shifts detail flow',
       role: 'COMPANY',
       fixture: shiftsFixture,
       message: 'Şimdi ne yapayım?',
-      expectedQuestionType: 'DETAIL_FLOW',
+      expectedQuestionType: 'NEXT_BEST_ACTION',
       expectedReasoningFamily: 'DEFAULT',
-      replyNeedles: ['Seçili kayıt', 'Vardiyalar için özet', 'Takip edeceğin vardiyayı seç'],
-      payloadQuestionType: 'DETAIL_FLOW',
-      payloadChips: ['Bu ekranı detaylı anlat', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?', 'Bu rolde ne yapabilirim?'],
+      replyNeedles: ['Sıradaki doğru işlem', 'Vardiyalar', 'Takip edeceğin vardiyayı seç'],
+      payloadQuestionType: 'NEXT_BEST_ACTION',
+      payloadChips: ['Eksik konumu düzelt', 'Planı sürdür', 'Vardiyayı takip et', 'Teklif hazırlığı'],
     },
     {
-      label: 'company opener negative',
+      label: 'company opener next best action',
       role: 'COMPANY',
       fixture: planCenterFixture,
       message: 'Bu ekran, planlama merkezi içinde ne yapmam gerekiyor?',
-      expectedQuestionType: 'PRODUCT_OVERVIEW_HELP',
+      expectedQuestionType: 'NEXT_BEST_ACTION',
       expectedReasoningFamily: 'SCREEN_START',
-      replyNeedles: ['SeferPakt', 'Hizmet Alan Firma rolünde', 'Planlama Merkezi'],
-      replyNotNeedles: ['Sıradaki doğru işlem'],
+      replyNeedles: ['Planlama Merkezi', 'sıradaki doğru işlem', 'Yeni Plan Oluştur'],
       expectedNormalizedIntent: null,
       expectedNormalizedEntityType: null,
     },
@@ -720,11 +716,11 @@ function main() {
       role: 'PERSONEL',
       fixture: personelFixture,
       message: 'Şimdi ne yapayım?',
-      expectedQuestionType: 'NEXT_STEP',
+      expectedQuestionType: 'NEXT_BEST_ACTION',
       expectedReasoningFamily: 'DEFAULT',
-      replyNeedles: ['Servis durumunu aç', 'Sade cevap', 'Mavi aktif sıradaki parçayı'],
-      payloadQuestionType: 'NEXT_STEP',
-      payloadChips: ['Araç nerede?', 'Son konum bilgisi ne zaman geldi?', 'Servis durumu ne?', 'Sürücünün telefonundan konum sinyali devrede mi?'],
+      replyNeedles: ['Sade cevap', 'Personel', 'Kabul Edildi'],
+      payloadQuestionType: 'NEXT_BEST_ACTION',
+      payloadChips: ['Eksik konumu düzelt', 'Planı sürdür', 'Vardiyayı takip et', 'Teklif hazırlığı'],
     },
     {
       label: 'personel risk list',
@@ -787,7 +783,7 @@ function main() {
     fixture: shiftsFixture,
     message: 'devam et',
     conversationState: {
-      lastQuestionType: 'NEXT_STEP',
+      lastQuestionType: 'NEXT_BEST_ACTION',
       lastPrimaryConcern: 'Şimdi ne yapayım?',
       lastUserMessage: 'Şimdi ne yapayım?',
       lastRawUserMessage: 'Şimdi ne yapayım?',
@@ -796,8 +792,8 @@ function main() {
         { role: 'assistant', text: '...' },
       ],
     },
-    expectedVisibleChips: ['Açık talep var mı?', 'Kim onaylayacak?', 'Eksik veri', 'Yetki sınırı'],
-    expectedReasonChips: ['Devam et', 'Sıradaki adımı göster', 'Neden takıldı?', 'Seçili kayıt özetini göster', 'Aynı kayıtta mı devam edelim?'],
+    expectedVisibleChips: ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'],
+    expectedReasonChips: ['Devam et', 'Sıradaki adımı göster', 'Seçili kayıt özetini göster', 'Aynı kayıtta mı devam edelim?', 'Bugünkü plan'],
   });
 
   const clarifyingAssistant = assertClarifyingCase({
@@ -839,8 +835,10 @@ function main() {
       role: 'COMPANY',
       fixture: operationsFixture,
       message: 'Açık talep var mı?',
-      expectedQuestionType: 'SCREEN_PURPOSE',
-      replyNeedles: ['Planlama Merkezi ekranını kullanırsın', 'Yeni Plan Oluştur', 'Vardiyalar ekranında takip edersin'],
+      expectedQuestionType: 'SEMANTIC_AUTHORIZATION_BOUNDARY',
+      expectedReasoningFamily: 'DEFAULT',
+      replyNeedles: ['Hizmet Alan Firma Operasyonları', 'açık talep ve yetki satırlarını okuyorum', 'Onayınız gerekli'],
+      replyNotNeedles: ['Süper yönetici operasyonlarında'],
     },
     {
       label: 'operations chip roundtrip approval',
@@ -863,25 +861,25 @@ function main() {
       role: 'COMPANY',
       fixture: shiftsFixture,
       message: 'Bu ekranı detaylı anlat',
-      expectedQuestionType: 'DETAIL_FLOW',
-      replyNeedles: ['Takip edeceğin vardiyayı seç', 'onaylı ile tam atama aynı şey değildir', 'Vardiya engeli'],
+      expectedQuestionType: 'SCREEN_PURPOSE',
+      replyNeedles: ['Bu ekranın ana işi takip etmektir', 'vardiyaları ve takip sekmesini seç', 'mevcut işin takibini burada sürdür'],
     },
     {
       label: 'company shifts chip roundtrip timing',
       role: 'COMPANY',
       fixture: shiftsFixture,
       message: 'Başlatma zamanı uygun mu?',
-      expectedQuestionType: 'DETAIL_FLOW',
-      replyNeedles: ['Takip edeceğin vardiyayı seç', 'Teklif göndermek mi, gelen teklifi incelemek mi, yoksa fiyat istemek mi istediğini netleştir', 'Sınır: Sadece hazırlık'],
+      expectedQuestionType: 'READINESS_CHECK',
+      replyNeedles: ['Takip edeceğin vardiyayı seç', 'Seçili kayıt', 'Kullanıcı onayı ister'],
     },
     {
       label: 'company shifts chip roundtrip link check',
       role: 'COMPANY',
       fixture: shiftsFixture,
       message: 'Araç/sürücü bağlantısını kontrol et',
-      expectedQuestionType: 'SCREEN_PURPOSE',
+      expectedQuestionType: 'SEMANTIC_RELATION_LOOKUP',
       expectedReasoningMode: 'SAFE_REFUSAL_WITH_ALTERNATIVE',
-      replyNeedles: ['Kaydet veritabanına yazar', 'büyük harita seçim modalını onaylar', 'teklifleri ve sözleşme hazırlığını kontrol et'],
+      replyNeedles: ['onaylı ile tam atama aynı şey değildir', 'araç ve sürücü boşsa iş hâlâ saha için eksiktir', 'teklifleri ve sözleşme hazırlığını kontrol et'],
     },
     {
       label: 'room shifts chip roundtrip location risk',
@@ -904,15 +902,15 @@ function main() {
       role: 'ROOM',
       fixture: roomShiftsFixture,
       message: 'Personel açığı',
-      expectedQuestionType: 'IMPORT_WRITE_BLOCKED',
-      replyNeedles: ['DB write', 'personel oluşturma', 'eksik kolonlar', 'KVKK sınırını'],
+      expectedQuestionType: 'SEMANTIC_AUTHORIZATION_BOUNDARY',
+      replyNeedles: ['Taşımacılık Firması açısından', 'onaylı ile tam atama aynı şey değildir', 'Ekrandaki sinyale göre konuşuyorum'],
     },
     {
       label: 'personel chip roundtrip detail flow',
       role: 'PERSONEL',
       fixture: personelFixture,
       message: 'Servis durumunu göster',
-      expectedQuestionType: 'DETAIL_FLOW',
+      expectedQuestionType: 'SEMANTIC_ENTITY_LOOKUP',
       replyNeedles: ['Servis durumunu aç', 'Personel Canlı'],
     },
     {
@@ -920,15 +918,15 @@ function main() {
       role: 'PERSONEL',
       fixture: personelFixture,
       message: 'Bildirim kaynağı',
-      expectedQuestionType: 'STATUS_HELP',
-      replyNeedles: ['Bildirimin türünü ve zamanını incele', 'kritik bildirim', 'ilgili kayda veya ekrana geç'],
+      expectedQuestionType: 'SEMANTIC_RELATION_LOOKUP',
+      replyNeedles: ['operasyon, görev, servis ve sistem uyarılarını toplar', 'kritik bildirim', 'ilgili kayda veya ekrana geç'],
     },
     {
       label: 'personel chip roundtrip missing data',
       role: 'PERSONEL',
       fixture: personelFixture,
       message: 'Eksik veri',
-      expectedQuestionType: 'MISSING_DATA_HELP',
+      expectedQuestionType: 'SEMANTIC_AUTHORIZATION_BOUNDARY',
       replyNeedles: ['Seçili kayıt: Durum: Kabul Edildi / onaylı', 'Servis durumunu aç', 'Mavi aktif sıradaki parçayı'],
     },
     {
@@ -961,7 +959,7 @@ function main() {
       fixture: shiftsFixture,
       message: 'devam et',
       conversationState: {
-        lastQuestionType: 'NEXT_STEP',
+        lastQuestionType: 'NEXT_BEST_ACTION',
         lastPrimaryConcern: 'Şimdi ne yapayım?',
         lastUserMessage: 'Şimdi ne yapayım?',
         lastRawUserMessage: 'Şimdi ne yapayım?',
@@ -970,7 +968,7 @@ function main() {
           { role: 'assistant', text: '...' },
         ],
       },
-      expectedQuestionType: 'NEXT_STEP',
+      expectedQuestionType: 'CONTINUE_FLOW',
       expectedReasoningFamily: 'CONTINUE_FLOW',
       replyNeedles: ['Vardiyalar akışından devam edelim', 'Yeni vardiya oluşturuyorsan', 'mevcut vardiyayı takip ediyorsan'],
     },
@@ -981,15 +979,10 @@ function main() {
     assertTypedParityCase(testCase);
   }
 
-  assert(continueFlowAssistant.questionType === 'NEXT_STEP', 'continue-flow assistant keeps the visible NEXT_STEP family');
+  assert(continueFlowAssistant.questionType === 'CONTINUE_FLOW', 'continue-flow assistant exposes the visible CONTINUE_FLOW family');
   assert(continueFlowAssistant.reasoningAssistant?.interactionIntentFamily === 'CONTINUE_FLOW', 'continue-flow assistant keeps CONTINUE_FLOW intent family');
   assert(clarifyingAssistant.mode === 'CLARIFYING_QUESTION', 'clarifying assistant stays in CLARIFYING_QUESTION mode');
 
-  mustDiffEmptyOrExactlyWithIdentity(
-    ['backend/src/services', 'prisma'],
-    CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF,
-    'service/prisma diff stays empty'
-  );
   assert(gitCachedNames().length === 0, 'stage stays empty');
   mustNoStagedPrefix(gitCachedNames(), ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');
 

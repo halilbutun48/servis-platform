@@ -159,7 +159,7 @@ function main() {
   mustNot(auditLogs, "JSON.stringify(x.meta)", "audit logs no raw JSON stringify in visible table");
 
   must(logExport, "Önizleme (son 250)", "log export preview label is Turkish");
-  must(logExport, "kanıt=", "log export uses safe proof summary");
+  must(logExport, "Kanıt:", "log export uses safe proof summary");
   must(logExport, "sistem kanıtı hazır", "log export safe fallback visible");
   mustNot(logExport, "meta=${JSON.stringify", "log export no raw meta dump");
 

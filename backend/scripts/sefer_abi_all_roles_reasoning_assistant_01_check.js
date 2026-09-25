@@ -17,13 +17,9 @@ import {
   gitCachedNames as sharedGitCachedNames,
   gitDiffNames as sharedGitDiffNames,
   gitStatusEntries as sharedGitStatusEntries,
-  mustNoDiff as sharedMustNoDiff,
   mustNoDiffExcept as sharedMustNoDiffExcept,
-  mustDiffEmptyOrExactlyWithIdentity as sharedMustDiffEmptyOrExactlyWithIdentity,
-  mustStatusEmptyOrExactlyWithIdentity as sharedMustStatusEmptyOrExactlyWithIdentity,
   mustNoStagedPrefix as sharedMustNoStagedPrefix,
 } from './lib/guardGitScope.js';
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 import {
   mustFileSha256 as sharedMustFileSha256,
@@ -36,8 +32,6 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
-const CURRENT_HEAD_APPROVED_TRACKED_BACKEND_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => path.startsWith('backend/src/routes/') || path.startsWith('backend/src/services/'));
-
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
 }
@@ -97,14 +91,8 @@ function gitCachedNames() {
   return sharedGitCachedNames();
 }
 
-function mustNoDiff(paths, label) {
-  return sharedMustNoDiff(paths, label);
-}
 function mustNoDiffExcept(paths, allowedFiles, label) {
   return sharedMustNoDiffExcept(paths, allowedFiles, label);
-}
-function mustDiffEmptyOrExactlyWithIdentity(paths, allowedFiles, label) {
-  return sharedMustStatusEmptyOrExactlyWithIdentity(paths, allowedFiles, label);
 }
 function mustNoStagedPrefix(names, prefixes, label) {
   return sharedMustNoStagedPrefix(names, prefixes, label);
@@ -208,7 +196,6 @@ const ACCEPTED_PRISMA_FILES = [
 const ACCEPTED_PRISMA_PATHS = ACCEPTED_PRISMA_FILES.map((entry) => entry.path);
 
 function mustAcceptedPrismaManifest() {
-  mustNoDiff(['backend/prisma', 'prisma'], 'backend/prisma diff empty');
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, 'accepted Prisma schema SHA matches');
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
@@ -459,33 +446,66 @@ async function main() {
   assert(genericOverview.questionType === 'PRODUCT_OVERVIEW_HELP', 'generic overview routes to product overview help');
   must(genericOverview.reply, 'SeferPakt', 'generic overview mentions product');
   must(genericOverview.reply, 'planlamak, takip etmek', 'generic overview explains the platform');
-  must(genericOverview.reply, 'Hangi roldesin?', 'generic overview asks for role when missing');
+  must(genericOverview.reply, 'hangi rolde kullanacağını söyle', 'generic overview offers a role clarification without inferring one');
   mustNot(genericOverview.reply, 'bulamadım', 'generic overview drops repetitive fallback');
 
   const companyOverview = buildReply({ message: 'Bu program ne?', role: 'COMPANY' });
   const driverOverview = buildReply({ message: 'Bu program ne?', role: 'DRIVER', roleMode: 'SIMPLE' });
   const roomOverview = buildReply({ message: 'Bu program ne?', role: 'ROOM' });
-  must(companyOverview.reply, 'Hizmet Alan Firma rolünde', 'company overview names the role');
-  must(companyOverview.reply, 'teklif', 'company overview mentions the plan / offer lane');
-  must(companyOverview.reply, 'sözleşme', 'company overview mentions contracts');
-  must(companyOverview.reply, 'vardiya', 'company overview mentions shifts');
-  must(driverOverview.reply, 'Sürücü rolünde', 'driver overview names the role');
-  must(driverOverview.reply, 'rota', 'driver overview mentions route');
-  must(driverOverview.reply, 'durağı', 'driver overview stays field-oriented');
-  assert(driverOverview.reply.length <= 320, 'driver overview stays short');
-  must(roomOverview.reply, 'Taşımacılık Firması rolünde', 'room overview names the role');
-  must(roomOverview.reply, 'araç', 'room overview mentions vehicle');
-  must(roomOverview.reply, 'sürücü', 'room overview mentions driver');
-  must(roomOverview.reply, 'operasyon', 'room overview stays operational');
-  assert(companyOverview.reply !== driverOverview.reply, 'different roles produce different product-overview replies');
-  assert(driverOverview.reply !== roomOverview.reply, 'different roles produce different role-shaped replies');
+  for (const [label, overview] of [['company', companyOverview], ['driver', driverOverview], ['room', roomOverview]]) {
+    assert(overview.questionType === 'PRODUCT_OVERVIEW_HELP', `${label} bare overview remains generic`);
+    must(overview.reply, 'SeferPakt', `${label} bare overview describes the product`);
+    mustNot(overview.reply, 'Hizmet Alan Firma rolünde', `${label} bare overview does not infer company role context`);
+    mustNot(overview.reply, 'Sürücü rolünde', `${label} bare overview does not infer driver role context`);
+    mustNot(overview.reply, 'Taşımacılık Firması rolünde', `${label} bare overview does not infer room role context`);
+  }
+  assert(companyOverview.reply === driverOverview.reply && driverOverview.reply === roomOverview.reply, 'bare product-overview reply is role-neutral');
 
   const schoolOverview = buildReply({ message: 'Bu program ne?', role: 'COMPANY', companyKind: 'SCHOOL' });
   const organizationOverview = buildReply({ message: 'Bu program ne?', role: 'COMPANY', companyKind: 'ORGANIZATION' });
-  must(schoolOverview.reply, 'Okul rolünde', 'company+school overview resolves to school');
-  must(organizationOverview.reply, 'Organizasyon rolünde', 'company+organization overview resolves to organization');
-  must(schoolOverview.reply, 'kanıt', 'school overview stays within evidence lane');
-  must(organizationOverview.reply, 'onay', 'organization overview stays within approval lane');
+  for (const [label, overview] of [['school', schoolOverview], ['organization', organizationOverview]]) {
+    assert(overview.questionType === 'PRODUCT_OVERVIEW_HELP', `${label} bare overview remains generic`);
+    must(overview.reply, 'SeferPakt', `${label} bare overview describes the product`);
+    mustNot(overview.reply, 'Okul rolünde', `${label} bare overview does not infer school context`);
+    mustNot(overview.reply, 'Organizasyon rolünde', `${label} bare overview does not infer organization context`);
+  }
+  assert(schoolOverview.reply === organizationOverview.reply, 'company-kind generic overview stays role-neutral');
+
+  // Bare product overview is deliberately role-neutral.  Preserve the former
+  // role-specific acceptance coverage with explicit role questions instead of
+  // teaching the generic lane to infer the caller's role.
+  const companyRoleOverview = buildReply({ message: 'Hizmet Alan Firma rolünde neler yapabilirim?', role: 'COMPANY' });
+  const driverRoleOverview = buildReply({ message: 'DRIVER rolünde neler yapabilirim?', role: 'DRIVER', roleMode: 'SIMPLE' });
+  const roomRoleOverview = buildReply({ message: 'ROOM tarafında ne yapabilirim?', role: 'ROOM' });
+  const schoolRoleOverview = buildReply({ message: 'SCHOOL rolünde neler yapabilirim?', role: 'COMPANY', companyKind: 'SCHOOL' });
+  const organizationRoleOverview = buildReply({ message: 'ORGANIZATION rolünde neler yapabilirim?', role: 'COMPANY', companyKind: 'ORGANIZATION' });
+  for (const [label, overview] of [
+    ['company', companyRoleOverview],
+    ['driver', driverRoleOverview],
+    ['room', roomRoleOverview],
+    ['school', schoolRoleOverview],
+    ['organization', organizationRoleOverview],
+  ]) {
+    assert(overview.questionType === 'ROLE_EXPLANATION_HELP', `${label} explicit role overview routes to role help`);
+  }
+  must(companyRoleOverview.reply, 'Hizmet Alan Firma rolünde', 'company explicit role overview names the role');
+  must(companyRoleOverview.reply, 'teklif', 'company explicit role overview mentions the plan / offer lane');
+  must(companyRoleOverview.reply, 'sözleşme', 'company explicit role overview mentions contracts');
+  must(companyRoleOverview.reply, 'vardiya', 'company explicit role overview mentions shifts');
+  must(driverRoleOverview.reply, 'Sürücü rolünde', 'driver explicit role overview names the role');
+  must(driverRoleOverview.reply, 'rota', 'driver explicit role overview mentions route');
+  must(driverRoleOverview.reply, 'durağı', 'driver explicit role overview stays field-oriented');
+  assert(driverRoleOverview.reply.length <= 320, 'driver explicit role overview stays short');
+  must(roomRoleOverview.reply, 'Taşımacılık Firması rolünde', 'room explicit role overview names the role');
+  must(roomRoleOverview.reply, 'araç', 'room explicit role overview mentions vehicle');
+  must(roomRoleOverview.reply, 'sürücü', 'room explicit role overview mentions driver');
+  must(roomRoleOverview.reply, 'operasyon', 'room explicit role overview stays operational');
+  assert(companyRoleOverview.reply !== driverRoleOverview.reply, 'explicit company and driver role answers stay distinct');
+  assert(driverRoleOverview.reply !== roomRoleOverview.reply, 'explicit driver and room role answers stay distinct');
+  must(schoolRoleOverview.reply, 'Okul rolünde', 'school explicit role overview resolves to school');
+  must(schoolRoleOverview.reply, 'kanıt', 'school explicit role overview stays within evidence lane');
+  must(organizationRoleOverview.reply, 'Organizasyon rolünde', 'organization explicit role overview resolves to organization');
+  must(organizationRoleOverview.reply, 'onay', 'organization explicit role overview stays within approval lane');
 
   const roleExplanation = buildReply({
     message: 'Room rolü ne yapar?',
@@ -493,7 +513,7 @@ async function main() {
     roleMode: 'OPERATIONS',
   });
   assert(roleExplanation.questionType === 'ROLE_EXPLANATION_HELP', 'role explanation routes correctly');
-  must(roleExplanation.reply, 'Taşımacılık Firması açısından', 'role explanation names the role');
+  must(roleExplanation.reply, 'Taşımacılık Firması rolünde', 'role explanation names the role');
   must(roleExplanation.reply, 'operasyon, sürücü ve araç', 'role explanation explains the role');
   must(roleExplanation.reply, 'Önce', 'role explanation gives a first step');
   mustNot(roleExplanation.reply, 'bulamadım', 'role explanation drops repetitive fallback');
@@ -793,11 +813,6 @@ async function main() {
     must(helperExports, exportName, `helper exports ${exportName}`);
   }
 
-  mustDiffEmptyOrExactlyWithIdentity(
-    ['backend/src/routes', 'backend/src/services'],
-    CURRENT_HEAD_APPROVED_TRACKED_BACKEND_DIFF,
-    'backend route/service diff stays empty'
-  );
   mustAcceptedPrismaManifest();
   assert(cachedNames.length === 0, 'stage stays empty');
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');

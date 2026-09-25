@@ -10,6 +10,7 @@ import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
+const isPreflight = process.argv.slice(2).includes("--preflight");
 
 const reportJsonPath = path.join(
   root,
@@ -202,7 +203,10 @@ function main() {
   mustNotContains(doc, "force push", "mobile all roles panel audit doc avoids force push wording");
   mustNotContains(doc, "tag taşıma", "mobile all roles panel audit doc avoids tag rewrite wording");
 
-  if (fs.existsSync(reportJsonPath)) {
+  if (isPreflight) {
+    console.log("=== UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 PRE-RUN STATIC IDENTITY PASS ===");
+    console.log("OK report freshness is intentionally deferred to the real-browser evidence gate");
+  } else if (fs.existsSync(reportJsonPath)) {
     const report = readJson(reportJsonPath);
     mustSmokeEvidenceIdentity(report, {
       repoRoot: root,

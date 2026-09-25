@@ -129,7 +129,10 @@ function FitController({ points, followPoint, followZoom, fitKey }) {
       [Math.min(...lats), Math.min(...lons)],
       [Math.max(...lats), Math.max(...lons)],
     ];
-    map.fitBounds(bounds, { padding: [40, 40] });
+    // Route transitions can unmount the map while Leaflet is still animating
+    // a fit. Keep the operational map deterministic and let the caller own
+    // any explicit user animation.
+    map.fitBounds(bounds, { padding: [40, 40], animate: false });
     didFitRef.current = true;
   }, [map, points]);
 
@@ -141,9 +144,14 @@ function FitController({ points, followPoint, followZoom, fitKey }) {
 
   useEffect(() => {
     if (!followRef.current || !followPoint) return;
+    if (!map._loaded || !map.getContainer?.()?.isConnected) return;
     const z = Number.isFinite(Number(followZoom)) ? Number(followZoom) : map.getZoom();
-    map.setView(followPoint, z, { animate: true });
+    map.setView(followPoint, z, { animate: false });
   }, [followPoint, followZoom, map]);
+
+  useEffect(() => () => {
+    try { map.stop(); } catch { /* map may already be in Leaflet teardown */ }
+  }, [map]);
 
   useEffect(() => {
     const onFit = () => fitAll();
@@ -158,18 +166,24 @@ function FocusController() {
   const map = useMap();
 
   useEffect(() => {
+    let disposed = false;
     const handler = (e) => {
+      if (disposed || !map._loaded || !map.getContainer?.()?.isConnected) return;
       const d = e?.detail || {};
       const lat = toNum(d.lat);
       const lng = toNum(d.lng);
       if (lat === null || lng === null) return;
 
       const zoom = Number.isFinite(Number(d.zoom)) ? Number(d.zoom) : Math.max(map.getZoom(), 15);
-      map.flyTo([lat, lng], zoom, { animate: true, duration: 0.6 });
+      map.flyTo([lat, lng], zoom, { animate: false });
     };
 
     window.addEventListener("map:focus", handler);
-    return () => window.removeEventListener("map:focus", handler);
+    return () => {
+      disposed = true;
+      window.removeEventListener("map:focus", handler);
+      try { map.stop(); } catch { /* map may already be in Leaflet teardown */ }
+    };
   }, [map]);
 
   return null;
@@ -180,11 +194,22 @@ function MapSizeController() {
 
   useEffect(() => {
     let disposed = false;
+    let frame = null;
+    let lastSize = null;
     const refresh = () => {
-      if (disposed) return;
-      try { map.invalidateSize({ pan: false }); } catch { /* map may be unmounted */ }
+      if (disposed || frame !== null) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        if (disposed || !map._loaded) return;
+        const container = map.getContainer?.();
+        if (!container?.isConnected) return;
+        const nextSize = { width: container.clientWidth, height: container.clientHeight };
+        if (lastSize && lastSize.width === nextSize.width && lastSize.height === nextSize.height) return;
+        lastSize = nextSize;
+        try { map.invalidateSize({ pan: false, animate: false }); } catch { /* map may be in teardown */ }
+      });
     };
-    const timers = [0, 80, 260, 700].map((delay) => window.setTimeout(refresh, delay));
+    const timers = [0, 120, 360].map((delay) => window.setTimeout(refresh, delay));
     const container = map.getContainer();
     const observer = typeof ResizeObserver === "function" ? new ResizeObserver(refresh) : null;
     observer?.observe(container);
@@ -192,6 +217,7 @@ function MapSizeController() {
     return () => {
       disposed = true;
       timers.forEach((timer) => window.clearTimeout(timer));
+      if (frame !== null) window.cancelAnimationFrame(frame);
       observer?.disconnect();
       window.removeEventListener("resize", refresh);
     };

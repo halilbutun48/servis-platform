@@ -4,7 +4,8 @@ import AppShell from "./layout/AppShell";
 import { useSession } from "./state/session";
 import { login } from "./api";
 import { useHashRoute, navigate } from "./router";
-import { companyBase } from "./utils/paths";
+import { getRoleDefaultPath, resolveRouteScope } from "./utils/roleNavigation";
+import { createCopilotRouteContext } from "./copilot/routeContext";
 import BrandMark from "./components/BrandMark";
 import ErrorBoundary from "./components/ErrorBoundary";
 import RoleTaskHome from "./components/RoleTaskHome";
@@ -107,18 +108,6 @@ const SuperOperationsPanel = lazy(() => import("./panels/superadmin/OperationsPa
 const SuperPublicLeadReviewPanel = lazy(() => import("./panels/superadmin/PublicLeadReviewPanel"));
 const SuperTelematicsHubPanel = lazy(() => import("./panels/superadmin/TelematicsHubPanel"));
 
-function roleDefaultPath(me) {
-  if (me?.requirePasswordChange) return "/auth/change-password";
-  const role = me?.role;
-  if (role === "ROOM") return "/room";
-  if (role === "COMPANY") return companyBase(me); // COMPANY or SCHOOL variant
-  if (role === "DRIVER") return me?.requirePinChange ? "/driver/change-pin" : "/driver/today";
-  if (role === "PERSONEL") return "/personel/live";
-  if (role === "PARENT") return "/parent/live";
-  if (role === "SUPER_ADMIN") return "/superadmin";
-  return "/";
-}
-
 function fallbackCopilotPath(path) {
   const clean = String(path || "").split("?")[0];
   if (clean.startsWith("/room")) return "/room/copilot";
@@ -203,7 +192,7 @@ function LoginCard() {
                 Canlı GPS, kanıt ve kalite kontrolü aynı yerde; hakediş ve maliyet riskleri için güvenli önizleme,
                 Sefer Abi ile rol bazlı operasyon desteğiyle birlikte sunulur.
               </p>
-              <div className="authHeroPills" aria-label="Login promise highlights">
+              <div className="authHeroPills" aria-label="Giriş avantajları">
                 <span className="authHeroMiniPill">Güvenli giriş</span>
                 <span className="authHeroMiniPill">Rol bazlı akış</span>
                 <span className="authHeroMiniPill">Demo hazırlıklı</span>
@@ -296,10 +285,41 @@ function RouteRedirect({ to, message = "Yönlendiriliyor..." }) {
   return <div style={{ padding: 16 }} role="status">{message}</div>;
 }
 
+function ScopedAccessDenied({ home }) {
+  return (
+    <main className="notFoundRecovery" aria-labelledby="scoped-access-title">
+      <div className="card notFoundRecoveryCard">
+        <div className="pre18-type-section-eyebrow">SeferPakt</div>
+        <h1 id="scoped-access-title">Bu çalışma alanına erişim yok</h1>
+        <p>Bu kayıt alanı mevcut oturumun yetkili kapsamına dahil değil.</p>
+        <p className="muted">Korunan kayıtlar yüklenmeden güvenli başlangıç ekranına dönebilirsin.</p>
+        <button type="button" className="btn primary" onClick={() => navigate(home)}>Ana sayfaya dön</button>
+      </div>
+    </main>
+  );
+}
+
+function NotFoundRecovery({ me, requestedPath }) {
+  const home = getRoleDefaultPath(me);
+  return (
+    <main className="notFoundRecovery" data-not-found-recovery="true" aria-labelledby="not-found-title">
+      <div className="card notFoundRecoveryCard">
+        <div className="pre18-type-section-eyebrow">SeferPakt</div>
+        <h1 id="not-found-title">Sayfa bulunamadı</h1>
+        <p>Bu çalışma alanı artık mevcut değil veya bu oturum için kullanılamıyor.</p>
+        <p className="muted">Güvenli başlangıç ekranına dönerek devam edebilirsin.</p>
+        <button type="button" className="btn primary" onClick={() => navigate(home)}>Ana sayfaya dön</button>
+        <span className="sr-only">İstenen sayfa: {requestedPath}</span>
+      </div>
+    </main>
+  );
+}
+
 export default function App() {
   const { token, me } = useSession();
   const { path } = useHashRoute();
   const cleanPath = String(path || "/").split("?")[0];
+  const canonicalRouteScope = token && me ? resolveRouteScope(me, cleanPath) : "UNAVAILABLE";
 
   // ✅ WS: token geldikçe başlat, token gidince durdur
   useEffect(() => {
@@ -313,7 +333,7 @@ export default function App() {
   // Redirect to default panel after login
   useEffect(() => {
     if (!token || !me?.role) return;
-    if (path === "/" || path === "") navigate(roleDefaultPath(me));
+    if (path === "/" || path === "") navigate(getRoleDefaultPath(me));
   }, [token, me, me?.role, me?.requirePasswordChange, path]);
 
   const view = useMemo(() => {
@@ -334,11 +354,11 @@ export default function App() {
     }
 
     if (me.role === "DRIVER" && me.requirePinChange && path !== "/driver/change-pin") {
-      return { layout: true, node: <RouteRedirect to="/driver/change-pin" message="PIN ekranına yönlendiriliyor..." /> };
+      return { layout: true, routeContextStatus: "UNAVAILABLE", node: <RouteRedirect to="/driver/change-pin" message="PIN ekranına yönlendiriliyor..." /> };
     }
 
-    if (cleanPath.startsWith("/superadmin") && me.role !== "SUPER_ADMIN") {
-      return { layout: true, node: <RouteRedirect to={roleDefaultPath(me)} /> };
+    if (canonicalRouteScope === "DENY") {
+      return { layout: true, routeContextStatus: "DENY", node: <ScopedAccessDenied home={getRoleDefaultPath(me)} /> };
     }
 
     // Shared
@@ -460,17 +480,20 @@ export default function App() {
     if (path === "/superadmin/public-leads") return { layout: true, node: <SuperPublicLeadReviewPanel /> };
     if (path === "/superadmin/copilot") return { layout: true, node: <CopilotPanel /> };
 
-    // Unknown: go default
-    const def = roleDefaultPath(me);
-    return { layout: true, node: <RouteRedirect to={def} /> };
-  }, [token, me, path, cleanPath]);
+    // Unknown routes must be explicit recovery surfaces. Silently redirecting
+    // to a role home makes invalid-route evidence indistinguishable from a
+    // successful page load and can hide stale/deep-link defects.
+    return { layout: true, routeContextStatus: "UNKNOWN", node: <NotFoundRecovery me={me} requestedPath={cleanPath} /> };
+  }, [token, me, path, cleanPath, canonicalRouteScope]);
 
   if (!view.layout) return view.node;
 
   const routeResetKey = cleanPath || path || "default";
+  const routeContextStatus = view.routeContextStatus || (canonicalRouteScope === "ALLOW" ? "ALLOW" : canonicalRouteScope);
+  const routeContext = createCopilotRouteContext({ status: routeContextStatus, path: cleanPath });
 
   return (
-    <AppShell path={path}>
+    <AppShell path={path} routeContext={routeContext}>
       <ErrorBoundary resetKey={routeResetKey}>
         <Suspense key={routeResetKey} fallback={<div style={{ padding: 16 }}>Yükleniyor...</div>}>
           {view.node}

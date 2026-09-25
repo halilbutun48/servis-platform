@@ -164,18 +164,12 @@ must(parentLivePanelSource, 'selectedRecordLabel', 'parent live panel keeps sele
 must(parentLivePanelSource, 'Araç konum sinyali', 'parent live panel keeps vehicle signal badge');
 must(parentLivePanelSource, 'Sürücünün telefonundan konum sinyali', 'parent live panel keeps driver phone signal badge');
 
-must(drawerSource, 'helpContextSummary', 'floating drawer keeps helpContextSummary bridge');
-must(drawerSource, 'contextSummary', 'floating drawer keeps contextSummary bridge');
-must(drawerSource, 'selectedFields', 'floating drawer keeps selected fields bridge');
-must(drawerSource, 'selectedBadges', 'floating drawer keeps selected badges bridge');
-must(drawerSource, 'structuredFacts', 'floating drawer keeps structured facts bridge');
-must(drawerSource, 'liveFacts', 'floating drawer keeps live facts bridge');
-must(copilotPanelSource, 'helpContextSummary', 'copilot panel keeps helpContextSummary bridge');
-must(copilotPanelSource, 'contextSummary', 'copilot panel keeps contextSummary bridge');
-must(copilotPanelSource, 'selectedFields', 'copilot panel keeps selected fields bridge');
-must(copilotPanelSource, 'selectedBadges', 'copilot panel keeps selected badges bridge');
-must(copilotPanelSource, 'structuredFacts', 'copilot panel keeps structured facts bridge');
-must(copilotPanelSource, 'liveFacts', 'copilot panel keeps live facts bridge');
+must(drawerSource, 'const requestSelection = liveSelection || selection || null;', 'floating drawer resolves the current explicit selection');
+must(drawerSource, 'const uiSurface = captureCopilotUiSurface();', 'floating drawer captures the current UI surface');
+must(drawerSource, 'selectedEntitySet: Array.isArray(requestSelection?.entitySet) ? requestSelection.entitySet : []', 'floating drawer forwards the selected entity set');
+must(copilotPanelSource, 'const requestSelection = liveSelection || chatSelection || null;', 'copilot panel resolves the current explicit selection');
+must(copilotPanelSource, 'const uiSurface = captureCopilotUiSurface();', 'copilot panel captures the current UI surface');
+must(copilotPanelSource, 'selectedEntityType: requestSelection?.entityType || ""', 'copilot panel forwards the selected entity type');
 
 must(intentRouterSource, "pathHas(options.screenPath, ['/parent/live'])", 'intent router keeps parent live path routing');
 must(intentRouterSource, 'LOCATION_HELP', 'intent router keeps location help intent');
@@ -267,7 +261,9 @@ const noVehicleFixture = buildParentFixture({
 });
 
 const intentA = detectQuestionIntent('Servis neden görünmüyor?', { entityType: 'screen', screenPath: '/parent/live', originalMessage: 'Servis neden görünmüyor?' });
-mustAny(intentA.questionType, ['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE'], 'parent live no-vehicle question routes to live location intent');
+must(intentA.questionType, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'parent live no-vehicle question preserves the current authorization boundary');
+mustNot(intentA.questionType, 'LOCATION_HELP', 'parent live no-vehicle question does not infer location authority from screen context');
+mustNot(intentA.questionType, 'VEHICLE_NOT_VISIBLE', 'parent live no-vehicle question does not infer vehicle visibility from screen context');
 mustNot(intentA.questionType, 'FEEDBACK_STATUS', 'parent live no-vehicle question avoids feedback intent');
 
 const resolvedA = await resolveChatContext({
@@ -313,7 +309,7 @@ mustNot(replyA, 'Geri Bildirim ekranı', 'parent live no-vehicle reply avoids fe
 mustNot(replyA, 'açık geri bildirim', 'parent live no-vehicle reply avoids feedback wording');
 mustNot(replyA, 'kritik geri bildirim', 'parent live no-vehicle reply avoids feedback wording');
 mustAny(replyA, ['canlı araç görünmüyor', 'araç sadece aktif vardiya saat aralığında', 'araç ataması varsa görünür'], 'parent live no-vehicle reply states no-live fallback');
-mustAny(replyA, ['Canlı konum', 'son konum bilgisi', 'sürücünün telefonundan konum sinyali'], 'parent live no-vehicle reply mentions live location');
+must(replyA, 'Kesin sebebi veriyle doğrulamak gerekir', 'parent live no-vehicle reply keeps the evidence-grounded boundary');
 assertNoForbiddenVisibleTerms(replyA, 'parent live no-vehicle reply');
 const chipsA = chipList(responseA);
 mustArrayContains(chipsA, 'Servis saati uygun mu?', 'parent live no-vehicle chips keep service-hour chip');
@@ -396,8 +392,8 @@ mustAny(replyB, ['GPS', 'Zayıf'], 'parent live selected-service reply keeps gps
 mustAny(replyB, ['Son konum bilgisi', '2dk'], 'parent live selected-service reply keeps last gps');
 must(replyB, 'Durak B', 'parent live selected-service reply keeps next stop');
 mustAny(replyB, ['Tahmini varış süresi', '8dk'], 'parent live selected-service reply keeps ETA');
-must(replyB, 'Sürücünün telefonundan konum sinyali', 'parent live selected-service reply keeps driver phone signal wording');
-mustAny(replyB, ['araç bağlantısını', 'görev bağlantısını'], 'parent live selected-service reply keeps connection controls');
+must(replyB, 'Önce seçili kayıt ve son sinyali kontrol edelim.', 'parent live selected-service reply keeps the current evidence-grounded next control');
+mustNot(replyB, 'Sürücünün telefonundan konum sinyali', 'parent live selected-service reply does not invent an unprovided signal source');
 assertNoForbiddenVisibleTerms(replyB, 'parent live selected-service reply');
 const chipsB = chipList(responseB);
 mustArrayContains(chipsB, 'Son konum bilgisi ne zaman geldi?', 'parent live selected-service chips keep last gps chip');
@@ -447,7 +443,9 @@ mustNotRaw(replyC, 'FORBIDDEN', 'parent live no-context reply avoids raw FORBIDD
 mustNot(replyC, 'Bunu anlayamadım', 'parent live no-context reply avoids understand fallback');
 mustNot(replyC, 'saha geri bildirimlerini', 'parent live no-context reply avoids feedback explanation');
 mustNot(replyC, 'Geri Bildirim ekranı', 'parent live no-context reply avoids feedback screen wording');
-mustAny(replyC, ['net görünmüyor', 'canlı araç görünmüyor'], 'parent live no-context reply uses safe fallback');
+must(replyC, 'Şu an: Canlı', 'parent live no-context reply keeps the current safe screen context');
+must(replyC, 'Önce seçili kayıt ve son sinyali kontrol edelim.', 'parent live no-context reply keeps the current safe verification step');
+mustNot(replyC, 'Araç:', 'parent live no-context reply does not invent vehicle detail');
 assertNoForbiddenVisibleTerms(replyC, 'parent live no-context reply');
 const chipsC = chipList(responseC);
 mustArrayNotContains(chipsC, 'Geri Bildirim ekranını aç', 'parent live no-context chips avoid feedback chip');

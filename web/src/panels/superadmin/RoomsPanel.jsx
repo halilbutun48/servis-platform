@@ -227,8 +227,9 @@ export default function RoomsPanel() {
 
         {err ? <div style={{ color: "#ff7b7b", marginBottom: 10, whiteSpace: "pre-wrap" }}>{err}</div> : null}
 
-        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-          <div
+        <div className="card pre18-responsive-list" style={{ padding: 0, overflow: "hidden" }}>
+            <div
+              className="pre18-responsive-list-head"
             style={{
               display: "grid",
               gridTemplateColumns: "72px 1.2fr 1fr 1fr 120px 190px 260px",
@@ -251,6 +252,7 @@ export default function RoomsPanel() {
             const editing = editId === r.id;
             return (
               <div
+                className="pre18-responsive-list-row"
                 key={r.id}
                 style={{
                   display: "grid",
@@ -260,9 +262,9 @@ export default function RoomsPanel() {
                   alignItems: "center",
                 }}
               >
-                <div style={{ opacity: 0.85 }}>{r.id}</div>
+                <div data-label="ID" style={{ opacity: 0.85 }}>{r.id}</div>
 
-                <div>
+                <div data-label="Ad">
                   {editing ? (
                     <input value={editForm.name} onChange={(e) => setEditForm((s) => ({ ...s, name: e.target.value }))} />
                   ) : (
@@ -270,7 +272,7 @@ export default function RoomsPanel() {
                   )}
                 </div>
 
-                <div>
+                <div data-label="İl">
                   {editing ? (
                     <select value={editForm.regionId} onChange={(e) => setEditForm((s) => ({ ...s, regionId: e.target.value }))}>
                       <option value="">-</option>
@@ -285,7 +287,7 @@ export default function RoomsPanel() {
                   )}
                 </div>
 
-                <div>
+                <div data-label="İlçe">
                   {editing ? (
                     <input value={editForm.district} onChange={(e) => setEditForm((s) => ({ ...s, district: e.target.value }))} />
                   ) : (
@@ -293,7 +295,7 @@ export default function RoomsPanel() {
                   )}
                 </div>
 
-                <div>
+                <div data-label="Durum">
                   {editing ? (
                     <select value={editForm.status} onChange={(e) => setEditForm((s) => ({ ...s, status: e.target.value }))}>
                       <option value="ACTIVE">Aktif</option>
@@ -304,9 +306,9 @@ export default function RoomsPanel() {
                   )}
                 </div>
 
-                <div style={{ opacity: 0.8 }}>{r.createdAt ? formatDateTimeTR(r.createdAt) : "-"}</div>
+                <div data-label="Oluşturma" style={{ opacity: 0.8 }}>{r.createdAt ? formatDateTimeTR(r.createdAt) : "-"}</div>
 
-                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                <div data-label="Aksiyon" style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
                   <button className="btn sm" disabled={busy} onClick={() => copyText(r.id)}>
                     ID Kopyala
                   </button>

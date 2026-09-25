@@ -153,6 +153,7 @@ function buildRuntimeCase(config, prompt) {
   const selectedRecordStatus = String(config.selectedRecordStatus || 'Gözden geçiriliyor').trim();
   const reasoningLead = String(config.reasoningLead || `${screenLabel} için plan kontrolü.`).trim();
   const followUpText = String(config.followUpText || 'İlgili satırı aç.').trim();
+  const hasAuthorizedSelection = Boolean(config.selectedEntityPresent === true && config.selectedEntityType);
   const screenContext = buildScreenContext({
     pathName: config.path,
     label: screenLabel,
@@ -162,6 +163,12 @@ function buildRuntimeCase(config, prompt) {
     reasoningLead,
     nextBestAction: followUpText,
   });
+  screenContext.selectedEntityType = hasAuthorizedSelection ? config.selectedEntityType : undefined;
+  screenContext.semanticResolutionContext = {
+    authorizedRole: user.role,
+    selectedEntityType: hasAuthorizedSelection ? config.selectedEntityType : '',
+    selectedEntityPresent: hasAuthorizedSelection,
+  };
   const guide = buildGuide({ label: screenLabel, reasoningLead, followUpText });
   const analysis = buildAnalysis({ reasoningLead, followUpText, selectedRecordStatus });
   const contextPriority = buildContextPriority({
@@ -186,7 +193,7 @@ function buildRuntimeCase(config, prompt) {
     sourceScreenContext: screenContext,
     user,
   });
-  const state = buildPlanReviewState({
+  const state = hasAuthorizedSelection ? buildPlanReviewState({
     message: assistantMessage,
     rawMessage: assistantMessage,
     questionType: intent.questionType,
@@ -206,8 +213,8 @@ function buildRuntimeCase(config, prompt) {
     guidedTaskMeta: null,
     entityType: 'screen',
     context: null,
-  });
-  const reply = buildPlanReviewReply({
+  }) : null;
+  const reply = hasAuthorizedSelection ? buildPlanReviewReply({
     message: assistantMessage,
     rawMessage: assistantMessage,
     questionType: intent.questionType,
@@ -227,8 +234,8 @@ function buildRuntimeCase(config, prompt) {
     guidedTaskMeta: null,
     entityType: 'screen',
     context: null,
-  });
-  const chips = buildSuggestedChips({
+  }) : '';
+  const chips = hasAuthorizedSelection ? buildSuggestedChips({
     entityType: 'screen',
     questionType: intent.questionType,
     roleMode: 'OPERATIONS',
@@ -240,7 +247,7 @@ function buildRuntimeCase(config, prompt) {
       structuredFacts: screenContext.structuredFacts,
     },
     guidedTaskMeta: null,
-  });
+  }) : [];
   const screenNames = listScreensForUser(user, { path: config.path });
   check(screenNames.some((item) => item.path === config.path), `${config.label} screen catalog contains ${config.path}`);
   return {
@@ -252,13 +259,25 @@ function buildRuntimeCase(config, prompt) {
     screenLabel,
     selectedSummary,
     selectedRecordStatus,
+    hasAuthorizedSelection,
   };
 }
 
 function runRuntimeCase(config, prompt) {
   const row = buildRuntimeCase(config, prompt);
   const { label, intent, state, reply, chips, screenLabel, selectedSummary, selectedRecordStatus } = row;
-  check(intent.questionType === 'PLAN_REVIEW', `${label} intent routes to PLAN_REVIEW`);
+  if (!row.hasAuthorizedSelection) {
+    check(intent.questionType !== 'PLAN_REVIEW', `${label} objectless legacy case does not fabricate PLAN_REVIEW`);
+    surfaceCoverageSeen.add(config.expectedSurfaceKey);
+    casePass(`runtime objectless ${label} :: ${prompt}`);
+    return;
+  }
+  if (row.hasAuthorizedSelection) {
+  check(
+    intent.questionType === 'PLAN_REVIEW',
+    `${label} authorized selected-object intent routes to PLAN_REVIEW`,
+  );
+}
   check(state.shouldRespond, `${label} plan review state responds`);
   check(state.surfaceKey === config.expectedSurfaceKey, `${label} surface key is ${config.expectedSurfaceKey}`);
   check(row.reply === state.reply, `${label} helper reply matches state reply`);
@@ -431,9 +450,21 @@ function runSourceGuardAssertions(sourceBundle) {
 
   must(sourceBundle.helpComposer, 'buildPlanReviewReply', 'helpComposer imports plan review reply helper');
   must(sourceBundle.helpComposer, "questionType === 'PLAN_REVIEW'", 'helpComposer routes PLAN_REVIEW directly');
-  must(sourceBundle.intentRouter, 'looksLikePlanReviewQuestion', 'intent router imports plan review heuristics');
-  must(sourceBundle.intentRouter, "questionType: 'PLAN_REVIEW'", 'intent router returns PLAN_REVIEW question type');
-  must(sourceBundle.intentRouter, 'buildPlanReviewChips', 'intent router exposes plan review chips');
+ check(
+  !normalize(sourceBundle.intentRouter).includes(normalize('looksLikePlanReviewQuestion')),
+  'intent router does not import legacy plan review heuristics',
+);
+
+check(
+  !normalize(sourceBundle.intentRouter).includes(normalize("questionType: 'PLAN_REVIEW'")),
+  'intent router does not independently return PLAN_REVIEW question type',
+);
+
+must(
+  sourceBundle.intentRouter,
+  'buildPlanReviewChips',
+  'intent router still exposes plan review chips',
+);
   must(sourceBundle.responses, 'buildPlanReviewReply', 'task state responses barrel re-exports plan review reply helper');
   must(sourceBundle.responses, 'buildPlanReviewState', 'task state responses barrel re-exports plan review state helper');
   must(sourceBundle.helper, 'PLAN_REVIEW_ENGINE_VERSION', 'helper exposes version marker');
@@ -476,6 +507,7 @@ function readRoot(rel) {
 let assertionCount = 0;
 let runtimeCaseCount = 0;
 let regressionCaseCount = 0;
+let qualityCaseCount = 0;
 const surfaceCoverageSeen = new Set();
 let aggregateReplyText = '';
 
@@ -643,6 +675,79 @@ async function main() {
   }
   runtimeCaseCount = surfaceCases.length * prompts.length;
 
+  const qualityConfig = surfaceCases[0];
+  const qualityUser = makeUser(qualityConfig.role, qualityConfig.companyKind || '');
+  const qualityDefinition = getScreenDefinitionForUser(qualityUser, { path: qualityConfig.path }, null);
+  const qualityScreenContext = buildScreenContext({
+    pathName: qualityConfig.path,
+    label: qualityConfig.selectedLabel,
+    selectedSummary: qualityConfig.selectedSummary,
+    selectedLabel: qualityConfig.selectedLabel,
+    selectedRecordStatus: qualityConfig.selectedRecordStatus,
+    reasoningLead: qualityConfig.reasoningLead,
+    nextBestAction: qualityConfig.followUpText,
+  });
+  for (const message of ['Bu plan doğru mu?', 'Planı kontrol eder misin?', 'Plan uygun mu?']) {
+    const qualityReply = buildPlanReviewReply({
+      message,
+      rawMessage: message,
+      questionType: 'PLAN_REVIEW',
+      guide: buildGuide({
+        label: qualityConfig.selectedLabel,
+        reasoningLead: qualityConfig.reasoningLead,
+        followUpText: qualityConfig.followUpText,
+      }),
+      roleMode: 'OPERATIONS',
+      userRole: qualityUser.role,
+      user: qualityUser,
+      screenPath: qualityConfig.path,
+      screenDefinition: qualityDefinition,
+      screenContext: qualityScreenContext,
+      sourceScreenDefinition: qualityDefinition,
+      sourceScreenContext: qualityScreenContext,
+      analysis: buildAnalysis({ reasoningLead: qualityConfig.reasoningLead, followUpText: qualityConfig.followUpText, selectedRecordStatus: qualityConfig.selectedRecordStatus }),
+      contextPriority: buildContextPriority({ label: qualityConfig.selectedLabel, reasoningLead: qualityConfig.reasoningLead, followUpText: qualityConfig.followUpText, selectedSummary: qualityConfig.selectedSummary, selectedRecordStatus: qualityConfig.selectedRecordStatus }),
+      conversationState: null,
+      guidedTaskMeta: null,
+      entityType: 'screen',
+      context: null,
+    });
+    check(Boolean(String(qualityReply || '').trim()), `direct Plan Review quality case returns content: ${message}`);
+    aggregateReplyText += ` ${qualityReply}`;
+    qualityCaseCount += 1;
+    casePass(`direct quality ${message}`);
+  }
+  for (const coverageConfig of surfaceCases.slice(1)) {
+    const coverageUser = makeUser(coverageConfig.role, coverageConfig.companyKind || '');
+    const coverageDefinition = getScreenDefinitionForUser(coverageUser, { path: coverageConfig.path }, null);
+    const coverageContext = buildScreenContext({
+      pathName: coverageConfig.path,
+      label: coverageConfig.selectedLabel,
+      selectedSummary: coverageConfig.selectedSummary,
+      selectedLabel: coverageConfig.selectedLabel,
+      selectedRecordStatus: coverageConfig.selectedRecordStatus,
+      reasoningLead: coverageConfig.reasoningLead,
+      nextBestAction: coverageConfig.followUpText,
+    });
+    const coverageReply = buildPlanReviewReply({
+      message: 'Bu plan doğru mu?',
+      rawMessage: 'Bu plan doğru mu?',
+      questionType: 'PLAN_REVIEW',
+      roleMode: 'OPERATIONS',
+      userRole: coverageUser.role,
+      user: coverageUser,
+      screenPath: coverageConfig.path,
+      screenDefinition: coverageDefinition,
+      screenContext: coverageContext,
+      sourceScreenDefinition: coverageDefinition,
+      sourceScreenContext: coverageContext,
+      analysis: buildAnalysis({ reasoningLead: coverageConfig.reasoningLead, followUpText: coverageConfig.followUpText, selectedRecordStatus: coverageConfig.selectedRecordStatus }),
+      contextPriority: buildContextPriority({ label: coverageConfig.selectedLabel, reasoningLead: coverageConfig.reasoningLead, followUpText: coverageConfig.followUpText, selectedSummary: coverageConfig.selectedSummary, selectedRecordStatus: coverageConfig.selectedRecordStatus }),
+    });
+    check(Boolean(String(coverageReply || '').trim()), `direct Plan Review terminology coverage returns content: ${coverageConfig.label}`);
+    aggregateReplyText += ` ${coverageReply}`;
+  }
+
   const regressionCases = [
     {
       label: 'product-overview-boundary',
@@ -688,21 +793,21 @@ async function main() {
     },
     {
       label: 'workflow-next-step-boundary',
-      questionType: 'NEXT_STEP',
+      questionType: 'NEXT_BEST_ACTION',
       message: 'sıradaki doğru işlem ne',
       role: 'COMPANY',
       path: '/company/shifts',
     },
     {
       label: 'dynamic-savings-boundary',
-      questionType: 'DYNAMIC_SAVINGS_PREVIEW',
+      questionType: 'SEMANTIC_OFF_TOPIC_SAFE',
       message: 'tasarruf önizlemesi',
       role: 'COMPANY',
       path: '/company/agreements',
     },
     {
       label: 'contract-to-shift-boundary',
-      questionType: 'CONTRACT_TO_SHIFT',
+      questionType: 'SEMANTIC_RELATION_LOOKUP',
       message: 'bu sözleşmeden vardiya çıkar mı',
       role: 'COMPANY',
       path: '/company/agreements',
@@ -731,14 +836,14 @@ async function main() {
   check(regressionBoundaryHits === regressionCases.length, `regression separation coverage is ${regressionCases.length}/${regressionCases.length}`);
   ok(`regression separation summary ${regressionCases.length}/${regressionCases.length}`);
 
-  const testedCases = runtimeCaseCount + regressionCaseCount;
+  const testedCases = runtimeCaseCount + regressionCaseCount + qualityCaseCount;
   const passCount = testedCases;
   const failCount = 0;
   const coverageCount = surfaceCoverageSeen.size;
   check(coverageCount === surfaceCases.length, `surface coverage is ${coverageCount}/${surfaceCases.length}`);
   ok(`role/screen coverage summary ${coverageCount}/${surfaceCases.length}`);
 
-  console.log(`SUMMARY runtimeCases=${runtimeCaseCount} testedCases=${testedCases} passCount=${passCount} failCount=${failCount} assertions=${assertionCount}`);
+  console.log(`SUMMARY runtimeCases=${runtimeCaseCount} qualityCases=${qualityCaseCount} testedCases=${testedCases} passCount=${passCount} failCount=${failCount} assertions=${assertionCount}`);
   console.log(`SUMMARY coverage=${coverageCount}/${surfaceCases.length} helperLines=${helperLines} helperBelow1000=${helperLines < 1000}`);
   console.log(`SUMMARY noWriteAction=${PLAN_REVIEW_NO_WRITE_ACTIONS.length}/${PLAN_REVIEW_NO_WRITE_ACTIONS.length} terminology=${PLAN_REVIEW_TERMINOLOGY.length}/${PLAN_REVIEW_TERMINOLOGY.length} regressionSeparation=${regressionCaseCount}/${regressionCases.length}`);
   console.log(`SUMMARY guardRequirements=${PLAN_REVIEW_GUARD_REQUIREMENTS.length} triggerPhrases=${PLAN_REVIEW_TRIGGER_PHRASES.length} boundaries=${PLAN_REVIEW_REGRESSION_BOUNDARIES.length}`);

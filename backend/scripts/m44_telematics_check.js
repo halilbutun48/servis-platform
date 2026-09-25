@@ -37,17 +37,18 @@ async function postRaw(path, body, headers = {}) {
 }
 
 function signVendorPayload(provider, body, timestampMs, secret) {
+  const at = body?.at ? new Date(body.at).toISOString() : "";
   const payload = [
     String(provider || "").trim().toLowerCase(),
     String(timestampMs || 0),
     String(body?.serial || ""),
-    String(body?.at || ""),
+    at,
     String(body?.lat ?? ""),
     String(body?.lng ?? ""),
     String(body?.speed ?? ""),
     String(body?.heading ?? ""),
     String(body?.accuracy ?? ""),
-    String(body?.provider || ""),
+    String(body?.provider || provider || "").trim().toLowerCase(),
     String(body?.source || "VENDOR"),
   ].join("|");
 
@@ -117,6 +118,17 @@ async function main() {
   const vendorSecret = String(ENV.TELEMATICS_VENDOR_SECRET_GENERIC || ENV.TELEMATICS_VENDOR_SHARED_SECRET || "");
   const vendorTimestamp = String(Date.now());
   const vendorBody = { serial, lat: 41.015, lng: 29.02, speed: 41, at: at2 };
+  const unsignedVendorPush = await postRaw("/api/telematics/vendor/generic", vendorBody);
+  must("unsigned vendor push rejected", !unsignedVendorPush.ok && unsignedVendorPush.status === 400 && unsignedVendorPush.json?.error === "VENDOR_TIMESTAMP_REQUIRED");
+  const invalidVendorPush = await postRaw(
+    "/api/telematics/vendor/generic",
+    vendorBody,
+    {
+      "x-telematics-timestamp": vendorTimestamp,
+      "x-telematics-signature": "0".repeat(64),
+    }
+  );
+  must("invalid vendor signature rejected", !invalidVendorPush.ok && invalidVendorPush.status === 401 && invalidVendorPush.json?.error === "VENDOR_UNAUTHORIZED");
   const vendorSignature = signVendorPayload("generic", vendorBody, vendorTimestamp, vendorSecret);
   const vendorPush = await postRaw(
     "/api/telematics/vendor/generic",

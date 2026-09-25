@@ -86,7 +86,7 @@ must(helper, "Kalite karar geçmişi", "review helper keeps history title wordin
 must(helper, "Denetim izi", "review helper keeps audit wording");
 must(helper, "latestDecision", "review helper exposes latest decision field");
 must(helper, "Bu geçmiş kesin kalite puanı değildir", "review helper keeps non-final history wording");
-must(helper, "Bu geçmiş hakediş veya komisyon hesabını etkilemez", "review helper keeps payment impact wording");
+must(helper, "Bu geçmiş ödeme veya sözleşme hesabını etkilemez", "review helper keeps payment impact wording");
 must(helper, "Sağlayıcı sıralaması değildir", "review helper keeps not-ranking wording");
 must(helper, "Kalite incelemesi bekliyor", "review helper keeps pending wording");
 must(helper, "İncelendi", "review helper keeps reviewed wording");
@@ -115,7 +115,7 @@ must(route, "clearResponseCache(\"trust-quality:review-decision-history:", "trus
 must(route, "slice(0, 10)", "trust quality history keeps 10 item limit");
 must(route, "cleanText(record?.note, 120)", "trust quality history keeps note preview limit");
 must(route, "Bu geçmiş kesin kalite puanı değildir", "trust quality route keeps non-final history wording");
-must(route, "Bu geçmiş hakediş veya komisyon hesabını etkilemez", "trust quality route keeps payment impact history wording");
+must(route, "Bu geçmiş ödeme veya sözleşme hesabını etkilemez", "trust quality route keeps payment impact history wording");
 must(route, "Kapsam bu kullanıcı için geçerli değil.", "trust quality route keeps scope safety wording");
 mustNot(route, 'post("/review-decision/history"', "history endpoint is read-only");
 mustNot(route, 'put("/review-decision/history"', "history endpoint has no put");
@@ -130,7 +130,7 @@ must(api, "/api/trust-quality/review-decision/history", "api uses review history
 must(card, "Kalite karar geçmişi", "history card title present");
 must(card, "Denetim izi", "history card subtitle present");
 must(card, "Bu geçmiş kesin kalite puanı değildir.", "history card keeps non-final wording");
-must(card, "Bu geçmiş hakediş veya komisyon hesabını etkilemez.", "history card keeps payment impact wording");
+must(card, "Bu geçmiş ödeme veya sözleşme hesabını etkilemez.", "history card keeps payment impact wording");
 must(card, "Kalite karar geçmişi yükleniyor...", "history card keeps loading text");
 must(card, "Kalite karar geçmişi henüz yok.", "history card keeps empty text");
 must(card, "Bu kalite geçmişini görme yetkiniz yok.", "history card keeps permission fallback");

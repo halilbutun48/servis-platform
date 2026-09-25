@@ -27,6 +27,7 @@ const SHARED = [
 
 const REGISTRY = {
   ROOM: [
+    { id: 1100, path: "/room", label: "Taşımacılık Firması Merkezi" },
     { id: 1101, path: "/room/map", label: "Canlı Takip" },
     { id: 1102, path: "/room/offers", label: "Teklifler" },
     { id: 1103, path: "/room/shifts", label: "Vardiyalar" },
@@ -146,10 +147,16 @@ export function getCopilotScreenOptions(me) {
 }
 
 export function resolveCopilotScreenContext(path, me) {
-  const clean = String(path || "").split("?")[0];
+  const requestedPath = String(path || "");
   const rows = getCopilotScreenOptions(me);
-  const current = rows.find((x) => x.path === clean) || rows[0] || null;
-  return { screen: current, label: current?.label || clean || "Ekran", path: clean };
+  const exact = rows.find((x) => x.path === requestedPath) || null;
+  return {
+    screen: exact,
+    label: exact?.label || "",
+    path: exact?.path || "",
+    requestedPath,
+    metadataStatus: exact ? "FOUND" : "METADATA_MISSING",
+  };
 }
 
 export function getCopilotMenuEntry(me) {

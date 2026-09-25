@@ -34,10 +34,6 @@ export function driversRouter(io) {
     const text = String(value ?? "").trim();
     return text ? text.toLocaleUpperCase("tr-TR") : "";
   };
-  const upperTrOrNull = (value) => {
-    const text = String(value ?? "").trim();
-    return text ? text.toLocaleUpperCase("tr-TR") : null;
-  };
   const DRIVER_USER_SELECT = { id: true, email: true, deviceId: true, deviceBoundAt: true, deviceLastSeenAt: true, sessionVersion: true };
 
   const CONNECTION_ONLINE_WINDOW_MS = 5 * 60 * 1000;
@@ -273,12 +269,12 @@ export function driversRouter(io) {
 
     try {
       const normalizedFullName = upperTr(fullName);
-      const normalizedDeviceInfo = upperTrOrNull(deviceInfo);
+      const normalizedDeviceInfo = upperTr(deviceInfo);
 
       const result = await prisma.$transaction(async (tx) => {
         const created = await tx.driver.create({
           data: {
-            roomId: u.roomId,
+            room: { connect: { id: u.roomId } },
             fullName: normalizedFullName,
             phone,
             deviceInfo: normalizedDeviceInfo,

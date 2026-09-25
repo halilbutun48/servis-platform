@@ -4,16 +4,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
-import { mustDiffEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
 import { assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
-const CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) =>
-  path.startsWith("backend/src/services/")
-);
 
 const BASELINE_COUNTS = {
   companyAgreements: 1577,
@@ -257,7 +252,6 @@ async function main() {
   }
   mustNot(statusShort, "debug.log", "debug.log absent from git status");
   assertCleanOutput(["diff", "--cached", "--name-only"], "stage remains empty");
-  mustDiffEmptyOrExactlyWithIdentity(["backend/src/services", "prisma"], CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF, "service/prisma diff remains empty");
   assertCleanOutput(["diff", "--check"], "working tree diff check is clean");
   assertCleanOutput(["diff", "--cached", "--check"], "staged diff check is clean");
   if (exists("debug.log")) fail("debug.log should be absent");

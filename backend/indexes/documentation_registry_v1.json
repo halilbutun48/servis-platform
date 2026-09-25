@@ -2,13 +2,13 @@
   "schemaVersion": "docs-registry-v1",
   "generatedAt": "2026-08-20T14:53:21.500Z",
   "repo": {
-    "head": "42e67e678a8c88a9e14d5607dc90761cfc4a47b5",
+    "head": "e3bec6177f32263325bd14e876502faacac7a5b0",
     "branch": "m90d1_web_lint_inventory"
   },
   "census": {
-    "total": 1365,
-    "tracked": 656,
-    "untracked": 709
+    "total": 1398,
+    "tracked": 659,
+    "untracked": 739
   },
   "discovery": {
     "description": "Repository documentation-like artifact census, path-exact and deterministic.",
@@ -33,10 +33,10 @@
   "summaryCounts": {
     "classificationCounts": {
       "CANONICAL_SSOT": 5,
-      "ACTIVE_DOMAIN_DOC": 165,
+      "ACTIVE_DOMAIN_DOC": 171,
       "REFERENCE_POINTER": 27,
       "HISTORICAL_EVIDENCE": 464,
-      "DERIVED_GENERATED": 704,
+      "DERIVED_GENERATED": 731,
       "STALE_CONTRADICTORY": 0,
       "UNKNOWN_NEEDS_REVIEW": 0,
       "CHECKER_DEPENDENT": 0,
@@ -44,13 +44,13 @@
       "DUPLICATE": 0,
       "ORPHAN": 0
     },
-    "archiveBlocked": 406,
-    "checkerDependent": 289,
-    "generated": 704,
-    "activeCanonical": 170,
+    "archiveBlocked": 415,
+    "checkerDependent": 297,
+    "generated": 731,
+    "activeCanonical": 176,
     "archiveDispositionCounts": {
-      "KEEP_ACTIVE": 170,
-      "KEEP_GENERATED_EVIDENCE": 704,
+      "KEEP_ACTIVE": 176,
+      "KEEP_GENERATED_EVIDENCE": 731,
       "KEEP_POINTER": 27,
       "KEEP_IN_ARCHIVE": 464
     }
@@ -9235,6 +9235,357 @@
       "notesStatusReason": "generated evidence artifact; consumerCount=0"
     },
     {
+      "path": "backend/artifacts/browser-smoke/pre-18-browser-presentation-residual-batch-acceptance-01/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-final-two-presentation-residual-reachability-01/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-final-visual-excellence-discovery/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-fve001-single-corrective/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-human-review-round-1/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-human-review-round-2/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 1,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=1"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-major-findings-corrective-01/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-package1-micro-closure/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-package1-security-scope/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-premium-ui-polish-01/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-premium-ux-live-defect-corrective/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-round-10-conversation-routing/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-round-11-deterministic-conversation/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-round-12-acceptance-completion/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 1,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=1"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-round-12-canonical-authorization/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-round-13-current-state/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 2,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=2"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-round-14-short-clean-confirmation/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-round-7-query-plan/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 1,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=1"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/pre-18-round-9-final-execution/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/project-wide-turkish-terminology-audit-01/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01-visual-corrective-01/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01-visual-corrective-01/report.md",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 2,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=2"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/report.md",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/sefer-abi-character-animation-safe-snap-polish-01/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/sefer-abi-premium-character-corrective-01/report.json",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "backend/artifacts/browser-smoke/sefer-abi-premium-character-corrective-01/report.md",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "BACKEND",
+      "canonicalOwner": "backend/scripts/final_ux_smoke_01_check.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
       "path": "backend/data/README.md",
       "tracked": true,
       "classification": "ACTIVE_DOMAIN_DOC",
@@ -9461,12 +9812,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/BUG_ROUTE_IMPACT_PREVIEW_BUTTON_01.md",
-      "consumerCount": 3,
+      "consumerCount": 2,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=3"
+      "notesStatusReason": "active domain doc; consumerCount=2"
     },
     {
       "path": "docs/CACHE_COALESCING_AND_BACKOFF_01.md",
@@ -9487,12 +9838,12 @@
       "classification": "CANONICAL_SSOT",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/CHECKLIST_SSOT.md",
-      "consumerCount": 28,
+      "consumerCount": 30,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "canonical anchor; consumerCount=28"
+      "notesStatusReason": "canonical anchor; consumerCount=30"
     },
     {
       "path": "docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md",
@@ -10371,12 +10722,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/INDEX.md",
-      "consumerCount": 10,
+      "consumerCount": 12,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=10"
+      "notesStatusReason": "active domain doc; consumerCount=12"
     },
     {
       "path": "docs/INVITE_BASED_MEMBERSHIP_01.md",
@@ -11476,12 +11827,12 @@
       "classification": "CANONICAL_SSOT",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/MILESTONE_REGISTRY_V1.md",
-      "consumerCount": 68,
+      "consumerCount": 70,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "canonical anchor; consumerCount=68"
+      "notesStatusReason": "canonical anchor; consumerCount=70"
     },
     {
       "path": "docs/MILESTONE_VE_TICARI_OMURGA_HIZA_REHBERI_V2.md",
@@ -11541,12 +11892,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/NEXT_BACKLOG_V1.md",
-      "consumerCount": 41,
+      "consumerCount": 43,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=41"
+      "notesStatusReason": "active domain doc; consumerCount=43"
     },
     {
       "path": "docs/NOTIFICATION_PAYLOAD_STANDARD.md",
@@ -11861,17 +12212,56 @@
       "notesStatusReason": "historical evidence artifact; consumerCount=2"
     },
     {
+      "path": "docs/PRE_18_PREMIUM_UI_POLISH_01.md",
+      "tracked": false,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/PRE_18_PREMIUM_UI_POLISH_01.md",
+      "consumerCount": 3,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=3"
+    },
+    {
+      "path": "docs/PRE_18_ROUND_12_FINAL_LEDGER.md",
+      "tracked": false,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/PRE_18_ROUND_12_FINAL_LEDGER.md",
+      "consumerCount": 2,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=2"
+    },
+    {
+      "path": "docs/PRE_18_ROUND_13_FINAL_LEDGER.md",
+      "tracked": false,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/PRE_18_ROUND_13_FINAL_LEDGER.md",
+      "consumerCount": 2,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=2"
+    },
+    {
       "path": "docs/PRIMER_SSOT.md",
       "tracked": true,
       "classification": "CANONICAL_SSOT",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/PRIMER_SSOT.md",
-      "consumerCount": 184,
+      "consumerCount": 185,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "canonical anchor; consumerCount=184"
+      "notesStatusReason": "canonical anchor; consumerCount=185"
     },
     {
       "path": "docs/PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01.md",
@@ -11931,12 +12321,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/PRIMER_SSOT.md",
-      "consumerCount": 13,
+      "consumerCount": 16,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=13"
+      "notesStatusReason": "active domain doc; consumerCount=16"
     },
     {
       "path": "docs/PROJECT_SPEC_V1.md",
@@ -11963,6 +12353,19 @@
       "archiveBlocked": true,
       "replacement": null,
       "notesStatusReason": "active domain doc; consumerCount=3"
+    },
+    {
+      "path": "docs/PROJECT_WIDE_TURKISH_LANGUAGE_TERMINOLOGY_AUDIT_01.md",
+      "tracked": true,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/PROJECT_WIDE_TURKISH_LANGUAGE_TERMINOLOGY_AUDIT_01.md",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=0"
     },
     {
       "path": "docs/PUBLIC_LANDING_01.md",
@@ -12288,6 +12691,19 @@
       "archiveBlocked": true,
       "replacement": null,
       "notesStatusReason": "active domain doc; consumerCount=63"
+    },
+    {
+      "path": "docs/ROLE_BASED_SIMPLE_NAVIGATION_AND_TASK_HOME_01.md",
+      "tracked": true,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/ROLE_BASED_SIMPLE_NAVIGATION_AND_TASK_HOME_01.md",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=0"
     },
     {
       "path": "docs/ROLE_DATA_ISOLATION_REDTEAM_01.md",
@@ -13868,12 +14284,12 @@
       "classification": "REFERENCE_POINTER",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
-      "consumerCount": 93,
+      "consumerCount": 94,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_POINTER",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "reference pointer; consumerCount=93"
+      "notesStatusReason": "reference pointer; consumerCount=94"
     },
     {
       "path": "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
@@ -13881,12 +14297,12 @@
       "classification": "REFERENCE_POINTER",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
-      "consumerCount": 219,
+      "consumerCount": 220,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_POINTER",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "reference pointer; consumerCount=219"
+      "notesStatusReason": "reference pointer; consumerCount=220"
     },
     {
       "path": "docs/SECURITY_KVKK_FINAL_01.md",
@@ -13926,6 +14342,19 @@
       "archiveBlocked": true,
       "replacement": null,
       "notesStatusReason": "active domain doc; consumerCount=13"
+    },
+    {
+      "path": "docs/SEFER_ABI_PREMIUM_CHARACTER_CORRECTIVE_01.md",
+      "tracked": true,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/SEFER_ABI_PREMIUM_CHARACTER_CORRECTIVE_01.md",
+      "consumerCount": 1,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=1"
     },
     {
       "path": "docs/SEFER_ABI_REASONING_ASSISTANT_01.md",
@@ -14466,12 +14895,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
-      "consumerCount": 13,
+      "consumerCount": 14,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=13"
+      "notesStatusReason": "active domain doc; consumerCount=14"
     },
     {
       "path": "docs/UX_PANEL_STRUCTURE_02_AUDIT.md",
@@ -14492,12 +14921,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
-      "consumerCount": 7,
+      "consumerCount": 8,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=7"
+      "notesStatusReason": "active domain doc; consumerCount=8"
     },
     {
       "path": "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
@@ -17482,12 +17911,12 @@
       "classification": "CANONICAL_SSOT",
       "ownerDomain": "TOOLS",
       "canonicalOwner": "tools/CHECKLIST_SSOT.md",
-      "consumerCount": 14,
+      "consumerCount": 15,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "canonical anchor; consumerCount=14"
+      "notesStatusReason": "canonical anchor; consumerCount=15"
     },
     {
       "path": "tools/PRIMER_SNAPSHOT.md",
@@ -17495,12 +17924,12 @@
       "classification": "REFERENCE_POINTER",
       "ownerDomain": "TOOLS",
       "canonicalOwner": "tools/PRIMER_SNAPSHOT.md",
-      "consumerCount": 43,
+      "consumerCount": 45,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_POINTER",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "reference pointer; consumerCount=43"
+      "notesStatusReason": "reference pointer; consumerCount=45"
     },
     {
       "path": "tools/README.md",

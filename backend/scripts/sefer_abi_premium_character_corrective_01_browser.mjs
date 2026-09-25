@@ -81,6 +81,8 @@ let quickOpenClosePassCount = 0;
 let quickCloseContextResetCount = 0;
 let keyboardActivationPassCount = 0;
 let mobileKeyboardOverlapCount = 0;
+let characterStateMotionPassCount = 0;
+let staticPortraitOnlyCount = 0;
 
 function record(name, ok, detail = "") {
   results.push({ name, ok, detail });
@@ -180,11 +182,38 @@ async function assertIdentity(page, label, expectedCount = 1) {
   return state;
 }
 
+async function assertCharacterMotion(page, label, expectedState) {
+  const state = await page.evaluate((wanted) => {
+    const avatar = document.querySelector(`.seferAbiAvatar[data-sefer-abi-state="${wanted}"]`);
+    const image = avatar?.querySelector(".seferAbiAvatar__image");
+    const style = image ? getComputedStyle(image) : null;
+    return {
+      state: avatar?.getAttribute("data-sefer-abi-state") || "",
+      animationName: style?.animationName || "",
+      transform: style?.transform || "",
+    };
+  }, expectedState);
+  const pass = state.state === expectedState && state.animationName && state.animationName !== "none" && /seferAbiCharacter/i.test(state.animationName);
+  record(`${label} character-level motion`, pass, JSON.stringify(state));
+  if (pass) characterStateMotionPassCount += 1;
+  if (!pass && state.animationName === "none") staticPortraitOnlyCount += 1;
+  return pass;
+}
+
 async function assertNoOverlap(page, label) {
+  await page.waitForFunction(() => {
+    const button = document.querySelector('button[aria-label="Sefer Abi’ye Sor, operasyon yardımcısını aç"]');
+    const launcherStack = button?.parentElement;
+    return button
+      && button.getAttribute("data-map-safe-placement") !== "pending"
+      && Boolean(launcherStack?.style.left)
+      && Boolean(launcherStack?.style.top);
+  }, { timeout: 10000 }).catch(() => undefined);
   const state = await page.evaluate(() => {
     const rect = (element) => element?.getBoundingClientRect?.();
     const intersects = (a, b) => Boolean(a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
     const mascot = document.querySelector('button[aria-label="Sefer Abi’ye Sor, operasyon yardımcısını aç"]');
+    const launcherStack = mascot?.parentElement;
     const mascotBox = rect(mascot);
     const boxes = (selector) => [...document.querySelectorAll(selector)].map(rect).filter((box) => box && box.width > 0 && box.height > 0);
     const markers = boxes('[data-map-surface="primary"] .leaflet-marker-icon');
@@ -194,6 +223,8 @@ async function assertNoOverlap(page, label) {
     const inViewport = mascotBox ? mascotBox.left >= 0 && mascotBox.top >= 0 && mascotBox.right <= innerWidth && mascotBox.bottom <= innerHeight : false;
     return {
       mascotBox: mascotBox ? { x: mascotBox.x, y: mascotBox.y, width: mascotBox.width, height: mascotBox.height } : null,
+      placement: mascot?.getAttribute("data-map-safe-placement") || "",
+      launcherStyle: launcherStack ? { left: launcherStack.style.left, top: launcherStack.style.top, right: launcherStack.style.right, bottom: launcherStack.style.bottom } : null,
       markerOverlap: markers.some((box) => intersects(mascotBox, box)),
       controlOverlap: controls.some((box) => intersects(mascotBox, box)),
       criticalOverlap: critical.some((box) => intersects(mascotBox, box)),
@@ -223,6 +254,7 @@ async function runDesktopMatrix(browser, companyToken, roomToken) {
   record("COMPANY desktop home avatar visible", await launcher(companyHome).isVisible().catch(() => false));
   await capture(companyHome, "company-desktop-home-idle");
   await assertIdentity(companyHome, "COMPANY desktop home");
+  await assertCharacterMotion(companyHome, "IDLE", "idle");
   await companyHome.close();
 
   const roomHome = await newPageWithToken(browser, "ROOM", roomToken, { width: 1440, height: 900 }, "room-home-idle");
@@ -266,6 +298,7 @@ async function runDesktopMatrix(browser, companyToken, roomToken) {
   await page.waitForTimeout(120);
   const listeningState = await drawer.locator(".seferAbiAvatar").getAttribute("data-sefer-abi-state");
   record("listening state is rendered while the user is typing", listeningState === "listening", `state=${listeningState}`);
+  await assertCharacterMotion(page, "LISTENING", "listening");
   await capture(page, "company-desktop-listening");
   await input.blur();
   await input.fill("Seçili araç ne durumda?");
@@ -276,12 +309,14 @@ async function runDesktopMatrix(browser, companyToken, roomToken) {
   const thinkingPass = thinkingState === "thinking";
   record("thinking state is rendered during existing assistant request", thinkingPass, `state=${thinkingState}`);
   if (thinkingPass) thinkingRealRequestPassCount += 1;
+  await assertCharacterMotion(page, "THINKING", "thinking");
   await capture(page, "company-desktop-thinking");
   await page.waitForTimeout(800);
   const respondingState = await drawer.locator(".seferAbiAvatar").getAttribute("data-sefer-abi-state");
   const respondingPass = respondingState === "responding";
   record("responding state is rendered after existing assistant response", respondingPass, `state=${respondingState}`);
   if (respondingPass) respondingStatePassCount += 1;
+  await assertCharacterMotion(page, "RESPONDING", "responding");
   await capture(page, "company-desktop-responding");
   await page.waitForTimeout(1050);
   const resultReadyState = await drawer.locator(".seferAbiAvatar").getAttribute("data-sefer-abi-state");
@@ -319,6 +354,9 @@ async function runDesktopMatrix(browser, companyToken, roomToken) {
   if (approvalPass) approvalRequiredVisualPassCount += 1;
   await capture(page, "company-desktop-approval-required");
 
+  // The full-workspace action is intentionally kept in the native options
+  // disclosure. Open the current UI control before asserting its action.
+  await drawer.locator(".copilotDrawerMore > summary").click();
   const fullButton = drawer.getByRole("button", { name: "Tam ekranda aç", exact: true });
   await fullButton.click();
   await page.waitForTimeout(650);
@@ -351,6 +389,10 @@ async function newPageWithToken(browser, role, token, viewport, label, reducedMo
     localStorage.setItem("token", value);
     localStorage.removeItem("psv1:copilot:drawer:v4");
     localStorage.removeItem("psv1:copilot:drawer:history:v4");
+    // Each acceptance page starts with an independent launcher-placement
+    // scenario; persisted user placement is covered by the dedicated drag
+    // smoke and must not contaminate the map overlap assertions.
+    localStorage.removeItem("psv1:copilot:launcher-placement:v1");
   }, token);
   await installFixtures(page);
   return page;
@@ -496,6 +538,8 @@ async function run() {
       quickCloseContextResetCount,
       keyboardActivationPassCount,
       mobileKeyboardOverlapCount,
+      characterStateMotionPassCount,
+      staticPortraitOnlyCount,
       productionFakeStateTriggerCount: 0,
       proactiveBehaviorPreimplementedCount: 0,
       consoleErrorCount,
@@ -544,10 +588,12 @@ async function run() {
     console.log(`SEFER_ABI_QUICK_CLOSE_CONTEXT_RESET_COUNT = ${report.quickCloseContextResetCount}`);
     console.log(`SEFER_ABI_KEYBOARD_ACTIVATION_PASS_COUNT = ${report.keyboardActivationPassCount}`);
     console.log(`SEFER_ABI_MOBILE_KEYBOARD_OVERLAP_COUNT = ${report.mobileKeyboardOverlapCount}`);
+    console.log(`CHARACTER_STATE_MOTION_PASS_COUNT = ${report.characterStateMotionPassCount}`);
+    console.log(`STATIC_PORTRAIT_ONLY_COUNT = ${report.staticPortraitOnlyCount}`);
     console.log(`SEFER_ABI_REDUCED_MOTION_PASS_COUNT = ${reducedMotionPassCount}`);
     console.log(`SEFER_ABI_QUICK_FULL_CONTEXT_CONTINUITY_PASS_COUNT = ${quickFullContinuityPassCount}`);
-    console.log(`SEFER_ABI_PREMIUM_CHARACTER_BROWSER_PASS = ${report.failCount === 0 && report.screenshotEvidenceCount >= 16 && consoleErrorCount === 0 && pageErrorCount === 0 && unexpected500Count === 0 ? "YES" : "NO"}`);
-    if (report.failCount || report.screenshotEvidenceCount < 18 || realLifecycleStateBindingPassCount < 1 || hoverVisualPassCount < 1 || keyboardFocusVisualPassCount < 1 || thinkingRealRequestPassCount < 1 || respondingStatePassCount < 1 || resultReadyStatePassCount < 1 || approvalRequiredVisualPassCount < 1 || quickOpenClosePassCount < 1 || keyboardActivationPassCount < 1 || mobileKeyboardOverlapCount > 0 || consoleErrorCount || pageErrorCount || unexpected500Count) process.exitCode = 1;
+    console.log(`SEFER_ABI_PREMIUM_CHARACTER_BROWSER_PASS = ${report.failCount === 0 && report.screenshotEvidenceCount >= 16 && report.characterStateMotionPassCount >= 4 && report.staticPortraitOnlyCount === 0 && consoleErrorCount === 0 && pageErrorCount === 0 && unexpected500Count === 0 ? "YES" : "NO"}`);
+    if (report.failCount || report.screenshotEvidenceCount < 18 || report.characterStateMotionPassCount < 4 || report.staticPortraitOnlyCount > 0 || realLifecycleStateBindingPassCount < 1 || hoverVisualPassCount < 1 || keyboardFocusVisualPassCount < 1 || thinkingRealRequestPassCount < 1 || respondingStatePassCount < 1 || resultReadyStatePassCount < 1 || approvalRequiredVisualPassCount < 1 || quickOpenClosePassCount < 1 || keyboardActivationPassCount < 1 || mobileKeyboardOverlapCount > 0 || consoleErrorCount || pageErrorCount || unexpected500Count) process.exitCode = 1;
   } finally {
     await browser.close();
   }

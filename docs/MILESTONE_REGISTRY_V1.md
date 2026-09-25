@@ -1,11 +1,18 @@
 # MILESTONE REGISTRY V1
 
-## Current frontier (2026-08-31)
+## Current frontier (2026-09-24)
 
-- `#1–#14` — closed/proven according to their current immutable closure or operational evidence.
-- `#16 PROJECT-DOCUMENTATION-ARCHITECTURE-AND-CODEBASE-INDEX-01` — next / not started at entry; its canonical entrypoint is `docs/INDEX.md`.
-- `#17` — not started / next locked owner after #16.
-- `#15` — not started / locked terminology owner.
+## PRE-#18 immutable closure (2026-09-25)
+
+- Combined acceptance is GREEN and the No-Surprise Repository Exit is GREEN (`487/487` candidates classified, `0` unexplained).
+- Final terminology / Sefer Abi residual closure and bounded public-runtime source-match recheck are PASS; no raw same-class status leakage remains.
+- `#18` is not started. This package is the exact immutable PRE-#18 closure step; proven-closed milestones require concrete newer regression evidence before reopening.
+
+- `#1–#14`, `#16` and the M80–M92 verification spine remain closed/proven according to their current immutable closure or operational evidence.
+- PRE-#18 foundation semantic, security, ownership, lifecycle and documentation/SSOT reconciliation is closed at HEAD `e3bec6177f32263325bd14e876502faacac7a5b0`.
+- `verify:repo` is `PASS 32/32`, `verify:final` is `PASS`, KVKK is `262/262`, role/data isolation is `216/216`, and active/product unowned is `0`.
+- `PREMIUM_UI` is `72_OF_72_PROVEN`; Foundation Exit is `GREEN PRESERVED`, ROOM/OTHER423 is `PROVEN_CLOSED`, and No-Surprise Repository Exit is green after current-tree classification.
+- PRE-#18 is `FINAL CLOSURE READY`; #18 is not started, and no commit/tag/push is implied by this documentation state.
 
 The older ordering below is retained as historical compatibility context. It is not the current frontier and must not override `docs/INDEX.md`, `docs/PRIMER_SSOT.md`, or current-head evidence.
 

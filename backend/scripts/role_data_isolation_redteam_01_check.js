@@ -93,7 +93,7 @@ function gitStatusNames(paths = []) {
     .filter(Boolean);
 }
 
-const approvedCurrentHeadProductHashes = new Map([
+const acceptedHistoricalProductHashes = new Map([
   ['backend/Dockerfile', 'BC81A199698A5758B51B0EA35A4C9B1C6640E22684E09FC4CD19BC977D21113D'],
   ['backend/scripts/smoke.js', 'A6FC4C039803A5A8FFA61BC733FA2B13C51707F1C1B00EF6007EF0326F328C12'],
   ['backend/src/routes/admin.js', '61A3D7CF98653E6E413E787BCBFD9D8DD9AECE77A7663DCA78E9CE446D2C5DA4'],
@@ -103,7 +103,7 @@ const approvedCurrentHeadProductHashes = new Map([
   ['backend/src/routes/dashboardBulk.js', 'C1FA734271C1B3FF73CA3393B781EAF966710A66AD57BC31290B829CFFF5754F'],
   ['backend/src/routes/shifts/company.js', 'A9FA0C8A737DF701505E71FAEB16EF3402E883DCA82DB71B8E4A95507AE232AA'],
   ['backend/src/routes/commercialCore.js', '14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F'],
-  ['backend/src/routes/commercialCorePaymentReportsRoutes.js', 'DA3C9CEE5DF38EB89EE315475F9C37EB94D1EE7E95A11E5E2039C4FDFB21AE3F'],
+  ['backend/src/routes/commercialCorePaymentReportsRoutes.js', '41A7F4A75CD21B56BD29C8D9B068C01BD6D1B9D56496969A8C1307C246D0BB10'],
   ['backend/src/routes/commercialCorePaymentRoutes.js', '53C908A0C414D73A9BC397DCC89FC1D8DD285AC0D842FD949426911307DFA993'],
   ['backend/src/routes/commercialCoreRoomRoutes.js', 'CA2B42085F02A2DFEB03ED3992FE47583152EE424FF39DDF73C9699B99D6D2FF'],
   ['backend/src/routes/companyBudgetLifecycleRoutes.js', '3D29611FD1D4DE54FA7DE87D6C98D6D7CB034D13776512A792EBD4C139D049EE'],
@@ -112,13 +112,19 @@ const approvedCurrentHeadProductHashes = new Map([
   ['backend/src/routes/offers.js', '40C553F43D0709D3146D6DA48893B2FDAF9DA3B3814961ECA9C0FD8FA15FF649'],
   ['backend/src/routes/operationProof.js', 'E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0'],
   ['backend/src/routes/public.js', '5196203AC501B365D52D79D29FA355DF23421180C9337D58EEE3B19707AFFF23'],
-  ['backend/src/routes/trustQuality.js', 'FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD'],
-  ['backend/src/services/dashboardBulk.js', 'E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E'],
+  ['backend/src/routes/trustQuality.js', '0E2358DAA468D205DAC92CFF6E01BA4CE3FD3E89350505BE6DF704882C6A8FBD'],
   ['backend/src/services/financialOperationsLifecycle.js', '0767FB5A163CCB19B06F111FE8B00B2340913E29C613A9DEDA93B2CCAA711FF2'],
   ['backend/src/services/companyShiftMutationTail.js', 'FE0F1F30AD2F5BC893FF631F26D19EDDDE2060246ED129087104BFDD69D88C78'],
   ['backend/src/services/qualityPaymentBridgeService.js', '935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83'],
-  ['backend/src/ai/service.js', '30BC3DAF78FA5B114F6F3653E7039AB7DB777EA8D0B22B494034DC2A3F1AF4F5'],
+  ['backend/src/ai/service.js', '186DEAE407BCB7396C630860D5AD73D66113AED652424080D6CC371D6773975C'],
 ]);
+
+// All active current-head backend identities are consumed from the one policy
+// owner. Historical accepted product identities above deliberately remain
+// separate because they are not a working-tree scope allowlist.
+const currentHeadPolicyHashes = new Map(
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.map(({ path: entryPath, sha256 }) => [normalizeStatusPath(entryPath), sha256]),
+);
 
 const approvedCanonicalProvenanceHashes = new Map([
   ['backend/src/lib/requestUrl.js', '629D6C894B91551AB14518F36E2BF4C5CEF48DC60ADBB01A17EFE7755C30063E'],
@@ -178,9 +184,9 @@ function normalizeStatusPath(file) {
 
 function isApprovedCurrentHeadProductPath(file) {
   const normalized = normalizeStatusPath(file);
-  const expectedSha = approvedCurrentHeadProductHashes.get(normalized);
+  const expectedSha = currentHeadPolicyHashes.get(normalized) || acceptedHistoricalProductHashes.get(normalized);
   if (!expectedSha) return false;
-  const actualSha = normalizedTextSha256(normalized);
+  const actualSha = fileSha256(normalized);
   must(actualSha === expectedSha, `approved current-head product identity mismatch: ${normalized}`);
   return true;
 }

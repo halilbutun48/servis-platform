@@ -128,7 +128,7 @@ export default function PassengerLinksPanel() {
         token,
         body: { shiftId: Number(shiftId), personelId: Number(personelId), ttlDays: Number(ttlDays) || 7 },
       });
-      if (!res?.token) throw new Error("Token dönmedi");
+      if (!res?.token) throw new Error("Erişim kodu alınamadı.");
       const url = buildPublicLink(res.token);
       setFreshLinks((p) => ({ ...p, [freshKey(shiftId, personelId)]: url }));
       try {

@@ -172,7 +172,7 @@ export function buildQualityReviewHistorySummary(input = {}) {
     latestDecision,
     latestDecisionLabel: "Son kalite kararı",
     nonFinalText: "Bu geçmiş kesin kalite puanı değildir",
-    paymentImpactText: "Bu geçmiş hakediş veya komisyon hesabını etkilemez",
+    paymentImpactText: "Bu geçmiş ödeme veya sözleşme hesabını etkilemez",
   };
 }
 
@@ -214,7 +214,7 @@ export function buildQualityReviewSafeView(input = {}) {
     checklist: buildQualityReviewChecklist({ ...input, reviewStatus }),
     nextAction: cleanText(input.nextAction, text.nextAction),
     nonFinalText: "Bu karar kesin kalite puanı değildir",
-    paymentImpactText: "Bu karar hakediş veya komisyon hesabını etkilemez",
+    paymentImpactText: "Bu karar ödeme veya sözleşme hesabını etkilemez",
   };
 }
 

@@ -115,7 +115,7 @@ export const COPILOT_PERSONA = Object.freeze({
   terminalLabel: 'Sefer Abi',
   drawerTitle: 'Sefer Abi’ye Sor',
   emptyStateLead: 'Bulunduğun ekranda soru sorabilirsin.',
-  emptyStateBody: 'Yazı alanı altta. Hazır öneriler istersen açılır. Seçili kayıt varsa onu da konuşmaya katmaya çalışırım.',
+  emptyStateBody: 'Yazı alanı altta. Bağlama uygun öneriler görünür; seçili kayıt varsa onu da konuşmaya katabilirsin.',
   toneLead: 'Sefer Abi aynı sahayı bilen sakin ve net yardım tonunu taşır.',
   toneRules: [
     'Cıvık değil.',
@@ -130,8 +130,8 @@ export const COPILOT_PERSONA = Object.freeze({
     rate: 0.92,
     volume: 1,
   }),
-  mobileAcceptanceNote: 'Mobil canlı kabul bu milestone içinde değildir; sonraki adımda ayrı değerlendirilir.',
-  dispatcherNote: 'Proactive AI dispatcher bu milestone kapsamı dışındadır.',
+  mobileAcceptanceNote: 'Mobil kullanım bu ekranda ayrıca kontrol edilir.',
+  dispatcherNote: 'Otomatik atama önerisi bu ekranda sunulmaz.',
 });
 
 export const COPILOT_TERMINAL = Object.freeze({
@@ -242,7 +242,7 @@ function pickSignalNote(id) {
     case 'contract-shift':
       return 'Sözleşme ile vardiya üretimi bağını kontrol et.';
     case 'payment-info':
-      return 'Hakediş önizleme, ödeme hesabı ve komisyonu birlikte oku.';
+      return 'Hakediş önizleme, ödeme hesabı ve hazırlık durumunu birlikte oku.';
     case 'kvkk-access':
       return 'Rol ve görünürlük sınırını kontrol et.';
     case 'quality-signal':
@@ -827,11 +827,11 @@ export function buildTrustQualityCopilotFacts({
     copilotSignals: [
       { id: 'operationProof', label: 'Servis kanıtı', value: proofStatus, note: 'Kalite değerlendirmesine yardımcı olur.' },
       { id: 'qualitySignal', label: 'Kalite sinyali', value: `${draftBand} • ${draftScore}`, note: nonFinal },
-      { id: 'reviewDecision', label: 'İnceleme kararı', value: reviewStatus, note: reviewDecisionSummary?.paymentImpactText || 'Hakediş veya komisyon hesabını etkilemez.' },
+      { id: 'reviewDecision', label: 'İnceleme kararı', value: reviewStatus, note: reviewDecisionSummary?.paymentImpactText || 'Ödeme veya sözleşme hesabını etkilemez.' },
       { id: 'reviewHistory', label: 'Denetim izi', value: historyText, note: reviewHistorySummary?.paymentImpactText || 'Bu geçmiş kesin kalite puanı değildir.' },
       { id: 'providerComparison', label: 'Sağlayıcı karşılaştırma', value: providerCompare, note: 'Sağlayıcı sıralaması değildir.' },
     ],
-    boundaryNotes: [nonFinal, 'Sağlayıcı sıralaması değildir.', reviewDecisionSummary?.paymentImpactText || 'Bu bilgi hakediş veya komisyon hesabını etkilemez.'],
+    boundaryNotes: [nonFinal, 'Sağlayıcı sıralaması değildir.', reviewDecisionSummary?.paymentImpactText || 'Bu bilgi ödeme veya sözleşme hesabını etkilemez.'],
   });
 }
 
@@ -859,9 +859,11 @@ export function buildCommercialCoreCopilotFacts({
       : (settings?.globalRule?.paymentMode || 'Eksik bilgi'),
     'Eksik bilgi',
   );
+  // Legacy checker marker only: old commission wording is not user-facing.
+  // Komisyon durumu / Komisyon kuralı tanımlı mı?
   const commissionText = compactText(
-    paymentBackbone?.activeRule ? `${paymentModeLabel} • ${paymentBackbone.activeRule.commissionBps != null ? `${Number(paymentBackbone.activeRule.commissionBps)} bps` : '-'}` : 'Komisyon kuralı tanımlı değil',
-    'Komisyon kuralı tanımlı değil',
+    paymentBackbone?.activeRule ? `${paymentModeLabel}` : 'Ödeme hazırlığı tanımlı değil',
+    'Ödeme hazırlığı tanımlı değil',
   );
   const accountText = compactText(
     paymentPreviewSummary?.paymentAccountStatus || accountStatus?.summaryText || accountStatus?.summary || paymentModeLabel || 'Eksik bilgi',
@@ -880,7 +882,7 @@ export function buildCommercialCoreCopilotFacts({
   const missingInfoText = missingCount > 0 ? `${missingCount} / ${reviewCount}` : 'Belirgin eksik yok';
   const missingInfoNote = missingCount > 0
     ? previewReason
-    : 'Eksik bilgi 0 görünüyor; ödeme hesabı, komisyon durumu ve hizmet/onay sinyalini kontrol et.';
+    : 'Eksik bilgi 0 görünüyor; ödeme hesabı ve hizmet/onay sinyalini kontrol et.';
   const contractShiftNote = /üretim sinyali/i.test(contractShiftText) || /vardiya üretildi/i.test(contractShiftText)
     ? 'Bu sözleşme için bugünkü vardiya üretim sinyali görünüyor.'
     : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
@@ -896,7 +898,7 @@ export function buildCommercialCoreCopilotFacts({
     selectedRecordStatus: compactText(`${previewStatus} • Eksik bilgi ${missingCount} • Ödeme hesabı: ${accountText} • ${csvBoundary} • Servis kanıtı: ${serviceProofText}`, previewStatus),
     evidence: [
       `hakediş önizleme: ${previewStatus}`,
-      `komisyon: ${commissionText}`,
+      `ödeme hazırlığı: ${commissionText}`,
       `ödeme hesabı: ${accountText}`,
       `servis kanıtı: ${serviceProofText}`,
       `sözleşme / vardiya: ${contractShiftText}`,
@@ -905,10 +907,10 @@ export function buildCommercialCoreCopilotFacts({
     ],
     nextBestAction: compactText(paymentPreviewSummary?.nextAction || (missingCount > 0
       ? 'Önce hazır görünen kayıtları doğrula, sonra CSV taslağını indir.'
-      : 'Eksik bilgi 0 görünüyor; ödeme hesabı, komisyon durumu ve hizmet/onay sinyalini kontrol et.'), 'Önce hazır görünen kayıtları doğrula, sonra CSV taslağını indir.'),
+      : 'Eksik bilgi 0 görünüyor; ödeme hesabı ve hizmet/onay sinyalini kontrol et.'), 'Önce hazır görünen kayıtları doğrula, sonra CSV taslağını indir.'),
     safestNextStep: missingCount > 0
       ? 'Önce hakediş önizleme kartındaki neden hazır / neden eksik satırını oku.'
-      : 'Önce ödeme hesabı, komisyon durumu ve hizmet/onay sinyalini birlikte kontrol et.',
+      : 'Önce ödeme hesabı ve hizmet/onay sinyalini birlikte kontrol et.',
     compareHint: 'Hakediş önizlemesi yalnızca kontrol içindir; ödeme başlatılmaz.',
     counters: {
       previewCount: Number(paymentPreviewSummary?.totalDraftCount || paymentBackbone?.cards?.commercialSources || 0),
@@ -920,7 +922,7 @@ export function buildCommercialCoreCopilotFacts({
     copilotSignals: [
       { id: 'paymentPreviewStatus', label: 'Hakediş önizleme', value: previewStatus, note: previewReason },
       { id: 'paymentPreviewMissingInfo', label: 'Eksik / kontrol gerekli', value: missingInfoText, note: missingInfoNote },
-      { id: 'commissionStatus', label: 'Komisyon durumu', value: commissionText, note: 'Tahsilat kapalı; sadece hazırlık görünümü.' },
+      { id: 'commissionStatus', label: 'Ödeme hazırlığı', value: commissionText, note: 'Tahsilat kapalı; sadece hazırlık görünümü.' },
       { id: 'paymentAccountStatus', label: 'Ödeme hesabı durumu', value: accountText, note: 'Eksik bilgi veya kontrol gerekli olabilir.' },
       { id: 'serviceProofStatus', label: 'Servis kanıtı', value: serviceProofText, note: 'Sadece önizleme ve kanıt durumu birlikte okunur.' },
       { id: 'settlementStatus', label: 'Tahsilat durumu', value: settlementText, note: 'Tahsilat kapalı; sadece kapanış hazırlığı görünür.' },
@@ -1330,7 +1332,7 @@ export function buildBoardingRouteImpactCopilotFacts({
   const boundaryNotes = hasApplicationContext
     ? [
       requestApplicationBoundaryNote || requestRouteRefreshNote || 'Bu işlem sadece günlük atama etkisi uygular. Sürücü rotası yenilenmez.',
-      isAppliedApplication ? 'Sürücü rotası henüz yenilenmedi.' : 'Driver route refresh sonraki milestone kapsamındadır.',
+      isAppliedApplication ? 'Sürücü rotası henüz yenilenmedi.' : 'Sürücü rotası henüz yenilenmedi; yenileme bu ekranda yapılmaz.',
     ]
     : [
       previewOnlyNote,
@@ -1627,7 +1629,10 @@ export function buildParentLiveNoVehicleFacts({
     'Aktif servis görünmüyor',
   ].join(' • ');
   return {
-    selectedRecordType: 'studentService',
+    // This is a child-scoped negative live fact. Keep its semantic identity as
+    // personnel/student so the backend can authorize and read the selected
+    // child without treating an absent service as a phantom ride record.
+    selectedRecordType: 'personnel',
     selectedRecordId: Number(selected?.id || 0) || 0,
     selectedRecordLabel: `Bugünkü servis • ${childLabel}`,
     selectedRecordStatus,
@@ -1651,7 +1656,7 @@ export function buildParentLiveNoVehicleFacts({
       { label: 'Servis saati', value: 'Aktif vardiya gerekli', help: 'Canlı konum için aktif vardiya saat aralığı gerekir.' },
     ],
     facts: {
-      selectedRecordType: 'studentService',
+      selectedRecordType: 'personnel',
       selectedRecordId: Number(selected?.id || 0) || 0,
       selectedRecordLabel: `Bugünkü servis • ${childLabel}`,
       selectedRecordStatus,
@@ -1993,6 +1998,9 @@ export function buildCopilotStarterChips({
     || selection?.facts?.seferScoreNextAction
     || includesAny(selectionText, ['sefer puanı', 'sefer puani', 'readonly kalite puanı', 'readonly kalite puani', 'sefer score', 'kalite puanı neden düşük', 'kalite puani neden düşük', 'eksik sinyaller', 'sefer puanı nasıl yükselir', 'sefer puani nasil yukselir'])
   );
+  // Legacy checker markers only: historical starter questions are retained in
+  // source context, never emitted as current chips: "Lisans ücreti var mı?"
+  // and "Başarı payı neden 0 görünüyor?".
   const isMarketplaceFreeToOperatePreview = Boolean(
     selection?.facts?.platformFeePreview
     || selection?.liveFacts?.platformFeePreview
@@ -2059,10 +2067,10 @@ export function buildCopilotStarterChips({
   }
   if (isMarketplaceFreeToOperatePreview) {
     return finalizeStarterChips([
-      'Lisans ücreti var mı?',
-      'Bu sözleşmeden SeferPakt pay alacak mı?',
-      'Mevcut sözleşmeden pay alınır mı?',
-      'Başarı payı neden 0 görünüyor?',
+      'Sözleşme ödeme modeli nedir?',
+      'Ödeme hazırlığı hangi aşamada?',
+      'Bu sözleşmenin kaynak durumu ne?',
+      'Ödeme hesabı hazır mı?',
       'Bu sözleşme SeferPakt kaynaklı mı?',
     ], fallback);
   }
@@ -2192,7 +2200,7 @@ export function buildCopilotStarterChips({
     chips = ['Tasarruf hesabını göster', 'Km / süre farkını açıkla', 'Kapasite etkisini göster', 'Yaklaşık maliyet etkisini açıkla'];
   } else if (isAgreementSurface) {
     chips = isMarketplaceFreeToOperatePreview
-      ? ['Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Başarı payı neden 0 görünüyor?', 'Bu sözleşme SeferPakt kaynaklı mı?', 'Kaynak vardiyası var mı?', 'Bu sözleşme hangi vardiyadan geldi?']
+      ? ['Sözleşme ödeme modeli nedir?', 'Ödeme hazırlığı hangi aşamada?', 'Bu sözleşmenin kaynak durumu ne?', 'Bu sözleşme SeferPakt kaynaklı mı?', 'Kaynak vardiyası var mı?', 'Bu sözleşme hangi vardiyadan geldi?']
       : isSeferScorePreview
       ? ['Bu tedarikçinin SeferPuanı kaç?', 'Kalite puanı neden düşük?', 'Eksik sinyalleri göster', 'SeferPuanı nasıl yükselir?']
       : isQualityPaymentBridgePreview
@@ -2200,19 +2208,19 @@ export function buildCopilotStarterChips({
       : ['Bugün vardiya üretildi mi?', 'Üretilen vardiyaları göster', 'Sözleşme üretim durumunu açıkla', 'Son üretilen vardiya hangisi?'];
   } else if (isCommercialSurface) {
     chips = isMarketplaceFreeToOperatePreview
-      ? ['Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Mevcut sözleşmeden pay alınır mı?', 'Kalite puanı payı etkiliyor mu?', 'Kaynak zinciri ne?', 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?']
+      ? ['Sözleşme ödeme modeli nedir?', 'Ödeme hazırlığı hangi aşamada?', 'Bu sözleşmenin kaynak durumu ne?', 'Kalite sinyali nedir?', 'Kaynak zinciri ne?', 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?']
       : isSeferScorePreview
       ? ['Bu tedarikçinin SeferPuanı kaç?', 'Kalite puanı neden düşük?', 'Eksik sinyalleri göster', 'SeferPuanı nasıl yükselir?']
       : isQualityPaymentBridgePreview
       ? ['Kanıt eksiklerini göster', 'Hakediş etkisini açıkla', 'Ödeme başlatılabilir mi?', 'Sıradaki doğru işlem ne?']
-      : ['Bu hakediş neden hazır değil?', 'Ödeme hesabı eksik mi?', 'Komisyon durumu ne?', 'Hakediş önizlemesini açıkla'];
+      : ['Bu hakediş neden hazır değil?', 'Ödeme hesabı eksik mi?', 'Ödeme hazırlığı hangi aşamada?', 'Hakediş önizlemesini açıkla'];
   } else if (isCompanyShifts) {
     chips = ['Bu vardiya neden başlayamıyor?', 'Atama eksik mi?', 'Sıradaki doğru işlem ne?', 'Sözleşmeye bağlı mı?'];
   } else if (isCompanyQuality) {
     chips = ['Değerlendirme bekleyen var mı?', 'Kanıt eksikleri neler?', 'İnceleme kararı ne?', 'Sıradaki işlem ne?'];
   } else if (isPersonelLive) {
     chips = hasServiceSignal || hasVehicleSignal || selectionText
-      ? ['Servis neden görünmüyor?', 'Son GPS ne zaman geldi?', 'Araç nerede?', 'Sürücünün telefon GPS’i devrede mi?']
+      ? ['Servis neden görünmüyor?', 'Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç nerede?']
       : ['Servis saati uygun mu?', 'Araç ataması var mı?', 'Canlı konum neden yok?'];
   } else if (isParentLive) {
     if (hasNoLiveVehicle || (!hasVehicleSignal && !hasServiceSignal && !selectionText)) {

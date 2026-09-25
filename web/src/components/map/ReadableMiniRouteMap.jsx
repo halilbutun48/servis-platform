@@ -282,7 +282,7 @@ function MiniRouteMapSurface({
 
 export default function ReadableMiniRouteMap({
   title = "Mini harita önizlemesi",
-  subtitle = "Leaflet tile arka planlı mini rota görünümü",
+  subtitle = "Harita üzerinde mini rota görünümü",
   linePoints = [],
   markers = [],
   routePathPoints = [],
@@ -548,7 +548,7 @@ export default function ReadableMiniRouteMap({
         >
           <div style={{ fontWeight: 800 }}>{fallbackText}</div>
           <div className="panelMeta">
-            Koordinat eklenince burada tile arka planlı mini harita görünür. Rota çizgisi ve marker'lar birlikte okunur.
+            Koordinat eklenince burada mini harita görünür. Rota çizgisi ve durak işaretleri birlikte okunur.
           </div>
         </div>
       )}

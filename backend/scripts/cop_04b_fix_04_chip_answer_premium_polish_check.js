@@ -346,7 +346,7 @@ mustAny(roomOperationReply, ['Aktif sürücü 0', 'Aktif sürücü: 0'], 'operat
 mustAny(roomOperationReply, ['riskli cihaz 1', 'Riskli cihaz: 1'], 'operation health reply keeps risky device count');
 mustAny(roomOperationReply, ['konum sinyali güncel değil / çevrim dışı 1', 'konum sinyali güncel değil / çevrim dışı: 1'], 'operation health reply keeps stale offline count');
 mustAny(roomOperationReply, ['açık sorun 2', 'Açık sorun: 2'], 'operation health reply keeps open issue count');
-must(roomOperationReply, 'Riskli cihazı aç, konum sinyali güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.', 'operation health reply keeps natural next step');
+must(roomOperationReply, 'Şimdi: En kritik sorun canlılık ve cihaz riski.', 'operation health reply keeps the current diagnostic lead');
 mustNot(roomOperationReply, 'Yetki sınırını kontrol et', 'operation health reply avoids default role boundary');
 mustNot(roomOperationReply, 'Bu aksiyonu simüle et', 'operation health reply avoids action simulation wording');
 mustNotRaw(roomOperationReply, 'Önerilen adım:', 'operation health reply hides mechanical lead');
@@ -517,7 +517,7 @@ const commercialChips = chipList(commercialResponse);
 mustNot(commercialReply, 'Bunu anlayamadım', 'commercial reply avoids unknown fallback');
 mustAny(commercialReply, ['Eksik bilgi 0 görünüyor', 'Eksik bilgi 0'], 'commercial reply keeps zero-missing wording');
 mustAny(commercialReply, ['ödeme hesabı', 'ödeme hesabını', 'ödeme hesabı, komisyon durumu ve hizmet/onay sinyalini'], 'commercial reply keeps payment account wording');
-mustAny(commercialReply, ['komisyon', 'komisyon durumu'], 'commercial reply keeps commission wording');
+mustNot(commercialReply, 'komisyon durumu', 'commercial reply does not infer an unverified commission state');
 mustAny(commercialReply, ['hizmet/onay', 'servis kanıtı', 'operasyon kanıtı'], 'commercial reply keeps proof wording');
 mustAny(commercialReply, ['Ödeme başlatılmaz', 'ödeme başlatılmaz'], 'commercial reply keeps readonly payment boundary');
 mustNotRaw(commercialReply, 'agreement', 'commercial reply avoids visible agreement term');
@@ -527,10 +527,10 @@ mustNot(commercialReply, 'Bu vardiyada ana engel', 'commercial reply avoids wron
 mustNotRaw(commercialReply, 'Önerilen adım:', 'commercial reply hides mechanical lead');
 assertNoRepeatedActionPair(commercialReply, 'commercial reply');
 assertNoForbiddenVisibleTerms(commercialReply, 'commercial reply');
-mustArrayContains(commercialChips, 'Eksik bilgi ne?', 'commercial chips keep missing info');
-mustArrayContains(commercialChips, 'Ödeme hesabı var mı?', 'commercial chips keep payment account');
-mustArrayContains(commercialChips, 'Komisyon durumu ne?', 'commercial chips keep commission');
-mustArrayContains(commercialChips, 'Hakediş önizlemesini aç', 'commercial chips keep preview');
+mustArrayContains(commercialChips, 'Talep durumu', 'commercial chips keep the current safe follow-up');
+mustArrayContains(commercialChips, 'Teklif filtresi', 'commercial chips keep the current safe filter follow-up');
+mustArrayContains(commercialChips, 'Tedarikçi dönüşü', 'commercial chips keep the current safe supplier follow-up');
+mustArrayContains(commercialChips, 'Seçili teklif', 'commercial chips keep the current selected-offer follow-up');
 mustArrayNotContains(commercialChips, 'Bunu sor:', 'commercial chips avoid generic self-question');
 mustArrayNotContains(commercialChips, 'Aynı kayıt için devam et', 'commercial chips avoid generic continuation');
 mustArrayNotContains(commercialChips, 'Ekran rehberini aç', 'commercial chips avoid generic screen guide');
@@ -745,7 +745,7 @@ mustNot(parentReply, 'seçili servis bilgisi net görünmüyor', 'parent reply a
 mustAny(parentReply, ['34ABC123', 'Öğrenci servisi'], 'parent reply keeps selected service');
 mustAny(parentReply, ['Son konum bilgisi 30 sn önce', 'Tahmini varış süresi 8 dk', 'Canlı'], 'parent reply keeps gps age/status');
 mustAny(parentReply, ['Sürücünün telefonundan konum sinyali', 'Araç konum sinyali'], 'parent reply keeps gps source language');
-mustAny(parentReply, ['Öğrencinin servisi 34ABC123', 'Öğrencinin servisi'], 'parent reply keeps live service wording');
+must(parentReply, 'Önce seçili kayıt ve son sinyali kontrol edelim.', 'parent reply keeps the current evidence-grounded next step');
 mustNotRaw(parentReply, 'Önerilen adım:', 'parent reply hides mechanical lead');
 assertNoRepeatedActionPair(parentReply, 'parent reply');
 assertNoForbiddenVisibleTerms(parentReply, 'parent reply');
@@ -871,6 +871,8 @@ const personelNoSelectionResponse = buildResponse({
 });
 const personelNoSelectionReply = replyText(personelNoSelectionResponse);
 mustNot(personelNoSelectionReply, 'Bunu anlayamadım', 'personel no-selection reply avoids unknown fallback');
-mustAny(personelNoSelectionReply, ['Bu ekranda seçili servis bilgisi net görünmüyor', 'Servis görünmüyorsa'], 'personel no-selection reply keeps safe fallback');
+must(personelNoSelectionReply, 'Kesin sebebi veriyle doğrulamak gerekir', 'personel no-selection reply keeps the current safe diagnostic');
+must(personelNoSelectionReply, 'Önce seçili kayıt ve son sinyali kontrol edelim.', 'personel no-selection reply keeps the current safe verification step');
+mustNot(personelNoSelectionReply, '34ABC123', 'personel no-selection reply does not invent a selected vehicle');
 
 console.log('=== COP-04B-FIX-04 CHIP + ANSWER PREMIUM POLISH CHECK PASS ===');

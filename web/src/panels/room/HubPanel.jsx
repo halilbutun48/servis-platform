@@ -148,10 +148,11 @@ export default function HubPanel() {
       {err ? <div className="card err">{err}</div> : null}
       {msg ? <div className="card" style={{ borderColor: "rgba(34,197,94,.35)", background: "rgba(6,34,20,.25)" }}>{msg}</div> : null}
 
-      <div className="grid" style={{ gridTemplateColumns: "minmax(320px, 360px) minmax(0, 1fr)", alignItems: "start" }}>
+      <div className="grid hubLocationGrid" style={{ gridTemplateColumns: "minmax(320px, 360px) minmax(0, 1fr)", alignItems: "start" }}>
         <PanelChrome
           title="Adres ve Koordinat"
           subtitle="Taşımacılık Firması konumu koordinatını elle, konumla ya da harita üstünden seç."
+          headingLevel={2}
         >
           <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
             <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
@@ -192,6 +193,7 @@ export default function HubPanel() {
         <PanelChrome
           title="Konum Önizleme"
           subtitle="Pikselde gördüğün nokta, kayda gidecek konumu netleştirir."
+          headingLevel={2}
         >
           <HubMapPicker
             lat={lat}

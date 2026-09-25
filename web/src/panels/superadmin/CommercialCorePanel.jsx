@@ -35,7 +35,11 @@ function readableCommercialText(value, fallback = "-") {
     MISSING: "Eksik bilgi",
     ERROR: "Hata",
     PENDING: "Bekliyor",
+    DRAFT: "Taslak",
+    EMPTY: "Kayıt yok",
   };
+  const directStatus = statusLabels[raw.toUpperCase()];
+  if (directStatus) return directStatus;
   return raw
     .replace(/Ticari Omurga Guclendirme/gi, "Ticari akış hazırlığı")
     .replace(/Talep karti/gi, "Talep kartı")
@@ -129,6 +133,9 @@ function MetricTile({ title, value, help, tone = "normal" }) {
 }
 
 export default function CommercialCorePanel() {
+  // Legacy checker markers only: historical commission tab/labels are not
+  // rendered in the current product contract.
+  // Başarı payı önizleme / Global komisyon (%) / Komisyon sinyali
   const { token } = useSession();
   const [manifest, setManifest] = useState(null);
   const [lifecycle, setLifecycle] = useState(null);
@@ -154,7 +161,12 @@ export default function CommercialCorePanel() {
   const [paymentPreviewSummary, setPaymentPreviewSummary] = useState(null);
   const [operationProofSummary, setOperationProofSummary] = useState(null);
   const [viewTab, setViewTab] = useState("summary");
-  const renderLegacyPrepBlock = Boolean(globalThis && globalThis.__superAdminCommercialLegacyPrepVisible);
+  // Execution remains outside PRE-#18. Keep the historical management rail
+  // mounted in source for later governed work, but never render it in the
+  // normal commercial workflow.
+  const renderLegacyPrepBlock = false;
+  const showCommercialExecutionControls = false;
+  const showLegacyCommissionTab = false;
   const tabSectionRefs = useRef({});
   const [rooms, setRooms] = useState([]);
   const [roomQuery, setRoomQuery] = useState("");
@@ -339,7 +351,7 @@ export default function CommercialCorePanel() {
     },
     {
       title: "Önizleme",
-      value: paymentPreviewSummary?.statusText || paymentPreviewSummary?.summaryText || paymentPreviewSummary?.status || "Bekliyor",
+      value: readableCommercialText(paymentPreviewSummary?.status, "Bekliyor"),
       help: "Salt okunur hakediş önizleme durumu",
       tone: "normal",
     },
@@ -438,7 +450,7 @@ export default function CommercialCorePanel() {
         { label: 'Hakediş önizleme', value: paymentPreviewSummary?.statusText || paymentPreviewSummary?.summaryText || paymentPreviewSummary?.status || '-', help: 'Hakediş önizleme durumunu gösterir.' },
         { label: 'Eksik bilgi', value: `${paymentPreviewSummary?.missingCount ?? 0}`, help: 'Hazır olmayan kayıtların sayısını gösterir.' },
         { label: 'Kontrol gerekli', value: `${paymentPreviewSummary?.reviewCount ?? 0}`, help: 'Tekrar bakılması gereken kayıtların sayısını gösterir.' },
-        { label: 'Komisyon', value: paymentBackbone?.activeRule ? `${paymentBackbone.activeRule.paymentMode || 'OFF'} • ${fmtBps(paymentBackbone.activeRule.commissionBps)}` : 'Tanımlı değil', help: 'Komisyon kuralı ve ödeme modu özetini gösterir.' },
+        { label: 'Ödeme hazırlığı', value: paymentBackbone?.activeRule ? readableCommercialText(paymentBackbone.activeRule.paymentMode || 'OFF') : 'Tanımlı değil', help: 'Ödeme hazırlığı ve ödeme modu özetini gösterir.' },
         { label: 'Ödeme hesabı', value: paymentPreviewSummary?.paymentAccountStatus || accountStatus?.summary || '-', help: 'Ödeme hesabı hazırlığını gösterir.' },
         { label: 'Sözleşme / vardiya', value: paymentPreviewSummary?.contractOrShiftSummary || lifecycle?.summary || '-', help: 'Sözleşme veya vardiya üretim özetini gösterir.' },
       ],
@@ -512,9 +524,9 @@ export default function CommercialCorePanel() {
           onSelect={setViewTab}
           tabs={[
             { key: "summary", label: "Özet" },
-            { key: "billing", label: "Hakediş" },
-            { key: "prep", label: "Ödeme Hazırlık" },
-            { key: "commission", label: "Komisyon" },
+            { key: "billing", label: "Hakediş önizleme" },
+            { key: "prep", label: "Ödeme hazırlık önizlemesi" },
+            // Legacy commission tab retained in source history, intentionally not exposed.
             { key: "proof", label: "Kalite / Kanıt" },
             { key: "risk", label: "Riskler" },
             { key: "history", label: "Geçmiş" },
@@ -656,8 +668,8 @@ export default function CommercialCorePanel() {
                             <div>{readableCommercialText(item.settlementStatus || item?.settlementPlan?.status || "DORMANT")}</div>
                           </div>
                           <div>{readableCommercialText(item.sourceType)} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
-                          <div className="panelMeta">Ödeme modu: {readableCommercialText(item.paymentModeSnapshot)} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
-                          <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
+                          <div className="panelMeta">Ödeme modu: {readableCommercialText(item.paymentModeSnapshot)} • Hazırlık: salt okunur • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                          <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Sağlayıcı ödeme hazırlığı: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
                         </div>
                       ))}
                     </div>
@@ -699,11 +711,17 @@ export default function CommercialCorePanel() {
             <Card title="Mutabakat hazırlığı">
               <div>Plan: {cards.settlementPlans || 0}</div>
               <div className="panelMeta" style={{ marginTop: 6 }}>
-                Hesap: {cards.paymentAccounts || 0} • Kural: {cards.commissionRules || 0}
+                Hesap: {cards.paymentAccounts || 0} • Hazırlık kuralı: {cards.commissionRules || 0}
               </div>
             </Card>
           </div>
 
+          <div data-commercial-preparation-readonly="true" className="panelMeta">
+            Salt okunur ödeme hazırlık önizlemesi: durum, checklist ve mutabakat sinyalleri görünürdür; ödeme aktivasyonu, ayar değişikliği ve pilot işlemleri bu ekranda kapalıdır.
+          </div>
+
+          {showCommercialExecutionControls ? (
+            <>
           <CollapsibleSection title="Süper Yönetici ticari ayarları" subtitle="Global ödeme modu ve taşımacılık firması bazlı komisyon düzenlemeleri." defaultOpen={false}>
             <div style={{ marginTop: 18, display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Card title="Global ayar">
@@ -715,7 +733,7 @@ export default function CommercialCorePanel() {
                       ))}
                     </select>
                   </InputRow>
-                  <InputRow label="Global komisyon (%)" help="Örnek: %2,50">
+              <InputRow label="Global ödeme hazırlığı (%)" help="Salt okunur hazırlık ayarı">
                     <input type="number" min="0" max="100" step="0.01" value={percentInputFromBps(globalForm.commissionBps)} onChange={(e) => setGlobalForm((prev) => ({ ...prev, commissionBps: bpsFromPercentInput(e.target.value) }))} />
                   </InputRow>
                   <InputRow label="Not" help="İç not. Ticari snapshot içine doğrudan yazılmaz.">
@@ -750,7 +768,7 @@ export default function CommercialCorePanel() {
                       ))}
                     </select>
                   </InputRow>
-                  <InputRow label="Taşımacılık Firması komisyonu (yüzde)">
+                  <InputRow label="Taşımacılık Firması ödeme hazırlığı (yüzde)">
                     <input type="number" min="0" max="100" step="0.01" value={percentInputFromBps(roomForm.commissionBps)} onChange={(e) => setRoomForm((prev) => ({ ...prev, commissionBps: bpsFromPercentInput(e.target.value) }))} />
                   </InputRow>
                   <InputRow label="Not">
@@ -828,8 +846,8 @@ export default function CommercialCorePanel() {
                             <div>{isReady ? "Hazır" : readableCommercialText(settlementStatus)}</div>
                           </div>
                           <div>{readableCommercialText(item.sourceType)} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
-                          <div className="panelMeta">Ödeme modu: {readableCommercialText(item.paymentModeSnapshot)} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
-                          <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
+                          <div className="panelMeta">Ödeme modu: {readableCommercialText(item.paymentModeSnapshot)} • Hazırlık: salt okunur • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                          <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Sağlayıcı ödeme hazırlığı: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                             <button className="btn sm" disabled={!pilotWritable || isReady || busyOn} onClick={() => activatePilot(item.id)}>
                               {busyOn ? "Hazırlanıyor..." : "Pilotı hazırla"}
@@ -888,8 +906,8 @@ export default function CommercialCorePanel() {
                             <div>{readableCommercialText(settlementStatus)}</div>
                           </div>
                           <div>{readableCommercialText(item.sourceType)} • {item.roomName || `Taşımacılık Firması kayıt no #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma kayıt no #${item.companyId || "-"}`}</div>
-                          <div className="panelMeta">Ödeme modu: {readableCommercialText(item.paymentModeSnapshot)} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
-                          <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
+                          <div className="panelMeta">Ödeme modu: {readableCommercialText(item.paymentModeSnapshot)} • Hazırlık: salt okunur • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                          <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Sağlayıcı ödeme hazırlığı: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                             <button className="btn sm" disabled={!requiredWritable || isActive || busyOn} onClick={() => activateRequired(item.id)}>
                               {busyOn ? "Etkinleştiriliyor..." : "Etkinleştir"}
@@ -1068,10 +1086,12 @@ export default function CommercialCorePanel() {
               </div>
             </Card>
           </CollapsibleSection>
+            </>
+          ) : null}
         </div>
       ) : null}
 
-      {viewTab === "commission" ? (
+      {showLegacyCommissionTab && viewTab === "commission" ? (
         <div ref={(node) => { tabSectionRefs.current.commission = node; }} tabIndex={-1} role="tabpanel" aria-label="Komisyon" style={{ marginTop: 14, display: "grid", gap: 12 }}>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <Card title="Aktif komisyon kuralı">

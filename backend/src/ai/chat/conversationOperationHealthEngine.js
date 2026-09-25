@@ -1,6 +1,7 @@
 import {
   ensureVisibleSentence,
   normalizeVisibleReplyFragment,
+  normalizeRoleKey,
   prettyRoleName,
   prettyScreenLabel,
 } from './conversationTaskStateShared.js';
@@ -212,6 +213,7 @@ function structuredFacts(screenContext) {
 export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   Object.freeze({
     key: 'ROOM_OPERATION_HEALTH',
+    roleScopes: Object.freeze(['room']),
     label: 'Operasyon Sağlığı',
     purpose: 'canlılık, riskli cihaz, açık sorun ve konum sinyalini birlikte okuma',
     paths: ['/room/operation-health'],
@@ -227,6 +229,7 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
   Object.freeze({
     key: 'SUPERADMIN_OPERATIONS',
+    roleScopes: Object.freeze(['superadmin']),
     label: 'Super Admin Operasyonları',
     purpose: 'genel operasyon riskini ve canlılık zincirini birlikte okuma',
     paths: ['/superadmin/operations'],
@@ -242,6 +245,7 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
   Object.freeze({
     key: 'OBSERVABILITY',
+    roleScopes: Object.freeze(['superadmin']),
     label: 'Canlı İzleme',
     purpose: 'canlı durum, konum sinyali güveni ve son olayları birlikte okuma',
     paths: ['/observability', '/superadmin/observability'],
@@ -257,6 +261,7 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
   Object.freeze({
     key: 'TRUST_QUALITY',
+    roleScopes: Object.freeze(['superadmin']),
     label: 'Kalite Sinyali',
     purpose: 'kanıt, taslak skor ve inceleme kararını birlikte okuma',
     paths: ['/trust-quality', '/superadmin/trust-quality'],
@@ -272,6 +277,7 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
   Object.freeze({
     key: 'COMPANY_OPERATIONS',
+    roleScopes: Object.freeze(['company']),
     label: 'Şirket Operasyonları',
     purpose: 'şirket operasyon riskini ve açık talepleri birlikte okuma',
     paths: ['/company/operations'],
@@ -287,6 +293,7 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
   Object.freeze({
     key: 'COMPANY_SHIFTS',
+    roleScopes: Object.freeze(['company', 'organization']),
     label: 'Vardiyalar',
     purpose: 'vardiya canlılığı, atama ve başlatma akışını birlikte okuma',
     paths: ['/company/shifts', '/organization/shifts'],
@@ -302,6 +309,7 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
   Object.freeze({
     key: 'ROOM_SHIFTS',
+    roleScopes: Object.freeze(['room']),
     label: 'Oda Vardiyaları',
     purpose: 'oda tarafındaki vardiya planı ve canlı başlangıcı birlikte okuma',
     paths: ['/room/shifts'],
@@ -317,6 +325,7 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
   Object.freeze({
     key: 'ROOM_MAP',
+    roleScopes: Object.freeze(['room']),
     label: 'Canlı Takip',
     purpose: 'konum sinyali ve canlı hareketi birlikte okuma',
     paths: ['/room/map', '/room/live'],
@@ -332,6 +341,7 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
   Object.freeze({
     key: 'ROOM_VEHICLES',
+    roleScopes: Object.freeze(['room']),
     label: 'Araçlar',
     purpose: 'araç, sürücü ve cihaz riskini birlikte okuma',
     paths: ['/room/vehicles'],
@@ -347,6 +357,7 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
   Object.freeze({
     key: 'DRIVER_ROUTE',
+    roleScopes: Object.freeze(['driver']),
     label: 'Sürücü Rotası',
     purpose: 'günlük rota, durak sırası ve zaman uyumunu birlikte okuma',
     paths: ['/driver/route', '/driver/today', '/driver/map'],
@@ -362,6 +373,7 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
   Object.freeze({
     key: 'PERSONEL_LIVE',
+    roleScopes: Object.freeze(['personel']),
     label: 'Personel Canlı',
     purpose: 'servis, konum ve erişim riskini birlikte okuma',
     paths: ['/personel/live', '/personel/my'],
@@ -377,6 +389,7 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
   Object.freeze({
     key: 'PARENT_LIVE',
+    roleScopes: Object.freeze(['parent']),
     label: 'Veli Canlı',
     purpose: 'öğrenci servis canlılığını ve güvenli takip sinyalini birlikte okuma',
     paths: ['/parent/live'],
@@ -392,6 +405,7 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
   Object.freeze({
     key: 'SCHOOL_OPERATIONS',
+    roleScopes: Object.freeze(['school']),
     label: 'Okul Operasyonları',
     purpose: 'okul servis operasyon riskini ve açık sinyalleri birlikte okuma',
     paths: ['/school/operations'],
@@ -407,6 +421,7 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
   Object.freeze({
     key: 'ORGANIZATION_OPERATIONS',
+    roleScopes: Object.freeze(['organization']),
     label: 'Organizasyon Operasyonları',
     purpose: 'organizasyon servis operasyon riskini ve açık sinyalleri birlikte okuma',
     paths: ['/organization/operations'],
@@ -422,7 +437,37 @@ export const OPERATION_HEALTH_SURFACE_PROFILES = Object.freeze([
   }),
 ]);
 
-function detectSurfaceProfile({ screenPath = '', screenDefinition = null, screenContext = null, sourceScreenDefinition = null, sourceScreenContext = null, conversationState = null } = {}) {
+function resolveSurfaceRoleScope({ userRole = '', user = null } = {}) {
+  const role = normalizeRoleKey(firstNonBlank(userRole, user?.role, ''));
+  const companyKind = normalizeRoleKey(firstNonBlank(user?.companyKind, user?.companyType, ''));
+  if (role === 'company' && ['school', 'organization'].includes(companyKind)) return companyKind;
+  return role === 'default' ? '' : role;
+}
+
+function profileMatchesRoleScope(profile, roleScope = '') {
+  const scopes = Array.isArray(profile?.roleScopes) ? profile.roleScopes : [];
+  return !roleScope || scopes.length === 0 || scopes.includes(roleScope);
+}
+
+function genericSurfaceProfile() {
+  return Object.freeze({
+    key: 'GENERIC',
+    label: 'Operasyon Sağlığı',
+    purpose: 'canlılık ve risk sinyalini birlikte okuma',
+    paths: [],
+    visibleNeedles: [],
+    reviewLead: 'Operasyon sağlığı tarafında canlılık ve risk özetini okuyorum.',
+    summaryFallback: 'Bu ekranda operasyon sağlığı sinyali görünmüyor.',
+    nextBestAction: 'Önce açık sorun, riskli cihaz, aktif sürücü ve konum sinyali satırlarını kontrol et.',
+    safestNextStep: 'En risksiz adım, önce açık sorun ve konum sinyali satırlarını okumaktır.',
+    compareHint: 'Operasyon sağlığı canlılık ve risk okuması içindir; tek başına işlem kararı değildir.',
+    blocker: 'Önce açık veya riskli kayıt var mı bak.',
+    chips: ['Riskli cihazı göster', 'Konum sinyali güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'],
+    forceHealthSurface: false,
+  });
+}
+
+function detectSurfaceProfile({ screenPath = '', screenDefinition = null, screenContext = null, sourceScreenDefinition = null, sourceScreenContext = null, conversationState = null, userRole = '', user = null } = {}) {
   const path = normalizeText(firstNonBlank(
     screenPath,
     screenDefinition?.path,
@@ -450,21 +495,14 @@ function detectSurfaceProfile({ screenPath = '', screenDefinition = null, screen
     firstNonBlank(sourceScreenContext?.selectedRecordStatus, ''),
     firstNonBlank(conversationState?.uiSurface?.summary, ''),
   ]).join(' • '));
-  return OPERATION_HEALTH_SURFACE_PROFILES.find((profile) => pathHas(path, profile.paths) || textHas(visibleText, profile.visibleNeedles)) || Object.freeze({
-    key: 'GENERIC',
-    label: 'Operasyon Sağlığı',
-    purpose: 'canlılık ve risk sinyalini birlikte okuma',
-    paths: [],
-    visibleNeedles: [],
-    reviewLead: 'Operasyon sağlığı tarafında canlılık ve risk özetini okuyorum.',
-    summaryFallback: 'Bu ekranda operasyon sağlığı sinyali görünmüyor.',
-    nextBestAction: 'Önce açık sorun, riskli cihaz, aktif sürücü ve konum sinyali satırlarını kontrol et.',
-    safestNextStep: 'En risksiz adım, önce açık sorun ve konum sinyali satırlarını okumaktır.',
-    compareHint: 'Operasyon sağlığı canlılık ve risk okuması içindir; tek başına işlem kararı değildir.',
-    blocker: 'Önce açık veya riskli kayıt var mı bak.',
-    chips: ['Riskli cihazı göster', 'Konum sinyali güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'],
-    forceHealthSurface: false,
-  });
+  const roleScope = resolveSurfaceRoleScope({ userRole, user });
+  const exactPathProfiles = OPERATION_HEALTH_SURFACE_PROFILES.filter((profile) => pathHas(path, profile.paths));
+  const exactPathProfile = exactPathProfiles.find((profile) => profileMatchesRoleScope(profile, roleScope));
+  if (exactPathProfile) return exactPathProfile;
+  if (roleScope && exactPathProfiles.length > 0) return genericSurfaceProfile();
+  return OPERATION_HEALTH_SURFACE_PROFILES.find((profile) => (
+    profileMatchesRoleScope(profile, roleScope) && textHas(visibleText, profile.visibleNeedles)
+  )) || genericSurfaceProfile();
 }
 
 function getOperationHealthCounters({ screenContext = null, sourceScreenContext = null } = {}) {
@@ -641,6 +679,8 @@ export function buildOperationHealthState({
     sourceScreenDefinition,
     sourceScreenContext,
     conversationState,
+    userRole,
+    user,
   });
   const countersState = getOperationHealthCounters({
     screenContext,

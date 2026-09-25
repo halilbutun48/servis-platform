@@ -153,7 +153,10 @@ export function CompanyOfferDecisionCard({
         </div>
       </div>
 
-      <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+      <details className="shiftCardDisclosure pre18-shift-secondary-details" style={{ marginTop: 10 }}>
+        <summary>Teklif ve işlem ayrıntıları</summary>
+        <div className="shiftCardDisclosureBody">
+      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
         <OfferSignalPill label="Hizmet Alan Firma" value={offer.amountCompany != null ? `${formatTRY(offer.amountCompany)} ₺` : "-"} tone="neutral" />
         <OfferSignalPill label="Taşımacılık Firması" value={offer.amountRoom != null ? `${formatTRY(offer.amountRoom)} ₺` : "-"} tone={canAccept ? "warn" : "neutral"} />
         <OfferSignalPill label={gap.label} value={gap.value} tone={gap.tone} />
@@ -202,6 +205,8 @@ export function CompanyOfferDecisionCard({
           </div>
         </div>
       ) : null}
+        </div>
+      </details>
     </div>
   );
 }

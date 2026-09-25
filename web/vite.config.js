@@ -25,6 +25,13 @@ export default defineConfig({
     },
 
     proxy: {
+      // The public tunnel terminates at Vite in development. Keep the
+      // canonical backend health contract reachable through the same public
+      // origin without exposing any diagnostic route beyond /health.
+      "/health": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
       "/api": {
         target: "http://127.0.0.1:3000",
         changeOrigin: true,

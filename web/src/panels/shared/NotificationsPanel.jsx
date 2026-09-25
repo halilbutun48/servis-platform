@@ -195,7 +195,7 @@ export default function NotificationsPanel() {
 
         .notifTbl thead th, .notifTbl .nowrap { white-space:nowrap; }
 
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        .mono { font-family: Inter, system-ui, Arial, sans-serif; }
         .nowrap { white-space:nowrap; }
         .ellipsis { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
@@ -246,6 +246,47 @@ export default function NotificationsPanel() {
             min-width: 0 !important;
           }
           .notifTblCard { min-height: 320px; }
+          .notifTblWrap { overflow-x: hidden; }
+          .notifTbl { display: block; width: 100%; min-width: 0; }
+          .notifTbl colgroup, .notifTbl thead { display: none; }
+          .notifTbl tbody, .notifTbl tr { display: grid; min-width: 0; }
+          .notifTbl tr {
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 4px 8px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, .16);
+          }
+          .notifTbl td {
+            display: none;
+            min-width: 0;
+            max-width: 100%;
+            padding: 3px 0;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+            word-break: normal;
+          }
+          .notifTbl td:nth-child(1),
+          .notifTbl td:nth-child(2),
+          .notifTbl td:nth-child(5),
+          .notifTbl td:nth-child(6),
+          .notifTbl td:nth-child(7),
+          .notifTbl td:nth-child(10),
+          .notifTbl td:nth-child(12) { display: block; }
+          .notifTbl td:nth-child(1) { grid-column: 1; grid-row: 1; }
+          .notifTbl td:nth-child(2) { grid-column: 1; grid-row: 2; }
+          .notifTbl td:nth-child(5) { grid-column: 2; grid-row: 1; text-align: right; }
+          .notifTbl td:nth-child(6) { grid-column: 1 / -1; grid-row: 3; font-weight: 700; }
+          .notifTbl td:nth-child(7) { grid-column: 1 / -1; grid-row: 4; }
+          .notifTbl td:nth-child(10) { grid-column: 2; grid-row: 2; text-align: right; }
+          .notifTbl td:nth-child(12) { grid-column: 2; grid-row: 3 / span 2; align-self: start; }
+          .notifTbl .pillEllip {
+            display: inline-flex;
+            max-width: 100%;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: clip;
+            overflow-wrap: anywhere;
+          }
         }
       `}</style>
 
