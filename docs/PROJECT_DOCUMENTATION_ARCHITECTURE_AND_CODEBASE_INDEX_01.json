@@ -14,11 +14,11 @@
   ],
   "frontier": {
     "closed": ["#1", "#2", "#3", "#4", "#5", "#6", "#7", "#8", "#9", "#10", "#11", "#12", "#13", "#14"],
-    "current": "#16",
-    "currentStatus": "NEXT / NOT_STARTED",
-    "next": "#17",
-    "nextStatus": "NOT_STARTED",
-    "alsoNotStarted": ["#15"],
+    "current": "#18",
+    "currentStatus": "ACTIVE / BOUNDED_IMPLEMENTATION",
+    "next": "#19",
+    "nextStatus": "LOCKED / NOT_STARTED",
+    "alsoNotStarted": ["#15", "#17"],
     "sourceEvidence": [
       "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_GAP_REGISTER.json",
       "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_CAPABILITY_MATRIX.json",
@@ -67,6 +67,7 @@
     {"id":"external-providers","purpose":"Provider abstractions for reference and telematics data","ownerPaths":["backend/src/externalCost/providerRegistry.js","backend/src/telematics/providers.js"]},
     {"id":"sefer-abi","purpose":"Evidence-bound contextual decision support","ownerPaths":["backend/src/ai/service.js","backend/src/ai/chat/seferAbiReasoningAssistant.js"]},
     {"id":"checks","purpose":"Behavioral acceptance and repository verification","ownerPaths":["backend/scripts/run_repo_check_chain.js","backend/scripts/run_product_extensions_check_chain.js"]},
+    {"id":"milestone-ownership-authority","purpose":"Immutable closure records plus the single active numbered-milestone ownership/current-head authority","ownerPaths":["backend/scripts/lib/milestoneOwnershipAuthority.js","backend/scripts/lib/m18CopilotUiElementAnchorOwnershipManifest.json","backend/scripts/package_ownership_delta_01_check.js"]},
     {"id":"ci","purpose":"Repository-native verification workflow","ownerPaths":[".github/workflows/vardis_verification_visibility.yml"]}
   ],
   "schema": {

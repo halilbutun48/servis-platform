@@ -31,6 +31,12 @@ function textOf(el) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
+function semanticTypeOf(el) {
+  if (el?.getAttribute?.('role') === 'tab') return 'tab';
+  if (el?.matches?.('summary')) return 'disclosure';
+  return 'button';
+}
+
 function uniqueByLabel(rows) {
   const seen = new Set();
   const out = [];
@@ -67,30 +73,44 @@ function inferDisabledReason(el, label) {
 }
 
 function collectButtons(excludeSelector) {
-  const nodes = Array.from(document.querySelectorAll('button,[role="button"],a[href],input[type="button"],input[type="submit"]'));
+  const nodes = Array.from(document.querySelectorAll('button,[role="button"],a[href],input[type="button"],input[type="submit"],summary'));
   const rows = nodes
     .filter((el) => !isExcluded(el, excludeSelector))
     .filter((el) => isVisibleElement(el))
     .map((el) => {
       const label = textOf(el);
       const disabled = Boolean(el.disabled) || String(el.getAttribute?.('aria-disabled') || '').toLowerCase() === 'true';
-      return { label, disabled, reason: disabled ? inferDisabledReason(el, label) : '' };
+      return {
+        label,
+        disabled,
+        reason: disabled ? inferDisabledReason(el, label) : '',
+        semanticType: semanticTypeOf(el),
+        targetKey: el.getAttribute?.('data-copilot-target') || el.getAttribute?.('data-copilot-label') || '',
+      };
     })
     .filter((row) => row.label && row.label.length <= 80)
     .filter((row) => !/^(yardım|copilot|sohbet|rehber|gelişmiş|sorunu bul|hızlı cevap|adım adım)$/i.test(row.label));
-  return uniqueByLabel(rows).slice(0, 18);
+  // Keep the compact context summary bounded, but retain current disclosure
+  // targets that appear after the shell navigation in the DOM.
+  return uniqueByLabel(rows).slice(0, 48);
 }
 
 function collectButtonsWithin(root, excludeSelector) {
   if (!root || typeof root.querySelectorAll !== 'function') return [];
-  const nodes = Array.from(root.querySelectorAll('button,[role="button"],a[href],input[type="button"],input[type="submit"]'));
+  const nodes = Array.from(root.querySelectorAll('button,[role="button"],a[href],input[type="button"],input[type="submit"],summary'));
   const rows = nodes
     .filter((el) => !isExcluded(el, excludeSelector))
     .filter((el) => isVisibleElement(el))
     .map((el) => {
       const label = textOf(el);
       const disabled = Boolean(el.disabled) || String(el.getAttribute?.('aria-disabled') || '').toLowerCase() === 'true';
-      return { label, disabled, reason: disabled ? inferDisabledReason(el, label) : '' };
+      return {
+        label,
+        disabled,
+        reason: disabled ? inferDisabledReason(el, label) : '',
+        semanticType: semanticTypeOf(el),
+        targetKey: el.getAttribute?.('data-copilot-target') || el.getAttribute?.('data-copilot-label') || '',
+      };
     })
     .filter((row) => row.label && row.label.length <= 80)
     .filter((row) => !/^(yardım|copilot|sohbet|rehber|gelişmiş|sorunu bul|hızlı cevap|adım adım)$/i.test(row.label));
@@ -122,7 +142,7 @@ export function captureCopilotUiSurface({ excludeSelector = '.copilotDrawer,.cop
     ...collectButtons(excludeSelector),
   ]);
   return {
-    visibleButtons: buttons.filter((row) => !row.disabled).slice(0, 18),
+    visibleButtons: buttons.filter((row) => !row.disabled).slice(0, 48),
     disabledButtons: buttons.filter((row) => row.disabled).slice(0, 8),
     tableHeaders: collectTextRows('table th', excludeSelector, 12),
     modalTitles: uniqueByLabel(modalTitles).map((row) => row.label).slice(0, 6),

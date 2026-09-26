@@ -577,7 +577,11 @@ function main() {
       role: 'ROOM',
       fixture: roomShiftsFixture,
       message: 'İlgili durumu sor',
-      replyIncludes: ['Netleştirelim', 'canlı başlatma', 'araç-sürücü', 'eksik bilgi'],
+      // The current canonical ROOM contract presents the selected-record
+      // context directly, with the dynamic follow-up choices carried by the
+      // chips.  The old expectation required legacy clarification prose that
+      // is no longer the public response authority.
+      replyIncludes: ['Seçili kayıt görünüyor', 'canlı başlatma zamanı'],
       chipsIncludes: ['Canlı başlatma zamanı', 'Araç / sürücü'],
     },
     {

@@ -24,6 +24,7 @@ import {
   isM80M89ContractSweepRepoContractPath,
   mustNoDiffExceptWithIdentity,
 } from "./lib/guardGitScope.js";
+import { activeMilestoneTouchedPaths } from "./lib/milestoneOwnershipAuthority.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -107,6 +108,7 @@ const lifecycleDeferredArtifactRoot = "backend/artifacts/harness-topology/";
 const lifecycleDeferredPaths = new Set(LIFECYCLE_DEFERRED_TO_NO_SURPRISE_EXIT_PATHS);
 const closureSourceByPath = new Map(CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES.map((entry) => [entry.path, entry]));
 const screenContextByPath = new Map(CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE.map((entry) => [entry.path, entry]));
+const activeMilestoneByPath = new Map(activeMilestoneTouchedPaths().map((entry) => [entry.path, entry]));
 
 function isExplicitDeferredLifecyclePath(file) {
   return lifecycleDeferredPaths.has(file) || file.startsWith(lifecycleDeferredArtifactRoot);
@@ -120,6 +122,13 @@ function isCurrentAcceptedLifecyclePath(file) {
     (lifecycle?.category === "ACTIVE_CURRENT_SOURCE" && accepted?.sha256 === fileSha256(file)) ||
     screenContext?.sha256 === fileSha256(file)
   );
+}
+
+function isActiveMilestoneAcceptedPath(file) {
+  const entry = activeMilestoneByPath.get(normalizePath(file));
+  if (!entry || entry.identityMode === "CONTRACT_SELF") return false;
+  if (entry.acceptance !== "PASS" || entry.identityRegistered !== true || !entry.lifecycle) return false;
+  return entry.rawSha256 === fileSha256(file);
 }
 
 function mustNotList(files, needle, label) {
@@ -785,7 +794,7 @@ function main() {
   const statusWithoutApprovedConcurrent = statusWithoutAcceptedPrisma.filter((file) => !approvedConcurrentBackendPaths.has(normalizePath(file)));
   const statusWithinBrandLoginScope = statusWithoutApprovedConcurrent.filter((file) => {
     const normalized = normalizePath(file);
-    if (isExplicitDeferredLifecyclePath(normalized) || isCurrentAcceptedLifecyclePath(normalized)) {
+    if (isExplicitDeferredLifecyclePath(normalized) || isCurrentAcceptedLifecyclePath(normalized) || isActiveMilestoneAcceptedPath(normalized)) {
       return false;
     }
     if (isM80M89ContractSweepRepoContractPath(normalized)) {
@@ -813,8 +822,8 @@ function main() {
     "terminology presentation diff stays within approved identities"
   );
   mustNoDiffExceptWithIdentity(
-    CURRENT_PRE18_VISIBLE_PRESENTATION.map((entry) => entry.path),
-    CURRENT_PRE18_VISIBLE_PRESENTATION,
+    CURRENT_PRE18_VISIBLE_PRESENTATION.filter((entry) => !isActiveMilestoneAcceptedPath(entry.path)).map((entry) => entry.path),
+    CURRENT_PRE18_VISIBLE_PRESENTATION.filter((entry) => !isActiveMilestoneAcceptedPath(entry.path)),
     "current PRE-#18 visible presentation stays identity-locked"
   );
   mustNoDiffExceptWithIdentity(["backend/src/routes", "backend/src/services"], approvedConcurrentBackendDiff, "approved NEW-01 backend diff is identity-locked");

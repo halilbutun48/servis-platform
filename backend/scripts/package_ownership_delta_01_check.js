@@ -17,13 +17,17 @@ import { fileURLToPath } from "node:url";
 import {
   ACTIVE_UNOWNED_CURRENT_CHANGE_PATHS,
   assertLifecycleClassificationIntegrity,
-  classifyLifecyclePath,
 } from "./lib/pre18LifecycleClassification.js";
+import {
+  activeMilestoneTouchedPaths,
+  assertMilestoneOwnershipAuthorityIntegrity,
+  readMilestoneOwnershipAuthority,
+} from "./lib/milestoneOwnershipAuthority.js";
+import { PRE18_HISTORICAL_CURRENT_HEAD_IDENTITIES } from "./lib/currentHeadScopePolicy.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
-const manifestPath = path.join(__dirname, "lib", "packageOwnershipDeltaManifest.json");
 const packageId = "PRE_18_VERIFY_CHAIN_PACKAGE_OWNERSHIP_DELTA_GATE_01";
 const TRANSIENT_ARTIFACT_ROOTS = Object.freeze([
   "backend/artifacts/runtime-data/",
@@ -74,19 +78,19 @@ function gitStatusEntries() {
   });
 }
 
-function currentEntriesIncludingCommittedBaseline(manifest) {
+function currentEntriesIncludingCommittedBaseline(manifest, activeTouchedPaths = []) {
   const statusEntries = gitStatusEntries();
   const statusByPath = new Map(statusEntries.map((entry) => [entry.path, entry]));
-  const current = manifest.baselineStatusEntries.map((baselineEntry) => {
-    const normalizedPath = normalizePath(baselineEntry.path);
-    return statusByPath.get(normalizedPath) || {
-      path: normalizedPath,
-      status: "  ",
-      ...fileIdentity(normalizedPath),
-    };
+  const authorityPaths = new Set([
+    ...manifest.baselineStatusEntries.map((entry) => normalizePath(entry.path)),
+    ...activeTouchedPaths.map((entry) => normalizePath(entry.path)),
+  ]);
+  const authorityCurrent = [...authorityPaths].map((normalizedPath) => statusByPath.get(normalizedPath) || {
+    path: normalizedPath,
+    status: "  ",
+    ...fileIdentity(normalizedPath),
   });
-  const baselinePaths = new Set(manifest.baselineStatusEntries.map((entry) => normalizePath(entry.path)));
-  return current.concat(statusEntries.filter((entry) => !baselinePaths.has(entry.path)));
+  return authorityCurrent.concat(statusEntries.filter((entry) => !authorityPaths.has(entry.path)));
 }
 
 function isTransientArtifact(relativePath) {
@@ -94,8 +98,8 @@ function isTransientArtifact(relativePath) {
   return TRANSIENT_ARTIFACT_ROOTS.some((root) => normalized === root.replace(/\/$/, "") || normalized.startsWith(root));
 }
 
-function readManifest() {
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+function readHistoricalManifest(authority) {
+  const manifest = authority.immutableClosure.manifest;
   assert.equal(manifest.packageId, packageId, "package manifest id");
   assert.equal(manifest.contractVersion, "PACKAGE_OWNERSHIP_DELTA_V1", "package manifest contract version");
   assert.ok(Array.isArray(manifest.touchedPaths), "package manifest touched paths");
@@ -136,10 +140,48 @@ function validateTouchedRecord(record, current, { skipIdentityHash = false } = {
   return errors;
 }
 
-export function evaluatePackageDelta({ baselineEntries, currentEntries, touchedPaths }) {
+function historicalCurrentHeadByPath(entries) {
+  const records = new Map();
+  for (const entry of entries) {
+    const relativePath = normalizePath(entry.path);
+    if (relativePath) records.set(relativePath, { ...entry, path: relativePath });
+  }
+  return records;
+}
+
+export function mergeOwnershipTouchedPaths({ historicalTouchedPaths, activeTouchedPaths = [], historicalCurrentHeadEntries = [] }) {
+  const merged = mapByPath(historicalTouchedPaths);
+  const active = mapByPath(activeTouchedPaths);
+  const historicalCurrentHead = historicalCurrentHeadByPath(historicalCurrentHeadEntries);
+  for (const [relativePath, entry] of active) {
+    const historical = merged.get(relativePath);
+    if (historical && (entry.supersedesHistoricalIdentity !== true || !entry.historicalOwner)) {
+      throw new Error(`active milestone must explicitly supersede historical identity: ${relativePath}`);
+    }
+    if (!historical && (entry.supersedesHistoricalIdentity === true || entry.historicalOwner)) {
+      const externalCurrentHead = historicalCurrentHead.get(relativePath);
+      const externallyProven = entry.historicalAuthority === "PRE18_CURRENT_HEAD_POLICY" &&
+        externalCurrentHead &&
+        externalCurrentHead.owner === entry.historicalOwner &&
+        externalCurrentHead.sha256 === entry.historicalRawSha256 &&
+        entry.historicalRawSha256 === entry.historicalNormalizedSha256;
+      if (!externallyProven) {
+        throw new Error(`active milestone cannot claim historical supersession without canonical historical record: ${relativePath}`);
+      }
+    }
+    merged.set(relativePath, entry);
+  }
+  return [...merged.values()];
+}
+
+export function evaluatePackageDelta({ baselineEntries, currentEntries, touchedPaths, activeTouchedPaths = [], historicalCurrentHeadEntries = [] }) {
   const baseline = mapByPath(baselineEntries);
   const current = mapByPath(currentEntries);
-  const touched = mapByPath(touchedPaths);
+  const touched = mapByPath(mergeOwnershipTouchedPaths({
+    historicalTouchedPaths: touchedPaths,
+    activeTouchedPaths,
+    historicalCurrentHeadEntries,
+  }));
   const changed = new Set();
   for (const [relativePath, currentEntry] of current) {
     const baselineEntry = baseline.get(relativePath);
@@ -172,15 +214,50 @@ function runNegativeAndPositiveTests() {
     { name: "unexplained repo file", negative: true, current: [...current, { path: "mystery.json", status: "??", rawSha256: "B", normalizedSha256: "B" }], touched: [] },
     { name: "wildcard exemption", negative: true, current: [...current, { path: "wild.mjs", status: "??", rawSha256: "B", normalizedSha256: "B" }], touched: [{ ...valid("wild.mjs", "B"), path: "backend/**" }] },
     { name: "identity without acceptance", negative: true, current: [...current, { path: "identity.mjs", status: "??", rawSha256: "B", normalizedSha256: "B" }], touched: [valid("identity.mjs", "B")].map((entry) => ({ ...entry, acceptance: "NONE" })) },
+    {
+      name: "active milestone with stale exact identity is rejected",
+      negative: true,
+      current: [...current, { path: "milestone-stale.jsx", status: "??", rawSha256: "B", normalizedSha256: "B" }],
+      touched: [],
+      activeTouched: [{ ...valid("milestone-stale.jsx", "A"), owner: "M18_GUIDED_TARGET" }],
+    },
+    {
+      name: "external current-head supersession without canonical history is rejected",
+      negative: true,
+      current: [...current, { path: "external-head.jsx", status: "??", rawSha256: "B", normalizedSha256: "B" }],
+      touched: [],
+      activeTouched: [{ ...valid("external-head.jsx", "B"), owner: "M18_GUIDED_TARGET", supersedesHistoricalIdentity: true, historicalOwner: "PRE18_OWNER", historicalAuthority: "PRE18_CURRENT_HEAD_POLICY", historicalRawSha256: "A", historicalNormalizedSha256: "A" }],
+    },
     { name: "valid owned accepted identity lifecycle", negative: false, current: [...current, { path: "owned.jsx", status: "??", rawSha256: "B", normalizedSha256: "B" }], touched: [valid("owned.jsx", "B")] },
     { name: "valid durable checker", negative: false, current: [...current, { path: "valid-check.mjs", status: "??", rawSha256: "B", normalizedSha256: "B" }], touched: [valid("valid-check.mjs", "B")] },
     { name: "inherited debt unchanged", negative: false, current, touched: [] },
     { name: "inherited accepted path staged without content delta", negative: false, current: [{ path: "tracked.js", status: "M ", rawSha256: "A", normalizedSha256: "A" }], touched: [] },
     { name: "inherited debt resolved", negative: false, current: [{ path: "tracked.js", status: " M", rawSha256: "B", normalizedSha256: "B" }], touched: [valid("tracked.js", "B")] },
+    {
+      name: "active milestone owns a new durable path without rewriting historical ownership",
+      negative: false,
+      current: [...current, { path: "milestone-target.jsx", status: "??", rawSha256: "B", normalizedSha256: "B" }],
+      touched: [],
+      activeTouched: [{ ...valid("milestone-target.jsx", "B"), owner: "M18_GUIDED_TARGET" }],
+    },
+    {
+      name: "external current-head supersession with exact canonical history is accepted",
+      negative: false,
+      current: [...current, { path: "external-head.jsx", status: "??", rawSha256: "B", normalizedSha256: "B" }],
+      touched: [],
+      activeTouched: [{ ...valid("external-head.jsx", "B"), owner: "M18_GUIDED_TARGET", supersedesHistoricalIdentity: true, historicalOwner: "PRE18_OWNER", historicalAuthority: "PRE18_CURRENT_HEAD_POLICY", historicalRawSha256: "A", historicalNormalizedSha256: "A" }],
+      historicalCurrentHead: [{ path: "external-head.jsx", owner: "PRE18_OWNER", sha256: "A" }],
+    },
   ];
   const results = cases.map((test) => {
     try {
-      const result = evaluatePackageDelta({ baselineEntries: base, currentEntries: test.current, touchedPaths: test.touched });
+      const result = evaluatePackageDelta({
+        baselineEntries: base,
+        currentEntries: test.current,
+        touchedPaths: test.touched,
+        activeTouchedPaths: test.activeTouched || [],
+        historicalCurrentHeadEntries: test.historicalCurrentHead || [],
+      });
       const validResult = result.unexplained.length === 0 && result.missingEvidence.length === 0;
       return { ...test, pass: test.negative ? !validResult : validResult };
     } catch {
@@ -196,7 +273,15 @@ function runNegativeAndPositiveTests() {
 }
 
 function main() {
-  const manifest = readManifest();
+  const authority = readMilestoneOwnershipAuthority();
+  const authorityIntegrity = assertMilestoneOwnershipAuthorityIntegrity();
+  const manifest = readHistoricalManifest(authority);
+  const activeTouchedPaths = activeMilestoneTouchedPaths(authority);
+  const allTouchedPaths = mergeOwnershipTouchedPaths({
+    historicalTouchedPaths: manifest.touchedPaths,
+    activeTouchedPaths,
+    historicalCurrentHeadEntries: PRE18_HISTORICAL_CURRENT_HEAD_IDENTITIES,
+  });
   assertLifecycleClassificationIntegrity();
   const statusEntries = gitStatusEntries();
   const statusPathSet = new Set(statusEntries.map((entry) => entry.path));
@@ -204,11 +289,13 @@ function main() {
   // does not make their package delta unexplained. Rehydrate baseline paths
   // from the committed worktree so ownership compares content/lifecycle rather
   // than whether Git currently reports a status row.
-  const currentEntries = currentEntriesIncludingCommittedBaseline(manifest);
+  const currentEntries = currentEntriesIncludingCommittedBaseline(manifest, activeTouchedPaths);
   const result = evaluatePackageDelta({
     baselineEntries: manifest.baselineStatusEntries,
     currentEntries,
     touchedPaths: manifest.touchedPaths,
+    activeTouchedPaths,
+    historicalCurrentHeadEntries: PRE18_HISTORICAL_CURRENT_HEAD_IDENTITIES,
   });
   const inherited = new Set(ACTIVE_UNOWNED_CURRENT_CHANGE_PATHS);
   const inheritedUnchanged = [...inherited].filter((relativePath) => result.baseline.has(relativePath) && !result.changed.has(relativePath));
@@ -225,11 +312,14 @@ function main() {
   );
   const report = {
     packageId,
-    touchedPathCount: manifest.touchedPaths.length,
-    ownedPathCount: manifest.touchedPaths.filter((entry) => entry.owner).length,
-    acceptedPathCount: manifest.touchedPaths.filter((entry) => entry.acceptance === "PASS").length,
-    identityRegisteredPathCount: manifest.touchedPaths.filter((entry) => entry.identityRegistered === true).length,
-    lifecycleClassifiedPathCount: manifest.touchedPaths.filter((entry) => entry.lifecycle).length,
+    authorityVersion: authorityIntegrity.version,
+    activeMilestoneId: authorityIntegrity.activeMilestoneId,
+    activeMilestoneTouchedPathCount: activeTouchedPaths.length,
+    touchedPathCount: allTouchedPaths.length,
+    ownedPathCount: allTouchedPaths.filter((entry) => entry.owner).length,
+    acceptedPathCount: allTouchedPaths.filter((entry) => entry.acceptance === "PASS").length,
+    identityRegisteredPathCount: allTouchedPaths.filter((entry) => entry.identityRegistered === true).length,
+    lifecycleClassifiedPathCount: allTouchedPaths.filter((entry) => entry.lifecycle).length,
     unownedDeltaCount: unownedDelta,
     unexplainedDeltaCount: unexplainedDelta,
     changedPathCount: result.changed.size,

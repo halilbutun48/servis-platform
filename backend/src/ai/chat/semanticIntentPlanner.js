@@ -1028,7 +1028,7 @@ function resolveFamily({ text, domains, entity, entities, temporalMode, relation
   // instead of treating the mentioned product domain as a generic summary.
   if (howWords && hasAny(text, ["vardiya nasıl oluştur", "vardiya nasil olustur", "teklif nasıl alın", "teklif nasil alin", "sözleşmeye nasıl geç", "sozlesmeye nasil gec", "servisimi nasıl takip", "servisimi nasil takip", "checkin nasıl yap", "checkin nasil yap"])) return "UI_GUIDANCE";
   if (hasAny(text, ["önce", "once", "acil", "en acil", "aciliyet", "öncelikli", "oncelikli", "öncelik", "oncelik", "hangisine el", "ilk ne", "ilk hangisi", "ilk hangisini", "ilk kontrol", "birinci kontrol", "kontrol adayı", "nereden başlay", "nereden baslay", "hangisinden başlay", "hangisinden baslay", "hangiyle başlay", "hangiyle baslay", "neyle başlay", "neyle baslay", "hangi işi önce", "hangi isi once", "önce neyi", "once neyi", "en önemli", "en onemli"])) return "PRIORITY";
-  if (hasAny(text, ["sonra", "peki sonra", "ne yapayım", "ne yapayim", "ne yapmalı", "ne yapmali", "sıradaki işlem", "siradaki islem", "sıradaki doğru işlem", "siradaki dogru islem", "sıradaki güvenli", "siradaki guvenli", "sırada hangi", "sirada hangi", "sırada ne var", "sirada ne var", "bundan sonra", "şimdi ne", "simdi ne", "şimdi hangi işi", "simdi hangi isi", "ilk adım", "ilk adim", "bir sonraki güvenli", "bir sonraki guvenli", "bir sonraki işlem", "bir sonraki islem", "doğru işlem", "dogru islem", "doğru adım", "dogru adim", "adım", "adim", "devam et", "devam edelim", "devamını anlat", "devamini anlat", "biraz daha anlat", "detaylandır", "detaylandir"])) return "NEXT_STEP";
+  if (hasAny(text, ["sonra", "peki sonra", "ne yapayım", "ne yapayim", "ne yapmalı", "ne yapmali", "sıradaki işlem", "siradaki islem", "sıradaki doğru işlem", "siradaki dogru islem", "sıradaki güvenli", "siradaki guvenli", "sırada hangi", "sirada hangi", "sırada ne var", "sirada ne var", "bundan sonra", "şimdi ne", "simdi ne", "şimdi hangi işi", "simdi hangi isi", "ilk adım", "ilk adim", "bir sonraki güvenli", "bir sonraki guvenli", "bir sonraki işlem", "bir sonraki islem", "doğru işlem", "dogru islem", "doğru adım", "dogru adim", "adım", "adim", "devam", "devam et", "devam edelim", "devamını anlat", "devamini anlat", "biraz daha anlat", "detaylandır", "detaylandir"])) return "NEXT_STEP";
   const issueSignal = hasAny(text, ["sorun", "problem", "sıkıntı", "sikinti", "ters", "arıza", "ariza", "aksak", "aksayan", "başka ne", "baska ne"]);
   const explicitComparisonSignal = hasAny(text, ["karşılaştır", "karsilastir", "fark", "hangisi daha", "hangisini seç", "hangisini sec", "biri mi diğeri mi", "biri mi digeri mi", "mantıklı", "mantikli", "alternatif"]);
   if (issueSignal && !explicitComparisonSignal) return "ISSUE_DIAGNOSTIC";
@@ -1120,10 +1120,11 @@ export function getRoleDomainCapabilities(userOrRole) {
   return { role, capabilities: { ...(ROLE_DOMAIN_CAPABILITIES[role] || {}) } };
 }
 
-function buildContinuationSemanticPlan({ role, text, conversationRoute, conversationState, screenContext, previousPlan, selectedEntity } = {}) {
-  const priorContinuationDepth = previousPlan?.family === "CONTINUE_CURRENT_REASONING"
-    ? Number(previousPlan.continuationDepth || 0)
-    : 0;
+function buildContinuationSemanticPlan({ role, text, conversationRoute, conversationState, screenContext, previousPlan, selectedEntity, canonicalShape } = {}) {
+  const priorContinuationDepth = Math.max(
+    previousPlan?.family === "CONTINUE_CURRENT_REASONING" ? Number(previousPlan.continuationDepth || 0) : 0,
+    Number(conversationState?.activeGuidedTask?.continuationDepth || 0),
+  );
   let basePlan = previousPlan || null;
   for (let depth = 0; depth < 6 && basePlan && ["STYLE", "CONTINUE_CURRENT_REASONING"].includes(basePlan.family); depth += 1) {
     basePlan = basePlan.family === "STYLE" ? basePlan.styleTargetPlan || null : basePlan.continuationBasePlan || null;
@@ -1150,6 +1151,7 @@ function buildContinuationSemanticPlan({ role, text, conversationRoute, conversa
     domain: requestedDomains[0] || null,
     targetEntityType: entities[0]?.type ? String(entities[0].type).toUpperCase() : null,
     continuationIntent: true,
+    continuationAction: canonicalShape?.continuationAction || "CONTINUE",
     explicitUserTarget: hasGroundedBase,
     confidence: hasGroundedBase ? 0.98 : 0.45,
   };
@@ -1189,6 +1191,7 @@ function buildContinuationSemanticPlan({ role, text, conversationRoute, conversa
     taskVariant: "CONTINUE_CURRENT_REASONING",
     continuationOfFamily,
     continuationDepth,
+    continuationAction: canonicalShape?.continuationAction || "CONTINUE",
     continuationBasePlan: basePlan,
     previousAnswerText,
     requestedStyle: "",
@@ -1220,6 +1223,7 @@ function buildContinuationSemanticPlan({ role, text, conversationRoute, conversa
       requestedFieldKeys: requestedFields.map((field) => field.key || field),
       requestedTaskSlots: [],
       taskType: "CONTINUE_CURRENT_REASONING",
+      continuationAction: canonicalShape?.continuationAction || "CONTINUE",
       followUp: true,
       previousIntentFamily: continuationOfFamily,
       dialogueTopic: "PRODUCT",
@@ -1524,12 +1528,13 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     return buildReturnToProductSemanticPlan({ role, text, conversationRoute, conversationState });
   }
   if (canonicalShape.taskType === "CONTINUE_CURRENT_REASONING") {
-    const previousPlan = conversationState?.lastSettledResult?.semanticPlan
+    const previousPlan = conversationState?.activeGuidedTask?.semanticPlan
+      || conversationState?.lastSettledResult?.semanticPlan
       || conversationState?.authorizedProductContext?.semanticPlan
       || conversationState?.lastProductSemanticPlan
       || conversationState?.lastSemanticPlan
       || null;
-    return buildContinuationSemanticPlan({ role, text, conversationRoute, conversationState, screenContext, previousPlan, selectedEntity });
+    return buildContinuationSemanticPlan({ role, text, conversationRoute, conversationState, screenContext, previousPlan, selectedEntity, canonicalShape });
   }
   if (["OFF_TOPIC_SAFE", "GENERAL_KNOWLEDGE", "LIVE_EXTERNAL_DATA", "UNCLEAR_OR_AMBIGUOUS"].includes(conversationRoute.route)) {
     const routeFamily = conversationRoute.route;
@@ -1788,7 +1793,7 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     && entities.length > 0
     && (discourseReferentialFieldLookup || canonicalShape.scopeTarget === "SELECTED_RECORD");
   const domains = canonicalShape.taskType === "SCREEN_CONTEXT"
-    ? []
+    ? (canonicalShape.explicitUiGuidance && canonicalShape.domain ? [canonicalShape.domain] : [])
     : ["COUNT", "PLAN_REVIEW"].includes(canonicalShape.taskType) && canonicalShape.domain
       ? [canonicalShape.domain]
       : styleOnlyRequest
@@ -1865,7 +1870,9 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     && (hasAny(text, ["rota", "gps"]) || approvedLastLocationInfoTimeLookup || approvedDriverPhoneLocationSignalLookup)
     ? "LOCATION_GPS"
     : "ENTITY_LOOKUP";
-  const shapeFamily = {
+  const shapeFamily = canonicalShape.explicitUiGuidance
+    ? "UI_GUIDANCE"
+    : {
     SCREEN_CONTEXT: "SCREEN_CONTEXT",
     SELECTED_RECORD_CONTEXT: "SELECTED_RECORD_CONTEXT",
     RECORD_DETAILS: "RECORD_DETAILS",
@@ -2044,6 +2051,7 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
       ? (styleTargetPlan?.semanticEntityType || entities[0]?.type?.toUpperCase() || semanticEntityType)
       : semanticEntityType,
     currentAssignmentIntent: Boolean(canonicalShape.currentAssignmentIntent),
+    workflowIntent: canonicalShape.workflowIntent || null,
     deniedDomains,
     conditionalDomains,
     entities,
@@ -2095,7 +2103,7 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     evidenceRequirements,
     temporalMode,
     temporalScope: { mode: temporalMode, explicit: temporalMode !== "UNKNOWN" },
-    explicitUiGuidance: family === "UI_GUIDANCE",
+    explicitUiGuidance: family === "UI_GUIDANCE" || Boolean(canonicalShape.explicitUiGuidance),
     multiDomain: requestedDomains.length > 1,
     multiEntity: entities.length > 1,
     signals: {

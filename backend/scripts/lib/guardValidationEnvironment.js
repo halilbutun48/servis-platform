@@ -1,7 +1,7 @@
 import {
   gitCachedNames,
   gitStatusNames,
-  mustStatusEmptyOrExactlyWithIdentity,
+  mustStatusSubsetWithIdentity,
   mustDiffEmptyOrExactlyWithIdentity,
   mustNoDiff,
 } from "./guardGitScope.js";
@@ -45,7 +45,7 @@ export function mustCleanCommittedState({
 }
 
 export function mustCurrentHeadCommittedState({
-  routeServicePaths = ["backend/src/routes", "backend/src/services"],
+  routeServicePaths = ["backend/src/routes", "backend/src/services", "backend/src/ai"],
   prismaPaths = ["backend/prisma", "prisma"],
   approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
   label = "current head committed state",
@@ -53,7 +53,11 @@ export function mustCurrentHeadCommittedState({
   const scopedApprovedConcurrentBackendDiff = approvedConcurrentBackendDiff.filter(({ path }) =>
     isWithinScope(path, routeServicePaths),
   );
-  mustStatusEmptyOrExactlyWithIdentity(
+  // Historical PRE-#18 identities stay available to legacy consumers, but
+  // they are not required to remain as a dirty worktree snapshot. A live
+  // numbered milestone may contain only a subset of the current scope; every
+  // observed path still requires its exact registered identity.
+  mustStatusSubsetWithIdentity(
     routeServicePaths,
     scopedApprovedConcurrentBackendDiff,
     `${label} route/service status exact current head policy`

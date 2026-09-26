@@ -22,12 +22,18 @@
 
 - Combined PRE-#18 acceptance and No-Surprise Repository Exit: GREEN (`487/487` classified, `0` unexplained).
 - Final terminology / Sefer Abi residual and bounded public-runtime current-source recheck: PASS.
-- `#18_STARTED = NO`; proven-closed work reopens only for concrete newer regression evidence.
+- PRE-#18 baseline records `#18_STARTED = NO`; the active branch now starts #18 only after that immutable tag. Proven-closed work reopens only for concrete newer regression evidence.
 - Current HEAD: `e3bec6177f32263325bd14e876502faacac7a5b0` on `m90d1_web_lint_inventory`.
 - `verify:repo` `PASS 32/32`; `verify:final` `PASS`; KVKK `262/262`; role/data isolation `216/216`.
 - Presentation provenance has one authority; active/product unowned is `0`; the package ownership delta is `0/0`.
 - M79 D1 `199/199` and AI semantic quality `122/122` are current accepted evidence. Copilot Context 14/21 is `PROVEN_SUPERSEDED_BY_CURRENT_ACCEPTANCE`.
-- `PREMIUM_UI = 72_OF_72_PROVEN`; Foundation Exit is `GREEN PRESERVED`, ROOM/OTHER423 is `PROVEN_CLOSED`, and No-Surprise Repository Exit is `GREEN` after current-tree classification. PRE-#18 is `FINAL CLOSURE READY`; #18 and commit/tag/push remain `NO`.
+- `PREMIUM_UI = 72_OF_72_PROVEN`; Foundation Exit is `GREEN PRESERVED`, ROOM/OTHER423 is `PROVEN_CLOSED`, and No-Surprise Repository Exit is the immutable PRE-#18 baseline. #18 is active in its bounded screen-grounding package; #19+ and closure commit/tag/push remain `NO`.
+
+## #18 current bounded implementation
+
+- #18 starts only after the immutable PRE-#18 tag `v2026.09.25-pre18-immutable-closure` and consumes the already-proven role/screen/tenant interaction grounding.
+- Current owner: `backend/src/ai/chat/copilotUiElementAnchor.js` + `web/src/components/copilot/GuidedTargetOverlay.jsx`; focused checks: `npm run check:copilotuielementanchor01` and `npm run smoke:copilotuielementanchor01`.
+- Boundary: semantic target resolution, bounded highlight/scroll/focus and safe navigation guidance only. No business write, approval, dispatch, authorization mutation, force-click or #19+ capability.
 
 ## Kanonik komut hiyerarşisi (Tur 1)
 - Resmi günlük giriş: `npm run verify:repo`

@@ -101,6 +101,8 @@
     "check:ai03bsemanticvisibleaudit01": "node backend/scripts/ai03b_semantic_visible_audit_01_check.js",
     "check:ai03bsemanticvisiblelivematrix01": "node backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js",
     "check:copilotguidedtaskengine01": "node backend/scripts/copilot_guided_task_engine_01_check.js",
+    "check:copilotuielementanchor01": "node backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+    "smoke:copilotuielementanchor01": "node backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
     "check:copilotdynamicquestionengine01": "node backend/scripts/copilot_dynamic_question_engine_01_check.js",
     "check:copilotsmartdiagnosticengine01": "node backend/scripts/copilot_smart_diagnostic_engine_01_check.js",
     "check:copilotrootcauseengine01": "node backend/scripts/copilot_root_cause_engine_01_check.js",

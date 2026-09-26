@@ -4464,7 +4464,9 @@ textarea:focus-visible,
   /* The quick assistant is a compact, two-row control surface on narrow
      screens: its controls reflow instead of competing with the heading. */
   .copilotDrawer {
-    height: min(49vh, 420px) !important;
+    /* Keep the primary page target above the drawer after semantic guidance
+       scrolls it into the viewport. Desktop sizing remains unchanged. */
+    height: min(36vh, 320px) !important;
     min-height: 0;
     max-height: calc(100dvh - 112px);
     box-sizing: border-box;
@@ -5263,6 +5265,13 @@ textarea:focus-visible,
     width: min(260px, calc(100vw - 34px));
   }
 
+  /* Preset sizes and the pointer resize handle are desktop semantics. The
+     mobile drawer has one bounded native size, so do not expose controls that
+     appear to change its size but are constrained by the mobile layout. */
+  .copilotDrawerMoreMenu .copilotDrawerPresets {
+    display: none;
+  }
+
   .copilotDrawer .copilotComposer textarea {
     min-height: 64px;
     height: 64px;
@@ -5282,5 +5291,36 @@ textarea:focus-visible,
     bottom: max(88px, calc(env(safe-area-inset-bottom) + 78px));
     height: min(var(--copilot-map-safe-height, 49vh), 420px) !important;
     max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 88px);
+  }
+}
+
+/* #18 mobile compact/expanded drawer contract. */
+@media (max-width: 720px) {
+  .copilotDrawer.copilotDrawer--mobile-expanded {
+    height: min(62vh, 560px) !important;
+    max-height: calc(100dvh - 88px);
+  }
+
+  .copilotDrawer .copilotComposer textarea {
+    min-height: 48px;
+    height: 48px;
+    max-height: 120px;
+    overflow-y: hidden;
+    resize: none;
+  }
+
+  .copilotDrawerHeaderActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .copilotMobileExpandBtn {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 721px) {
+  .copilotMobileExpandBtn {
+    display: none !important;
   }
 }

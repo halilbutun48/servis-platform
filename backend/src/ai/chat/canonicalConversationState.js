@@ -113,7 +113,31 @@ function safeScreenContext(screenContext, user) {
     // UI labels and controls are hints. Protected facts never cross the
     // client/server boundary as authoritative screen evidence.
     uiHints: screenContext?.uiHints && typeof screenContext.uiHints === "object"
-      ? { drawerMode: text(screenContext.uiHints.drawerMode), activeTabs: Array.isArray(screenContext.uiHints.activeTabs) ? screenContext.uiHints.activeTabs.slice(0, 12).map(text).filter(Boolean) : [] }
+      ? {
+        drawerMode: text(screenContext.uiHints.drawerMode),
+        activeTabs: Array.isArray(screenContext.uiHints.activeTabs)
+          ? screenContext.uiHints.activeTabs.slice(0, 16).map((row) => typeof row === "string" ? text(row) : {
+            label: text(row?.label),
+            targetKey: text(row?.targetKey || row?.semanticKey || row?.copilotTarget),
+            semanticType: text(row?.semanticType) || "tab",
+          }).filter((row) => typeof row === "string" ? Boolean(row) : Boolean(row.label))
+          : [],
+        visibleButtons: Array.isArray(screenContext.uiHints.visibleButtons) ? screenContext.uiHints.visibleButtons.slice(0, 48).map((row) => ({
+          label: text(row?.label),
+          targetKey: text(row?.targetKey || row?.semanticKey || row?.copilotTarget),
+          semanticType: text(row?.semanticType) || "button",
+          disabled: Boolean(row?.disabled),
+        })).filter((row) => row.label) : [],
+        disabledButtons: Array.isArray(screenContext.uiHints.disabledButtons) ? screenContext.uiHints.disabledButtons.slice(0, 16).map((row) => ({
+          label: text(row?.label),
+          targetKey: text(row?.targetKey || row?.semanticKey || row?.copilotTarget),
+          semanticType: text(row?.semanticType) || "button",
+          disabled: true,
+        })).filter((row) => row.label) : [],
+        tableHeaders: Array.isArray(screenContext.uiHints.tableHeaders) ? screenContext.uiHints.tableHeaders.slice(0, 16).map((row) => typeof row === "string" ? text(row) : { label: text(row?.label), semanticType: "field" }).filter((row) => typeof row === "string" ? Boolean(row) : Boolean(row.label)) : [],
+        modalTitles: Array.isArray(screenContext.uiHints.modalTitles) ? screenContext.uiHints.modalTitles.slice(0, 8).map((row) => typeof row === "string" ? text(row) : { label: text(row?.label), semanticType: "modal" }).filter((row) => typeof row === "string" ? Boolean(row) : Boolean(row.label)) : [],
+        pageTitles: Array.isArray(screenContext.uiHints.pageTitles) ? screenContext.uiHints.pageTitles.slice(0, 8).map((row) => typeof row === "string" ? text(row) : { label: text(row?.label), semanticType: "section" }).filter((row) => typeof row === "string" ? Boolean(row) : Boolean(row.label)) : [],
+      }
       : {},
   };
 }
@@ -135,6 +159,8 @@ function emptyState(authState, screenContext) {
     lastProductTask: "",
     suspendedProductContext: null,
     lastSettledResult: null,
+    activeGuidedTask: null,
+    guidedTarget: null,
     authScopeVersion: authState.authScopeVersion,
     entityContext: { conversationEntities: [], selectedEntity: screenContext.selectedEntity, selectedRelatedEntity: screenContext.selectedRelatedEntity, referentConfidence: 0 },
     screenContext,
@@ -193,6 +219,8 @@ export function getCanonicalConversationState({ user, screenContext, authSession
     lastProductTask: text(stored.lastProductTask || stored.productContext?.semanticPlan?.family),
     suspendedProductContext: stored.suspendedProductContext || null,
     lastSettledResult: stored.lastSettledResult || null,
+    activeGuidedTask: stored.activeGuidedTask || null,
+    guidedTarget: stored.guidedTarget || null,
     authScopeVersion: authState.authScopeVersion,
     // Compatibility projection for the existing planner. These values are
     // server-owned and never copied from the request body.
@@ -227,6 +255,20 @@ export function commitCanonicalConversationState({ user, screenContext, message,
     : productPlan?.family === "CONTINUE_CURRENT_REASONING"
       ? productPlan.continuationBasePlan || current.productContext?.semanticPlan || null
       : productPlan;
+  const guidedTaskPlan = productPlan?.family === "UI_GUIDANCE"
+    ? productPlan
+    : productPlan?.family === "CONTINUE_CURRENT_REASONING" && productPlan?.continuationBasePlan?.family === "UI_GUIDANCE"
+      ? productPlan.continuationBasePlan
+      : null;
+  const activeGuidedTask = guidedTaskPlan
+    ? {
+      semanticPlan: guidedTaskPlan,
+      screenPath: text(screenContext?.path),
+      continuationDepth: productPlan?.family === "CONTINUE_CURRENT_REASONING"
+        ? Number(productPlan.continuationDepth || 1)
+        : 0,
+    }
+    : current.activeGuidedTask || null;
   const planEntities = Array.isArray(plan?.entities) ? plan.entities.map(normalizeEntity).filter(Boolean) : [];
   const entity = planEntities.length ? planEntities : plan?.entity ? [normalizeEntity(plan.entity)].filter(Boolean) : [];
   // A relationship lookup may resolve both its source and related target.
@@ -306,6 +348,10 @@ export function commitCanonicalConversationState({ user, screenContext, message,
           : null,
       }
       : current.lastSettledResult || null,
+    activeGuidedTask,
+    guidedTarget: payload?.guidedTarget
+      ? payload.guidedTarget
+      : (current.guidedTarget && safeScreen.path === current.guidedTarget.screenPath ? current.guidedTarget : null),
     entityContext: {
       conversationEntities: presentationOperation && !entity.length ? current.entityContext?.conversationEntities || [] : entity,
       selectedEntity: safeScreen.selectedEntity || null,

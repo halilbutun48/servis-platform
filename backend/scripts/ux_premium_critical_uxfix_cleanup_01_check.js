@@ -3,7 +3,7 @@
 import { CANONICAL_PRISMA_SCHEMA_PATH as ACCEPTED_SCHEMA_PATH, CANONICAL_PRISMA_SCHEMA_RAW_SHA256 as ACCEPTED_SCHEMA_SHA256 } from "./lib/prismaSchemaIdentity.js";
 
 import crypto from "node:crypto";
-import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustDiffEmptyOrExactlyWithIdentity, mustStatusSubsetWithIdentity } from "./lib/guardGitScope.js";
 import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
 import fs from "node:fs";
@@ -657,7 +657,7 @@ function main() {
   const approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
     entryPath.startsWith("backend/src/routes/") || entryPath.startsWith("backend/src/services/")
   );
-  mustStatusEmptyOrExactlyWithIdentity(
+  mustStatusSubsetWithIdentity(
     ["backend/src/routes", "backend/src/services"],
     approvedConcurrentBackendDiff,
     "approved NEW-01 backend diff is identity-locked"

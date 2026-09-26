@@ -8,9 +8,10 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { BATCH10_DOC_WORKTREE_CLOSURE_PATHS, mustStatusEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
+import { BATCH10_DOC_WORKTREE_CLOSURE_PATHS, mustStatusSubsetWithIdentity } from './lib/guardGitScope.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { activeMilestoneTouchedPaths } from './lib/milestoneOwnershipAuthority.js';
 
 // The source list remains the canonical current-head authority.  This checker
 // applies it only to its route/service scope, preserving exact identities.
@@ -321,6 +322,16 @@ function canonicalAcceptedRawSha256(relPath) {
   return String(record.rawSha256).toUpperCase();
 }
 
+function activeMilestoneRawSha256(relPath) {
+  const record = activeMilestoneTouchedPaths().find((entry) => entry.path === relPath);
+  if (!record || !String(record.owner || '').trim()) fail(`active milestone identity owner missing for ${relPath}`);
+  if (record.acceptance !== 'PASS') fail(`active milestone identity acceptance missing for ${relPath}`);
+  if (record.identityRegistered !== true) fail(`active milestone identity registration missing for ${relPath}`);
+  if (!String(record.lifecycle || '').startsWith('ACTIVE_')) fail(`active milestone identity lifecycle is not active for ${relPath}`);
+  if (!/^[A-F0-9]{64}$/i.test(String(record.rawSha256 || ''))) fail(`active milestone raw identity missing for ${relPath}`);
+  return String(record.rawSha256).toUpperCase();
+}
+
 function normalizedTextSha256(relPath) {
   const bytes = fs.readFileSync(path.join(root, relPath));
   for (let i = 0; i < bytes.length; i++) {
@@ -433,7 +444,7 @@ async function main() {
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
   const cachedNames = gitCachedNames();
-  mustStatusEmptyOrExactlyWithIdentity(
+  mustStatusSubsetWithIdentity(
     ['backend/src/routes', 'backend/src/services'],
     exactApprovedConcurrentRouteServiceEntries,
     'backend route/service status stays current-head approved',
@@ -658,7 +669,11 @@ async function main() {
     'guard smoke evidence helper SHA matches canonical identity',
   );
   mustNormalizedTextSha256('backend/scripts/ux_live_panel_premium_smoke_01_check.js', 'C82D81B94C35C7EDFD6D90A9FDEBB1CFF6EE6CB4BA3BFDAD6E35E2D346C884B6', 'premium smoke check normalized SHA matches');
-  mustFileSha256('backend/scripts/current_head_scope_policy_01_check.js', '1B9D790AF2740A338DCC46FB4C317D468073C0D66A166BE254B11F71FECDE2D6', 'current head scope policy check SHA matches');
+  mustFileSha256(
+    'backend/scripts/current_head_scope_policy_01_check.js',
+    activeMilestoneRawSha256('backend/scripts/current_head_scope_policy_01_check.js'),
+    'current head scope policy check SHA matches active milestone identity',
+  );
   if (!CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.every(
     ({ path, sha256 }) => typeof path === 'string' && /^[A-F0-9]{64}$/.test(String(sha256 || '')),
   )) {

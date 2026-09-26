@@ -99,6 +99,7 @@ export const productExtensionsCheckScripts = Object.freeze([
   "check:exceltoroutereadinessredteam01",
   "check:copiloteblockruntimeanswerintegration01",
   "check:copilotguidedtaskengine01",
+  "check:copilotuielementanchor01",
   "check:copilotdynamicquestionengine01",
   "check:copilotsmartdiagnosticengine01",
   "check:copilotrootcauseengine01",

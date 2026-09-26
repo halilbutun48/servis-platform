@@ -10,6 +10,7 @@ import { canUseRouteBoundCopilotContext, routeContextKey, useCopilotRouteContext
 import { planCenterOverlayLayerEventName, readPlanCenterOverlayLayer, setPlanCenterOverlayLayer } from "../../utils/planCenterOverlayLayer";
 import { compactCopilotMessages, copilotAuthScopeKey, copilotSharedStateEventName, readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
 import { captureCopilotUiSurface } from "./uiSurface";
+import { setGuidedTarget } from "../../copilot/guidedTargetState";
 import SeferAbiAvatar from "./SeferAbiAvatar";
 import { resolveSeferAbiWidgetState, SEFER_ABI_WIDGET_STATE_LABELS } from "./SeferAbiWidgetState";
 import { humanizeUserFacingText } from "../../utils/terminology";
@@ -306,6 +307,17 @@ function filterMessageActions(actions, suggestions, followUpPrompt, me) {
   });
 }
 
+function hasSameMessageTranscript(incomingMessages, currentMessages) {
+  const incoming = Array.isArray(incomingMessages) ? incomingMessages : [];
+  const current = Array.isArray(currentMessages) ? currentMessages : [];
+  const localTail = current.slice(-incoming.length);
+  return incoming.length === localTail.length && incoming.every((message, index) => (
+    String(message?.role || '') === String(localTail[index]?.role || '')
+    && String(message?.text || '') === String(localTail[index]?.text || '')
+    && Boolean(message?.system) === Boolean(localTail[index]?.system)
+  ));
+}
+
 export default function FloatingCopilotDrawer({ path: propPath = "", routeContext: propagatedRouteContext = null }) {
   const { token, me } = useSession();
   const inheritedRouteContext = useCopilotRouteContext();
@@ -342,6 +354,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
   const [attentionBubbleVisible, setAttentionBubbleVisible] = useState(false);
   const [mobileDrawerPlacement, setMobileDrawerPlacement] = useState("bottom");
   const [mobileDrawerMaxHeight, setMobileDrawerMaxHeight] = useState(null);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const [selection, setSelection] = useState(() => {
     const initialScreenContext = resolveCopilotScreenContext(currentPath, me);
     const initialSelection = readCopilotSelection();
@@ -354,6 +367,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
   const drawerResizeRef = useRef(null);
   const drawerResizeCleanupRef = useRef(null);
   const drawerResizeHandleRef = useRef(null);
+  const composerTextareaRef = useRef(null);
   const drawerDragRef = useRef(null);
   const drawerDragCleanupRef = useRef(null);
   const drawerHeaderRef = useRef(null);
@@ -414,6 +428,26 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
       window.visualViewport?.removeEventListener("resize", updateViewport);
     };
   }, []);
+
+  useEffect(() => {
+    if (!open || viewportSize.width > 720) setMobileExpanded(false);
+  }, [open, viewportSize.width]);
+
+  const resizeComposerInput = useCallback((node) => {
+    if (!node) return;
+    node.style.height = "auto";
+    const compact = viewportSize.width <= 720;
+    const minHeight = compact ? 48 : 84;
+    const maxHeight = compact ? 120 : 180;
+    const contentHeight = String(node.value || "").trim() ? node.scrollHeight : minHeight;
+    const nextHeight = Math.min(Math.max(contentHeight, minHeight), maxHeight);
+    node.style.height = `${nextHeight}px`;
+    node.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
+  }, [viewportSize.width]);
+
+  useEffect(() => {
+    resizeComposerInput(composerTextareaRef.current);
+  }, [resizeComposerInput, text]);
 
   useEffect(() => {
     const compact = viewportSize.width <= 720;
@@ -521,7 +555,11 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
       if (!incoming || !Array.isArray(incoming.messages)) return;
       if (incoming.scopeKey && incoming.scopeKey !== authScopeKey) return;
       const next = incoming.messages.slice(-20);
-      if (JSON.stringify(next) === JSON.stringify(messages.slice(-20))) return;
+      // Shared history intentionally keeps only safe compact text.  The
+      // drawer that produced the event still owns richer current-message UI
+      // state such as a verified safe route action.  Do not let the same
+      // transcript overwrite that action before the user can use it.
+      if (hasSameMessageTranscript(next, messages)) return;
       setMessages(next);
     }
     const eventName = copilotSharedStateEventName();
@@ -891,7 +929,13 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
         authorizedProductContext: payload?.authorizedProductContext || null,
         conversationRoute: payload?.conversationRoute || payload?.semanticPlan?.conversationRoute || null,
         dialogueTopic: payload?.dialogueTopic || payload?.semanticPlan?.dialogueTopic || null,
+        guidedTarget: payload?.guidedTarget || null,
       }]);
+      setGuidedTarget(payload?.guidedTarget || null);
+      const replyText = String(payload?.reply || payload?.summary || "");
+      if (viewportSize.width <= 720 && !payload?.guidedTarget && (replyText.length > 360 || (Array.isArray(payload?.responseSections) && payload.responseSections.length > 1))) {
+        setMobileExpanded(true);
+      }
       markResponseReady();
     } catch (e) {
       if (controller.signal.aborted || requestId !== requestSequenceRef.current || requestScopeKey !== authScopeRef.current || requestRouteContextKey !== routeContextKey(routeContextRef.current)) return;
@@ -1086,6 +1130,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
   function openFromLauncher() {
     setPanelSide(launcherSide);
     setLauncherInteraction("idle");
+    setMobileExpanded(false);
     setOpen(true);
   }
 
@@ -1338,7 +1383,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
     </div>
   ) : (
     <aside
-      className={`copilotDrawer${mobileDrawerPlacement === "top" || mobileDrawerPlacement === "map-top" ? " copilotDrawer--task-home-top" : ""}${mobileDrawerPlacement === "map-top" ? " copilotDrawer--map-top" : ""}${mobileDrawerPlacement === "map-bottom" ? " copilotDrawer--map-bottom" : ""}${panelSide === "left" ? " copilotDrawer--from-left" : ""}`}
+      className={`copilotDrawer${mobileExpanded ? " copilotDrawer--mobile-expanded" : ""}${mobileDrawerPlacement === "top" || mobileDrawerPlacement === "map-top" ? " copilotDrawer--task-home-top" : ""}${mobileDrawerPlacement === "map-top" ? " copilotDrawer--map-top" : ""}${mobileDrawerPlacement === "map-bottom" ? " copilotDrawer--map-bottom" : ""}${panelSide === "left" ? " copilotDrawer--from-left" : ""}`}
       style={{ ...drawerPositionStyle, ...(mobileDrawerMaxHeight ? { "--copilot-map-safe-height": `${mobileDrawerMaxHeight}px` } : {}) }}
       onPointerDownCapture={activateCopilotLayer}
       onMouseDownCapture={activateCopilotLayer}
@@ -1367,6 +1412,15 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
           </div>
         </div>
         <div className="copilotDrawerHeaderActions">
+          <button
+            type="button"
+            className="btn sm copilotToolBtn copilotMobileExpandBtn"
+            onClick={() => setMobileExpanded((previous) => !previous)}
+            aria-expanded={mobileExpanded}
+            title={mobileExpanded ? "Paneli küçült" : "Paneli büyüt"}
+          >
+            {mobileExpanded ? "Küçült" : "Büyüt"}
+          </button>
           <details className="copilotDrawerMore">
             <summary aria-label="Sefer Abi seçenekleri" title="Seçenekler"><span aria-hidden="true">⋯</span></summary>
             <div className="copilotDrawerMoreMenu">
@@ -1418,7 +1472,13 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
             className="copilotContextSuggestionsToggle"
             aria-expanded={suggestionsOpen}
             aria-controls={suggestionPanelId}
-            onClick={() => setSuggestionsOpen((previous) => !previous)}
+            onClick={() => {
+              setSuggestionsOpen((previous) => {
+                const next = !previous;
+                if (next && viewportSize.width <= 720) setMobileExpanded(true);
+                return next;
+              });
+            }}
           >
             <span>Öneriler ({suggestions.length})</span>
             <span className="copilotContextSuggestionsChevron" aria-hidden="true">{suggestionsOpen ? "▾" : "▸"}</span>
@@ -1460,11 +1520,10 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
       </div>
 
       <form className="copilotComposer" onSubmit={onSubmit}>
-        <textarea value={text} onChange={(e) => setText(e.target.value)} onFocus={() => setInputFocused(true)} onBlur={() => setInputFocused(false)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(e); } }} placeholder="Sorunu yaz. Örnek: burada neden devam edemiyorum, bu ekran ne işe yarar, seçili araç ne durumda, şimdi ne yapacağım" rows={4} />
+        <textarea ref={composerTextareaRef} value={text} onChange={(e) => setText(e.target.value)} onInput={(e) => resizeComposerInput(e.currentTarget)} onFocus={() => setInputFocused(true)} onBlur={() => setInputFocused(false)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(e); } }} placeholder="Sorunu yaz. Örnek: burada neden devam edemiyorum, bu ekran ne işe yarar, seçili araç ne durumda, şimdi ne yapacağım" rows={2} />
         <div className="copilotComposerRow">
-          <div className="muted">Bağlam: <b>{screenContext.label}</b>{selection?.label ? ` • ${selection.label}` : ""}</div>
           <div className="copilotComposerButtons">
-            <button type="button" className="btn sm copilotToolBtn" onClick={() => { setMessages([]); setErr(""); }}>Temizle</button>
+            {(messages.length || err || String(text || "").trim()) ? <button type="button" className="btn sm copilotToolBtn" onClick={() => { setMessages([]); setErr(""); }}>Temizle</button> : null}
             <button type="submit" className="btn sm primary copilotToolBtn" disabled={busy || !String(text || "").trim()}>Sor</button>
           </div>
         </div>

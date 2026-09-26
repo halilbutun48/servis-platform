@@ -14,6 +14,7 @@ import { buildConversationRoutingResponse } from "./chat/conversationRouting.js"
 import { resolveSemanticIntent } from "./chat/semanticIntentPlanner.js";
 import { commitCanonicalConversationState, getCanonicalConversationState } from "./chat/canonicalConversationState.js";
 import { normalizeSeferAbiUserFacingPayload } from "./chat/userFacingLanguageNormalizer.js";
+import { resolveCopilotGuidedTarget } from "./chat/copilotUiElementAnchor.js";
 
 function roleGlobalActionableFallbackAllowed(semanticPlan, _conversationState) {
   if (!semanticPlan || semanticPlan.planStatus !== "READY") return false;
@@ -71,6 +72,11 @@ export function resolveIncomingCopilotScreenContext({ user, screenContext, entit
     role: resolved.effectiveRoleKey,
     companyKind: String(user?.companyKind || "").toUpperCase(),
     catalogRoleKey: resolved.screen.catalogRoleKey,
+    // The browser surface is evidence for this turn only. The canonical
+    // conversation state sanitizes it before any semantic target resolution.
+    uiHints: screenContext?.uiHints && typeof screenContext.uiHints === "object"
+      ? screenContext.uiHints
+      : {},
   };
 }
 
@@ -373,7 +379,15 @@ function buildProductAwarenessResponse({ awareness, user, entityType, entityId, 
     ],
     roleBoundary: awareness.roleBoundary || (authorizationBoundary ? awareness.reply : "Yalnızca kullanıcının mevcut yetki ve tenant kapsamındaki kayıtlar kullanıldı."),
     readOnly: true,
-    quickActions: [],
+    quickActions: awareness.navigationTarget?.path
+      ? [{
+        actionKind: "OPEN_ROUTE",
+        label: `${awareness.navigationTarget.label || "Yetkili ekran"} ekranına git`,
+        path: awareness.navigationTarget.path,
+        safeNavigation: true,
+        criticalActionExecution: false,
+      }]
+      : [],
     followUpPrompt: "Devamını anlat",
   };
 }
@@ -1155,7 +1169,23 @@ export async function runCopilotFoundation(args = {}) {
     screenContext: canonicalState.screenContext,
     conversationState: canonicalState,
   });
-  const payload = normalizeSeferAbiUserFacingPayload(rawPayload);
+  const guidedTarget = resolveCopilotGuidedTarget({
+    user: args.user,
+    screenContext: canonicalState.screenContext,
+    conversationState: canonicalState,
+    semanticPlan: rawPayload?.semanticPlan || null,
+    message: args.message,
+  });
+  const payload = normalizeSeferAbiUserFacingPayload({
+    ...rawPayload,
+    ...(guidedTarget ? { guidedTarget } : {}),
+    conversationState: {
+      guidedTarget: guidedTarget || canonicalState.guidedTarget || null,
+      lastScreenPath: canonicalState.screenContext?.path || null,
+      lastScreenLabel: canonicalState.screenContext?.label || null,
+      selectedLabel: canonicalState.screenContext?.selectedLabel || null,
+    },
+  });
   commitCanonicalConversationState({
     user: args.user,
     screenContext: canonicalState.screenContext,
@@ -1289,13 +1319,17 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
     // Financial questions have a dedicated read-only assistant and must reach
     // its canonical cost/scenario owners before the generic priority fallback.
     // The typed authorization decision remains the gate for this early route.
-    const reasoningAnswer = await buildAuthorizedReasoningAnswer({
-      user,
-      message,
-      screenContext,
-      conversationState,
-      semanticPlan,
-    });
+    const workflowGuidance = semanticPlan.family === "UI_GUIDANCE"
+      || semanticPlan.continuationBasePlan?.family === "UI_GUIDANCE";
+    const reasoningAnswer = workflowGuidance
+      ? null
+      : await buildAuthorizedReasoningAnswer({
+        user,
+        message,
+        screenContext,
+        conversationState,
+        semanticPlan,
+      });
     if (reasoningAnswer) {
       applyRequestedStyleToAnswer(reasoningAnswer);
       const authorized = resolveAuthorizedProductDomains(user);

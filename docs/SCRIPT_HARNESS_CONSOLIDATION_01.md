@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `488`
+- Toplam package script entry: `490`
 - Toplam executable tracked file: `1538`
-- Combined registry row: `2026`
-- Root/backend/web/mobile package dağılımı: root `301`, backend `1119`, web `102`, mobile `201`
+- Combined registry row: `2028`
+- Root/backend/web/mobile package dağılımı: root `303`, backend `1119`, web `102`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,7 +395,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `1016`
+- NEEDS_REVIEW: `1018`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 1016 |
+| NEEDS_REVIEW | 1018 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -532,6 +532,8 @@ Repo: `servis-platform`
 | root:check:ai03bsemanticvisibleaudit01 | package.json | root | node backend/scripts/ai03b_semantic_visible_audit_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AI-03-BSEMANTICVISIBLEAUDIT-01 |  | Owner or chain unclear |  |
 | root:check:ai03bsemanticvisiblelivematrix01 | package.json | root | node backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AI-03-BSEMANTICVISIBLELIVEMATRIX-01 |  | Owner or chain unclear |  |
 | root:check:copilotguidedtaskengine01 | package.json | root | node backend/scripts/copilot_guided_task_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-GUIDED-TASK-ENGINE-01 |  | Breaks canonical verification chain |  |
+| root:check:copilotuielementanchor01 | package.json | root | node backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTUIELEMENTANCHOR-01 |  | Owner or chain unclear |  |
+| root:smoke:copilotuielementanchor01 | package.json | root | node backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-COPILOTUIELEMENTANCHOR-01 |  | Owner or chain unclear |  |
 | root:check:copilotdynamicquestionengine01 | package.json | root | node backend/scripts/copilot_dynamic_question_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-DYNAMIC-QUESTION-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotsmartdiagnosticengine01 | package.json | root | node backend/scripts/copilot_smart_diagnostic_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-SMART-DIAGNOSTIC-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotrootcauseengine01 | package.json | root | node backend/scripts/copilot_root_cause_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-ROOT-CAUSE-ENGINE-01 |  | Breaks canonical verification chain |  |
@@ -1762,7 +1764,7 @@ Repo: `servis-platform`
 | kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:securitykvkkfinal01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
 | live.js | backend/src/routes/live.js | backend | backend:prisma:migrate:deploy, backend:prisma:migrate:status, backend:prisma:migration:acceptance, backend:prisma:migration:ci, mobile:check:m82.5, mobile:check:m95d, root:accept:databasemigrationbaselineandliveadoption01, root:accept:externalcostdataproviderfreshness01, root:check:ai03bsemanticvisiblelivematrix01, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:databasemigrationbaselineandliveadoption01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
-| me.js | backend/src/routes/me.js | backend | backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotcontextmemorytaskstate01, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:copilotofferrecommendation01, root:check:copilotshifttoagreementprep01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:projectdocumentationarchitectureandcodebaseindex01, root:check:rolebasedsimplenavigationandtaskhome01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4, root:smoke:rolebasedsimplenavigationandtaskhome01 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
+| me.js | backend/src/routes/me.js | backend | backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotcontextmemorytaskstate01, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:copilotofferrecommendation01, root:check:copilotshifttoagreementprep01, root:check:copilotuielementanchor01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:projectdocumentationarchitectureandcodebaseindex01, root:check:rolebasedsimplenavigationandtaskhome01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:copilotuielementanchor01, root:smoke:m98e4, root:smoke:rolebasedsimplenavigationandtaskhome01 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
 | naturalCopilot.js | backend/src/routes/naturalCopilot.js | backend |  | review | NEEDS_REVIEW |  | NATURAL-COPILOT |  | Owner or chain unclear |  |
 | notifications.js | backend/src/routes/notifications.js | backend | mobile:check:m96b, mobile:check:m96bnotifications | review | NEEDS_REVIEW |  | NOTIFICATIONS |  | Owner or chain unclear |  |
 | observability.js | backend/src/routes/observability.js | backend | root:check:observabilitymonitoringalerting01 | review | NEEDS_REVIEW |  | OBSERVABILITY |  | Owner or chain unclear |  |
@@ -1889,7 +1891,7 @@ Repo: `servis-platform`
 | vehicleMarkerC.js | web/src/lib/markers/vehicleMarkerC.js | web |  | review | NEEDS_REVIEW |  | VEHICLE-MARKER-C |  | Owner or chain unclear |  |
 | bus.js | web/src/live/bus.js | web |  | review | NEEDS_REVIEW |  | BUS |  | Owner or chain unclear |  |
 | useAutoReload.js | web/src/live/useAutoReload.js | web |  | review | NEEDS_REVIEW |  | USE-AUTO-RELOAD |  | Owner or chain unclear |  |
-| ws.js | web/src/live/ws.js | web | backend:check:pre18-round10-conversation-routing-browser, backend:check:pre18-round11-deterministic-conversation-browser, backend:check:pre18-round12-canonical-authorization-browser, backend:check:pre18-round7-query-plan-browser, backend:check:pre18-round9-final-execution-browser, root:smoke:accountingexportcontract01, root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01, root:smoke:pre18premiumuipolish01, root:smoke:projectgapreadiness01, root:smoke:projectwideturkishterminology01, root:smoke:rolebasedsimplenavigationandtaskhome01, root:smoke:seferabicharactersafesnappolish01, root:smoke:seferabicostanalysisassistant01, root:smoke:seferabipremiumcharactercorrective01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
+| ws.js | web/src/live/ws.js | web | backend:check:pre18-round10-conversation-routing-browser, backend:check:pre18-round11-deterministic-conversation-browser, backend:check:pre18-round12-canonical-authorization-browser, backend:check:pre18-round7-query-plan-browser, backend:check:pre18-round9-final-execution-browser, root:smoke:accountingexportcontract01, root:smoke:copilotuielementanchor01, root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01, root:smoke:pre18premiumuipolish01, root:smoke:projectgapreadiness01, root:smoke:projectwideturkishterminology01, root:smoke:rolebasedsimplenavigationandtaskhome01, root:smoke:seferabicharactersafesnappolish01, root:smoke:seferabicostanalysisassistant01, root:smoke:seferabipremiumcharactercorrective01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
 | agreementWizardPacks.js | web/src/panels/company/agreementWizardPacks.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-WIZARD-PACKS |  | Owner or chain unclear |  |
 | companyAgreementsPanelHelpers.js | web/src/panels/company/companyAgreementsPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENTS-PANEL-HELPERS |  | Owner or chain unclear |  |
 | companyShiftsPanelActions.js | web/src/panels/company/companyShiftsPanelActions.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-PANEL-ACTIONS |  | Owner or chain unclear |  |

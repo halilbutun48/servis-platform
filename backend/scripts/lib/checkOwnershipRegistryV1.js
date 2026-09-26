@@ -8,6 +8,7 @@ import {
 import { CHANGE_IMPACT_VALID_DOMAINS } from "./changeImpactRegistryV1.js";
 import { repoRoot } from "./guardGitScope.js";
 import { getRegistryPaths } from "./pre_18_harness_topology_provenance_registry.mjs";
+import { activeMilestoneGateTopologyRecords } from "./milestoneOwnershipAuthority.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -714,6 +715,23 @@ function readFrozenTopologyRegistry() {
   return Object.freeze({ parsed, scripts, byPath: new Map(scripts.map((record) => [record.path, record])) });
 }
 
+function readCanonicalTopologyRegistry() {
+  const frozen = readFrozenTopologyRegistry();
+  const activeMilestoneRecords = activeMilestoneGateTopologyRecords();
+  const frozenPaths = new Set(frozen.scripts.map((record) => record.path));
+  for (const record of activeMilestoneRecords) {
+    if (frozenPaths.has(record.path)) {
+      throw new Error(`GATE_POLICY_REGISTRY_INCONSISTENCY:active milestone shadows frozen topology ${record.path}`);
+    }
+  }
+  const scripts = Object.freeze([...frozen.scripts, ...activeMilestoneRecords]);
+  return Object.freeze({
+    frozen,
+    scripts,
+    byPath: new Map(scripts.map((record) => [record.path, record])),
+  });
+}
+
 function resolveActiveDecisionRecord(topologyRecord, byPath, seen = new Set()) {
   if (!topologyRecord) return null;
   if (topologyRecord.provenanceConclusion === "PROVEN_ACTIVE") return topologyRecord;
@@ -820,20 +838,22 @@ function buildPolicyEntry({ record, topologyRecord, gateId = record.checkId, isC
 
 /**
  * The one generated policy projection for known active release and PRE-18
- * gates. It reads the existing package/check-ownership mapping and frozen
- * topology registry; it does not crawl the repository or create a registry.
+ * gates. It reads the existing package/check-ownership mapping, the immutable
+ * PRE-#18 topology snapshot, and explicitly declared active-milestone topology
+ * records. It does not crawl the repository or create a second registry.
  */
 export function buildGatePolicyProjectionV1() {
   const ownership = buildCheckOwnershipRegistryV1();
-  const frozenTopology = readFrozenTopologyRegistry();
+  const canonicalTopology = readCanonicalTopologyRegistry();
+  const frozenTopology = canonicalTopology.frozen;
   const entries = [];
 
   for (const record of ownership.records) {
-    const topologyRecord = frozenTopology.byPath.get(record.checkerPath);
+    const topologyRecord = canonicalTopology.byPath.get(record.checkerPath);
     if (!topologyRecord) {
-      throw new Error(`GATE_POLICY_REGISTRY_INCONSISTENCY:missing frozen topology record for ${record.checkerPath}`);
+      throw new Error(`GATE_POLICY_REGISTRY_INCONSISTENCY:missing canonical topology record for ${record.checkerPath}`);
     }
-    const decisionTopologyRecord = resolveActiveDecisionRecord(topologyRecord, frozenTopology.byPath);
+    const decisionTopologyRecord = resolveActiveDecisionRecord(topologyRecord, canonicalTopology.byPath);
     if (!decisionTopologyRecord) {
       throw new Error(`GATE_POLICY_REGISTRY_INCONSISTENCY:non-active package gate ${record.checkId}:${topologyRecord.provenanceConclusion}`);
     }
@@ -864,7 +884,7 @@ export function buildGatePolicyProjectionV1() {
     gateClass,
     sortedEntries.filter((entry) => entry.class === gateClass).length,
   ]));
-  const knownScriptTotal = frozenTopology.parsed.topology.summary.totalScriptCount;
+  const knownScriptTotal = canonicalTopology.scripts.length;
   const duplicateGateIdCount = sortedEntries.length - new Set(sortedEntries.map((entry) => entry.gateId)).size;
   const unresolvedClassificationCount = sortedEntries.filter((entry) => !GATE_POLICY_CLASSES.includes(entry.class)).length;
   const unknownOwnerCount = sortedEntries.filter((entry) => !entry.owner || !entry.canonicalDecisionOwner).length;

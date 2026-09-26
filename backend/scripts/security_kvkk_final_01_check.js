@@ -23,7 +23,6 @@ import {
   isCommercialPaymentSecurityCheckerPath,
   isM80M89ContractSweepRepoContractPath,
   mustDiffEmptyOrExactlyWithIdentity,
-  mustStatusEmptyOrExactlyWithIdentity,
   mustStatusSubsetWithIdentity,
   isBatch11IndexWorktreeScopePath,
 } from "./lib/guardGitScope.js";
@@ -46,6 +45,7 @@ import {
   classifyLifecyclePath,
   assertLifecycleClassificationIntegrity,
 } from "./lib/pre18LifecycleClassification.js";
+import { activeMilestoneTouchedPaths } from "./lib/milestoneOwnershipAuthority.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -357,9 +357,20 @@ const coreGuardInfraIdentityEntries = [
 const coreGuardInfraIdentityMap = new Map(
   coreGuardInfraIdentityEntries.map(({ path: relPath, sha256 }) => [normalizePath(relPath), sha256]),
 );
+const activeMilestoneIdentityMap = new Map(
+  activeMilestoneTouchedPaths().map((entry) => [normalizePath(entry.path), entry]),
+);
 
 function isCoreGuardInfraPath(file) {
   const normalized = normalizePath(file);
+  const activeMilestone = activeMilestoneIdentityMap.get(normalized);
+  if (activeMilestone && activeMilestone.acceptance === "PASS" && activeMilestone.identityRegistered === true && activeMilestone.lifecycle) {
+    if (activeMilestone.identityMode === "CONTRACT_SELF") return "ACTIVE_MILESTONE_GOVERNANCE";
+    const expected = String(activeMilestone.normalizedSha256 || activeMilestone.rawSha256 || "").toUpperCase();
+    const actual = normalizedTextSha256(normalized);
+    must(actual === expected, `active milestone guard identity mismatch: ${normalized}`);
+    return true;
+  }
   const expectedSha = coreGuardInfraIdentityMap.get(normalized);
   if (!expectedSha) return false;
   const actualSha = normalizedTextSha256(normalized);
@@ -622,6 +633,14 @@ function isApprovedCurrentHeadSchemaPath(file) {
 function classifySecurityKvkkStatusPath(file) {
   const normalized = normalizePath(file);
   if (normalized === selfSecurityGuardPath) return "SELF_SECURITY_GUARD";
+  const activeMilestone = activeMilestoneIdentityMap.get(normalized);
+  if (activeMilestone && activeMilestone.acceptance === "PASS" && activeMilestone.identityRegistered === true && activeMilestone.lifecycle) {
+    if (activeMilestone.identityMode === "CONTRACT_SELF") return "ACTIVE_MILESTONE_GOVERNANCE";
+    const expected = String(activeMilestone.normalizedSha256 || activeMilestone.rawSha256 || "").toUpperCase();
+    const actual = normalizedTextSha256(normalized);
+    must(actual === expected, `active milestone identity mismatch: ${normalized}`);
+    return "ACTIVE_MILESTONE_GOVERNANCE";
+  }
   if (projectGapReadinessExactPaths.has(normalized)) return "PROJECT_GAP_READINESS_14";
   if (isApprovedCurrentHeadScreenContextAuthorityPath(normalized)) return "APPROVED_CURRENT_HEAD_PRODUCT";
   if (isApprovedCurrentHeadBackendPath(normalized) || isApprovedCurrentHeadSchemaPath(normalized)) return "APPROVED_CURRENT_HEAD_PRODUCT";
@@ -1514,6 +1533,7 @@ function main() {
       "LIFECYCLE_DEFERRED_TO_NO_SURPRISE_EXIT",
       "ACTIVE_CURRENT_HARNESS",
       "ACTIVE_CURRENT_SOURCE",
+      "ACTIVE_MILESTONE_GOVERNANCE",
       "DURABLE_CURRENT_CHECKER",
       "CURRENT_PRE_18_PRODUCT_FLOW",
       "RUNTIME_DATA",
@@ -1537,8 +1557,11 @@ function main() {
       [...approvedCurrentHeadRouteEntries],
       "route diff not empty",
     ));
-  addCase(cases, "service status stays exact", () =>
-    mustStatusEmptyOrExactlyWithIdentity(["backend/src/services"], approvedCurrentHeadServiceEntries, "service status not exact"));
+  // Historical accepted service identities may be clean after their work is
+  // committed. Validate only the actual current service delta against the
+  // canonical exact allowlist; clean historical paths are not current scope.
+  addCase(cases, "service status stays within current scope", () =>
+    mustStatusSubsetWithIdentity(["backend/src/services"], approvedCurrentHeadServiceEntries, "service status not allowed"));
   addCase(cases, "prisma diff stays empty", () => must(gitLines(["diff", "--name-only", "--", "prisma"]).length === 0, "prisma diff not empty"));
   addCase(cases, "backend prisma diff stays empty", () => mustAcceptedPrismaManifest());
   addCase(cases, "debug.log stays absent", () => must(!fs.existsSync(paths.debugLog), "debug.log exists"));

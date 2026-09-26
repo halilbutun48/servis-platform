@@ -199,7 +199,11 @@ function main() {
     { id: 'matrix-company-purpose', role: 'COMPANY', path: '/company', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Yeni işi kurma ve planlama'] },
     { id: 'matrix-company-ops', role: 'COMPANY', path: '/company/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['Açık iş, bekleyen iş veya riskli kaydı bul', 'Özet kartları oku'] },
     { id: 'matrix-school-purpose', role: 'SCHOOL', path: '/school', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Planlama Merkezi', 'Vardiyalar'] },
-    { id: 'matrix-school-ops', role: 'SCHOOL', path: '/school/operations', message: 'burada ne yapacağım', expectedTypes: ['NEXT_STEP'], mustContain: ['açık veya riskli kayıt var mı bak', 'sorumlu rol'] },
+    // This short deictic prompt is normalized by the active request contract
+    // to a screen-purpose question.  It must stay grounded in the current
+    // School operations surface, rather than inheriting the old feedback
+    // matrix's unrelated "sorumlu rol" action expectation.
+    { id: 'matrix-school-ops', role: 'SCHOOL', path: '/school/operations', message: 'burada ne yapacağım', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Vardiyalar', 'Yeni iş'] },
     { id: 'matrix-organization-purpose', role: 'ORGANIZATION', path: '/organization', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['gezi veya organizasyon'] },
     { id: 'matrix-organization-ops', role: 'ORGANIZATION', path: '/organization/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['Açık iş, bekleyen iş veya riskli kaydı bul', 'Özet kartları oku'] },
     { id: 'matrix-driver-today', role: 'DRIVER', path: '/driver/today', message: 'bu ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['bugün'] },

@@ -824,7 +824,9 @@ function buildThemeCases() {
       fixture: roomShiftsFixture,
       message: 'İlgili durumu sor',
       expectedQuestionTypes: ['SEMANTIC_ENTITY_LOOKUP'],
-      replyNeedles: ['Netleştirelim', 'canlı başlatma', 'araç-sürücü', 'eksik bilgi'],
+      // The selected-record ROOM response is now the canonical public
+      // contract; the legacy clarification lead is no longer required here.
+      replyNeedles: ['Seçili kayıt görünüyor', 'canlı başlatma zamanı'],
       chipNeedles: ['Canlı başlatma zamanı', 'Araç / sürücü'],
     },
     {
@@ -898,8 +900,13 @@ function buildThemeCases() {
       fixture: companyPlanningFollowUpFixture,
       message: 'bulamadım',
       conversationState: followUpState,
-      expectedIntentQuestionTypes: ['SEMANTIC_OFF_TOPIC_SAFE'],
-      expectedHelpQuestionTypes: ['SEMANTIC_OFF_TOPIC_SAFE'],
+      // “Bulamadım” is a canonical recovery continuation.  This lower-level
+      // bridge does not give detectQuestionIntent the conversation state, so
+      // it correctly reports CONTINUE_FLOW with a no-base ambiguity; the
+      // production-path M18 suite separately proves recovery with persisted
+      // canonical task state.
+      expectedIntentQuestionTypes: ['CONTINUE_FLOW'],
+      expectedHelpQuestionTypes: ['CONTINUE_FLOW'],
       replyNeedles: ['Alternatif yol bulalım', 'Aynı plan akışından devam edelim', 'Planlama Merkezi > Yeni Plan Oluştur / Rehberi Başlat'],
     },
     {

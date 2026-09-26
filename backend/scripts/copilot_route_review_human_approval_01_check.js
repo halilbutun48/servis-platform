@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
-import { mustStatusEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
+import { mustStatusSubsetWithIdentity } from './lib/guardGitScope.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -259,7 +259,7 @@ async function main() {
   const status = gitStatusNames();
   const cachedNames = gitCachedNames();
 
-  mustStatusEmptyOrExactlyWithIdentity(
+  mustStatusSubsetWithIdentity(
     ['backend/src/routes', 'backend/src/services'],
     CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF,
     'backend route/service status stays current-head approved',

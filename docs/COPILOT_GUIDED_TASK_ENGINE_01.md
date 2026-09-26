@@ -72,3 +72,17 @@ Repo: `servis-platform`
 - Role + screen + selected record + conversation state ile context-aware reasoning üretir.
 - Golden pack test/kabul içindir, reply source değildir.
 - Runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
+
+## #18 screen-grounded continuation boundary
+
+- `COPILOT-UI-ELEMENT-ANCHOR-AND-GUIDED-HIGHLIGHT-01` mevcut bu semantic/progress katmanını gerçek yetkili UI yüzeyiyle birleştirir; canonical check `check:copilotuielementanchor01`, browser acceptance `smoke:copilotuielementanchor01` ve owner `backend/src/ai/chat/copilotUiElementAnchor.js` + `web/src/components/copilot/GuidedTargetOverlay.jsx` olarak yaşar.
+- Sunucu yalnızca mevcut role/screen yetkisiyle gelen `uiSurface` kanıtındaki hedefi `FOUND`, `NOT_FOUND`, `UNAUTHORIZED` veya `STALE` olarak çözer. Konuşma durumu hedef devamlılığını hatırlar ancak hiçbir zaman yetki kaynağı değildir.
+- Tarayıcı hedefi semantik label/type/key ile yeniden çözer; bounded scroll, pointer-events olmayan outline ve erişilebilir status bildirimi kullanır. Hedef kaybolur, rota değişir veya state değişirse highlight temizlenir.
+- Bu katman yalnız navigation/guidance'tır: iş yazımı, onay, dispatch, finansal/authorization değişikliği, force-click, tool execution ve fake success açmaz.
+
+## #18 milestone authority boundary
+
+- PRE-#18 kapanış kanıtı ve `v2026.09.25-pre18-immutable-closure` etiketi tarihsel/immutable kayıttır; #18 değişikliği bu kimlikleri yeniden yazmaz.
+- Canlı numbered-milestone ownership/current-head kaydı `backend/scripts/lib/milestoneOwnershipAuthority.js` tarafından tek otorite olarak tüketilir. Aktif #18 manifesti yalnız kendi açık path, owner, kabul, identity ve lifecycle kayıtlarını taşır.
+- Aynı path için #18 kimliği, yalnız açık `historicalOwner` + `supersedesHistoricalIdentity` kaydıyla canlı current-head kimliğini ileri alabilir. Bu PRE-#18 hash'ini değiştirmez.
+- #19 ve sonraki milestone'lar aynı registry'ye yeni aktif kayıt olarak eklenir; wildcard, eski manifest toplu yenilemesi veya checker bypass kullanılmaz.

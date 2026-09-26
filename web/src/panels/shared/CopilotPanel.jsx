@@ -23,6 +23,7 @@ import SuggestedChips from "../../components/copilot/SuggestedChips";
 import SeferAbiAvatar from "../../components/copilot/SeferAbiAvatar";
 import { resolveSeferAbiWidgetState, SEFER_ABI_WIDGET_STATE_LABELS } from "../../components/copilot/SeferAbiWidgetState";
 import { captureCopilotUiSurface } from "../../components/copilot/uiSurface";
+import { setGuidedTarget } from "../../copilot/guidedTargetState";
 import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
 import { copilotAuthScopeKey, readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
 import { COPILOT_PERSONA, COPILOT_TERMINAL } from "../../utils/copilotFacts";
@@ -485,6 +486,7 @@ export default function CopilotPanel() {
       }, { token, signal: controller.signal });
       if (requestId !== chatRequestSequenceRef.current || requestScopeKey !== chatAuthScopeRef.current || controller.signal.aborted || requestRouteContextKey !== routeContextKey(routeContextRef.current)) return;
       setChatConversationState(payload?.conversationState || null);
+      setGuidedTarget(payload?.guidedTarget || null);
       const contextualSuggestedChips = Array.isArray(payload?.contextualSuggestedChips) && payload.contextualSuggestedChips.length
         ? payload.contextualSuggestedChips
         : Array.isArray(payload?.suggestedChips) ? payload.suggestedChips : [];
@@ -526,6 +528,7 @@ export default function CopilotPanel() {
         diagnosticSignalSummary: chatDiagnosticSummary,
         diagnosticSignalsVisible: chatDiagnosticSignalsVisible,
         diagnosticSignalEmptyText: "Bu ekranda ek kanıt sinyali yok",
+        guidedTarget: payload?.guidedTarget || null,
       }]);
       markResponseReady();
     } catch (e2) {

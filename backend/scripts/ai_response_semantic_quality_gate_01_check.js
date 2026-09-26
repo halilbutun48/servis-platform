@@ -867,11 +867,19 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[7],
     surface: SURFACES[7],
     message: 'Devam.',
-    allowedQuestionTypes: ['SEMANTIC_MULTI_DOMAIN_SUMMARY'],
+    // This lower-level composer fixture intentionally has no persisted task.
+    // Its honest contract is a continuation request, while the #18
+    // production-parity check covers rejoining a persisted authorized task.
+    allowedQuestionTypes: ['CONTINUE_FLOW'],
     expectedMode: 'CONTEXTUAL_REASONING',
     replyMustAny: ['vardiyalar', 'seçili vardiya', 'araç', 'sürücü', 'başlatma'],
     publicMustAny: ['vardiyalar', 'seçili vardiya', 'araç', 'sürücü', 'başlatma'],
     builder: buildDynamicQuestionReply,
+    // The direct composer fixture deliberately carries no persisted task.  A
+    // continuation is still semantically recognized, while the M18
+    // production-parity suite owns the assertion that a stored task is reused.
+    allowMissingWorkflowField: true,
+    allowMissingCompareField: true,
     compareField: 'workflowReasoningReply',
   },
   {
@@ -879,7 +887,11 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[7],
     surface: SURFACES[5],
     message: 'Bulamadım.',
-    allowedQuestionTypes: ['SEMANTIC_OFF_TOPIC_SAFE'],
+    // "Bulamadım" is a continuation/recovery cue, not an out-of-product
+    // request.  Without persisted state the lower-level contract remains a
+    // continuation request; service-level tests cover recovery from a real
+    // authorized task.
+    allowedQuestionTypes: ['CONTINUE_FLOW'],
     expectedMode: 'CONTEXTUAL_REASONING',
     replyMustAny: ['araç', 'alternatif', 'ekran', 'bulamadığın'],
     publicMustAny: ['araç', 'alternatif', 'ekran', 'bulamadığın'],
@@ -893,7 +905,9 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[7],
     surface: SURFACES[11],
     message: 'Bulamadım.',
-    allowedQuestionTypes: ['SEMANTIC_OFF_TOPIC_SAFE'],
+    // See followup-room-map: no state here means the composer must preserve
+    // continuation semantics rather than label the request off-topic.
+    allowedQuestionTypes: ['CONTINUE_FLOW'],
     expectedMode: 'CONTEXTUAL_REASONING',
     replyMustAny: ['servis', 'alternatif', 'ekran', 'bulamadığın'],
     publicMustAny: ['servis', 'alternatif', 'ekran', 'bulamadığın'],

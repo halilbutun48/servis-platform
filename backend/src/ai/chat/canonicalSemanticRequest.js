@@ -144,6 +144,15 @@ function typeForSelected(value) {
 function currentUiContext(screenContext, conversationState) {
   const path = String(screenContext?.path || conversationState?.lastScreenPath || "").trim();
   const label = String(screenContext?.label || conversationState?.lastScreenLabel || "").trim();
+  // Visible controls are route-bound UI context only. They never grant a
+  // capability or select data: server-side role/screen authorization remains
+  // authoritative, and the guided-target resolver still requires a real
+  // currently rendered control before it can return FOUND.
+  const visibleControlCount = Array.isArray(screenContext?.uiHints?.visibleButtons)
+    ? screenContext.uiHints.visibleButtons
+      .filter((item) => String(item?.label || "").trim())
+      .length
+    : 0;
   const selectedId = Number(screenContext?.selectedEntityId || conversationState?.selectedEntityId || 0);
   // The routing adapter deliberately never transports an entity id. It may
   // carry the already-authorized current-screen selection type, however,
@@ -158,7 +167,7 @@ function currentUiContext(screenContext, conversationState) {
     screenContext?.semanticResolutionContext?.selectedEntityPresent === true
     || (selectedId > 0 && selectedType),
   );
-  return { path, label, selectedId: selectedId > 0 ? selectedId : null, selectedType, selectedEntityPresent };
+  return { path, label, selectedId: selectedId > 0 ? selectedId : null, selectedType, selectedEntityPresent, visibleControlCount };
 }
 
 function hasCardinalityCue(text) {
@@ -350,6 +359,26 @@ function hasScreenContextCue(text) {
     ])
     || (uiSurface && locationQuestion)
     || ((situatedReference && orientationOperation) || selfLocatedProgress || workflowSelfLocation);
+}
+
+function hasCurrentScreenReferentCue(text) {
+  // This recognises a deictic product speech act. The caller still supplies
+  // the separately authorized current route and visible screen facts.
+  return /(?:^|\b)(?:nasil)\s+calisiyor\s+(?:bu|burasi)|(?:bu|su)\s+ne\s+ise\s+yarar|(?:burada|bu\s+ekranda)\s+ne\s+yapacagim|(?:su|bu)\s+ekran\s+ne(?:dir)?\b/iu.test(text);
+}
+
+function hasVisibleControlDiscoveryCue(text, ui) {
+  // A request such as "Detayları göster nerede?" asks to locate a visible
+  // control, not to retrieve a record's "detail" field.  The grammar is kept
+  // semantic rather than tied to a particular label.  It is available only
+  // when the current authorized screen supplied visible controls; downstream
+  // target resolution then proves the exact control or truthfully returns
+  // NOT_FOUND.
+  if (!ui?.path || !Number(ui.visibleControlCount || 0)) return false;
+  const locationRequest = /\b(?:nerede|neresi|hangi(?:si|\s+(?:buton|sekme|kart|alan|bolum|bölüm)))\b/iu.test(text);
+  const controlNoun = /\b(?:buton|sekme|tab|kart|alan|bolum|bölüm|detay)\p{L}*\b/iu.test(text);
+  const discoveryVerb = /\b(?:goster|göster|ac|aç|bul|git|götür|gotur|baslat|başlat|incele|sec|seç)\p{L}*\b/iu.test(text);
+  return locationRequest && (controlNoun || discoveryVerb);
 }
 
 function hasScreenDeicticCue(text) {
@@ -853,11 +882,33 @@ function hasComparisonContext(conversationState, text) {
   return activePair || hasComparisonCue(text) || /\b(?:ikisi|bu\s+iki|iki\s+kayit|iki\s+teklif|digeri)\b/iu.test(text);
 }
 
-function hasContinuationCue(text) {
-  return hasAnyTerm(text, [
-    "devamini anlat", "devamini acikla", "devam et", "daha fazla anlat", "daha fazla acikla",
-    "biraz daha anlat", "biraz daha acikla", "surdur", "devam edelim",
-  ]);
+function hasStandaloneNextCue(text) {
+  // “Sonra?” is a short discourse continuation.  A sentence such as
+  // “Konum incelemeden sonra nereye geçeyim?” already names its screen task,
+  // so it must be resolved from the current authorized screen rather than
+  // being treated as a continuation with no base.
+  return /^(?:peki\s+)?(?:sonra|sonrasi|sonraki(?:\s+adim)?)(?:\s+ne)?[?.!,]*$/iu.test(String(text || '').trim());
+}
+
+function continuationActionFor(text) {
+  // This is a discourse operation over the already authorized task. It never
+  // adds a domain, entity, permission, or business execution request.
+  if (/\b(?:bulamad|goremiyor|yanlis\s+ekran)\p{L}*/iu.test(text)) return "RECOVER";
+  if (/^geri\b|\bgeri\s+(?:don|gel)\p{L}*/iu.test(text)) return "BACK";
+  if (/\b(?:adim\s+adim|detayli|devamini|daha\s+fazla|biraz\s+daha)\s+(?:anlat|acikla)\p{L}*/iu.test(text)) return "EXPAND";
+  if (hasStandaloneNextCue(text)) return "NEXT";
+  return "CONTINUE";
+}
+
+function hasContinuationCue(text, conversationState = null) {
+  const confirmsEntryToActiveGuidedTask = Boolean(conversationState?.activeGuidedTask?.semanticPlan)
+    && /^\s*(?:girdim|girdik|ekrana\s+girdim|buradayim|buradayım)\b/iu.test(String(text || ''));
+  return confirmsEntryToActiveGuidedTask || (!hasWorkflowGuidanceCue(text) && hasAnyTerm(text, [
+    "devam", "devamini anlat", "devamini acikla", "devam et", "daha fazla anlat", "daha fazla acikla",
+    "biraz daha anlat", "biraz daha acikla", "surdur", "devam edelim", "adim adim anlat",
+    "adim adim acikla", "bulamadim", "burada goremiyorum",
+    "yanlis ekrandayim", "geri",
+  ]) || (!hasWorkflowGuidanceCue(text) && hasStandaloneNextCue(text)));
 }
 
 function hasReturnToProductCue(text, conversationState = null) {
@@ -1011,6 +1062,44 @@ function hasRelationLookupCue(text) {
   ]);
 }
 
+// Workflow guidance is a request to find the current product entry point,
+// not a lookup for an existing record.  Keep this semantic distinction at the
+// canonical request boundary so every downstream composer/authorizer receives
+// the same task intent for natural Turkish variants.
+function hasWorkflowGuidanceCue(text) {
+  // A request that explicitly names a fabricated/nonexistent target must not
+  // enter a real workflow lane.  It has no canonical screen identity to
+  // resolve, so downstream guidance must remain target-less and truthful.
+  if (/\b(?:hayali|olmayan|var\s+olmayan|mevcut\s+olmayan|uydurma|sahte)\b/iu.test(text)) return false;
+  const hasShiftSubject = /\b(?:vardiya|sefer|shift)\p{L}*\b/iu.test(text);
+  if (!hasShiftSubject) return false;
+  const guidanceVerb = /\b(?:olustur|oluştur|ac|aç|ekle|goster|göster|gotur|götür|bulamad|bulamiyor|bulamıyo|nereden)\p{L}*\b/iu.test(text);
+  if (!guidanceVerb) return false;
+  // Existing-record questions remain data lookups.  Creation/location verbs
+  // without a concrete record/status keep the request in the UI workflow lane.
+  const existingRecordLookup = /\b(?:durum|status|statu|numara|id|tarih|saat|konum|arac|araç|surucu|sürücü|kayit|kayıt)\p{L}*\b/iu.test(text)
+    && !/\b(?:olustur|oluştur|ac|aç|ekle|goster|göster|gotur|götür|nereden)\p{L}*\b/iu.test(text);
+  return !existingRecordLookup;
+}
+
+// Opening the Vardiyalar surface is a navigation task. It is distinct from
+// both creating a new shift and reading a shift field: the user names a
+// screen/location, not an existing record or one of its properties.
+function hasShiftSurfaceNavigationCue(text) {
+  if (/\b(?:hayali|olmayan|var\s+olmayan|mevcut\s+olmayan|uydurma|sahte)\b/iu.test(text)) return false;
+  const hasShiftSubject = /\b(?:vardiya|sefer|shift)\p{L}*\b/iu.test(text);
+  if (!hasShiftSubject) return false;
+  const creationCue = /\b(?:olustur|oluştur|ac|aç|ekle)\p{L}*\b/iu.test(text);
+  const creationScreenCue = /\b(?:olustur|oluştur|ekle|ekleme)\p{L}*\s+ekran\p{L}*\b/iu.test(text);
+  const directScreenOpenCue = /\bekran\p{L}*\s+(?:ac|aç)\b/iu.test(text);
+  // “Vardiya ekranını aç” names the existing surface.  “Vardiya oluşturma
+  // ekranını aç” still names the create workflow, so it stays in the
+  // CREATE_SHIFT lane.  This distinction is semantic, not a phrase-specific
+  // route shortcut.
+  if (creationCue && (!directScreenOpenCue || creationScreenCue)) return false;
+  return /\b(?:nerede|nerde|ekran\p{L}*|goster|göster|git|gidelim|kontrol\s+edelim)\b/iu.test(text);
+}
+
 // A deictic reference ("bu teklif", "seçili vardiya") identifies a target;
 // it is not itself a request to identify that target.  Keep operation
 // detection separate so that explicit work such as risk, next action, field,
@@ -1147,8 +1236,51 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       styleTarget: "LAST_SETTLED_RESULT",
     };
   }
-  if (hasContinuationCue(text)) {
-    return { taskType: "CONTINUE_CURRENT_REASONING", confidence: 0.99, domain: null, targetEntityType: ui.selectedType || null, continuationIntent: true };
+  if (hasContinuationCue(text, conversationState)) {
+    return {
+      taskType: "CONTINUE_CURRENT_REASONING",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: ui.selectedType || null,
+      continuationIntent: true,
+      continuationAction: continuationActionFor(text),
+    };
+  }
+  if (hasShiftSurfaceNavigationCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.98,
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      screenContextIntent: true,
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      workflowIntent: "OPEN_SHIFT_SURFACE",
+    };
+  }
+  if (hasWorkflowGuidanceCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.98,
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      screenContextIntent: true,
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      workflowIntent: "CREATE_SHIFT",
+    };
+  }
+  if (hasVisibleControlDiscoveryCue(text, ui)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.96,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      uiTargetDiscovery: true,
+    };
   }
   // "Bu vardiyanın riskine dön" is a selected-record risk request, not a
   // context-restoration command.  A genuine return phrase has no present
@@ -1241,7 +1373,7 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   // A screen-deictic action or situation is a current-screen task even when
   // it also contains words such as "önce", "durum", or "hangi". Classify
   // it before generic priority/field grammar can turn it into global work.
-  if (hasScreenContextCue(text) && !hasCardinalityCue(text)) {
+  if ((hasScreenContextCue(text) || (ui.path && hasCurrentScreenReferentCue(text))) && !hasCardinalityCue(text)) {
     return {
       taskType: "SCREEN_CONTEXT",
       confidence: 0.98,
@@ -1534,6 +1666,7 @@ export function buildCanonicalTypedRequest({ shape, family, domains = [], entiti
     combinedContextIntent: Boolean(shape?.combinedContextIntent),
     recordDetailsIntent: Boolean(shape?.recordDetailsIntent || validTaskType === "RECORD_DETAILS"),
     continuationIntent: Boolean(shape?.continuationIntent || validTaskType === "CONTINUE_CURRENT_REASONING"),
+    continuationAction: shape?.continuationAction || null,
     returnToProductIntent: Boolean(shape?.returnToProductIntent || validTaskType === "RETURN_TO_PRODUCT"),
     currentAssignmentIntent: Boolean(shape?.currentAssignmentIntent),
     explicitTaskIntent: Boolean(shape?.explicitTaskIntent),

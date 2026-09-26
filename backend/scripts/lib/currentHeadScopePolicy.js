@@ -1,5 +1,6 @@
 import { CANONICAL_PRISMA_SCHEMA_NORMALIZED_SHA256 } from "./prismaSchemaIdentity.js";
 import { CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES } from "./pre18LifecycleClassification.js";
+import { activeMilestoneCurrentHeadEntries } from "./milestoneOwnershipAuthority.js";
 
 // Historical commercial split-route identity remains separately pinned for
 // security review. It is not a current working-tree scope allowlist.
@@ -188,10 +189,10 @@ export const CURRENT_HEAD_APPROVED_SEFER_ABI_SEMANTIC_REASONING_ACCEPTANCE = Obj
   },
 ]);
 
-// Current HEAD working-tree backend scope. The driver correction remains a
-// separately reviewed entry; the accepted backend-context family above is
-// derived into the shared scope instead of being copied into each guard.
-export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF = Object.freeze([
+// Frozen PRE-#18 working-tree scope. These identities remain historical
+// evidence of the immutable closure; they are not a requirement that those
+// paths stay dirty after PRE-#18 is committed.
+export const PRE18_HISTORICAL_CONCURRENT_BACKEND_DIFF = Object.freeze([
   // Current working-tree driver-create correction: connect the required
   // Prisma room relation and omit an empty optional device value. Keep exact
   // identity pinning; this does not expand authorization or tenant scope.
@@ -225,6 +226,28 @@ export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF = Object.freeze([
   ...CURRENT_HEAD_APPROVED_CURRENT_ACCEPTED_SERVICE_SOURCES,
 ]);
 
+function mergeCurrentHeadIdentities(...entryGroups) {
+  const byPath = new Map();
+  for (const entry of entryGroups.flat()) {
+    const path = String(entry?.path || "").replace(/\\/g, "/").replace(/^\.\//, "");
+    if (!path || path.includes("*") || path.includes("..")) throw new Error(`CURRENT_HEAD_SCOPE_INVALID_PATH:${path || "(empty)"}`);
+    // A currently active numbered-milestone entry may advance a historical
+    // path only by replacing that path's exact live identity. The historical
+    // entry itself stays frozen in PRE18_HISTORICAL_CONCURRENT_BACKEND_DIFF.
+    byPath.set(path, Object.freeze({ ...entry, path }));
+  }
+  return Object.freeze([...byPath.values()]);
+}
+
+export const CURRENT_HEAD_ACTIVE_MILESTONE_DIFF = activeMilestoneCurrentHeadEntries();
+
+// One current-head authority: frozen PRE-#18 records plus the active numbered
+// milestone. Later milestone records replace only their own current paths.
+export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF = mergeCurrentHeadIdentities(
+  PRE18_HISTORICAL_CONCURRENT_BACKEND_DIFF,
+  CURRENT_HEAD_ACTIVE_MILESTONE_DIFF,
+);
+
 // Current product terminology ownership remains exact-pinned separately from
 // the uncommitted backend route scope. The payment service is already part of
 // the accepted current product baseline and is not an additional working-tree
@@ -240,6 +263,22 @@ export const CURRENT_HEAD_APPROVED_PRESENTATION_IDENTITY = Object.freeze([
     owner: "PRE_18_PANELCHROME_SEMANTIC_PRESENTATION_ACCEPTANCE",
   },
 ]);
+
+// This is the immutable PRE-#18 side of the current-head policy. It is used
+// only to prove a later milestone's explicit supersession; it is never
+// rewritten by that later milestone.
+export const PRE18_HISTORICAL_CURRENT_HEAD_IDENTITIES = Object.freeze([
+  ...PRE18_HISTORICAL_CONCURRENT_BACKEND_DIFF,
+  ...CURRENT_HEAD_APPROVED_PRESENTATION_IDENTITY,
+  ...CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE,
+  ...CURRENT_HEAD_APPROVED_SEFER_ABI_SEMANTIC_REASONING_ACCEPTANCE,
+  ...CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES,
+]);
+
+export function getPre18HistoricalCurrentHeadIdentity(candidatePath) {
+  const normalized = String(candidatePath || "").replace(/\\/g, "/").replace(/^\.\//, "");
+  return PRE18_HISTORICAL_CURRENT_HEAD_IDENTITIES.find(({ path }) => path === normalized) || null;
+}
 
 export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS =
   CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.map(({ path }) => path);

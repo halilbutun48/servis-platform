@@ -28,9 +28,13 @@ export function buildCompanySemanticOverrideReply({
   conversationState = null,
 }) {
   const normalizedUserRole = normalizeRoleKey(firstNonEmpty(user?.role, userRole, ''));
-  if (normalizedUserRole !== 'company') return '';
+  // The presentation layer may already have localized the canonical COMPANY
+  // token.  This branch only selects the Company-specific copy; it must keep
+  // treating the approved visible role name as the same authorized role.
+  // Authorization itself is resolved upstream from the canonical role token.
+  if (!['company', 'hizmetalanfirma'].includes(normalizedUserRole)) return '';
   const companyKind = normalizeRoleKey(firstNonEmpty(user?.companyKind, ''));
-  if (companyKind && companyKind !== 'company') return '';
+  if (companyKind && !['company', 'hizmetalanfirma'].includes(companyKind)) return '';
 
   const text = normalizeLooseText(message);
   const screenLabel = firstNonEmpty(

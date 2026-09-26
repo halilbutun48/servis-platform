@@ -24,6 +24,7 @@ import {
   mustStatusSubsetWithIdentity,
 } from "./lib/guardGitScope.js";
 import { assertProductExtensionsOrder } from "./lib/productExtensionsRegistry.js";
+import { activeMilestoneTouchedPaths } from "./lib/milestoneOwnershipAuthority.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -160,9 +161,16 @@ function fileSha256(relPath) {
 const CURRENT_SCREEN_CONTEXT_IDENTITY_BY_PATH = new Map(
   CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE.map(({ path: entryPath, sha256 }) => [normalizePath(entryPath), sha256]),
 );
+const ACTIVE_MILESTONE_IDENTITY_BY_PATH = new Map(
+  activeMilestoneTouchedPaths().map((entry) => [normalizePath(entry.path), entry]),
+);
 
 function hasCanonicalCurrentOrLifecycleClassification(file) {
   const normalized = normalizePath(file);
+  const activeMilestone = ACTIVE_MILESTONE_IDENTITY_BY_PATH.get(normalized);
+  if (activeMilestone && activeMilestone.identityMode !== "CONTRACT_SELF" && activeMilestone.acceptance === "PASS" && activeMilestone.identityRegistered === true) {
+    return activeMilestone.rawSha256 === fileSha256(normalized);
+  }
   const lifecycle = classifyLifecyclePath(normalized);
   if (lifecycle) return lifecycle.sha256 ? fileSha256(normalized) === lifecycle.sha256 : true;
 

@@ -12,6 +12,13 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - The final terminology / Sefer Abi residual is closed; bounded public-runtime current-source match is PASS and raw same-class status leakage is `0`.
 - `#18` has not started. This exact stage establishes the immutable closure commit/tag/push boundary; do not reopen proven-closed work without concrete newer regression evidence.
 
+## #18 active screen-grounded guidance overlay (2026-09-25)
+
+- `#18` is now the active numbered milestone after the immutable PRE-#18 tag. It consumes the PRE-#18 role/screen/tenant interaction grounding; it does not reopen PRE-#18.
+- Canonical check: `npm run check:copilotuielementanchor01`; bounded browser acceptance: `npm run smoke:copilotuielementanchor01`.
+- Owners: `backend/src/ai/chat/copilotUiElementAnchor.js`, `web/src/components/copilot/uiSurface.js`, `web/src/components/copilot/GuidedTargetOverlay.jsx`, and existing `/api/ai/copilot` / canonical conversation state.
+- Boundary: one next safe UI target at a time; highlight/scroll/focus may assist authorized navigation, but no business write, approval, dispatch, force-click, or fake success.
+
 Bu overlay, aşağıdaki tarihsel milestone haritasının güncel PRE-#18 kapanış durumudur. Tarihsel ve compatibility kayıtları korunur; aktif sıra ve semantic sahiplik için bu bölüm esas alınır.
 
 ### Tek canonical semantic sahiplik zinciri
@@ -413,6 +420,13 @@ Bu overlay, aşağıdaki tarihsel milestone haritasının güncel PRE-#18 kapan�
 - Static helper: `backend/src/ai/chat/copilotGuidedTaskEngine.js`
 - Bu check, `COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01`, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-AI-ACTION-ROADMAP-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; güvenli red / clarification / guided step üretir ama runtime execute açmaz.
 - Sonraki güvenli hatlar: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
+
+### COPILOT-UI-ELEMENT-ANCHOR-AND-GUIDED-HIGHLIGHT-01 [CHECK + BROWSER]
+- `check:copilotuielementanchor01` canonical authorized-surface target resolver, missing/unauthorized/stale target negatives and no-critical-action-execution boundaryni doğrular.
+- `smoke:copilotuielementanchor01` gerçek browser üzerinde desktop/tablet/mobile bounded highlight, scroll, disappearance and critical-write rejection acceptance'ını çalıştırır.
+- Static owner: `backend/src/ai/chat/copilotUiElementAnchor.js`; browser owner: `web/src/components/copilot/GuidedTargetOverlay.jsx`; surface capture: `web/src/components/copilot/uiSurface.js`.
+- Task state continuity target identity taşır; authorization source değildir. Rota/tab/disclosure/modal/selected-state değişiminde hedef yeniden çözülür ve hedef kaybolursa highlight temizlenir.
+- This milestone remains guidance/navigation only; #19 natural-language form preparation and later action milestones are not started.
 
 ### `COPILOT-DYNAMIC-QUESTION-ENGINE-01` [CHECK]
 - `check:copilotdynamicquestionengine01` role + screen + selected record + current reply üzerinden dynamic question assembly katmanını paylaşır; `backend/src/ai/chat/conversationTaskStateResponses.js` üzerinden `Netleştirelim / Devam edelim` formatını helpComposer, Sefer Abi reasoning assistant ve guided task engine arasında paylaşır; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.

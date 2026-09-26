@@ -33,7 +33,7 @@ assert(COST_REASONING_QUESTION_INTENTS.length === 10, "ten cost question intents
 assert(service.includes("buildSeferAbiCostAnalysisResponse"), "existing CHAT_HELP path invokes the #5 assistant");
 assert(service.includes("const baseResponse = buildChatHelpResponse"), "#5 wraps the existing Sefer Abi answer path");
 const costDispatchOffset = service.indexOf('const costRequest = detectCostAnalysisIntent({ message, screenContext, conversationState });');
-const genericReasoningOffset = service.indexOf('const reasoningAnswer = await buildAuthorizedReasoningAnswer({');
+const genericReasoningOffset = service.indexOf('buildAuthorizedReasoningAnswer({');
 assert(costDispatchOffset >= 0 && genericReasoningOffset > costDispatchOffset, "cost questions reach the canonical read-only assistant before generic priority fallback");
 assert(assistant.includes("loadCostScenarioBaselineForUser"), "#5 uses the tenant-scoped #4 baseline owner");
 assert(assistant.includes("buildCostScenarioPreviewFromBaseline"), "#5 uses the canonical #4 calculator");

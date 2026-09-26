@@ -284,12 +284,53 @@ const NAVIGATION_SCREEN_LABEL_BY_DOMAIN = Object.freeze({
   ORGANIZATION_PLANS: "Yer Planları",
 });
 
-function authorizedNavigationTarget(user, semanticPlan) {
-  if (semanticPlan?.family !== "UI_GUIDANCE") return null;
-  const domains = Array.isArray(semanticPlan?.requestedDomains) ? semanticPlan.requestedDomains : [];
+function workflowGuidancePlan(semanticPlan) {
+  if (semanticPlan?.family === "UI_GUIDANCE") return semanticPlan;
+  if (semanticPlan?.family === "CONTINUE_CURRENT_REASONING" && semanticPlan?.continuationBasePlan?.family === "UI_GUIDANCE") {
+    return semanticPlan.continuationBasePlan;
+  }
+  return null;
+}
+
+function authorizedNavigationTarget(user, semanticPlan, screenContext = null) {
+  const workflowPlan = workflowGuidancePlan(semanticPlan);
+  if (!workflowPlan) return null;
+  const role = String(user?.role || "").toUpperCase();
+  const companyKind = String(user?.companyKind || "").toUpperCase();
+  const roleKey = role === "COMPANY" && ["SCHOOL", "ORGANIZATION"].includes(companyKind) ? companyKind : role;
+  const roleScreens = buildRoleHelpSummary(user).screens;
+  const currentPath = normalizeScreenPath(screenContext?.path);
+  const currentScreen = roleScreens.find((screen) => normalizeScreenPath(screen.path) === currentPath) || null;
+  const isContinuation = semanticPlan?.family === "CONTINUE_CURRENT_REASONING";
+  // Once the user has safely moved into a related authorized surface, a
+  // continuation must consume that live screen as the current target. Do not
+  // replay the original CREATE_SHIFT home route as if the user were still
+  // there. The screen catalog remains the authorization source.
+  if (isContinuation
+    && currentScreen
+    && workflowPlan.requestedDomains?.includes("SHIFTS")
+    && currentScreen.label === "Vardiyalar") {
+    return currentScreen;
+  }
+  if (workflowPlan.workflowIntent === "OPEN_SHIFT_SURFACE") {
+    return roleScreens.find((screen) => screen.label === "Vardiyalar") || null;
+  }
+  if (workflowPlan.workflowIntent === "CREATE_SHIFT") {
+    const preferredPaths = roleKey === "ROOM"
+      ? ["/room/shifts"]
+      : roleKey === "SUPER_ADMIN"
+        ? ["/superadmin/operations", "/superadmin"]
+        : roleKey === "SCHOOL"
+          ? ["/school"]
+          : roleKey === "ORGANIZATION"
+            ? ["/organization"]
+            : ["/company"];
+    return preferredPaths.map((path) => roleScreens.find((screen) => screen.path === path)).find(Boolean) || null;
+  }
+  const domains = Array.isArray(workflowPlan?.requestedDomains) ? workflowPlan.requestedDomains : [];
   const label = NAVIGATION_SCREEN_LABEL_BY_DOMAIN[domains[0]];
   if (!label) return null;
-  return buildRoleHelpSummary(user).screens.find((screen) => screen.label === label) || null;
+  return roleScreens.find((screen) => screen.label === label) || null;
 }
 
 function isReasoningQuestion(message) {
@@ -2313,6 +2354,11 @@ function composeMultiPartExecutionReply({ plan, execution, baseReply }) {
 export async function buildAuthorizedProductAwarenessAnswer({ user, message, screenContext = null, conversationState = null, semanticPlan: suppliedSemanticPlan = null }) {
   const role = roleKey(user);
   const normalizedMessage = normalize(message);
+  // Service turns arrive with a canonical plan.  That plan is the semantic
+  // authority: this read/authorization layer may resolve its authorized
+  // domains, but may not infer a narrower domain from the raw wording again.
+  // The raw fallback remains only for legacy callers that provide no plan.
+  const hasCanonicalSemanticPlan = Boolean(suppliedSemanticPlan);
   const semanticPlan = suppliedSemanticPlan || resolveSemanticIntent({ user, message, screenContext, conversationState });
   const preflightFieldPrivacyDecision = resolveFieldPrivacyPolicy({ user, message, plan: semanticPlan });
   if (preflightFieldPrivacyDecision.status === "DENY") {
@@ -2420,8 +2466,26 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       semanticPlan,
     });
   }
-  const navigationTarget = authorizedNavigationTarget(user, semanticPlan);
+  const navigationTarget = authorizedNavigationTarget(user, semanticPlan, screenContext);
   if (navigationTarget) {
+    const currentPath = String(screenContext?.path || "").replace(/\/+$/, "") || "/";
+    const targetPath = String(navigationTarget.path || "").replace(/\/+$/, "") || "/";
+    const alreadyOnTarget = currentPath === targetPath;
+    const continuationAction = String(semanticPlan?.continuationAction || "");
+    const continuationDepth = Number(semanticPlan?.continuationDepth || 0);
+    const currentStep = continuationAction === "RECOVER"
+      ? "Doğrulanabilir sonraki adımı yeniden buluyorum; vurgulanan güvenli kontrolden devam et."
+      : continuationAction === "BACK"
+        ? "Bir önceki güvenli adımı yeniden gösteriyorum; vurgulanan kontrolden devam et."
+        : continuationAction === "EXPAND"
+          ? continuationDepth <= 1
+            ? "İlk güvenli adımı açıyorum; vurgulanan kontrolden başla."
+            : continuationDepth === 2
+              ? "İkinci adım için aynı sonucu tekrarlamıyorum; vurgulanan kontrolden ilerle."
+              : "Sonraki güvenli adımı vurguluyorum; yeni bir kayıt veya iş yazımı oluşturmuyorum."
+          : continuationAction === "NEXT"
+            ? "Sıradaki güvenli adım vurgulanacak; oradan devam et."
+            : "Bu ekrandaki doğrulanabilir güvenli adımdan devam et.";
     return {
       role,
       domain: "UI_GUIDANCE",
@@ -2429,13 +2493,39 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
       count: 0,
       records: [],
-      reply: `${navigationTarget.label} ekranını aç. ${navigationTarget.purpose || "Bu ekranda yetkili iş akışını takip edebilirsin."}`,
-      nextAction: `${navigationTarget.label} ekranını açıp ihtiyacın olan kaydı seç.`,
+      reply: alreadyOnTarget
+        ? `Şu anda ${navigationTarget.label} ekranındasın. ${currentStep}`
+        : `${navigationTarget.label} ekranını aç. ${navigationTarget.purpose || "Bu ekranda yetkili iş akışını takip edebilirsin."}`,
+      nextAction: alreadyOnTarget
+        ? "Vurgulanan güvenli kontrolü inceleyip bir sonraki adımı sor."
+        : `${navigationTarget.label} ekranını açıp ihtiyacın olan kaydı seç.`,
       source: "authorized-screen-catalog-v1",
+      navigationTarget: alreadyOnTarget ? null : { path: navigationTarget.path, label: navigationTarget.label },
       dataSources: ["authorized screen catalog", "current role scope"],
       retrievedFacts: [`screen.path=${navigationTarget.path}`, `screen.label=${navigationTarget.label}`],
-      reasoning: "Açık navigasyon isteği yalnızca kullanıcının yetkili ekran kataloğundan çözüldü; kayıt okunmadı ve navigasyon uygulanmadı.",
+      reasoning: alreadyOnTarget
+        ? "Kullanıcı zaten yetkili hedef ekranda. Aynı route için sahte navigasyon iddiası yerine yalnızca mevcut güvenli sonraki adım yönlendirmesi üretildi."
+        : "Açık navigasyon isteği yalnızca kullanıcının yetkili ekran kataloğundan çözüldü; kayıt okunmadı ve navigasyon uygulanmadı.",
       priority: "Yetkili ekran yönlendirmesi",
+      semanticPlan,
+    };
+  }
+  const navigationWorkflow = workflowGuidancePlan(semanticPlan);
+  if (["CREATE_SHIFT", "OPEN_SHIFT_SURFACE"].includes(String(navigationWorkflow?.workflowIntent || ""))) {
+    return {
+      role,
+      domain: "UI_GUIDANCE",
+      authorizationBoundary: true,
+      authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
+      count: 0,
+      records: [],
+      reply: "Bu rolde Vardiyalar ekranı için yetkili bir erişim bulunmuyor.",
+      nextAction: "Bu role açık olan ekranlardan devam edebilirsin.",
+      source: "authorized-screen-catalog-v1",
+      dataSources: ["authorized screen catalog", "current role scope"],
+      retrievedFacts: [],
+      reasoning: "Kullanıcının rolünde doğrulanmış bir Vardiyalar ekranı bulunmadığı için hedef veya navigasyon uydurulmadı.",
+      priority: "Rol ekranı yetki sınırı",
       semanticPlan,
     };
   }
@@ -2487,10 +2577,10 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
   const inferredDomains = semanticPlan.requestedDomains.length ? semanticPlan.requestedDomains : [];
   const requestedDomains = inferredDomains.length
     ? inferredDomains
-    : [
+    : (hasCanonicalSemanticPlan ? [] : [
       /(teklif|rfq|talep)/.test(normalizedMessage) ? "OFFERS" : "",
       /(sozlesme|anlasma|contract|agreement)/.test(normalizedMessage) ? "AGREEMENTS" : "",
-    ].filter(Boolean);
+    ].filter(Boolean));
   const allowed = resolveAuthorizedProductDomains(user).domains;
   const commercialRequest = semanticPlan.family === "AUTHORIZATION_BOUNDARY"
     || isUnauthorizedCommercialQuestion(message, role)
@@ -2608,7 +2698,7 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       semanticPlan,
     };
   }
-  const domain = requestedDomains[0] || domainForQuestion(message, role);
+  const domain = requestedDomains[0] || (hasCanonicalSemanticPlan ? "" : domainForQuestion(message, role));
   if (!domain) return null;
   if (!allowed.includes(domain)) {
     const roleLabel = role === "SCHOOL" ? "Okul" : role === "ORGANIZATION" ? "Organizasyon" : role;

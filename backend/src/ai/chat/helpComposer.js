@@ -5927,7 +5927,11 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   if ((String(screenPath || '').includes('/personel/live') || String(screenPath || '').includes('/personel/my')) && !personelSelectionPresent && String(questionType || '') !== 'SCREEN_PURPOSE') {
     reply = 'Şimdi: Bu ekranda seçili servis bilgisi net görünmüyor; servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.';
   }
-  const dynamicQuestionReply = questionType === 'ROLE_EXPLANATION_HELP'
+  // A role/screen-specific semantic override has already composed the most
+  // precise authorized reply for this turn.  Dynamic question copy is a
+  // presentation fallback; it must not replace that settled reply later in
+  // the pipeline.
+  const dynamicQuestionReply = semanticOverrideReply || questionType === 'ROLE_EXPLANATION_HELP'
     ? ''
     : buildDynamicQuestionReplyImpl({
       message: firstNonEmpty(rawMessage, message, ''),
@@ -6352,7 +6356,8 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     reasoningAssistant = { ...reasoningAssistant, reply };
   }
   if (
-    String(firstNonEmpty(screenDefinition?.path, '')).includes('/company/shifts')
+    !semanticOverrideReply
+    && String(firstNonEmpty(screenDefinition?.path, '')).includes('/company/shifts')
     && ['DETAIL_FLOW', 'SCREEN_PURPOSE'].includes(String(responseQuestionType || questionType || ''))
   ) {
     const companyShiftsMessage = normalizeText(firstNonEmpty(rawMessage, effectiveMessage, message, ''));

@@ -13,6 +13,7 @@ import {
 import {
   CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES,
 } from "./pre18LifecycleClassification.js";
+import { activeMilestoneTouchedPaths } from "./milestoneOwnershipAuthority.js";
 import { LIFECYCLE_DEFERRED_SUPERSEDED_ORPHAN_PATHS } from "./presentationProvenanceAuthority.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -121,16 +122,32 @@ function fileSha256(relPath) {
 }
 
 function allowedDiffMap(allowedEntries) {
+  const activeMilestoneEntries = activeMilestoneTouchedPaths();
   const canonicalCurrentIdentities = new Map([
     ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
     ...CURRENT_HEAD_APPROVED_PRESENTATION_IDENTITY,
     ...CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE,
     ...CURRENT_HEAD_APPROVED_SEFER_ABI_SEMANTIC_REASONING_ACCEPTANCE,
     ...CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES,
+    // Active milestone records are last so a current, explicitly accepted
+    // identity can supersede only the corresponding frozen historical pin.
+    ...activeMilestoneEntries,
   ].map((entry) => [normalizePath(entry.path), String(entry.sha256 || "").toUpperCase()]));
   return new Map(
     allowedEntries.map((entry) => {
       const normalized = normalizeAllowedDiffEntry(entry);
+      const activeHistoricalSupersession = activeMilestoneEntries.find(
+        (candidate) =>
+          normalizePath(candidate.path) === normalized.path &&
+          candidate.supersedesHistoricalIdentity === true &&
+          candidate.rawSha256,
+      );
+      // Immutable PRE-#18 presentation records stay available as historical
+      // evidence. A later milestone may replace their *current-head* use only
+      // when its own canonical manifest explicitly declares that supersession.
+      if (activeHistoricalSupersession) {
+        return [normalized.path, String(activeHistoricalSupersession.rawSha256).toUpperCase()];
+      }
       const canonicalPresentation = CANONICAL_PRESENTATION_PROVENANCE_BY_PATH.get(normalized.path);
       if (
         canonicalPresentation?.currentLifecycleStatus === "ACCEPTED_CURRENT_HEAD" &&
@@ -138,7 +155,7 @@ function allowedDiffMap(allowedEntries) {
       ) {
         return [normalized.path, canonicalPresentation.acceptedIdentities.rawSha256];
       }
-      const canonicalCurrentHead = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.find(
+      const canonicalCurrentHead = [...activeMilestoneEntries, ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF].find(
         ({ path: candidate }) => normalizePath(candidate) === normalized.path,
       );
       if (canonicalCurrentHead?.sha256) {

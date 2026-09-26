@@ -28,6 +28,8 @@ This map points to actual implementation/check owners. Status is one of `IMPLEME
 | Role-based task home and navigation | platform/ux | existing role routes and bundles | role/context owners | `web/src/utils/roleNavigation.js`, `web/src/components/RoleTaskHome.jsx` | #17 browser/check owner | IMPLEMENTED |
 | Operations Command Center presentation | platform/ux | existing dashboard/observability bundle owners | existing canonical signal owners | `web/src/components/OperationsCommandCenter.jsx` | #17 browser/check owner | IMPLEMENTED |
 | Single Sefer Abi contextual entry | ai/ux | `backend/src/routes/ai.js` | #5 context/state owners | `FloatingCopilotDrawer.jsx`, `CopilotPanel.jsx` | #17 browser + #5 checks | IMPLEMENTED |
+| Screen-grounded UI anchors and guided highlights | ai/ux | `backend/src/routes/ai.js` | canonical role/screen/tenant authorities | `web/src/components/copilot/GuidedTargetOverlay.jsx`, `web/src/components/copilot/uiSurface.js` | `check:copilotuielementanchor01`, `smoke:copilotuielementanchor01` | PARTIAL |
+| Numbered milestone ownership/current-head authority | platform/governance | `milestoneOwnershipAuthority.js` | immutable PRE-#18 closure + active milestone manifest | repository verification | package ownership/current-head checks | IMPLEMENTED |
 
 ## Finance semantics
 
@@ -44,7 +46,7 @@ Each arrow is owned by the route/service/schema family named above. Current boun
 | Capability | Status | Owner |
 |---|---|---|
 | Terminology sweep | PLANNED_LOCKED_OWNER | #15 |
-| UI anchors/highlights | PLANNED_LOCKED_OWNER | #18 |
+| UI anchors/highlights | ACTIVE / NOT CLOSED | `backend/src/ai/chat/copilotUiElementAnchor.js`, `web/src/components/copilot/GuidedTargetOverlay.jsx` / #18 |
 | Natural-language form preparation | PLANNED_LOCKED_OWNER | #19 |
 | Cost-aware optimizer/disruption recovery | PLANNED_LOCKED_OWNER | #20 |
 | Safe action framework | PLANNED_LOCKED_OWNER | #21 |

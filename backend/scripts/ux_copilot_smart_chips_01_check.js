@@ -98,12 +98,14 @@ function assertNoForbiddenVisibleTerms(actual, label) {
 
 function hasAccessibleSuggestionsContract(source) {
   const region = String(source || '').match(/<section className="copilotContextSuggestions"[\s\S]*?<\/section>/)?.[0] || '';
+  const toggleHandler = /onClick=\{\(\) => \{[\s\S]*?setSuggestionsOpen\(\(previous\) => \{[\s\S]*?(?:const\s+next\s*=\s*!previous|return\s+!previous)[\s\S]*?(?:return\s+next|setSuggestionsOpen\(\(previous\) => !previous\))[\s\S]*?\}\);[\s\S]*?\}\}/.test(region)
+    || /onClick=\{\(\) => setSuggestionsOpen\(\(previous\) => !previous\)\}/.test(region);
   return Boolean(region)
     && /suggestions\.length\s*\?\s*\(/.test(source)
     && /className="copilotContextSuggestionsToggle"/.test(region)
     && /aria-expanded=\{suggestionsOpen\}/.test(region)
     && /aria-controls=\{suggestionPanelId\}/.test(region)
-    && /onClick=\{\(\) => setSuggestionsOpen\(\(previous\) => !previous\)\}/.test(region)
+    && toggleHandler
     && /className="copilotSuggestionWrap" hidden=\{!suggestionsOpen\}/.test(region)
     && /suggestions\.map\(\(chip, index\) =>[\s\S]*?onClick=\{\(\) => ask\(chip\)\}/.test(region);
 }
@@ -161,8 +163,8 @@ const starterHelperDisconnected = drawerSource.replace('return buildCopilotStart
 if (!hasStarterHelperWiring(starterHelperDisconnected, helperSource)) ok('negative control rejects a disconnected starter helper');
 else fail('negative control rejects a disconnected starter helper');
 const suggestionsCannotOpen = drawerSource.replace(
-  'onClick={() => setSuggestionsOpen((previous) => !previous)}',
-  'onClick={() => setSuggestionsOpen(false)}',
+  'const next = !previous;',
+  'const next = previous;',
 );
 if (!hasAccessibleSuggestionsContract(suggestionsCannotOpen)) ok('negative control rejects permanently inaccessible suggestions');
 else fail('negative control rejects permanently inaccessible suggestions');

@@ -574,7 +574,11 @@ const cases = [
     verify: (response) => {
       assertTaskStateBridge(response, 'room shifts follow-up missing');
       assert(response.taskState.isFollowUp === true, 'room shifts follow-up missing is a follow-up');
-      assertQuestionTypeOneOf(response.questionType, ['SEMANTIC_OFF_TOPIC_SAFE'], 'room shifts follow-up missing');
+      // “Bulamadım” is a canonical recovery continuation.  This direct
+      // composer fixture has no active guided target, so it must ask for a
+      // safe continuation base instead of pretending that the request is out
+      // of product scope.
+      assertQuestionTypeOneOf(response.questionType, ['CONTINUE_FLOW'], 'room shifts follow-up missing');
       assert(response.taskState.currentGuidedTaskFlowId === '', 'room shifts follow-up missing does not fabricate a guided task flow');
       assertReplyHasAny(response, ['bulamad', 'alternatif', 'yol', 'doğru vardiya kaydını seç'], 'room shifts follow-up missing');
     },

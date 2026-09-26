@@ -8,6 +8,7 @@ import { getRoleDefaultPath, resolveRouteScope } from "./utils/roleNavigation";
 import { createCopilotRouteContext } from "./copilot/routeContext";
 import BrandMark from "./components/BrandMark";
 import ErrorBoundary from "./components/ErrorBoundary";
+import GuidedTargetOverlay from "./components/copilot/GuidedTargetOverlay";
 import RoleTaskHome from "./components/RoleTaskHome";
 import { startLiveWs, stopLiveWs } from "./live/ws";
 
@@ -499,6 +500,7 @@ export default function App() {
           {view.node}
         </Suspense>
       </ErrorBoundary>
+      <GuidedTargetOverlay />
     </AppShell>
   );
 }

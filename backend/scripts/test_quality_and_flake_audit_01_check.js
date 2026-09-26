@@ -706,7 +706,7 @@ async function main() {
 
   addGuard("allowlist", "route review guard stays exact-scope only", () => {
     mustAll(routeReviewCheck, [
-      ["mustStatusEmptyOrExactlyWithIdentity(", "backend route/service status stays current-head approved"],
+      ["mustStatusSubsetWithIdentity(", "backend route/service status stays current-head approved"],
       ["CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF", "current-head route/service diff helper"],
       ["stage stays empty", "stage policy remains exact"],
     ], "route review guard");
@@ -720,7 +720,7 @@ async function main() {
       ["const redteamTrackedCleanPaths = [", "owned-file committed-clean scope list"],
       ["const redteamAuthorizedFollowupPaths = [", "owned-file authorized follow-up scope list"],
       ["const exactApprovedConcurrentCanonicalEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;", "identity-locked backend diff helper"],
-      ["mustStatusEmptyOrExactlyWithIdentity(", "backend route/service status stays current-head approved"],
+      ["mustStatusSubsetWithIdentity(", "backend route/service status stays current-head approved"],
       ["mustTrackedAndCleanPaths(redteamTrackedCleanPaths, 'redteam committed scope stays tracked and clean');", "owned-file committed-clean status contract"],
       ["mustTrackedPaths(redteamAuthorizedFollowupPaths, 'redteam authorized follow-up scope stays tracked');", "owned-file authorized follow-up tracked contract"],
       ["mustDirtyOnlyWithin(", "owned-file follow-up dirty contract"],

@@ -764,8 +764,12 @@ async function main() {
       path: '/room/shifts',
     },
     {
-      label: 'how-to-boundary',
-      questionType: 'HOW_TO_HELP',
+      // “Adım adım anlat” is a canonical continuation.  With no persisted
+      // task it must ask for its continuation base, rather than being
+      // reclassified as a standalone how-to question by this legacy
+      // plan-review boundary check.
+      label: 'continuation-no-base-boundary',
+      questionType: 'CONTINUE_FLOW',
       message: 'Adım adım anlat',
       role: 'COMPANY',
       path: '/company/shifts',

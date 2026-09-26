@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, isAppJsxRoleTenantScopePath } from "./lib/guardGitScope.js";
 import { mustSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
 import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
+import { activeMilestoneTouchedPaths } from "./lib/milestoneOwnershipAuthority.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -77,6 +79,9 @@ const expectedCoverageSources = [
   "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
 ];
 const expectedIdentitySources = ["backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs", ...expectedCoverageSources];
+const activeMilestoneIdentityByPath = new Map(
+  activeMilestoneTouchedPaths().map((entry) => [String(entry.path || "").replace(/\\/g, "/"), entry]),
+);
 
 function read(relPath) {
   return fs.readFileSync(path.join(root, relPath), "utf8");
@@ -118,6 +123,14 @@ function countBy(items, key) {
     counts[item[key]] = (counts[item[key]] || 0) + 1;
   }
   return counts;
+}
+
+function isActiveMilestoneAcceptedPath(relPath) {
+  const normalized = String(relPath || "").replace(/\\/g, "/");
+  const entry = activeMilestoneIdentityByPath.get(normalized);
+  if (!entry || entry.acceptance !== "PASS" || entry.identityRegistered !== true || !entry.rawSha256) return false;
+  const actual = crypto.createHash("sha256").update(fs.readFileSync(path.join(root, normalized))).digest("hex").toUpperCase();
+  return actual === String(entry.rawSha256).toUpperCase();
 }
 
 function assertExactCounts(actual, expected, label) {
@@ -192,7 +205,8 @@ function main() {
   mustContains(doc, "backend/src/ai/jobGuide/screenCatalog.roomCompany.js", "mobile all roles panel audit doc keeps room/company screen catalog source");
   mustContains(doc, "backend/scripts/ux_live_panel_premium_smoke_01.mjs", "mobile all roles panel audit doc keeps premium smoke route source");
   must(
-    isAppJsxRoleTenantScopePath(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]),
+    isActiveMilestoneAcceptedPath(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]) ||
+      isAppJsxRoleTenantScopePath(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]),
     "mobile all roles panel audit App.jsx path delegates to canonical owner",
   );
   must(

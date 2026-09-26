@@ -31,7 +31,6 @@ import {
   isCommercialPaymentSecurityCheckerPath,
   isM80M89ContractSweepRepoContractPath,
   mustDiffEmptyOrExactlyWithIdentity,
-  mustStatusEmptyOrExactlyWithIdentity,
   mustStatusSubsetWithIdentity,
 } from "./lib/guardGitScope.js";
 import {
@@ -45,6 +44,7 @@ import {
   assertLifecycleClassificationIntegrity,
 } from "./lib/pre18LifecycleClassification.js";
 import { normalizedTextSha256 } from "./lib/guardTextIntegrity.js";
+import { activeMilestoneTouchedPaths } from "./lib/milestoneOwnershipAuthority.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -394,6 +394,9 @@ const currentPre18IdentityEntries = [
   { path: "web/src/utils/liveTrackingCopy.js", sha256: "80CFAD6538634EEBB9EE7CF1226AAAD31AD99E22D94F3DE37B9D589C6C04EA5F" },
 ];
 const currentPre18IdentityShas = buildExpectedShaMap(currentPre18IdentityEntries);
+const activeMilestoneIdentityByPath = new Map(
+  activeMilestoneTouchedPaths().map((entry) => [normalizePath(entry.path), entry]),
+);
 assertLifecycleClassificationIntegrity([
   ...currentPre18IdentityEntries.map(({ path: entryPath }) => entryPath),
   ...ACTIVE_CURRENT_SOURCE_PATHS,
@@ -451,6 +454,16 @@ function classifyDirtyPath(file, context) {
 
   if (projectGapReadinessExactPaths.has(normalized)) {
     return { category: "PROJECT_GAP_READINESS_14" };
+  }
+
+  const activeMilestone = activeMilestoneIdentityByPath.get(normalized);
+  if (activeMilestone && activeMilestone.acceptance === "PASS" && activeMilestone.identityRegistered === true && activeMilestone.lifecycle) {
+    if (activeMilestone.identityMode === "CONTRACT_SELF") return { category: "ACTIVE_MILESTONE_GOVERNANCE" };
+    const expected = String(activeMilestone.rawSha256 || "").toUpperCase();
+    const actual = fileSha256(normalized);
+    return actual === expected
+      ? { category: "ACTIVE_MILESTONE_GOVERNANCE" }
+      : { category: "UNKNOWN", detail: `${normalized} active milestone expected ${expected} got ${actual}` };
   }
 
   // Exact current-head identities are authoritative over older package-local
@@ -1314,6 +1327,7 @@ function main() {
         case "ACTIVE_CURRENT_SOURCE":
         case "DURABLE_CURRENT_CHECKER":
         case "CURRENT_PRE_18_PRODUCT_FLOW":
+        case "ACTIVE_MILESTONE_GOVERNANCE":
         case "ROLE_TENANT_AUTH_OWNED_PRODUCT":
         case "PROJECT_GAP_READINESS_14":
           break;
@@ -1344,7 +1358,10 @@ function main() {
     );
   });
   addCase(cases, "service diff stays compatible", () => {
-    mustStatusEmptyOrExactlyWithIdentity(
+    // Clean historical services are not current working-tree scope. Keep the
+    // existing exact identity allowlist for any service that is actually
+    // changed, while rejecting unexpected paths and identity mismatches.
+    mustStatusSubsetWithIdentity(
       ["backend/src/services"],
       CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) => entryPath.startsWith("backend/src/services/")),
       "service status stays compatible",

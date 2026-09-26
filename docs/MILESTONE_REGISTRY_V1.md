@@ -14,6 +14,12 @@
 - `PREMIUM_UI` is `72_OF_72_PROVEN`; Foundation Exit is `GREEN PRESERVED`, ROOM/OTHER423 is `PROVEN_CLOSED`, and No-Surprise Repository Exit is green after current-tree classification.
 - PRE-#18 is `FINAL CLOSURE READY`; #18 is not started, and no commit/tag/push is implied by this documentation state.
 
+## #18 active bounded implementation (2026-09-25)
+
+- `COPILOT-UI-ELEMENT-ANCHOR-AND-GUIDED-HIGHLIGHT-01` is the current numbered milestone after the immutable PRE-#18 closure tag `v2026.09.25-pre18-immutable-closure`.
+- Scope is screen-grounded Sefer Abi guidance: semantic target resolution from the authorized current UI surface, bounded highlight/scroll/focus, guided continuation and safe navigation. It does not execute business writes or reopen PRE-#18.
+- Canonical owners: `backend/src/ai/chat/copilotUiElementAnchor.js`, `web/src/components/copilot/GuidedTargetOverlay.jsx`, `check:copilotuielementanchor01`, and `smoke:copilotuielementanchor01`.
+
 The older ordering below is retained as historical compatibility context. It is not the current frontier and must not override `docs/INDEX.md`, `docs/PRIMER_SSOT.md`, or current-head evidence.
 
 ## 1) Tarihsel kapatılan resmi hatlar
