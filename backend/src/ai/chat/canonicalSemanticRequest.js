@@ -347,6 +347,10 @@ function hasScreenContextCue(text) {
   // suffix into a single token ("iş akışındayım"). This is a situated
   // orientation operation, not a generic question about workflows.
   const workflowSelfLocation = /\b(?:hangi\s+)?(?:is\s+akis|surec|operasyon|calisma\s+alan)(?:indayim|indeyim|dayim|deyim|icindeyim|icerisindeyim)\b/iu.test(text);
+  // Colloquial Turkish often contracts "ne yaparım" into "naparım".
+  // When it is anchored to the current surface, it is still a situated
+  // product-help request rather than general conversation or a record field.
+  const situatedActionQuestion = /\b(?:burada|burda|bu\s+ekranda|bu\s+sayfada)\s+(?:ne\s+)?(?:yap|nap)\p{L}*\b/iu.test(text);
   return /(?:^|[^\p{L}])neredey(?:im|iz)?(?:$|[^\p{L}])/iu.test(text)
     // First-person location verbs still ask about the current UI surface;
     // they are not record-field lookups.  Keep the verb stem open so normal
@@ -358,7 +362,7 @@ function hasScreenContextCue(text) {
       "su an neye bakiyorum", "burada ne acik", "burasi ne", "hangi sayfadayim",
     ])
     || (uiSurface && locationQuestion)
-    || ((situatedReference && orientationOperation) || selfLocatedProgress || workflowSelfLocation);
+    || ((situatedReference && orientationOperation) || selfLocatedProgress || workflowSelfLocation || situatedActionQuestion);
 }
 
 function hasCurrentScreenReferentCue(text) {

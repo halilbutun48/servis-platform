@@ -5,6 +5,7 @@ import { normalizeGuideLevel } from "./jobGuide/levels.js";
 import { getScreenDefinitionForUser, resolveAuthorizedScreenContext } from "./jobGuide/screenCatalog.js";
 import { resolveChatContext } from "./chat/contextResolver.js";
 import { buildChatHelpResponse, buildGenericProductHelpResponse } from "./chat/helpComposer.js";
+import { buildProductOverviewHelpReply } from "./chat/conversationTaskStateBuilders.js";
 import { buildSeferAbiCostAnalysisResponse, detectCostAnalysisIntent } from "./chat/seferAbiCostAnalysisAssistant.js";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel, normalizeGpsFreshness } from "./chat/etaSanity.js";
 import { ACTIONABLE_EVENT_SOURCE_ID, buildActionableAnswer, buildActionableEventsForUser } from "../services/actionableEvents.js";
@@ -80,8 +81,26 @@ export function resolveIncomingCopilotScreenContext({ user, screenContext, entit
   };
 }
 
-function buildGenericProductHelpProjection({ message, semanticPlan }) {
-  const reply = buildGenericProductHelpResponse({ message });
+function buildGenericProductHelpProjection({ message, semanticPlan, user = null, screenContext = null }) {
+  // Product-overview language is safe to answer without records, but an
+  // authenticated in-product turn should still explain the user's actual
+  // role and current authorized surface.  Keep the context-free projection
+  // for unauthenticated/no-screen requests; use the existing role playbook
+  // for current UI guidance without adding a second semantic authority.
+  const contextual = Boolean(screenContext?.path && user?.role);
+  const screenDefinition = contextual
+    ? getScreenDefinitionForUser(user, screenContext, Number(screenContext?.id || 0) || null)
+    : null;
+  const reply = contextual
+    ? buildProductOverviewHelpReply({
+      message,
+      userRole: user?.role,
+      user,
+      roleMode: "OPERATIONS",
+      screenDefinition,
+      screenContext,
+    })
+    : buildGenericProductHelpResponse({ message });
   return {
     ok: true,
     copilotVersion: "ROUND-10-GENERIC-PRODUCT-HELP",
@@ -89,15 +108,19 @@ function buildGenericProductHelpProjection({ message, semanticPlan }) {
     intent: "CHAT_HELP",
     intentLabel: "Genel ürün yardımı",
     provider: "local-static-product-help",
-    providerSummary: "context-free-generic-product-help",
+    providerSummary: contextual ? "role-scoped-product-help" : "context-free-generic-product-help",
     mode: "RULE_BASED",
     // Keep this projection context-free. Authenticated identity and persisted
     // route-bound context remain internal to the lifecycle owner for a later,
     // freshly authorized contextual request.
-    scope: { summary: "Genel ürün açıklaması; ekran, kayıt, rol veya tenant verisi kullanılmadı." },
+    scope: contextual
+      ? { role: String(user?.role || ""), companyKind: String(user?.companyKind || ""), summary: "Rol ve yetkili mevcut ekran yüzeyi üzerinden ürün yardımı; kayıt verisi okunmadı." }
+      : { summary: "Genel ürün açıklaması; ekran, kayıt, rol veya tenant verisi kullanılmadı." },
     reply,
     summary: reply,
-    contextSummary: "Bu tur, kayıt veya mevcut ekran bağlamı kullanmadan genel ürün açıklaması verdi.",
+    contextSummary: contextual
+      ? `Bu tur, ${String(screenContext?.label || "yetkili ekran")} ve ${String(user?.role || "mevcut rol")} bağlamında ürün rehberliği verdi; kayıt verisi okunmadı.`
+      : "Bu tur, kayıt veya mevcut ekran bağlamı kullanmadan genel ürün açıklaması verdi.",
     questionType: "GENERIC_PRODUCT_HELP",
     activeTopic: "GENERIC_PRODUCT_HELP",
     assistantIntent: "GENERIC_PRODUCT_HELP",
@@ -105,14 +128,21 @@ function buildGenericProductHelpProjection({ message, semanticPlan }) {
     authorizedRecords: [],
     retrievedFacts: [],
     responseSections: [{ title: "SeferPakt", body: reply }],
-    dataSources: ["statik ürün yardım sözleşmesi"],
-    reasoning: "Genel ürün yardımı, yetkili kayıt veya route-bound bağlam okumadan yanıtlandı.",
+    dataSources: [contextual ? "rol rehberi ve yetkili ekran sözleşmesi" : "statik ürün yardım sözleşmesi"],
+    reasoning: contextual
+      ? "Ürün yardımı, kayıt okumadan mevcut yetkili rol ve ekranın başlangıç adımlarına bağlandı."
+      : "Genel ürün yardımı, yetkili kayıt veya route-bound bağlam okumadan yanıtlandı.",
     semanticPlan,
     conversationRoute: "GENERIC_PRODUCT_HELP",
     dialogueTopic: "GENERIC_PRODUCT_HELP",
     authorizedProductContext: null,
     readOnly: true,
-    quickActions: [],
+    quickActions: contextual ? [{
+      label: "Bu ekranı anlat",
+      actionKind: "ASK",
+      askText: "Bu ekran ne işe yarıyor?",
+      reason: "Mevcut yetkili ekranı açıklamak için güvenli ürün yardımı ister; işlem başlatmaz.",
+    }] : [],
   };
 }
 
@@ -1218,7 +1248,7 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
     // "10 kişi daha gelirse?").  The current screen and the immediately
     // preceding cost conversation keep it inside the same read-only owner;
     // it must not be downgraded to off-topic before cost analysis sees it.
-    if (costRequest.isCostAnalysis && costDomainAllowed && !explicitRoleGlobal) {
+    if (costRequest.isCostAnalysis && costDomainAllowed && !explicitRoleGlobal && semanticPlan.family !== "SCREEN_CONTEXT") {
       const resolved = await resolveChatContext({ entityType, entityId, user, screenContext, conversationState });
       return buildSeferAbiCostAnalysisResponse({
         baseResponse: {
@@ -1257,7 +1287,7 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
       retrieveProductData: semanticPlan.retrieveProductData,
     };
     if (conversationRoute.route === "GENERIC_PRODUCT_HELP") {
-      return buildGenericProductHelpProjection({ message, semanticPlan });
+      return buildGenericProductHelpProjection({ message, semanticPlan, user, screenContext });
     }
     if (["OFF_TOPIC_SAFE", "GENERAL_KNOWLEDGE", "LIVE_EXTERNAL_DATA", "UNCLEAR_OR_AMBIGUOUS"].includes(conversationRoute.route)) {
       const reply = buildConversationRoutingResponse({ route: conversationRoute.route, message, semanticPlan, routingReason: conversationRoute.reason });
@@ -1321,7 +1351,14 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
     // The typed authorization decision remains the gate for this early route.
     const workflowGuidance = semanticPlan.family === "UI_GUIDANCE"
       || semanticPlan.continuationBasePlan?.family === "UI_GUIDANCE";
-    const reasoningAnswer = workflowGuidance
+    // A canonical screen-context question is already an authorized UI-help
+    // decision.  Let the screen-aware composer explain the real surface;
+    // the cross-domain reasoning path otherwise collapses it to a one-line
+    // situation summary before the richer UI guidance can run.
+    const screenContextHelp = semanticPlan.family === "SCREEN_CONTEXT"
+      && Boolean(screenContext?.path)
+      && !(semanticPlan.requestedDomains || []).length;
+    const reasoningAnswer = workflowGuidance || screenContextHelp
       ? null
       : await buildAuthorizedReasoningAnswer({
         user,
@@ -1392,12 +1429,19 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
 
     const visibleContextPlan = semanticPlan;
     const retainedProductResult = Boolean(conversationState?.lastSettledResult?.semanticPlan || conversationState?.authorizedProductContext?.semanticPlan);
-    const visibleContextDiagnostic = (!retainedProductResult || ["CURRENT_SITUATION", "LOCATION_GPS", "ETA"].includes(visibleContextPlan.family))
+    const visibleContextDiagnostic = semanticPlan.family !== "SCREEN_CONTEXT"
+      && (!retainedProductResult || ["CURRENT_SITUATION", "LOCATION_GPS", "ETA"].includes(visibleContextPlan.family))
       ? buildVisibleContextDiagnosticResponse({ user, entityType, entityId, screenContext, message })
       : null;
     if (visibleContextDiagnostic) return visibleContextDiagnostic;
 
-    const productAwareness = await buildAuthorizedProductAwarenessAnswer({ user, message, screenContext, conversationState, semanticPlan });
+    // SCREEN_CONTEXT is already a canonical UI-help decision. Let the
+    // screen-aware composer describe the real authorized surface and its safe
+    // next steps; the broad awareness snapshot must not collapse it into a
+    // one-line situation label.
+    const productAwareness = semanticPlan.family === "SCREEN_CONTEXT"
+      ? null
+      : await buildAuthorizedProductAwarenessAnswer({ user, message, screenContext, conversationState, semanticPlan });
     const productAwarenessResponse = buildProductAwarenessResponse({
       awareness: productAwareness,
       user,
@@ -1414,7 +1458,9 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
       // The established screen-scoped assistant remains available if the
       // read-only cross-panel snapshot is temporarily unavailable.
     }
-    const actionableAnswer = actionableSource && roleGlobalActionableFallbackAllowed(semanticPlan, conversationState)
+    const actionableAnswer = actionableSource
+      && semanticPlan.family !== "SCREEN_CONTEXT"
+      && roleGlobalActionableFallbackAllowed(semanticPlan, conversationState)
       ? buildActionableAnswer({ message, snapshot: actionableSource })
       : null;
     if (actionableAnswer) {
@@ -1486,6 +1532,18 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
         scope: resolved.scope,
         screenPath: screenContext?.path || null,
         screenLabel: screenContext?.label || null,
+      };
+    }
+    // Keep canonical screen-context help on the screen-help composer even if
+    // a colloquial phrase contains a cost-like verb such as "çalışıyor".
+    // Screen context is already the semantic decision and must not be wrapped
+    // by the financial assistant.
+    if (semanticPlan.family === "SCREEN_CONTEXT") {
+      return {
+        ...baseResponse,
+        semanticPlan,
+        conversationRoute: semanticPlan.conversationRoute,
+        dialogueTopic: semanticPlan.dialogueTopic,
       };
     }
     return buildSeferAbiCostAnalysisResponse({

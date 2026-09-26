@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-09-25
+Tarih: 2026-09-26
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
 - Toplam package script entry: `490`
-- Toplam executable tracked file: `1538`
-- Combined registry row: `2028`
-- Root/backend/web/mobile package dağılımı: root `303`, backend `1119`, web `102`, mobile `201`
+- Toplam executable tracked file: `1543`
+- Combined registry row: `2033`
+- Root/backend/web/mobile package dağılımı: root `303`, backend `1123`, web `103`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `1018`
+- NEEDS_REVIEW: `1023`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `428`
+- Eski sistem term eşleşmesi: `431`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 1018 |
+| NEEDS_REVIEW | 1023 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -936,6 +936,8 @@ Repo: `servis-platform`
 | copilot_shift_to_agreement_prep_01_check.js | backend/scripts/copilot_shift_to_agreement_prep_01_check.js | backend | root:check:copilotshifttoagreementprep01 | review | NEEDS_REVIEW |  | COPILOT-SHIFT-TO-AGREEMENT-PREP-01-CHECK |  | Owner or chain unclear |  |
 | copilot_smart_diagnostic_engine_01_check.js | backend/scripts/copilot_smart_diagnostic_engine_01_check.js | backend | root:check:copilotsmartdiagnosticengine01 | review | NEEDS_REVIEW |  | COPILOT-SMART-DIAGNOSTIC-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_stop_route_draft_01_check.js | backend/scripts/copilot_stop_route_draft_01_check.js | backend | root:check:copilotstoproutedraft01 | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-01-CHECK |  | Owner or chain unclear |  |
+| copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs | backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs | backend | root:smoke:copilotuielementanchor01 | review | NEEDS_REVIEW |  | COPILOT-UI-ELEMENT-ANCHOR-AND-GUIDED-HIGHLIGHT-01-BROWSER |  | Owner or chain unclear |  |
+| copilot_ui_element_anchor_and_guided_highlight_01_check.js | backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js | backend | root:check:copilotuielementanchor01 | review | NEEDS_REVIEW |  | COPILOT-UI-ELEMENT-ANCHOR-AND-GUIDED-HIGHLIGHT-01-CHECK |  | Owner or chain unclear |  |
 | copilot_workflow_reasoning_engine_01_check.js | backend/scripts/copilot_workflow_reasoning_engine_01_check.js | backend | root:check:copilotworkflowreasoningengine01 | review | NEEDS_REVIEW |  | COPILOT-WORKFLOW-REASONING-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | cost_scenario_forecast_and_savings_01_acceptance.mjs | backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs | backend | root:accept:costscenarioforecastandsavings01 | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
 | cost_scenario_forecast_and_savings_01_browser.mjs | backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs | backend | root:smoke:costscenarioforecastandsavings01 | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
@@ -996,6 +998,7 @@ Repo: `servis-platform`
 | guardValidationEnvironment.js | backend/scripts/lib/guardValidationEnvironment.js | backend |  | review | NEEDS_REVIEW |  | GUARD-VALIDATION-ENVIRONMENT |  | Owner or chain unclear |  |
 | impactAwareValidationExecutorV1.js | backend/scripts/lib/impactAwareValidationExecutorV1.js | backend |  | review | NEEDS_REVIEW |  | IMPACT-AWARE-VALIDATION-EXECUTOR-V-1 |  | Owner or chain unclear |  |
 | impactAwareValidationPlannerV1.js | backend/scripts/lib/impactAwareValidationPlannerV1.js | backend |  | review | NEEDS_REVIEW |  | IMPACT-AWARE-VALIDATION-PLANNER-V-1 |  | Owner or chain unclear |  |
+| milestoneOwnershipAuthority.js | backend/scripts/lib/milestoneOwnershipAuthority.js | backend |  | review | NEEDS_REVIEW |  | MILESTONE-OWNERSHIP-AUTHORITY |  | Owner or chain unclear |  |
 | pre18LifecycleClassification.js | backend/scripts/lib/pre18LifecycleClassification.js | backend |  | review | NEEDS_REVIEW |  | PRE-18-LIFECYCLE-CLASSIFICATION |  | Owner or chain unclear |  |
 | pre_18_authenticated_role_context.mjs | backend/scripts/lib/pre_18_authenticated_role_context.mjs | backend |  | review | NEEDS_REVIEW |  | PRE-18-AUTHENTICATED-ROLE-CONTEXT |  | Owner or chain unclear |  |
 | pre_18_browser_owner_candidates.mjs | backend/scripts/lib/pre_18_browser_owner_candidates.mjs | backend |  | review | NEEDS_REVIEW |  | PRE-18-BROWSER-OWNER-CANDIDATES |  | Owner or chain unclear |  |
@@ -1581,6 +1584,7 @@ Repo: `servis-platform`
 | copilotRouteReviewHumanApprovalPolicy.js | backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-POLICY |  | Owner or chain unclear |  |
 | copilotShiftToAgreementPrep.js | backend/src/ai/chat/copilotShiftToAgreementPrep.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-SHIFT-TO-AGREEMENT-PREP |  | Owner or chain unclear |  |
 | copilotStopRouteDraftPolicy.js | backend/src/ai/chat/copilotStopRouteDraftPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-POLICY |  | Owner or chain unclear |  |
+| copilotUiElementAnchor.js | backend/src/ai/chat/copilotUiElementAnchor.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-UI-ELEMENT-ANCHOR |  | Owner or chain unclear |  |
 | etaSanity.js | backend/src/ai/chat/etaSanity.js | backend |  | review | NEEDS_REVIEW |  | ETA-SANITY |  | Owner or chain unclear |  |
 | excelToRouteReadinessRedteamPack.js | backend/src/ai/chat/excelToRouteReadinessRedteamPack.js | backend |  | review | NEEDS_REVIEW |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-PACK |  | Owner or chain unclear |  |
 | fieldPrivacyPolicy.js | backend/src/ai/chat/fieldPrivacyPolicy.js | backend |  | review | NEEDS_REVIEW |  | FIELD-PRIVACY-POLICY |  | Owner or chain unclear |  |
@@ -1885,6 +1889,7 @@ Repo: `servis-platform`
 | uiSurface.js | web/src/components/copilot/uiSurface.js | web |  | review | NEEDS_REVIEW |  | UI-SURFACE |  | Owner or chain unclear |  |
 | stopTimelineUtils.js | web/src/components/stopTimelineUtils.js | web |  | review | NEEDS_REVIEW |  | STOP-TIMELINE-UTILS |  | Owner or chain unclear |  |
 | brand.js | web/src/config/brand.js | web | root:check:brand, root:check:docsbrandcleanup01, root:check:uxbrandloginpremium01 | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
+| guidedTargetState.js | web/src/copilot/guidedTargetState.js | web |  | review | NEEDS_REVIEW |  | GUIDED-TARGET-STATE |  | Owner or chain unclear |  |
 | routeContext.js | web/src/copilot/routeContext.js | web |  | review | NEEDS_REVIEW |  | ROUTE-CONTEXT |  | Owner or chain unclear |  |
 | screenRegistry.js | web/src/copilot/screenRegistry.js | web |  | review | NEEDS_REVIEW |  | SCREEN-REGISTRY |  | Owner or chain unclear |  |
 | logger.js | web/src/lib/logger.js | web |  | review | NEEDS_REVIEW |  | LOGGER |  | Owner or chain unclear |  |
@@ -2737,8 +2742,8 @@ Repo: `servis-platform`
 | backend/scripts/copilot_role_task_matrix_01_check.js | Hub | NEEDS_REVIEW |
 | backend/scripts/copilot_route_review_human_approval_01_check.js | Hub, Yer | NEEDS_REVIEW |
 | backend/scripts/copilot_stop_route_draft_01_check.js | Hub | NEEDS_REVIEW |
-| backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs | Yer | NEEDS_REVIEW |
-| backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs | Yer | NEEDS_REVIEW |
+| backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs | Yer | NEEDS_REVIEW |
+| backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js | Yer | NEEDS_REVIEW |
 
 ## 11) Cleanup Raporu
 

@@ -352,6 +352,23 @@ async function runProductionParityRegression() {
   assert(screenResponse.semanticPlan?.conversationRoute === 'RETURN_TO_PRODUCT_TASK', 'production screen referent is not routed off-topic');
   assert(!/mevcut ürün kapsamının dışında/i.test(screenResponse.reply || ''), 'production screen referent receives product help');
 
+  // Current-screen help and in-product onboarding are semantic classes, not
+  // a finite phrase list.  Keep representative colloquial/deictic variants
+  // on the real service path so they cannot regress to generic out-of-scope
+  // handling or a record/data lookup.
+  for (const message of ['burada ne yapabilirim', 'burda naparım', 'bu ekran ne işe yarıyor']) {
+    const response = await request(message, `m18-screen-help-variant-${message}`);
+    assert(response.semanticPlan?.family === 'SCREEN_CONTEXT', `screen-help variant keeps screen context: ${message}`);
+    assert(response.semanticPlan?.conversationRoute === 'RETURN_TO_PRODUCT_TASK', `screen-help variant remains product-grounded: ${message}`);
+    assert(!/mevcut ürün kapsamının dışında/i.test(response.reply || ''), `screen-help variant is not generic out-of-scope: ${message}`);
+    assert(/Planlama Merkezi|ekran|operasyon|İlk bakılacak yer|Önce/i.test(response.reply || ''), `screen-help variant explains the current surface: ${message}`);
+  }
+  for (const message of ['bana programı öğret', "SeferPakt'ı nasıl kullanacağım", 'nereden başlayayım']) {
+    const response = await request(message, `m18-product-help-variant-${message}`);
+    assert(response.semanticPlan?.conversationRoute !== 'OFF_TOPIC_SAFE', `product-help variant is not out-of-scope: ${message}`);
+    assert(!/mevcut ürün kapsamının dışında/i.test(response.reply || ''), `product-help variant has in-product guidance: ${message}`);
+  }
+
   const noBase = await request('Devam', 'm18-canonical-semantic-authority-no-base');
   assert(noBase.semanticPlan?.family === 'CONTINUE_CURRENT_REASONING', 'continuation without prior task remains a canonical continuation request');
   assert(noBase.semanticPlan?.clarificationNeed === 'CONTINUATION_BASE_NOT_FOUND', 'continuation without prior task asks for clarification');

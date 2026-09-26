@@ -63,7 +63,7 @@ export function isGenericProductHelpIntent(value) {
   if (!text) return false;
   if (isExplicitRoleHelpIntent(text)) return false;
   const productSubject = /\bseferpakt\b|\b(?:bu\s+)?(?:program|uygulama|platform|sistem)\p{L}*\b/iu.test(text);
-  const overviewRequest = /\b(?:bu\s+)?(?:program|uygulama|platform|sistem)\p{L}*\s+ne\b|\bne\s+(?:ise\s+yar\p{L}*|yapar|yapabil\p{L}*)\b|\bnedir\b|\bne\s+icin\s+kullan\p{L}*\b|\bamac\p{L}*\s+ne\b|\bgenel\s+olarak\b|\bneler\s+yap\p{L}*\b|\banlat\p{L}*\b/iu.test(text);
+  const overviewRequest = /\b(?:bu\s+)?(?:program|uygulama|platform|sistem)\p{L}*\s+ne\b|\bne\s+(?:ise\s+yar\p{L}*|yapar|yapabil\p{L}*)\b|\bnedir\b|\bne\s+icin\s+kullan\p{L}*\b|\b(?:nasil\s+)?kullan\p{L}*\b|\b(?:nasil\s+)?ogret\p{L}*\b|\b(?:nereden\s+)?basla\p{L}*\b|\bamac\p{L}*\s+ne\b|\bgenel\s+olarak\b|\bneler\s+yap\p{L}*\b|\banlat\p{L}*\b/iu.test(text);
   return productSubject && overviewRequest;
 }
 

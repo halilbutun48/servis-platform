@@ -220,7 +220,19 @@ function assertGuidedCase({
     // historical guided-task flow merely because the message shares its wording.
     assert(runtimeGuidedTaskMeta === null, `${label} canonical semantic route does not inherit guided task metadata`);
     same(response.questionType || '', intent.questionType || '', `${label} canonical semantic question type reaches the response`);
-    same(response.replyMode || '', CANONICAL_SEMANTIC_REPLY_MODE_BY_MESSAGE.get(message) || 'SHORT', `${label} canonical semantic reply mode`);
+    const expectedCanonicalReplyMode = CANONICAL_SEMANTIC_REPLY_MODE_BY_MESSAGE.get(message) || '';
+    if (expectedCanonicalReplyMode) {
+      same(response.replyMode || '', expectedCanonicalReplyMode, `${label} canonical semantic reply mode`);
+    } else if (String(response.replyMode || '').trim()) {
+      same(response.replyMode || '', 'SHORT', `${label} canonical semantic reply mode`);
+    } else {
+      assert(
+        response.questionType === 'PRODUCT_OVERVIEW_HELP'
+          && response.assistantIntent === 'GENERIC_PRODUCT_HELP',
+        `${label} canonical product-help response may omit guided reply mode`,
+      );
+      ok(`${label} canonical product-help response may omit guided reply mode`);
+    }
     assert(intent.semanticIntent?.typedRequestValidation?.valid === true, `${label} canonical semantic request is valid`);
   } else {
     assert(allowedFamilies.some((familyId) => normalize(intent.guidedTaskMeta?.familyId || '') === normalize(familyId)), `${label} routed family`);
