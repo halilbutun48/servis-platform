@@ -13,6 +13,27 @@ Bu primer yaşayan hattın resmi özetidir.
 
 Bu bölüm, aşağıdaki tarihsel milestone anlatılarının üzerinde duran güncel PRE-#18 kapanış özetidir. Tarihsel kayıtlar silinmez veya yeniden yazılmaz; güncel semantic, güvenlik, dokümantasyon ve yürütme kapısı bu bölümden okunur.
 
+## M18 final bounded acceptance overlay (2026-09-26)
+
+- M18 (`COPILOT-UI-ELEMENT-ANCHOR-AND-GUIDED-HIGHLIGHT-01`) is the current final-acceptance/pre-commit-closure frontier at HEAD `5501de58f86a52f0c518005c0e79ace580dbcb3a`; #19 remains not started and no commit/tag/push is performed by this documentation stage.
+- Accepted scope is screen-grounded Sefer Abi guidance: `ANLAT → GÖSTER → BİRLİKTE YAP` foundation, semantic target resolution, bounded scroll/highlight/focus, safe in-product navigation and continuation/recovery. Critical business writes, approvals, dispatch, authorization changes and force-click remain outside M18.
+- Real-browser evidence covers all 8 roles, `109/109` current menu/route targets, desktop/tablet/mobile representative guidance, desktop resize, mobile compact drawer, suggestions, modal stacking, current-screen help, continuation/recovery/back, offer navigation and nonexistent-target rejection. Local and same-build public-runtime representative checks are accepted; `fake navigation = 0`, `business write execution = 0`, and product defects remaining are `0`.
+- Canonical verification is green: package ownership/current-head authority, M90C.6, onboarding audit, smart-chips audit, `verify:repo = 32/32 PASS`, `verify:final = PASS`, and `git diff --check = PASS`. M18 broad guided/menu acceptance is bounded and does not claim exhaustive all-system/business-state E2E; that integrated owner remains #39.
+
+### Sefer Abi cross-milestone product contract
+
+There is one canonical all-role product/task backbone. It carries `ROLE → CAPABILITY → ORGANIZATION/ENTITY → MENU → SUBMENU → SURFACE → TAB → DISCLOSURE → CONTROL → FIELD → BUSINESS FUNCTION → PRECONDITION → WORKFLOW STATE → STATE TRANSITION → NEXT STEP → SAFE ACTION → BUSINESS-WRITE/APPROVAL BOUNDARY` for `ROOM`, `COMPANY`, `SCHOOL`, `ORGANIZATION`, `DRIVER`, `PERSONEL`, `PARENT` and `SUPER_ADMIN`.
+
+The progression is `ANLAT → GÖSTER → BİRLİKTE YAP → HAZIRLA → ONAY AL → UYGULA → TAKİP ET → GEREKİRSE UYAR`. Text, future voice, synchronized spoken UI, resumable tasks, evidence reasoning, proactive checks, form preparation and later controlled execution reuse this backbone; they do not create parallel assistant architectures. M18 stops at guidance/navigation/safe UI execution. Later milestones own preparation, approval and controlled business execution, with RBAC, tenant, KVKK, evidence grounding and visible uncertainty preserved.
+
+### Explicit multi-role / multi-entity execution context
+
+Every active Sefer Abi task carries explicit `TENANT/ORGANIZATION + ACTIVE ROLE + ACTIVE ENTITY + SELECTED RECORD + CURRENT SURFACE + ACTIVE TASK + AUTHORIZED ACTION SET`. Task or conversation state never grants authorization. Ambiguous multiple matches require a short clarification; switching role/entity is deliberate, visible and re-authorized; stale state cannot cross role/entity/tenant boundaries; same-name entities resolve by canonical identity. Future acceptance covers `MULTI_ROOM`, `MULTI_ROLE`, `SAME_NAME_ENTITY`, `STALE_CONTEXT`, `CONTEXT_SWITCH`, wrong-entity and cross-tenant negatives, and safe action in the correct entity.
+
+### Roadmap inheritance
+
+`#19` owns natural-language form/action preparation (`HAZIRLA`), `#20` dispatch/action preparation and optimizer/disruption awareness, `#21` controlled safe action/approval (`ONAY AL → UYGULA`), `#22–#29` voice on this same backbone, `#30–#33` proactive/agentic extensions (`TAKİP ET → GEREKİRSE UYAR`), and `#39` exhaustive all-role integrated acceptance. No `#18.5` or parallel roadmap is created.
+
 ### Kanonik Sefer Abi semantic zinciri
 
 `canonicalSemanticRequest.js` → `intentRouter.js` → `semanticIntentPlanner.js` → `toPublicQuestionType` → `helpComposer.js`
@@ -45,12 +66,12 @@ Bu bölüm, aşağıdaki tarihsel milestone anlatılarının üzerinde duran gü
 
 ### Güncel kanıt ve sonraki kapılar
 
-- HEAD `9838211e416649d7be69009da0411bf779a5ac21` (PRE-#18 immutable tag baseline), branch `m90d1_web_lint_inventory`; the current #18 worktree is bounded to screen-grounded interaction files.
+- HEAD `5501de58f86a52f0c518005c0e79ace580dbcb3a` (current M18 worktree), branch `m90d1_web_lint_inventory`; PRE-#18 immutable evidence remains anchored by its existing tag and M18 acceptance is bounded to screen-grounded interaction files.
 - KVKK `262/262`, role/data isolation `216/216`, presentation authority `PASS` with one authority, active/product unowned `0`, package ownership delta `0/0`.
 - M79 D1 `199/199` with score/floor `1.0/1.0`; AI semantic quality `122/122`; Copilot Context 14/21 is `PROVEN_SUPERSEDED_BY_CURRENT_ACCEPTANCE`; M90C6, M0 static compatibility, roadmap lock, public landing and product-flow smoke are `PASS`.
 - Exact current semantic identities are owned by the current-head/lifecycle authority, including `semanticIntentPlanner.js = 3BED61849BB8FFD7ED6A06652807CB0B46C07C38929880BECA882B7E3D882926`, `intentRouter.js = 01B619FE7B34DB5BA88B1BD925D210665BD3B7A06595E9D7B32812443228778D`, and `helpComposer.js = B1470807C086CB0FDB484225956510347A2DB4E26A2F8E0D737499BBDDB3BAE7`.
 - The documentation/SSOT reconciliation is the completed PRE-#18 foundation stage. The canonical Premium UI closure proves `PREMIUM_UI = 72_OF_72_PROVEN`; all 72 states remain backed by prior rendered evidence.
-- Foundation Exit Gate is `GREEN PRESERVED`, ROOM/OTHER423 is `PROVEN_CLOSED`, and the PRE-#18 No-Surprise Repository Exit remains the immutable baseline. #18 is the active bounded screen-grounding milestone; #19+ and commit/tag/push remain outside this package.
+- Foundation Exit Gate is `GREEN PRESERVED`, ROOM/OTHER423 is `PROVEN_CLOSED`, and the PRE-#18 No-Surprise Repository Exit remains the immutable baseline. M18 is at final bounded acceptance/pre-commit closure preparation; #19+ and commit/tag/push remain outside this package.
 
 ## Historical frontier snapshot (2026-08-31; superseded by the PRE-#18 overlay above)
 

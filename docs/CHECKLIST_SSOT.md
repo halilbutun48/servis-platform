@@ -35,6 +35,13 @@
 - Current owner: `backend/src/ai/chat/copilotUiElementAnchor.js` + `web/src/components/copilot/GuidedTargetOverlay.jsx`; focused checks: `npm run check:copilotuielementanchor01` and `npm run smoke:copilotuielementanchor01`.
 - Boundary: semantic target resolution, bounded highlight/scroll/focus and safe navigation guidance only. No business write, approval, dispatch, authorization mutation, force-click or #19+ capability.
 
+## #18 final acceptance / pre-commit closure preparation (2026-09-26)
+
+- Accepted evidence: 8/8 roles, 109/109 current menu/route targets, representative local and same-build public guidance, desktop/tablet/mobile coverage, desktop resize, mobile compact drawer, suggestions, modal stacking, current-screen help, continuation/recovery/back, offer navigation and nonexistent-target rejection.
+- Safety result: fake navigation `0`, business write execution `0`, unauthorized/nonexistent guidance `0`, product defects remaining `0`.
+- Governance result: package ownership/current-head, M90C.6, onboarding audit, smart-chips audit, `verify:repo 32/32`, `verify:final PASS`, and `git diff --check PASS`.
+- This is final pre-staging evidence, not a commit/tag/push. M18 broad guided/menu acceptance remains distinct from the exhaustive integrated #39 E2E owner. #19 is not started.
+
 ## Kanonik komut hiyerarşisi (Tur 1)
 - Resmi günlük giriş: `npm run verify:repo`
 - Resmi kapanış girişi: `npm run verify:final`

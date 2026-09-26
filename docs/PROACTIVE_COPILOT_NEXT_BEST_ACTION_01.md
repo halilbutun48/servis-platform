@@ -6,6 +6,10 @@ Repo: `servis-platform`
 ## Amaç
 - Sefer Abi'nin kullanıcı sormadan aksaklıkları ve riskleri fark edip doğru sıradaki işlemi önermesini sabitlemek.
 
+## Canonical backbone inheritance
+
+Proactive suggestions reuse the M18 canonical role/tenant/entity/surface/task context and authorization boundary. They explain risk and recommend a next safe step; they do not create a parallel assistant, silently execute business writes, or bypass later approval/execution milestones.
+
 ## Uyarı formatı
 Her proaktif uyarı şu sırayla yazılır:
 - Durum / risk nedir?
@@ -43,4 +47,3 @@ Her proaktif uyarı şu sırayla yazılır:
 ## Sınır
 - Proaktif uyarı otomatik işlem değildir.
 - Proaktif uyarı otomatik ödeme, tahsilat, fatura, settlement, SMS veya rota uygulaması yapmaz.
-

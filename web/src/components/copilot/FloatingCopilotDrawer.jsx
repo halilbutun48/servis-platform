@@ -10,7 +10,7 @@ import { canUseRouteBoundCopilotContext, routeContextKey, useCopilotRouteContext
 import { planCenterOverlayLayerEventName, readPlanCenterOverlayLayer, setPlanCenterOverlayLayer } from "../../utils/planCenterOverlayLayer";
 import { compactCopilotMessages, copilotAuthScopeKey, copilotSharedStateEventName, readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
 import { captureCopilotUiSurface } from "./uiSurface";
-import { setGuidedTarget } from "../../copilot/guidedTargetState";
+import { getGuidedTarget, setGuidedTarget, subscribeGuidedTarget } from "../../copilot/guidedTargetState";
 import SeferAbiAvatar from "./SeferAbiAvatar";
 import { resolveSeferAbiWidgetState, SEFER_ABI_WIDGET_STATE_LABELS } from "./SeferAbiWidgetState";
 import { humanizeUserFacingText } from "../../utils/terminology";
@@ -330,13 +330,16 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
   const [customDrawerSize, setCustomDrawerSize] = useState(null);
   const [drawerPlacement, setDrawerPlacement] = useState(() => normalizeDrawerPlacement(initial.drawerPlacement));
   const [drawerDragPreview, setDrawerDragPreview] = useState(null);
-  // Suggestions stay available in every viewport. A fresh compact session
-  // starts closed so the composer and answer surface retain useful height.
-  const [suggestionsOpen, setSuggestionsOpen] = useState(() => typeof window === "undefined" || window.innerWidth > 720);
+  // Suggestions stay available in every viewport, but remain a compact
+  // disclosure until the user asks for them. This keeps the guided answer
+  // and real target visible on desktop as well as mobile.
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [messages, setMessages] = useState(() => loadHistory(authScopeKey));
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [guidedRecoveryMessage, setGuidedRecoveryMessage] = useState("");
+  const [guidedTargetActive, setGuidedTargetActive] = useState(false);
   const [readingIndex, setReadingIndex] = useState(-1);
   const [inputFocused, setInputFocused] = useState(false);
   const [launcherInteraction, setLauncherInteraction] = useState("idle");
@@ -374,6 +377,8 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
   const suppressLauncherClickRef = useRef(false);
   const responseTimerRef = useRef(null);
   const attentionBubbleTimerRef = useRef(null);
+  const suggestionsCloseTimerRef = useRef(null);
+  const suggestionsOpenTimerRef = useRef(null);
   const attentionBubbleKeyRef = useRef("");
   const authScopeRef = useRef(authScopeKey);
   const skipPersistenceRef = useRef(false);
@@ -433,6 +438,18 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
     if (!open || viewportSize.width > 720) setMobileExpanded(false);
   }, [open, viewportSize.width]);
 
+  useEffect(() => {
+    const syncGuidedRecovery = (next) => {
+      const status = String(next?.status || "");
+      setGuidedTargetActive(status === "FOUND");
+      setGuidedRecoveryMessage(status && status !== "FOUND" && status !== "CLEARED"
+        ? "Bu hedef artık doğrulanamıyor; ekrandaki güncel durumu birlikte kontrol edelim."
+        : "");
+    };
+    syncGuidedRecovery(getGuidedTarget());
+    return subscribeGuidedTarget(syncGuidedRecovery);
+  }, []);
+
   const resizeComposerInput = useCallback((node) => {
     if (!node) return;
     node.style.height = "auto";
@@ -443,6 +460,11 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
     const nextHeight = Math.min(Math.max(contentHeight, minHeight), maxHeight);
     node.style.height = `${nextHeight}px`;
     node.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
+    if (compact && typeof window !== "undefined") {
+      window.requestAnimationFrame(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      });
+    }
   }, [viewportSize.width]);
 
   useEffect(() => {
@@ -454,10 +476,38 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
     if (compact !== wasCompactViewportRef.current) {
       // Preserve an intentionally opened accordion while the viewport is
       // stable, but choose the useful default when crossing a breakpoint.
-      setSuggestionsOpen(!compact);
+      setSuggestionsOpen(false);
       wasCompactViewportRef.current = compact;
     }
   }, [viewportSize.width]);
+
+  useEffect(() => () => {
+    if (suggestionsCloseTimerRef.current) window.clearTimeout(suggestionsCloseTimerRef.current);
+    if (suggestionsOpenTimerRef.current) window.clearTimeout(suggestionsOpenTimerRef.current);
+  }, []);
+
+  function openSuggestionsForDesktopInteraction() {
+    if (viewportSize.width <= 720) return;
+    if (suggestionsCloseTimerRef.current) window.clearTimeout(suggestionsCloseTimerRef.current);
+    if (suggestionsOpenTimerRef.current) window.clearTimeout(suggestionsOpenTimerRef.current);
+    suggestionsOpenTimerRef.current = window.setTimeout(() => {
+      suggestionsOpenTimerRef.current = null;
+      setSuggestionsOpen(true);
+    }, 140);
+  }
+
+  function scheduleSuggestionsClose() {
+    if (viewportSize.width <= 720) return;
+    if (suggestionsOpenTimerRef.current) {
+      window.clearTimeout(suggestionsOpenTimerRef.current);
+      suggestionsOpenTimerRef.current = null;
+    }
+    if (suggestionsCloseTimerRef.current) window.clearTimeout(suggestionsCloseTimerRef.current);
+    suggestionsCloseTimerRef.current = window.setTimeout(() => {
+      suggestionsCloseTimerRef.current = null;
+      setSuggestionsOpen(false);
+    }, 180);
+  }
 
   useEffect(() => {
     if (typeof window === "undefined" || !drawerPlacement || viewportSize.width <= 720) return;
@@ -548,7 +598,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
       metadataStatus: screenContext.metadataStatus,
     });
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [authScopeKey, canUseRouteBoundContext, messages, me?.role, me?.companyKind, routeContext.status, screenContext.label, screenContext.metadataStatus, screenContext.path, selection]);
+  }, [authScopeKey, canUseRouteBoundContext, guidedRecoveryMessage, messages, me?.role, me?.companyKind, routeContext.status, screenContext.label, screenContext.metadataStatus, screenContext.path, selection]);
   useEffect(() => {
     function syncSharedState(event) {
       const incoming = event?.detail || readCopilotSharedState(authScopeKey);
@@ -1121,7 +1171,11 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
   const drawerPositionStyle = {
     width: drawerDims.width,
     height: drawerDims.height,
-    zIndex: activeOverlayLayer === "copilot" ? 9130 : 4210,
+    // A live guided target is an active #18 conversation state. Keep the
+    // assistant above safe guided modals so the user can continue, recover,
+    // or go back without losing the real target context. The modal still
+    // remains the interaction surface everywhere outside the drawer.
+    zIndex: guidedTargetActive || activeOverlayLayer === "copilot" ? 9130 : 4210,
     ...(renderedDrawerPlacement && viewportSize.width > 720
       ? { left: renderedDrawerPlacement.left, top: renderedDrawerPlacement.top, right: "auto", bottom: "auto" }
       : {}),
@@ -1383,7 +1437,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
     </div>
   ) : (
     <aside
-      className={`copilotDrawer${mobileExpanded ? " copilotDrawer--mobile-expanded" : ""}${mobileDrawerPlacement === "top" || mobileDrawerPlacement === "map-top" ? " copilotDrawer--task-home-top" : ""}${mobileDrawerPlacement === "map-top" ? " copilotDrawer--map-top" : ""}${mobileDrawerPlacement === "map-bottom" ? " copilotDrawer--map-bottom" : ""}${panelSide === "left" ? " copilotDrawer--from-left" : ""}`}
+      className={`copilotDrawer${mobileExpanded ? " copilotDrawer--mobile-expanded" : ""}${guidedTargetActive ? " copilotDrawer--guided-target" : ""}${mobileDrawerPlacement === "top" || mobileDrawerPlacement === "map-top" ? " copilotDrawer--task-home-top" : ""}${mobileDrawerPlacement === "map-top" ? " copilotDrawer--map-top" : ""}${mobileDrawerPlacement === "map-bottom" ? " copilotDrawer--map-bottom" : ""}${panelSide === "left" ? " copilotDrawer--from-left" : ""}`}
       style={{ ...drawerPositionStyle, ...(mobileDrawerMaxHeight ? { "--copilot-map-safe-height": `${mobileDrawerMaxHeight}px` } : {}) }}
       onPointerDownCapture={activateCopilotLayer}
       onMouseDownCapture={activateCopilotLayer}
@@ -1466,7 +1520,16 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
       </div>
 
       {suggestions.length ? (
-        <section className="copilotContextSuggestions" aria-label="Bağlama uygun öneriler">
+        <section
+          className="copilotContextSuggestions"
+          aria-label="Bağlama uygun öneriler"
+          onPointerEnter={openSuggestionsForDesktopInteraction}
+          onPointerLeave={scheduleSuggestionsClose}
+          onFocusCapture={openSuggestionsForDesktopInteraction}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) scheduleSuggestionsClose();
+          }}
+        >
           <button
             type="button"
             className="copilotContextSuggestionsToggle"
@@ -1488,6 +1551,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
       ) : null}
 
       <div className="copilotChatSurface" ref={scrollRef}>
+        {guidedRecoveryMessage ? <div className="copilotGuidedRecovery" data-copilot-guided-recovery="true" role="status" aria-live="polite">{guidedRecoveryMessage}</div> : null}
         {messages.length === 0 ? <div className="copilotEmptyState"><div className="copilotEmptyTitle">{COPILOT_PERSONA.emptyStateLead}</div><div className="copilotEmptyText">{COPILOT_PERSONA.emptyStateBody}</div></div> : null}
         {messages.map((m, idx) => <div key={`${m.role}-${idx}`} className={m.role === "user" ? "copilotMsg user" : "copilotMsg assistant"}>
           <div className="copilotMsgHead">{m.role === "user" ? "Sen" : COPILOT_PERSONA.assistantDisplayName}</div>

@@ -15,7 +15,7 @@
   "frontier": {
     "closed": ["#1", "#2", "#3", "#4", "#5", "#6", "#7", "#8", "#9", "#10", "#11", "#12", "#13", "#14"],
     "current": "#18",
-    "currentStatus": "ACTIVE / BOUNDED_IMPLEMENTATION",
+    "currentStatus": "FINAL ACCEPTANCE GREEN / PRE-COMMIT CLOSURE PREPARATION",
     "next": "#19",
     "nextStatus": "LOCKED / NOT_STARTED",
     "alsoNotStarted": ["#15", "#17"],
@@ -23,7 +23,13 @@
       "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_GAP_REGISTER.json",
       "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_CAPABILITY_MATRIX.json",
       "docs/PRIMER_SSOT.md",
-      "docs/MILESTONE_REGISTRY_V1.md"
+    "docs/MILESTONE_REGISTRY_V1.md",
+    "docs/CHECKLIST_SSOT.md",
+    "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+    "docs/NEXT_BACKLOG_V1.md",
+    "docs/roles/ROLE_CONTEXT_AND_TENANT_MODEL.md",
+    "docs/VOICE_COPILOT_ROLE_ASSISTANT_01.md",
+    "docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md"
     ]
   },
   "documents": [

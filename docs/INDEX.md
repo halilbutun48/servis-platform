@@ -24,6 +24,12 @@ The engineering principle is **İÇERİDE GÜÇLÜ / DIŞARIDA BASİT**: canonic
 
 ## Current frontier
 
+### M18 final acceptance / pre-commit closure preparation (2026-09-26)
+
+The current worktree is the final bounded M18 acceptance state at HEAD `5501de58f86a52f0c518005c0e79ace580dbcb3a` on `m90d1_web_lint_inventory`. M18 product acceptance is green: all 8 supported roles, `109/109` current menu/route targets, local and same-build public-runtime representative guidance, Premium UI `72/72`, current-screen help, continuation/recovery/back, offer navigation and nonexistent-target rejection. `fake navigation = 0`, `business write execution = 0`, and `PRODUCT_DEFECTS_REMAINING = 0`.
+
+This is pre-staging closure preparation only. The existing M18 immutable tags remain historical evidence; no new commit, tag or push is implied here. #19 is not started. M18 broad guided/menu acceptance is bounded evidence and is not the exhaustive all-system/business-state E2E owner reserved for #39.
+
 ### PRE-#18 immutable closure
 
 PRE-#18 acceptance and the No-Surprise Repository Exit are GREEN at the current frontier. The final terminology / Sefer Abi residual and bounded public-runtime recheck are closed (`PUBLIC_RUNTIME_CURRENT_SOURCE_MATCH = PASS`, visible missing/unknown/weak raw-status counts `0`). `487/487` repository-owned candidates are classified with no unexplained state. `#18` has not started; this is the exact immutable closure stage, and proven-closed work is reopened only for concrete newer regression evidence.
@@ -35,6 +41,8 @@ Future ownership is explicit: #15 terminology sweep, #19 natural-language form p
 ### #18 active bounded implementation
 
 `COPILOT-UI-ELEMENT-ANCHOR-AND-GUIDED-HIGHLIGHT-01` consumes the accepted role/screen/tenant grounding and adds semantic target resolution, one-step highlight/scroll/focus guidance, continuation state and safe navigation. It reports `FOUND`, `NOT_FOUND`, `UNAUTHORIZED` or `STALE` from current UI evidence; it never executes business writes or uses conversation state as authorization. Canonical checks are `check:copilotuielementanchor01` and `smoke:copilotuielementanchor01`.
+
+The final accepted M18 surface also includes desktop drawer resize, mobile compact guided UX, suggestions and modal stacking behavior, target visibility, current-screen/product help, safe offer navigation and role/tenant negative controls. Governance is green at the current worktree: package ownership, current-head policy, M90C.6, onboarding audit, smart-chips audit, `verify:repo` (`32/32`), `verify:final` and `git diff --check`.
 
 ## Canonical authority map
 

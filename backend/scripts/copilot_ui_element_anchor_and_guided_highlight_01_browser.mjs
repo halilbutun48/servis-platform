@@ -459,10 +459,22 @@ try {
           const statusRect = status?.getBoundingClientRect?.();
           const panelRect = panel?.getBoundingClientRect?.();
           const targetRect = target?.getBoundingClientRect?.();
+          const composer = panel?.querySelector('.copilotComposer');
+          const composerRect = composer?.getBoundingClientRect?.();
+          const messages = [...(panel?.querySelectorAll('.copilotMsg') || [])];
+          const lastMessageRect = messages.at(-1)?.getBoundingClientRect?.();
           const overlap = (a, b) => Boolean(a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
-          return { highlightVisible: Boolean(statusRect), highlightObscured: overlap(statusRect, panelRect), targetObscured: overlap(targetRect, panelRect) };
+          return {
+            highlightVisible: Boolean(statusRect),
+            highlightObscured: overlap(statusRect, panelRect),
+            targetObscured: overlap(targetRect, panelRect),
+            composerVisible: Boolean(composerRect && composerRect.width > 0 && composerRect.height > 0),
+            composerWithinDrawer: Boolean(composerRect && panelRect && composerRect.top >= panelRect.top - 1 && composerRect.bottom <= panelRect.bottom + 1),
+            composerMessageOverlap: overlap(lastMessageRect, composerRect),
+          };
         });
         if (targetSafe.highlightObscured || targetSafe.targetObscured) fail('mobile drawer obscures guided target');
+        if (!targetSafe.composerVisible || !targetSafe.composerWithinDrawer || targetSafe.composerMessageOverlap) fail('mobile composer obscures or escapes the drawer message area');
         report.counters.guidedTargetFound += 1;
         report.states.push({ viewport: viewport.name, target: 'FOUND', highlight: true, drawer: drawerMetrics, targetSafe });
       } else {

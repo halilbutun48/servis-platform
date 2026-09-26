@@ -11,6 +11,7 @@ import {
   CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
   CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE,
 } from "./lib/currentHeadScopePolicy.js";
+import { activeMilestoneTouchedPaths } from "./lib/milestoneOwnershipAuthority.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,6 +92,20 @@ function main() {
   const finalAuditDoc = read("docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md");
   const inviteDoc = read("docs/INVITE_BASED_MEMBERSHIP_01.md");
   const registryScripts = productExtensionsChecks.map((step) => step.script);
+  const activeM18GuidedTargetOverlayPaths = activeMilestoneTouchedPaths()
+    .filter(
+      (entry) =>
+        entry.path === "web/src/components/copilot/GuidedTargetOverlay.jsx" &&
+        entry.owner === "M18_COPILOT_UI_ELEMENT_ANCHOR_AND_GUIDED_HIGHLIGHT_01" &&
+        entry.acceptance === "PASS" &&
+        entry.lifecycle === "ACTIVE_MILESTONE_PRODUCT_SOURCE" &&
+        entry.rawSha256,
+    )
+    .map(({ path: entryPath, rawSha256 }) => ({ path: entryPath, sha256: rawSha256 }));
+  if (activeM18GuidedTargetOverlayPaths.length !== 1) {
+    fail("active M18 GuidedTargetOverlay identity is registered");
+  }
+  ok("active M18 GuidedTargetOverlay identity is registered");
 
   must(pkg, '"check:invitebasedmembership01": "node backend/scripts/invite_based_membership_01_check.js"', "package.json exposes check:invitebasedmembership01");
   assertProductExtensionsIncludes("check:invitebasedmembership01", "product extensions registry includes invite-based membership check", registryScripts);
@@ -225,6 +240,7 @@ function main() {
       "web/src/panels/company/shiftPeopleTabActions.js",
       "web/src/panels/company/shiftPeopleTabSections.jsx",
       "web/src/components/copilot/FloatingCopilotDrawer.jsx",
+      ...activeM18GuidedTargetOverlayPaths,
       { path: "web/src/components/copilot/SeferAbiAvatar.jsx", sha256: "03C32A1EA79FB8B57500FA5C6103694A326D324AFB7E3F4147709A5C487C83EA" },
       "web/src/components/copilot/uiSurface.js",
       "web/src/utils/planCenterOverlayLayer.js",

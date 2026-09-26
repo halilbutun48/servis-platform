@@ -34,6 +34,25 @@ function semanticTypeOf(el) {
   return 'button';
 }
 
+function scrollTargetContainer(el, delta) {
+  let node = el?.parentElement || null;
+  while (node && node !== document.body) {
+    const style = window.getComputedStyle(node);
+    const scrollable = /(auto|scroll)/i.test(`${style.overflowY} ${style.overflow}`) && node.scrollHeight > node.clientHeight;
+    if (scrollable) {
+      node.scrollTop += delta;
+      return true;
+    }
+    node = node.parentElement;
+  }
+  try {
+    window.scrollBy({ top: delta, behavior: 'auto' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function keepTargetAboveMobileDrawer(el) {
   if (!el || typeof window === 'undefined' || window.innerWidth > 720) return;
   const drawer = document.querySelector('.copilotDrawer');
@@ -46,7 +65,7 @@ function keepTargetAboveMobileDrawer(el) {
     // The drawer is a fixed mobile surface. A semantic target must remain
     // visible above it after the normal center scroll; correct only the
     // bounded overlap and leave the target's own container untouched.
-    try { window.scrollBy({ top: targetRect.bottom - safeBottom, behavior: 'auto' }); } catch { /* no-op */ }
+    scrollTargetContainer(el, targetRect.bottom - safeBottom);
   }
 }
 
@@ -103,7 +122,8 @@ export default function GuidedTargetOverlay() {
       targetRef.current = el;
       if (!placedRef.current) {
         placedRef.current = true;
-        try { el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' }); } catch { /* no-op */ }
+        const behavior = typeof window !== 'undefined' && window.innerWidth <= 720 ? 'auto' : 'smooth';
+        try { el.scrollIntoView({ behavior, block: 'center', inline: 'nearest' }); } catch { /* no-op */ }
       }
       keepTargetAboveMobileDrawer(el);
       const next = el.getBoundingClientRect();
@@ -129,9 +149,10 @@ export default function GuidedTargetOverlay() {
   }, [target]);
 
   if (!target || target.status === 'CLEARED') return null;
-  if (target.status !== 'FOUND') {
-    return <div role="status" aria-live="polite" style={{ position: 'fixed', left: 12, bottom: 12, zIndex: 2147483000, maxWidth: 320, padding: '8px 10px', borderRadius: 10, background: '#fff7ed', color: '#9a3412', border: '1px solid #fdba74', fontSize: 12, boxShadow: '0 8px 24px rgba(16,24,40,.14)' }}>Bu hedef artık doğrulanamıyor; ekrandaki güncel durumu birlikte kontrol edelim.</div>;
-  }
+  // Recovery feedback is rendered inside the active Sefer Abi drawer so it
+  // stays attached to the guided conversation instead of becoming a detached
+  // global toast over the product surface.
+  if (target.status !== 'FOUND') return null;
   return rect ? (
     <>
       <div aria-hidden="true" style={{ position: 'fixed', left: rect.left, top: rect.top, width: rect.width, height: rect.height, zIndex: 2147482998, pointerEvents: 'none', border: '3px solid #175cd3', borderRadius: 10, boxShadow: '0 0 0 4px rgba(23,92,211,.18)', transition: 'left .18s ease, top .18s ease, width .18s ease, height .18s ease' }} />

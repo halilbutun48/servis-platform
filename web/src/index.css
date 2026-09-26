@@ -3151,6 +3151,16 @@ button, input, select, textarea, .btn, .secondary {
 }
 .copilotBusy { background: #fff8d8; color: #624d00; border: 1px solid #e9d883; }
 .copilotError { background: #ffe3e3; color: #7f1d1d; border: 1px solid #f2b2b2; }
+.copilotGuidedRecovery {
+  margin-bottom: 8px;
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fdba74;
+  font-size: 13px;
+  line-height: 1.4;
+}
 .copilotComposer {
   border-top: 1px solid #22314f;
   background: rgba(11, 16, 30, .98);
@@ -5296,6 +5306,75 @@ textarea:focus-visible,
 
 /* #18 mobile compact/expanded drawer contract. */
 @media (max-width: 720px) {
+  /* Keep enough scroll-bottom room for the fixed composer so the latest
+     assistant message remains readable above it. */
+  .copilotDrawer .copilotChatSurface {
+    box-sizing: border-box;
+    flex: 1 1 0%;
+    height: 0;
+    min-height: 0;
+    padding-bottom: 10px;
+  }
+
+  .copilotDrawer .copilotChatSurface::after {
+    content: "";
+    display: block;
+    height: 132px;
+    flex: 0 0 132px;
+  }
+
+  .copilotDrawer .copilotComposer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    box-sizing: border-box;
+    max-height: 132px;
+    overflow: hidden;
+  }
+
+  .copilotDrawer.copilotDrawer--guided-target {
+    /* Target guidance gets a smaller native mobile surface so the real
+       highlighted control remains usable even near the end of a page. */
+    height: min(36vh, 320px) !important;
+    max-height: calc(100dvh - 112px);
+    overflow: hidden;
+  }
+
+  .copilotDrawer.copilotDrawer--guided-target .copilotDrawerHeader {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px;
+    padding: 6px 8px;
+  }
+
+  .copilotDrawer.copilotDrawer--guided-target .copilotDrawerHeaderActions {
+    width: auto;
+  }
+
+  .copilotDrawer.copilotDrawer--guided-target .copilotContextSuggestionsToggle {
+    min-height: 34px;
+    padding: 6px 10px;
+  }
+
+  /* Keep compact guidance on the same anchored composer model while the
+     reserved scroll space above keeps the latest guidance readable. */
+  .copilotDrawer.copilotDrawer--guided-target .copilotChatSurface {
+    min-height: 0;
+    padding-bottom: 10px;
+  }
+
+  .copilotDrawer.copilotDrawer--guided-target .copilotComposer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    box-sizing: border-box;
+    max-height: 132px;
+    overflow: hidden;
+  }
+
   .copilotDrawer.copilotDrawer--mobile-expanded {
     height: min(62vh, 560px) !important;
     max-height: calc(100dvh - 88px);

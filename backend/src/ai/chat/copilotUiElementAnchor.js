@@ -1,4 +1,4 @@
-import { resolveAuthorizedScreenContext } from '../jobGuide/screenCatalog.js';
+import { buildRoleHelpSummary, resolveAuthorizedScreenContext } from '../jobGuide/screenCatalog.js';
 
 export const COPILOT_UI_ELEMENT_ANCHOR_VERSION = '18.0.0-semantic-target-v1';
 
@@ -139,12 +139,12 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
     : null;
   const currentPath = text(screenContext?.path);
   const hasCanonicalDecision = Boolean(semanticPlan?.family);
-  const canonicalWorkflow = ["CREATE_SHIFT", "OPEN_SHIFT_SURFACE"].includes(workflowIntentForPlan(
+  const canonicalWorkflow = ["CREATE_SHIFT", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE"].includes(workflowIntentForPlan(
     semanticPlan,
     text(semanticPlan?.family) === 'CONTINUE_CURRENT_REASONING' ? conversationState : null,
   ));
   const compatibilityWorkflow = !hasCanonicalDecision
-    && ["CREATE_SHIFT", "OPEN_SHIFT_SURFACE"].includes(workflowIntentForPlan(null, conversationState));
+    && ["CREATE_SHIFT", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE"].includes(workflowIntentForPlan(null, conversationState));
   const workflowRequest = canonicalWorkflow || compatibilityWorkflow || (!hasCanonicalDecision && isWorkflowGuidanceMessage(message));
   const continuation = text(semanticPlan?.family) === 'CONTINUE_CURRENT_REASONING'
     || (!hasCanonicalDecision && isContinuationMessage(message));
@@ -158,6 +158,25 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
   const freshCanonicalGuidance = hasCanonicalDecision && guidanceRequest;
   if (!screenAuthorized({ user, screenContext })) {
     return { status: GUIDED_TARGET_STATUSES.UNAUTHORIZED, targetKey: null, screenPath: currentPath || null, reason: 'Bu ekran mevcut rol için yetkili değil.' };
+  }
+  // Canonical semantic planning has already rejected fabricated or unresolved
+  // workflow targets. Do not let raw phrase scoring attach that request to a
+  // merely similar visible control; a rejected target must remain NOT_FOUND.
+  const semanticWorkflowIntent = workflowIntentForPlan(semanticPlan, text(semanticPlan?.family) === 'CONTINUE_CURRENT_REASONING' ? conversationState : null);
+  if (['UNRESOLVED_SHIFT_SURFACE', 'UNRESOLVED_UI_TARGET'].includes(semanticWorkflowIntent)) {
+    return { status: GUIDED_TARGET_STATUSES.NOT_FOUND, targetKey: null, screenPath: currentPath || null, reason: 'Bu hedef mevcut yetkili arayüzde doğrulanamadı.' };
+  }
+  const workflowIntent = semanticWorkflowIntent;
+  if (['CREATE_SHIFT', 'OPEN_SHIFT_SURFACE', 'OPEN_OFFER_SURFACE'].includes(workflowIntent)) {
+    const roleScreens = buildRoleHelpSummary(user).screens || [];
+    const requiredLabels = workflowIntent === 'OPEN_OFFER_SURFACE'
+      ? ['Teklifler', 'Ticari Akışım']
+      : workflowIntent === 'OPEN_SHIFT_SURFACE'
+        ? ['Vardiyalar']
+        : ['Planlama Merkezi', 'Gezi / Planlama Merkezi', 'Taşımacılık Firması Merkezi', 'Okul Merkezi', 'Genel Bakış'];
+    if (!roleScreens.some((screen) => requiredLabels.includes(String(screen?.label || '').trim()))) {
+      return { status: GUIDED_TARGET_STATUSES.UNAUTHORIZED, targetKey: null, screenPath: currentPath || null, reason: 'Bu görev için mevcut rolde yetkili bir hedef ekran bulunmuyor.' };
+    }
   }
   if (prior?.targetKey && text(prior.screenPath) && text(prior.screenPath) !== currentPath && !workflowRequest && !freshCanonicalGuidance) {
     return { status: GUIDED_TARGET_STATUSES.STALE, targetKey: null, screenPath: currentPath || null, previousTargetKey: text(prior.targetKey), reason: 'Ekran değişti; önceki hedef artık geçerli değil.' };
@@ -174,7 +193,8 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
         || available.find((row) => /ayrıntılı çalışma alanını göster|ayrintili calisma alanini goster/i.test(row.label))
         || available.find((row) => /detayları göster|detaylari goster/i.test(row.label))
         || available.find((row) => /planlama merkezi/i.test(row.label))
-      : available.find((row) => /ayrıntılı çalışma alanını göster|ayrintili calisma alanini goster/i.test(row.label))
+      : available.find((row) => /teklifler|ticari akışım|ticari akis/i.test(row.label))
+        || available.find((row) => /ayrıntılı çalışma alanını göster|ayrintili calisma alanini goster/i.test(row.label))
         || available.find((row) => /rehberi başlat|rehberi baslat/i.test(row.label))
         || available.find((row) => /planlama merkezi/i.test(row.label)))
     : null;

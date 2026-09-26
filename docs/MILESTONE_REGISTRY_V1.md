@@ -20,6 +20,13 @@
 - Scope is screen-grounded Sefer Abi guidance: semantic target resolution from the authorized current UI surface, bounded highlight/scroll/focus, guided continuation and safe navigation. It does not execute business writes or reopen PRE-#18.
 - Canonical owners: `backend/src/ai/chat/copilotUiElementAnchor.js`, `web/src/components/copilot/GuidedTargetOverlay.jsx`, `check:copilotuielementanchor01`, and `smoke:copilotuielementanchor01`.
 
+## #18 final bounded acceptance / pre-commit closure preparation (2026-09-26)
+
+- Current HEAD is `5501de58f86a52f0c518005c0e79ace580dbcb3a` on `m90d1_web_lint_inventory`; the existing M18 immutable tags remain historical evidence and this stage does not commit, tag or push.
+- Final accepted scope covers all 8 supported roles, `109/109` current menu/route targets, local and same-build public representative guidance, desktop/tablet/mobile behavior, desktop resize, mobile compact guided UX, suggestions, modal stacking, current-screen help, continuation/recovery/back, offer navigation and nonexistent-target rejection.
+- `PRODUCT_DEFECTS_REMAINING = 0`, fake navigation `0`, business write execution `0`, package ownership/current-head/M90C.6/onboarding/smart-chips governance PASS, `verify:repo = 32/32`, `verify:final = PASS`.
+- M18 is the `ANLAT → GÖSTER → BİRLİKTE YAP` foundation. #19 preparation, #20 dispatch/optimizer, #21 controlled safe action/approval, #22–#29 voice, #30–#33 proactive/agentic work and #39 exhaustive all-role E2E retain their existing ownership. M18 does not claim #39 coverage or start #19.
+
 The older ordering below is retained as historical compatibility context. It is not the current frontier and must not override `docs/INDEX.md`, `docs/PRIMER_SSOT.md`, or current-head evidence.
 
 ## 1) Tarihsel kapatılan resmi hatlar

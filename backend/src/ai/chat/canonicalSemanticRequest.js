@@ -1104,6 +1104,41 @@ function hasShiftSurfaceNavigationCue(text) {
   return /\b(?:nerede|nerde|ekran\p{L}*|goster|göster|git|gidelim|kontrol\s+edelim)\b/iu.test(text);
 }
 
+// Opening the current offers surface is a safe UI guidance request.  Keep it
+// separate from COMMERCIAL_SUMMARY so a user asking to inspect offers is not
+// mistaken for asking for a field from an existing offer.  The authorized
+// screen catalog remains the only source for the concrete destination.
+function hasOfferSurfaceNavigationCue(text) {
+  if (/\b(?:hayali|olmayan|var\s+olmayan|mevcut\s+olmayan|uydurma|sahte)\b/iu.test(text)) return false;
+  if (!/\b(?:teklif|offer|rfq)\p{L}*\b/iu.test(text)) return false;
+  const navigationVerb = /\b(?:nerede|nerde|ekran\p{L}*|ac|aç|goster|göster|git|gidelim|bakalım|bakalim|kontrol\s+edelim|incele|inceleyelim)\b/iu.test(text);
+  if (!navigationVerb) return false;
+  // Questions about a concrete offer's fields, comparison, decision or
+  // business action remain read-only commercial reasoning/action guidance.
+  const fieldOrDecisionCue = /\b(?:durum|tarih|saat|tutar|bedel|fiyat|rakam|neden|risk|kalite|kabul|reddet|onay|karsi\s+teklif|karşı\s+teklif|degerlendir|değerlendir|mantikli|mantıklı|daha\s+iyi|sozlesme|sözleşme)\b/iu.test(text);
+  return !fieldOrDecisionCue;
+}
+
+// A fabricated shift target is still a UI-guidance request.  Keep it in the
+// canonical guidance lane so downstream product awareness can reject the
+// target explicitly instead of reinterpreting "kontrolünü aç" as a field
+// lookup.  No real route or target is authorized by this shape.
+function hasUnresolvedShiftSurfaceNavigationCue(text) {
+  if (!/\b(?:hayali|olmayan|var\s+olmayan|mevcut\s+olmayan|uydurma|sahte)\b/iu.test(text)) return false;
+  if (!/\b(?:vardiya|sefer|shift)\p{L}*\b/iu.test(text)) return false;
+  return /\b(?:kontrol|ekran|panel|bolum|bölüm|sihirbaz)\p{L}*\b.{0,20}\b(?:ac|aç|goster|göster|git|gidelim|kontrol\s+edelim)\b/iu.test(text)
+    || /\b(?:ac|aç|goster|göster|git|gidelim|kontrol\s+edelim)\b.{0,20}\b(?:kontrol|ekran|panel|bolum|bölüm|sihirbaz)\p{L}*\b/iu.test(text);
+}
+
+// Plausible but explicitly fabricated UI names must stay in the guidance
+// lane so the downstream resolver can reject them truthfully instead of
+// matching a nearby real control by loose wording.
+function hasUnresolvedUiTargetCue(text) {
+  if (!/\b(?:hayali|gizli|vip|olmayan|var\s+olmayan|mevcut\s+olmayan|uydurma|sahte)\b/iu.test(text)) return false;
+  return /\b(?:ekran|sekme|panel|sihirbaz|buton|bolum|bölüm|alan)\p{L}*\b/iu.test(text)
+    && /\b(?:ac|aç|goster|göster|git|gidelim|bul|bulamad|kontrol|incele|inceleyelim)\p{L}*\b/iu.test(text);
+}
+
 // A deictic reference ("bu teklif", "seçili vardiya") identifies a target;
 // it is not itself a request to identify that target.  Keep operation
 // detection separate so that explicit work such as risk, next action, field,
@@ -1250,6 +1285,30 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       continuationAction: continuationActionFor(text),
     };
   }
+  if (hasUnresolvedShiftSurfaceNavigationCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      screenContextIntent: true,
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      workflowIntent: "UNRESOLVED_SHIFT_SURFACE",
+    };
+  }
+  if (hasUnresolvedUiTargetCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      workflowIntent: "UNRESOLVED_UI_TARGET",
+    };
+  }
   if (hasShiftSurfaceNavigationCue(text)) {
     return {
       taskType: "SCREEN_CONTEXT",
@@ -1260,6 +1319,18 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       explicitTaskIntent: true,
       explicitUiGuidance: true,
       workflowIntent: "OPEN_SHIFT_SURFACE",
+    };
+  }
+  if (hasOfferSurfaceNavigationCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.98,
+      domain: "OFFERS",
+      targetEntityType: "OFFER",
+      screenContextIntent: true,
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      workflowIntent: "OPEN_OFFER_SURFACE",
     };
   }
   if (hasWorkflowGuidanceCue(text)) {

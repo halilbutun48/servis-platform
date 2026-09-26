@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { useSession } from "../../state/session";
+import { getPath } from "../../router";
+import { getGuidedTarget, setGuidedTarget } from "../../copilot/guidedTargetState";
 import { personLabel } from "../../utils/labels";
 import { planCenterOverlayLayerEventName, readPlanCenterOverlayLayer, setPlanCenterOverlayLayer } from "../../utils/planCenterOverlayLayer";
 import { getApiErrorMessage } from "../../utils/apiContract";
@@ -73,6 +75,13 @@ import {
   setDestinationFieldInList,
 } from "./guidedPlanModalDestinationHelpers";
 
+function guidedModalTargetLabel(step, organization) {
+  if (step === 0) return "Konumumu al";
+  if (step === 1) return "Taslak vardiya oluştur";
+  if (step === 2) return organization ? "İleri" : "Adres Temizle ve İlerle";
+  return organization ? "Toplu Teklifleri Gönder" : "Toplu Teklifleri Gönder";
+}
+
 export default function GuidedPlanModal({
   open,
   onClose,
@@ -96,6 +105,7 @@ export default function GuidedPlanModal({
   const [err, setErr] = useState("");
   const [info, setInfo] = useState("");
   const [activeOverlayLayer, setActiveOverlayLayer] = useState(() => readPlanCenterOverlayLayer());
+  const guidedTargetBeforeModalRef = useRef(null);
 
   // Step-0: konum
   const [hubLat, setHubLat] = useState("");
@@ -248,6 +258,42 @@ export default function GuidedPlanModal({
       setPlanCenterOverlayLayer("guide");
     }
   }, [open]);
+
+  // When the guided workflow opens over a live Sefer Abi target, move the
+  // highlight into the actual modal step instead of leaving it attached to
+  // the now-covered underlying disclosure. This is presentation grounding;
+  // it does not authorize or execute any business action.
+  useEffect(() => {
+    if (!open) {
+      const previous = guidedTargetBeforeModalRef.current;
+      if (previous) setGuidedTarget(previous);
+      guidedTargetBeforeModalRef.current = null;
+      return undefined;
+    }
+    const existing = getGuidedTarget();
+    if (!guidedTargetBeforeModalRef.current && existing?.status === "FOUND") {
+      guidedTargetBeforeModalRef.current = existing;
+    }
+    if (!guidedTargetBeforeModalRef.current) return undefined;
+    const label = guidedModalTargetLabel(step, organization);
+    const frame = window.requestAnimationFrame(() => {
+      const candidates = Array.from(document.querySelectorAll('button,[role="button"],input,select,summary'));
+      const node = candidates.find((item) => String(item.textContent || item.getAttribute("aria-label") || item.value || "").replace(/\s+/g, " ").trim() === label);
+      if (!node) return;
+      setGuidedTarget({
+        status: "FOUND",
+        targetKey: `${getPath()}:button:${label}`,
+        label,
+        semanticType: "button",
+        screenPath: getPath(),
+        role: me?.role || "COMPANY",
+        safeAction: "HIGHLIGHT",
+        criticalActionExecution: false,
+        reason: "Açık rehber adımındaki gerçek ve yetkili kontrol gösteriliyor; iş yazımı çalıştırılmıyor.",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, step, organization, me?.role]);
 
   useEffect(() => {
     function onLayerChange(event) {

@@ -8,6 +8,10 @@ PRE-#18 combined acceptance, No-Surprise Repository Exit, final terminology / Se
 
 The current engineering entrypoint is [docs/INDEX.md](INDEX.md). PRE-#18 foundation acceptance, role/product acceptance and documentation/SSOT reconciliation are green at the current HEAD; `verify:repo` and `verify:final` pass, KVKK is `262/262`, role/data isolation is `216/216`, and active/product unowned is `0`. `PREMIUM_UI` is `72_OF_72_PROVEN`; Foundation Exit is `GREEN PRESERVED`, ROOM/OTHER423 is `PROVEN_CLOSED`, and the No-Surprise Repository Exit classification is green. PRE-#18 is `FINAL CLOSURE READY`; #18 and commit/tag/push have not started. The planning notes below are retained as historical compatibility material and do not replace the current frontier.
 
+### M18 final acceptance / pre-commit closure preparation (2026-09-26)
+
+M18 is the current bounded screen-grounded guidance milestone at HEAD `5501de58f86a52f0c518005c0e79ace580dbcb3a`. Its accepted frontier is 8 roles, `109/109` current menu/route targets, local and same-build public representative guidance, mobile/desktop guided UX and the safe boundary `ANLAT → GÖSTER → BİRLİKTE YAP`; no business write or #19 work is implied. The next product owners remain #19 natural-language preparation, #20 dispatch/optimizer, #21 controlled safe action/approval, #22–#29 voice, #30–#33 proactive/agentic extensions and #39 exhaustive integrated E2E. Exact commit/tag/push remains a later closure step.
+
 Tarih: 2026-04-19
 Timezone: Europe/Istanbul
 

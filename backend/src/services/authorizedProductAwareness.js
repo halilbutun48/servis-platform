@@ -277,6 +277,7 @@ function domainLabel(domain) {
 const NAVIGATION_SCREEN_LABEL_BY_DOMAIN = Object.freeze({
   AGREEMENTS: "Sözleşmeler",
   SHIFTS: "Vardiyalar",
+  OFFERS: "Teklifler",
   BUDGET: "Bütçe ve Servis Maliyeti",
   FINANCE: "Bütçe ve Servis Maliyeti",
   NOTIFICATIONS: "Bildirimler",
@@ -314,6 +315,11 @@ function authorizedNavigationTarget(user, semanticPlan, screenContext = null) {
   }
   if (workflowPlan.workflowIntent === "OPEN_SHIFT_SURFACE") {
     return roleScreens.find((screen) => screen.label === "Vardiyalar") || null;
+  }
+  if (workflowPlan.workflowIntent === "OPEN_OFFER_SURFACE") {
+    return roleScreens.find((screen) => screen.label === "Teklifler")
+      || roleScreens.find((screen) => screen.label === "Ticari Akışım")
+      || null;
   }
   if (workflowPlan.workflowIntent === "CREATE_SHIFT") {
     const preferredPaths = roleKey === "ROOM"
@@ -2466,6 +2472,44 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       semanticPlan,
     });
   }
+  if (semanticPlan.family === "UI_GUIDANCE" && semanticPlan.workflowIntent === "UNRESOLVED_SHIFT_SURFACE") {
+    return {
+      role,
+      domain: "UI_GUIDANCE",
+      authorizationBoundary: false,
+      authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
+      count: 0,
+      records: [],
+      reply: "Bu vardiya hedefini mevcut yetkili ekranda doğrulayamadım; gerçek bir ekran veya bölüm adıyla tekrar deneyebilirsin.",
+      nextAction: "Mevcut Vardiyalar ekranındaki gerçek bir bölüm adıyla ilerle.",
+      source: "authorized-screen-catalog-v1",
+      navigationTarget: null,
+      dataSources: ["canonical semantic guidance", "authorized screen catalog"],
+      retrievedFacts: ["requested shift target was not resolved to an authorized UI surface"],
+      reasoning: "Sahte veya hayali hedef, alan sorgusuna dönüştürülmeden gerçek yetkili ekran hedefi bulunamadığı için açıkça reddedildi.",
+      priority: "Hedef doğrulaması gerekli",
+      semanticPlan,
+    };
+  }
+  if (semanticPlan.family === "UI_GUIDANCE" && semanticPlan.workflowIntent === "UNRESOLVED_UI_TARGET") {
+    return {
+      role,
+      domain: "UI_GUIDANCE",
+      authorizationBoundary: false,
+      authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
+      count: 0,
+      records: [],
+      reply: "Bu hedefi mevcut yetkili arayüzde doğrulayamadım; gerçek bir ekran veya bölüm adıyla tekrar deneyebilirsin.",
+      nextAction: "Mevcut ekrandaki gerçek bir bölüm adıyla ilerle.",
+      source: "authorized-screen-catalog-v1",
+      navigationTarget: null,
+      dataSources: ["canonical semantic guidance", "authorized screen catalog"],
+      retrievedFacts: ["requested UI target was not resolved to an authorized UI surface"],
+      reasoning: "Sahte veya hayali hedef, yakındaki başka bir kontrole bağlanmadan gerçek yetkili ekran hedefi bulunamadığı için açıkça reddedildi.",
+      priority: "Hedef doğrulaması gerekli",
+      semanticPlan,
+    };
+  }
   const navigationTarget = authorizedNavigationTarget(user, semanticPlan, screenContext);
   if (navigationTarget) {
     const currentPath = String(screenContext?.path || "").replace(/\/+$/, "") || "/";
@@ -2477,12 +2521,18 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       ? "Doğrulanabilir sonraki adımı yeniden buluyorum; vurgulanan güvenli kontrolden devam et."
       : continuationAction === "BACK"
         ? "Bir önceki güvenli adımı yeniden gösteriyorum; vurgulanan kontrolden devam et."
-        : continuationAction === "EXPAND"
-          ? continuationDepth <= 1
-            ? "İlk güvenli adımı açıyorum; vurgulanan kontrolden başla."
-            : continuationDepth === 2
-              ? "İkinci adım için aynı sonucu tekrarlamıyorum; vurgulanan kontrolden ilerle."
-              : "Sonraki güvenli adımı vurguluyorum; yeni bir kayıt veya iş yazımı oluşturmuyorum."
+          : continuationAction === "EXPAND"
+            ? continuationDepth <= 1
+              ? "İlk güvenli adımı açıyorum; vurgulanan kontrolden başla."
+              : continuationDepth === 2
+                ? "İkinci adım için aynı sonucu tekrarlamıyorum; vurgulanan kontrolden ilerle."
+                : continuationDepth === 3
+                  ? "Üçüncü güvenli adımı vurguluyorum; önceki sonucu yeniden üretmiyorum."
+                  : continuationDepth === 4
+                    ? "Dördüncü güvenli adımı gösteriyorum; mevcut hedef üzerinde ilerliyoruz."
+                    : continuationDepth === 5
+                      ? "Beşinci güvenli adımı gösteriyorum; yeni kayıt veya iş yazımı oluşturmuyorum."
+                      : "Bu akışın doğrulanabilir adımlarını tamamladık; aynı sonucu tekrarlamıyorum. İstersen başka bir alanı sorabilirsin."
           : continuationAction === "NEXT"
             ? "Sıradaki güvenli adım vurgulanacak; oradan devam et."
             : "Bu ekrandaki doğrulanabilir güvenli adımdan devam et.";
@@ -2511,7 +2561,8 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
     };
   }
   const navigationWorkflow = workflowGuidancePlan(semanticPlan);
-  if (["CREATE_SHIFT", "OPEN_SHIFT_SURFACE"].includes(String(navigationWorkflow?.workflowIntent || ""))) {
+  if (["CREATE_SHIFT", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE"].includes(String(navigationWorkflow?.workflowIntent || ""))) {
+    const requestedSurface = String(navigationWorkflow?.workflowIntent || "") === "OPEN_OFFER_SURFACE" ? "Teklifler" : "Vardiyalar";
     return {
       role,
       domain: "UI_GUIDANCE",
@@ -2519,7 +2570,7 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
       count: 0,
       records: [],
-      reply: "Bu rolde Vardiyalar ekranı için yetkili bir erişim bulunmuyor.",
+      reply: `Bu rolde ${requestedSurface} ekranı için yetkili bir erişim bulunmuyor.`,
       nextAction: "Bu role açık olan ekranlardan devam edebilirsin.",
       source: "authorized-screen-catalog-v1",
       dataSources: ["authorized screen catalog", "current role scope"],

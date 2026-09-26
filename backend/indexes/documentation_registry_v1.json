@@ -2,13 +2,13 @@
   "schemaVersion": "docs-registry-v1",
   "generatedAt": "2026-08-20T14:53:21.500Z",
   "repo": {
-    "head": "e3bec6177f32263325bd14e876502faacac7a5b0",
+    "head": "5501de58f86a52f0c518005c0e79ace580dbcb3a",
     "branch": "m90d1_web_lint_inventory"
   },
   "census": {
     "total": 1398,
-    "tracked": 659,
-    "untracked": 739
+    "tracked": 660,
+    "untracked": 738
   },
   "discovery": {
     "description": "Repository documentation-like artifact census, path-exact and deterministic.",
@@ -45,7 +45,7 @@
       "ORPHAN": 0
     },
     "archiveBlocked": 415,
-    "checkerDependent": 297,
+    "checkerDependent": 299,
     "generated": 731,
     "activeCanonical": 176,
     "archiveDispositionCounts": {
@@ -9838,12 +9838,12 @@
       "classification": "CANONICAL_SSOT",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/CHECKLIST_SSOT.md",
-      "consumerCount": 30,
+      "consumerCount": 31,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "canonical anchor; consumerCount=30"
+      "notesStatusReason": "canonical anchor; consumerCount=31"
     },
     {
       "path": "docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md",
@@ -9890,12 +9890,12 @@
       "classification": "HISTORICAL_EVIDENCE",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/PRIMER_SSOT.md",
-      "consumerCount": 30,
+      "consumerCount": 31,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_IN_ARCHIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "historical evidence artifact; consumerCount=30"
+      "notesStatusReason": "historical evidence artifact; consumerCount=31"
     },
     {
       "path": "docs/COPILOT_AI_ACTION_STRATEGY_01.md",
@@ -10033,12 +10033,12 @@
       "classification": "HISTORICAL_EVIDENCE",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
-      "consumerCount": 14,
+      "consumerCount": 15,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_IN_ARCHIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "historical evidence artifact; consumerCount=14"
+      "notesStatusReason": "historical evidence artifact; consumerCount=15"
     },
     {
       "path": "docs/COPILOT_HUMAN_APPROVAL_01.md",
@@ -10722,12 +10722,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/INDEX.md",
-      "consumerCount": 12,
+      "consumerCount": 13,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=12"
+      "notesStatusReason": "active domain doc; consumerCount=13"
     },
     {
       "path": "docs/INVITE_BASED_MEMBERSHIP_01.md",
@@ -11827,12 +11827,12 @@
       "classification": "CANONICAL_SSOT",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/MILESTONE_REGISTRY_V1.md",
-      "consumerCount": 70,
+      "consumerCount": 71,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "canonical anchor; consumerCount=70"
+      "notesStatusReason": "canonical anchor; consumerCount=71"
     },
     {
       "path": "docs/MILESTONE_VE_TICARI_OMURGA_HIZA_REHBERI_V2.md",
@@ -11892,12 +11892,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/NEXT_BACKLOG_V1.md",
-      "consumerCount": 43,
+      "consumerCount": 44,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=43"
+      "notesStatusReason": "active domain doc; consumerCount=44"
     },
     {
       "path": "docs/NOTIFICATION_PAYLOAD_STANDARD.md",
@@ -12213,7 +12213,7 @@
     },
     {
       "path": "docs/PRE_18_PREMIUM_UI_POLISH_01.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/PRE_18_PREMIUM_UI_POLISH_01.md",
@@ -12256,12 +12256,12 @@
       "classification": "CANONICAL_SSOT",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/PRIMER_SSOT.md",
-      "consumerCount": 185,
+      "consumerCount": 186,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "canonical anchor; consumerCount=185"
+      "notesStatusReason": "canonical anchor; consumerCount=186"
     },
     {
       "path": "docs/PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01.md",
@@ -12295,12 +12295,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md",
-      "consumerCount": 2,
-      "checkerDependent": false,
+      "consumerCount": 4,
+      "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=2"
+      "notesStatusReason": "active domain doc; consumerCount=4"
     },
     {
       "path": "docs/PRODUCTION_RATE_LIMIT_POLICY_01.md",
@@ -14284,12 +14284,12 @@
       "classification": "REFERENCE_POINTER",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
-      "consumerCount": 94,
+      "consumerCount": 96,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_POINTER",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "reference pointer; consumerCount=94"
+      "notesStatusReason": "reference pointer; consumerCount=96"
     },
     {
       "path": "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
@@ -14297,12 +14297,12 @@
       "classification": "REFERENCE_POINTER",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
-      "consumerCount": 220,
+      "consumerCount": 221,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_POINTER",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "reference pointer; consumerCount=220"
+      "notesStatusReason": "reference pointer; consumerCount=221"
     },
     {
       "path": "docs/SECURITY_KVKK_FINAL_01.md",
@@ -14349,12 +14349,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/SEFER_ABI_PREMIUM_CHARACTER_CORRECTIVE_01.md",
-      "consumerCount": 1,
+      "consumerCount": 3,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=1"
+      "notesStatusReason": "active domain doc; consumerCount=3"
     },
     {
       "path": "docs/SEFER_ABI_REASONING_ASSISTANT_01.md",
@@ -15103,12 +15103,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/VOICE_COPILOT_ROLE_ASSISTANT_01.md",
-      "consumerCount": 1,
-      "checkerDependent": false,
+      "consumerCount": 3,
+      "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=1"
+      "notesStatusReason": "active domain doc; consumerCount=3"
     },
     {
       "path": "docs/_archive/legacy-notes/mileston kalanlar.md",
@@ -15662,12 +15662,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/domains/CAPABILITY_OWNERSHIP_MAP.md",
-      "consumerCount": 2,
+      "consumerCount": 3,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=2"
+      "notesStatusReason": "active domain doc; consumerCount=3"
     },
     {
       "path": "docs/integrations/INTEGRATION_OWNERSHIP_MAP.md",
@@ -17872,12 +17872,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/roles/ROLE_CONTEXT_AND_TENANT_MODEL.md",
-      "consumerCount": 2,
+      "consumerCount": 3,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=2"
+      "notesStatusReason": "active domain doc; consumerCount=3"
     },
     {
       "path": "docs/testing/TEST_CHECK_AND_CI_OWNERSHIP_MAP.md",

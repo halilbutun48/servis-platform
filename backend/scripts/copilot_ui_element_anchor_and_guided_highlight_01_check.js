@@ -271,21 +271,31 @@ assert(serviceSource.includes('resolveCopilotGuidedTarget'), 'service consumes c
 assert(serviceSource.includes('guidedTarget'), 'service returns grounded target state');
 assert(stateSource.includes('guidedTarget'), 'conversation state stores target continuity without auth authority');
 assert(overlaySource.includes('scrollIntoView'), 'browser target uses bounded scroll');
+assert(overlaySource.includes("window.innerWidth <= 720 ? 'auto' : 'smooth'"), 'mobile target scroll settles before drawer overlap correction');
 assert(overlaySource.includes('pointerEvents: \'none\''), 'highlight cannot block the target click');
 assert(overlaySource.includes('TARGET_DISAPPEARED'), 'disappeared target clears highlight');
 assert(overlaySource.includes('const hadTarget = Boolean(targetRef.current)'), 'disappeared target transition observes prior DOM target');
 assert(overlaySource.includes('keepTargetAboveMobileDrawer'), 'mobile target remains above the bounded drawer');
+assert(overlaySource.includes('scrollTargetContainer'), 'mobile overlap correction scrolls the real target container');
 assert(overlaySource.includes('window.scrollBy'), 'mobile overlap correction uses bounded browser scroll');
+assert(!overlaySource.includes('Bu hedef artık doğrulanamıyor'), 'guided recovery is not rendered as a detached global toast');
 assert(surfaceSource.includes('semanticType'), 'ui surface captures semantic target type');
+assert(drawerSource.includes('guidedRecoveryMessage'), 'guided recovery is attached to the Sefer Abi drawer state');
+assert(drawerSource.includes('data-copilot-guided-recovery="true"'), 'guided recovery has an in-drawer accessible marker');
+assert(drawerSource.includes('guidedRecoveryMessage, messages'), 'mobile recovery re-aligns the conversation scroll');
 assert(drawerSource.includes('copilotDrawerResizeHandle'), 'desktop resize handle remains explicit');
 assert(styleSource.includes('height: min(36vh, 320px) !important;'), 'mobile drawer uses bounded compact height');
 assert(styleSource.includes('.copilotDrawerMoreMenu .copilotDrawerPresets') && styleSource.includes('display: none;'), 'mobile hides desktop-only size presets');
 assert(drawerSource.includes('mobileExpanded'), 'mobile drawer has an explicit compact/expanded state');
 assert(drawerSource.includes('copilotDrawer--mobile-expanded'), 'mobile expanded state is reflected in the drawer surface');
 assert(drawerSource.includes('copilotMobileExpandBtn'), 'mobile expansion control has a real function');
+assert(drawerSource.includes('copilotDrawer--guided-target'), 'mobile guided target state has a compact drawer mode');
 assert(drawerSource.includes('rows={2}'), 'mobile composer starts compact');
 assert(!drawerSource.includes('Bağlam: <b>{screenContext.label}</b>'), 'duplicate visible context line is removed');
 assert(styleSource.includes('height: min(62vh, 560px) !important;'), 'mobile expanded height remains bounded');
+assert(styleSource.includes('height: min(36vh, 320px) !important;'), 'mobile guided target mode keeps the real target visible');
+assert(styleSource.includes('.copilotDrawer .copilotChatSurface::after'), 'mobile chat reserves composer-safe scroll space');
+assert(styleSource.includes('box-sizing: border-box;') && styleSource.includes('padding-bottom: 10px;'), 'mobile chat keeps composer-safe geometry');
 assert(styleSource.includes('min-height: 48px;') && styleSource.includes('max-height: 120px;'), 'mobile composer grows within bounded height');
 
 for (const role of ['SUPER_ADMIN', 'ROOM', 'COMPANY', 'DRIVER', 'PERSONEL', 'PARENT', 'SCHOOL', 'ORGANIZATION']) {
@@ -414,6 +424,11 @@ async function runProductionParityRegression() {
   assert(!(nonexistentShiftTarget.quickActions || []).some((item) => item?.actionKind === 'OPEN_ROUTE'), 'nonexistent shift target has no navigation action');
   assert(nonexistentShiftTarget.guidedTarget?.status !== GUIDED_TARGET_STATUSES.FOUND, 'nonexistent shift target has no guided target');
   assert(!/Planlama Merkezi ekranını aç|Vardiyalar ekranını aç/i.test(nonexistentShiftTarget.reply || ''), 'nonexistent shift target does not claim a real screen');
+  assert(/doğrulayamadım|doğrulanamadı|gerçek.*ekran|gerçek.*bölüm/i.test(nonexistentShiftTarget.reply || ''), 'nonexistent shift target is rejected as an unresolved UI target');
+  const unseenNonexistentShiftTarget = await shiftNavigationRequest('Hayali vardiya panelini göster', 'm18-unseen-nonexistent-shift-target');
+  assert(unseenNonexistentShiftTarget.semanticPlan?.family === 'UI_GUIDANCE', 'unseen nonexistent shift target stays UI guidance');
+  assert(!(unseenNonexistentShiftTarget.quickActions || []).some((item) => item?.actionKind === 'OPEN_ROUTE'), 'unseen nonexistent shift target has no navigation action');
+  assert(!/başlangıç\/bitiş saati, durum veya başka alanı netleştirir misin/i.test(unseenNonexistentShiftTarget.reply || ''), 'unseen nonexistent shift target is not a field clarification');
 
   // The real-user flow changes the browser route before the user confirms
   // entry.  Canonical continuation must verify that current screen and target
@@ -495,8 +510,13 @@ async function runProductionParityRegression() {
   await shiftNavigationRequest('vardiyalar nerde', staleSettledSession);
   await shiftNavigationRequest('vardiya durumları ne', staleSettledSession, shiftSurfaceContext);
   const afterDataQuestion = await shiftNavigationRequest('Devamını anlat', staleSettledSession, shiftSurfaceContext);
+  const afterDataQuestionRepeat = await shiftNavigationRequest('Devamını anlat', staleSettledSession, shiftSurfaceContext);
   assert(afterDataQuestion.semanticPlan?.continuationBasePlan?.workflowIntent === 'OPEN_SHIFT_SURFACE', 'a settled data answer cannot contaminate the active guided task');
   assert(afterDataQuestion.guidedTarget?.status === GUIDED_TARGET_STATUSES.FOUND, 'continuation after a data answer resolves the real current target');
+  assert(afterDataQuestionRepeat.semanticPlan?.continuationBasePlan?.workflowIntent === 'OPEN_SHIFT_SURFACE', 'repeated continuation after a data answer keeps the active guided task');
+  assert(afterDataQuestionRepeat.semanticPlan?.continuationDepth > afterDataQuestion.semanticPlan?.continuationDepth, 'repeated continuation after a data answer advances task progress');
+  assert(afterDataQuestionRepeat.reply !== afterDataQuestion.reply, 'repeated continuation after a data answer does not replay the same settled result');
+  assert(afterDataQuestionRepeat.guidedTarget?.status === GUIDED_TARGET_STATUSES.FOUND, 'repeated continuation after a data answer resolves the real current target');
 }
 
 await runProductionParityRegression();

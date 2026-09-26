@@ -96,8 +96,10 @@ function assertNoForbiddenVisibleTerms(actual, label) {
   }
 }
 
+const suggestionsRegionPattern = /<section\b[^>]*\bclassName="copilotContextSuggestions"[^>]*>[\s\S]*?<\/section>/;
+
 function hasAccessibleSuggestionsContract(source) {
-  const region = String(source || '').match(/<section className="copilotContextSuggestions"[\s\S]*?<\/section>/)?.[0] || '';
+  const region = String(source || '').match(suggestionsRegionPattern)?.[0] || '';
   const toggleHandler = /onClick=\{\(\) => \{[\s\S]*?setSuggestionsOpen\(\(previous\) => \{[\s\S]*?(?:const\s+next\s*=\s*!previous|return\s+!previous)[\s\S]*?(?:return\s+next|setSuggestionsOpen\(\(previous\) => !previous\))[\s\S]*?\}\);[\s\S]*?\}\}/.test(region)
     || /onClick=\{\(\) => setSuggestionsOpen\(\(previous\) => !previous\)\}/.test(region);
   return Boolean(region)
@@ -156,7 +158,7 @@ mustNot(drawerSource, 'askRef.current("");', 'drawer does not auto-ask on empty 
 mustNot(drawerSource, 'if (!messages.length) askRef.current("");', 'drawer does not auto-ask on empty open');
 must(helperSource, 'export function buildCopilotStarterChips', 'copilot facts exports starter chip helper');
 
-const suggestionsRegionRemoved = drawerSource.replace(/\{suggestions\.length\s*\?\s*\([\s\S]*?<\/section>\s*\)\s*:\s*null\}/, '');
+const suggestionsRegionRemoved = drawerSource.replace(suggestionsRegionPattern, '');
 if (!hasAccessibleSuggestionsContract(suggestionsRegionRemoved)) ok('negative control rejects a missing suggestions region');
 else fail('negative control rejects a missing suggestions region');
 const starterHelperDisconnected = drawerSource.replace('return buildCopilotStarterChips({', 'return [];');

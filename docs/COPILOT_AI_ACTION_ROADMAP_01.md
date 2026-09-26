@@ -3,6 +3,12 @@
 Tarih: 2026-06-12
 Repo: `servis-platform`
 
+## Current canonical cross-milestone contract (M18+)
+
+M18 is the accepted screen-grounded `ANLAT → GÖSTER → BİRLİKTE YAP` foundation. All later text, voice, proactive and controlled-action milestones reuse one canonical role/task/product backbone; they do not add a parallel assistant architecture. The backbone carries role, tenant/organization, active entity, selected record, current surface, active task, authorized action set, workflow state and business-write/approval boundary. Task state never grants authorization, and evidence, uncertainty, RBAC, tenant isolation and KVKK remain mandatory.
+
+`#19` owns form/action preparation, `#20` dispatch/optimizer preparation, `#21` controlled approval/execution, `#22–#29` voice on the same task state, `#30–#33` proactive/agentic extensions, and `#39` exhaustive all-role integrated acceptance. M18 does not silently execute critical business writes and does not claim #39 coverage.
+
 ## docs/check milestone
 - Bu doküman Sefer Abi / Copilot için gelecekteki AI action phase modelini kilitler.
 - Bu milestone runtime AI action açmaz; tool execution, write-action dispatcher, otomatik işlem ve kritik write yolları kapalı kalır.

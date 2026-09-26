@@ -275,8 +275,11 @@ mustNot(cachedNames, "public-leads.json", "public lead runtime artifact is not s
 
 // Consume the exact active-milestone registration for the current #18 source
 // instead of maintaining a second runtime-surface hash list.
-const activeM18AuthorizedProductAwarenessPaths = activeMilestoneTouchedPaths()
-  .filter(({ path: entryPath }) => entryPath === "backend/src/services/authorizedProductAwareness.js")
+const activeM18RuntimeSurfacePaths = activeMilestoneTouchedPaths()
+  .filter(({ path: entryPath }) =>
+    entryPath === "backend/src/services/authorizedProductAwareness.js" ||
+    entryPath === "web/src/components/copilot/GuidedTargetOverlay.jsx",
+  )
   .map(({ path: entryPath }) => entryPath);
 
   mustNoDiffExceptWithIdentity(
@@ -318,7 +321,7 @@ const activeM18AuthorizedProductAwarenessPaths = activeMilestoneTouchedPaths()
     { path: "backend/src/services/agreementSourceLineageService.js", sha256: "853AE24406FB818A236A36C5351A2F048CB11609777409B583DF88A7401F85A1" },
     { path: "backend/src/services/paymentBackbone.js", sha256: "D113CA27FA50F74D82E79FF0A5502F0CEFF1916CEEC879799261CFF7ED6F39A3" },
     { path: "backend/src/services/qualityPaymentBridgeService.js", sha256: "935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83" },
-      ...activeM18AuthorizedProductAwarenessPaths,
+      ...activeM18RuntimeSurfacePaths,
     { path: "backend/src/routes/shifts/company.js", sha256: "19A7C7C96A86438CDE36345274D8EC8E363C889CABF4C440FE8529DBAA1534A0" },
     // Current working-tree driver-create correction: exact identity only;
     // Prisma relation wiring and optional-field normalization do not alter

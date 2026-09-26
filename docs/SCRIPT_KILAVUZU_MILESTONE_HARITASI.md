@@ -19,6 +19,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Owners: `backend/src/ai/chat/copilotUiElementAnchor.js`, `web/src/components/copilot/uiSurface.js`, `web/src/components/copilot/GuidedTargetOverlay.jsx`, and existing `/api/ai/copilot` / canonical conversation state.
 - Boundary: one next safe UI target at a time; highlight/scroll/focus may assist authorized navigation, but no business write, approval, dispatch, force-click, or fake success.
 
+## #18 final acceptance / visible acceptance / closure preparation (2026-09-26)
+
+- Final bounded evidence is green for 8 roles and `109/109` current menu/route targets, with local and same-build public representative guidance across desktop/tablet/mobile. It includes desktop resize, mobile compact drawer, suggestions, modal stacking, current-screen help, continuation/recovery/back, offer navigation and nonexistent-target rejection.
+- Safety and governance: fake navigation `0`, business write execution `0`, package ownership/current-head, M90C.6, onboarding and smart-chips checks PASS; `verify:repo 32/32`, `verify:final PASS`, `git diff --check PASS`.
+- This stage prepares exact final staging only. It does not start #19, add a new milestone, or claim exhaustive #39 integrated E2E.
+
 Bu overlay, aşağıdaki tarihsel milestone haritasının güncel PRE-#18 kapanış durumudur. Tarihsel ve compatibility kayıtları korunur; aktif sıra ve semantic sahiplik için bu bölüm esas alınır.
 
 ### Tek canonical semantic sahiplik zinciri

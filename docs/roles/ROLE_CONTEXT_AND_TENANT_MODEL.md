@@ -58,3 +58,9 @@ The proven current flow is:
 `CompanyKind=SCHOOL` → `web/src/panels/school/ParentInvitePanel.jsx` → `backend/src/routes/schoolParentInvites.js` → `ParentInvite` / `ParentChild` → public invite acceptance → `backend/src/routes/parent.js`.
 
 It preserves School tenant ownership, child binding, role checks, audit and cross-kind rejection. Invite tokens and personal data are intentionally absent from this document.
+
+## Explicit multi-role / multi-entity execution context
+
+Sefer Abi keeps an explicit active execution context: `TENANT/ORGANIZATION + ACTIVE ROLE + ACTIVE ENTITY + SELECTED RECORD + CURRENT SURFACE + ACTIVE TASK + AUTHORIZED ACTION SET`. Conversation/task state is never an authorization source. When several authorized entities match, the assistant asks a short clarification; when the current context is explicit it does not repeatedly ask. Role/entity switching is deliberate, visible and re-authorized. Stale state cannot cross role, entity or tenant boundaries, and same-name entities resolve by canonical identity rather than label alone.
+
+Future acceptance must cover multiple Room entities, multiple roles, same-name entities, stale context, deliberate context switch, wrong-entity and cross-tenant negatives, and safe action in the correct entity. M18 consumes this contract for guidance/navigation; later controlled execution must reuse it.

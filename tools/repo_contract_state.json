@@ -148,10 +148,10 @@
                                                                                                      "class":  "safe-candidate-review",
                                                                                                      "note":  "operation-health hot path; kontrollu cleanup adayi"
                                                                                                  },
-                                                         "backend/src/finance/costScenarioForecast.js":  {
-                                                                                                     "class":  "acceptance-sensitive / later",
-                                                                                                     "note":  "#4 senaryo forecast/calculation owner; post-#4 kabulü öncesi split edilmez"
-                                                                                                 },
+                                                       "web/src/components/copilot/FloatingCopilotDrawer.jsx":  {
+                                                                                                                   "class":  "acceptance-sensitive / later",
+                                                                                                                   "note":  "M18 Sefer Abi guided UI surface; accepted interaction owner; split only after explicit M18 scope"
+                                                                                                               },
                                                          "backend/src/ai/chat/seferAbiCostAnalysisAssistant.js":  {
                                                                                                      "class":  "acceptance-sensitive / later",
                                                                                                      "note":  "#5 Sefer Abi cost-analysis assistant; #5 closure paused; split only after explicit #5 scope"
