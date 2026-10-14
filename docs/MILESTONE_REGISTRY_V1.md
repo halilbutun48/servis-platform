@@ -1,6 +1,399 @@
 # MILESTONE REGISTRY V1
 
+## Current variable-progress pointer (2026-10-14)
+
+Milestone contract and freeze provenance remain owned by this registry. The latest mutable M18/ROOM progress, WP-08 recovery boundary and next frontier are maintained only in [docs/NEXT_BACKLOG_V1.md](NEXT_BACKLOG_V1.md); historical HEAD/status overlays below are not a replacement for that current handoff.
+
 ## Current frontier (2026-09-24)
+
+<!-- <!-- SEFERPAKT_MILESTONE_CONTRACT_V1
+{
+  "milestoneId": "M18_COPILOT_UI_ELEMENT_ANCHOR_AND_GUIDED_HIGHLIGHT_01",
+  "lifecycleStatus": "ACTIVE",
+  "goal": "Adopt the bounded screen-grounded guidance and execution-governance contract without business-write expansion.",
+  "nonGoals": [
+    "Conversation Core implementation",
+    "#19",
+    "final repository closure"
+  ],
+  "inputCapabilityContracts": [
+    "PRE18_IMMUTABLE_CLOSURE"
+  ],
+  "outputCapabilityContracts": [
+    "SCREEN_GROUNDED_GUIDANCE",
+    "SAFE_UI_NAVIGATION"
+  ],
+  "canonicalOwners": [
+    "docs/NEXT_BACKLOG_V1.md",
+    "docs/MILESTONE_REGISTRY_V1.md",
+    "docs/PRIMER_SSOT.md",
+    "docs/LOCKED_INVARIANT_REGISTRY_V1.json",
+    "backend/scripts/run_repo_check_chain.js"
+  ],
+  "newCapabilities": [
+    "SEFERPAKT_EXECUTING_ACTIVE_FRONTIER_V1",
+    "SEFERPAKT_MILESTONE_CONTRACT_V1"
+  ],
+  "existingInvariants": [
+    "GLOBAL_LOCKED_INVARIANT_SUITE",
+    "M18_NO_BUSINESS_WRITE"
+  ],
+  "behaviorClasses": [
+    "current-screen-help",
+    "target-grounding",
+    "continuation-recovery",
+    "holdout-unseen"
+  ],
+  "canarySurfaces": [
+    "COMPANY",
+    "ROOM",
+    "DRIVER",
+    "SUPER_ADMIN"
+  ],
+  "realUserScenarios": [
+    "guided target recovery",
+    "safe navigation",
+    "mobile compact guidance"
+  ],
+  "responsiveRequirements": [
+    "desktop",
+    "tablet",
+    "mobile"
+  ],
+  "publicRuntimePolicy": "PUBLIC_REQUIRED",
+  "publicRuntimeRequirements": [
+    "same-build public/tunnel identity",
+    "real browser/device proof",
+    "role/tenant negatives"
+  ],
+  "writeApprovalBoundary": "guidance/navigation/highlight only; no consequential business mutation",
+  "rootClassAccounting": {
+    "state": "ACTIVE",
+    "rootClassId": "CANONICAL_SEMANTIC_CANDIDATE_DOMAIN_INTERPRETATION",
+    "ROOT_CLASS_TOTAL_LIFETIME_ATTEMPTS": null,
+    "ROOT_CLASS_CURRENT_ARCHITECTURE_EPOCH_ATTEMPTS": null,
+    "ARCHITECTURE_EPOCH_ID": "M18-ARCH-EPOCH-SEFER-ABI-SEMANTIC-ACTION-V1",
+    "ARCHITECTURE_DECISION_ID": "M18-ARCH-DECISION-SEFER-ABI-SEMANTIC-ACTION-V1-2026-09-29",
+    "MATERIAL_ROOT_BOUNDARY_CHANGE": {
+      "canonicalSemanticAuthority": true,
+      "postCanonicalMutationBoundary": true,
+      "taskEntityContinuityBoundary": true,
+      "deterministicAuthorizationGroundingBoundary": true,
+      "visibleRenderingBoundary": true
+    },
+    "architectureEpochTransition": {
+      "fromArchitectureEpochId": "M18-ARCH-EPOCH-SEFER-ABI-SEMANTIC-SCOPE-V1",
+      "toArchitectureEpochId": "M18-ARCH-EPOCH-SEFER-ABI-SEMANTIC-ACTION-V1",
+      "architectureDecisionId": "M18-ARCH-DECISION-SEFER-ABI-SEMANTIC-ACTION-V1-2026-09-29",
+      "recordedAtHead": "d85ea52218adcfcbacbdac279526ca0e767c4d0d",
+      "materialBoundaryChange": {
+        "canonicalRequestSchema": true,
+        "canonicalTaskActionRepresentation": true,
+        "semanticActionCandidateInterface": true,
+        "semanticScopeActionSiblingContract": true,
+        "operationWorkflowConsistencyValidation": true,
+        "typedConsumerContract": true
+      },
+      "historicalAttemptsPreserved": [
+        {
+          "attemptId": "M18-CSA-SEMANTIC-SCOPE-ATTEMPT-01",
+          "architectureEpochId": "M18-ARCH-EPOCH-SEFER-ABI-SEMANTIC-SCOPE-V1",
+          "architectureDecisionId": "M18-ARCH-DECISION-SEFER-ABI-SEMANTIC-SCOPE-V1-2026-09-29"
+        },
+        {
+          "attemptId": "M18-CSA-SEMANTIC-SCOPE-ATTEMPT-02",
+          "architectureEpochId": "M18-ARCH-EPOCH-SEFER-ABI-SEMANTIC-SCOPE-V1",
+          "architectureDecisionId": "M18-ARCH-DECISION-SEFER-ABI-SEMANTIC-SCOPE-V1-2026-09-29"
+        }
+      ],
+      "semanticScopeAttempt03": "NOT_CREATED",
+      "architecturalReviewDisposition": "HUMAN_APPROVED_MATERIAL_BOUNDARY_CHANGE"
+    },
+    "priorArchitectureEpochTransition": {
+      "fromArchitectureEpochId": "M18-ARCH-EPOCH-SEFER-ABI-CORE-V1",
+      "toArchitectureEpochId": "M18-ARCH-EPOCH-SEFER-ABI-SEMANTIC-SCOPE-V1",
+      "architectureDecisionId": "M18-ARCH-DECISION-SEFER-ABI-SEMANTIC-SCOPE-V1-2026-09-29",
+      "recordedAtHead": "d85ea52218adcfcbacbdac279526ca0e767c4d0d",
+      "historicalAttemptsPreserved": [
+        "M18-CSA-CANDIDATE-DOMAIN-ATTEMPT-01",
+        "M18-CSA-CANDIDATE-DOMAIN-ATTEMPT-02"
+      ],
+      "attempt03UnderPriorEpoch": "NOT_CREATED"
+    },
+    "independentAttemptIds": [
+      "M18-CSA-CANDIDATE-DOMAIN-ATTEMPT-01",
+      "M18-CSA-CANDIDATE-DOMAIN-ATTEMPT-02",
+      "M18-CSA-SEMANTIC-SCOPE-ATTEMPT-01",
+      "M18-CSA-SEMANTIC-SCOPE-ATTEMPT-02",
+      "M18-CSA-SEMANTIC-ACTION-ATTEMPT-01",
+      "M18-CSA-SEMANTIC-ACTION-ATTEMPT-02",
+      "M18-CSA-SEMANTIC-ACTION-ATTEMPT-03"
+    ],
+    "withinV3ArchitectureDecision": {
+      "decisionId": "M18-ARCH-DECISION-SEFER-ABI-CANDIDATE-FORMATION-HYBRID-V1-2026-09-30",
+      "status": "HUMAN_APPROVED_REGISTERED",
+      "registeredAtHead": "d85ea52218adcfcbacbdac279526ca0e767c4d0d",
+      "architectureEpochId": "M18-ARCH-EPOCH-SEFER-ABI-SEMANTIC-ACTION-V1",
+      "contractVersion": "SEFER-ABI-CANONICAL-REQUEST-V3",
+      "rootClassId": "CANONICAL_SEMANTIC_CANDIDATE_DOMAIN_INTERPRETATION",
+      "disposition": "NEW_ARCHITECTURE_DECISION_WITHIN_V3_CONTRACT",
+      "candidateStrategy": "DETERMINISTIC_FIRST_MODEL_FALLBACK",
+      "typedFrame": "PRESERVED",
+      "deterministicEvidence": "COMPOSITIONAL",
+      "confidencePolicy": "DETERMINISTIC_FIRST; MODEL_FALLBACK_ONLY_ON_UNRESOLVED_OR_LOW_CONFIDENCE; VERSIONED_THRESHOLD",
+      "modelProposalSchema": ["actionClass", "objectClass", "modifiers", "evidence", "confidence", "resolutionStatus"],
+      "typedOutputAllowlist": "ALLOWLISTED_V3_ACTION_OBJECT_MODIFIER_VALUES_ONLY",
+      "modelAuthority": "CANDIDATE_AND_EVIDENCE_PROPOSAL_ONLY",
+      "deterministicPostValidation": "REQUIRED_BEFORE_CANONICAL_MAPPING_AUTHORIZATION_GROUNDING_OR_EXECUTION",
+      "authorizationOrder": "AFTER_SEMANTIC_INTERPRETATION",
+      "securityTenantPrivacyBoundary": "MODEL_NEVER_AUTHORIZES_OR_SELECTS_TENANT_ENTITY_ACCESS_PRIVACY_OR_WRITES",
+      "promptInjectionBoundary": "USER_CONTENT_IS_UNTRUSTED_AND_CANNOT_CHANGE_SCHEMA_ALLOWLIST_OR_SYSTEM_CONTRACT",
+      "provenancePolicy": "RECORD_PROVIDER_MODEL_VERSION_FINGERPRINT_INPUT_CLASS_AND_PROPOSAL_PROVENANCE",
+      "timeoutFailurePolicy": "TIMEOUT_UNAVAILABLE_INVALID_OR_CONFLICTING_PROPOSAL_RESOLVES_SAFE_CLARIFICATION",
+      "leastContext": true,
+      "noSecondSemanticAuthority": true,
+      "failClosed": true,
+      "phrasePatchCount": 0,
+      "attempt03": "PROVEN_PASS",
+      "implementationStatus": "IMPLEMENTED_ACCEPTANCE_PASS",
+      "attempt03Evidence": {
+        "attemptId": "M18-CSA-SEMANTIC-ACTION-ATTEMPT-03",
+        "status": "PROVEN_PASS",
+        "rootClassId": "CANONICAL_SEMANTIC_CANDIDATE_DOMAIN_INTERPRETATION",
+        "architectureEpochId": "M18-ARCH-EPOCH-SEFER-ABI-SEMANTIC-ACTION-V1",
+        "contractVersion": "SEFER-ABI-CANONICAL-REQUEST-V3",
+        "package": "DETERMINISTIC_COMPOSITIONAL_FIRST_AND_RESPONSE_COMPOSITION_ACCEPTANCE",
+        "localSourceIdentity": {
+          "canonicalSemanticRequestSha256": "7F7B8B65FC89F4241E30C1C0E9BC78C6070882DDFBFFDF363A9494D7FCFBDD0C",
+          "serviceSha256": "DFC9174A7D0581E0FB2D90B8890B168F3D9B49DE51F9E95852D218B0003D5F01",
+          "frontendServedMainJsSha256": "8EE80094126AB991D4AD147F574DB08F6E3BA5E878B79576A4A9BA762396FE65",
+          "publicServedMainJsSha256": "8EE80094126AB991D4AD147F574DB08F6E3BA5E878B79576A4A9BA762396FE65",
+          "backendStartup": "2026-09-30T10:01:45.070Z"
+        },
+        "acceptance": {
+          "desktop": "PASS",
+          "tablet": "PASS",
+          "mobile390x844": "PASS",
+          "publicCompany": "PASS",
+          "publicRoom": "PASS",
+          "roleCapabilitySeparation": "PASS",
+          "businessWrites": 0,
+          "phrasePatchCount": 0,
+          "modelFallbackInvoked": 0,
+          "responsiveOverflow": 0,
+          "fakeNavigationSuccess": 0
+        },
+        "runtime": "https://special-isolation-moisture-ultimate.trycloudflare.com",
+        "nextGate": "NEW_FROZEN_UNSEEN_HOLDOUT",
+        "rootStatus": "ACTIVE_NOT_FROZEN"
+      },
+      "implementationStaging": {
+        "disposition": "WITHIN_V3_IMPLEMENTATION_STAGING_DISPOSITION_REGISTERED",
+        "currentStage": "DETERMINISTIC_COMPOSITIONAL_FIRST",
+        "modelFallbackStatus": "DEFERRED_NOT_ACTIVE",
+        "externalProviderPrerequisiteForAttempt03": false,
+        "providerModelRuntimeChanges": 0,
+        "safeClarification": "LOW_CONFIDENCE_OR_UNRESOLVED",
+        "attempt03Status": "PROVEN_PASS",
+        "attempt03Boundary": "RAW_UTTERANCE_PLUS_MINIMAL_AUTHENTICATED_CURRENT_CONTEXT -> COMPOSITIONAL_DETERMINISTIC_EVIDENCE -> TYPED_DETERMINISTIC_CANDIDATE -> CONFIDENCE_RESOLUTION -> V3_SEMANTIC_ACTION -> CAPABILITY_MAPPING -> CONSISTENCY_VALIDATION -> AUTHORIZATION -> GROUNDING -> WORKFLOW_TARGET",
+        "redFamilies": ["CREATE_GENERALIZATION", "CREATE_VIEW_NAVIGATE_RESTART_OOS", "CONTINUE_RESUME_RESTART_NEW_INTENT", "COMPARE_ANALYZE_PREPARE", "NEGATION_AMBIGUITY_UNRESOLVED_OOS", "ROLE_AUTH_TENANT_NEGATIVES", "NO_SECOND_AUTHORITY", "NO_DOWNSTREAM_REPAIR", "NO_WRITE"],
+        "acceptanceChain": "RED -> COMPOSITIONAL_DETERMINISTIC_IMPLEMENTATION -> CONFIDENCE_RESOLUTION -> FOCUSED_SEMANTIC_AND_CONSISTENCY -> PRODUCTION_PARITY -> REAL_BROWSER -> RESPONSIVE -> SAME_BUILD_PUBLIC -> ROLE_POLICY_NEGATIVES -> NO_WRITE",
+        "futureModelActivationGate": "COMPOSITIONAL_IMPLEMENTATION -> FOCUSED_ACCEPTANCE -> REAL_BROWSER_PUBLIC_PROOF -> FRESH_FROZEN_UNSEEN_HOLDOUT",
+        "futureProviderGovernance": "SEPARATE_EXPLICIT_PACKAGE_FOR_PROVIDER_OWNER_CONFIG_TYPED_ALLOWLIST_TIMEOUT_FAILURE_PROVENANCE_PRIVACY_TENANT_ROLE_ENTITY_REVIEW_POST_VALIDATION_AND_MODEL_REGRESSION",
+        "freshHoldout": "LATER_SEPARATE_NEW_FROZEN_MANIFEST"
+      },
+      "modelFallbackHumanPolicyDisposition": {
+        "status": "TECHNICAL_POLICY_APPROVED_LEGAL_PRIVACY_BLOCKED",
+        "recordedAtHead": "d85ea52218adcfcbacbdac279526ca0e767c4d0d",
+        "contractVersion": "SEFER-ABI-CANONICAL-REQUEST-V3",
+        "architectureEpochId": "M18-ARCH-EPOCH-SEFER-ABI-SEMANTIC-ACTION-V1",
+        "providerArchitecture": "ONE_CANONICAL_PROVIDER_BOUNDARY_ONE_INITIAL_PROVIDER",
+        "initialProvider": "HUMAN_DECISION_REQUIRED",
+        "initialModel": "HUMAN_DECISION_REQUIRED",
+        "serverSideOnly": true,
+        "highConfidenceDeterministicProviderCalls": 0,
+        "fallbackEligibility": "LOW_CONFIDENCE_OR_ELIGIBLE_UNRESOLVED_ONLY",
+        "ambiguityPolicy": "CLARIFICATION_BY_DEFAULT",
+        "genuineOffTopicProviderCall": false,
+        "modelAuthority": "SEMANTIC_CANDIDATE_EVIDENCE_PROPOSAL_ONLY",
+        "deterministicValidation": "REQUIRED",
+        "authorizationCapabilityWorkflowRouteTargetWriteAuthority": "MODEL_FORBIDDEN",
+        "failurePolicy": "FAIL_CLOSED_TO_SAFE_CLARIFICATION_OR_SEMANTIC_UNRESOLVED",
+        "cachePolicy": "NO_CACHE_BY_DEFAULT",
+        "modelVersionPolicy": "PINNED_ID_AND_FINGERPRINT;_REPLAY_ON_MATERIAL_CHANGE",
+        "rawUtteranceLongTermLogging": "NO_BY_DEFAULT",
+        "technicalDataMinimization": "APPROVED",
+        "externalProcessingAuthorization": "LEGAL_PRIVACY_CONFIRMATION_REQUIRED",
+        "providerDataRegion": "LEGAL_PRIVACY_CONFIRMATION_REQUIRED",
+        "providerTrainingSecondaryUse": "LEGAL_PRIVACY_CONFIRMATION_REQUIRED",
+        "providerRetentionDeletion": "LEGAL_PRIVACY_CONFIRMATION_REQUIRED",
+        "personalDataInUtterance": "LEGAL_PRIVACY_CONFIRMATION_REQUIRED",
+        "publicRuntimeProcessing": "LEGAL_PRIVACY_CONFIRMATION_REQUIRED",
+        "secretOwner": "NEW_SEMANTIC_PROVIDER_SECRET_OWNER_REQUIRED",
+        "numericTimeoutRetryCircuitBreakerBudgets": "HUMAN_DECISION_REQUIRED",
+        "implementationReady": false,
+        "attempt04": "NOT_CREATED",
+        "runB": "IMMUTABLE_STOPPED_AT_B02",
+        "runC": "NOT_CREATED"
+      },
+      "nextPackage": "RED -> compositional deterministic evidence -> confidence/resolution boundary -> bounded model fallback -> strict typed validation -> deterministic capability/consistency/authorization/grounding -> focused/service/browser/public/no-write proof",
+      "futureHoldout": "new frozen manifest; development and holdout corpora separate; model/version fingerprint recorded"
+    },
+    "boundedAttemptEvidence": {
+      "status": "PROVEN_PASS",
+      "rootAttemptCount": "UNKNOWN",
+      "attemptId": "M18-CSA-SEMANTIC-SCOPE-ATTEMPT-02",
+      "rootClassId": "CANONICAL_SEMANTIC_CANDIDATE_DOMAIN_INTERPRETATION",
+      "architectureEpochId": "M18-ARCH-EPOCH-SEFER-ABI-SEMANTIC-SCOPE-V1",
+      "architectureDecisionId": "M18-ARCH-DECISION-SEFER-ABI-SEMANTIC-SCOPE-V1-2026-09-29",
+      "proof": "New-epoch bounded package 02 completed RED -> minimal canonical navigation-cue fix -> focused PASS -> same-source public acceptance. The authorized SCHOOL movement class, ROOM role-aware shift guidance, COMPANY create-shift negative, and ambiguous-navigation negative all passed; the root remains ACTIVE and is not frozen.",
+      "redEvidence": {
+        "classification": "PRODUCT_REGRESSION",
+        "earliestFailingLayer": "canonical semantic scope classification",
+        "reference": "SCHOOL_EXPLICIT_SURFACE_MOVEMENT_RECURRENCE",
+        "check": "backend/scripts/canonical_conversation_core_01_check.js",
+        "failure": "authorized SCHOOL movement wording with the known Sözleşmeler surface fell to PRODUCT_AMBIGUOUS / CLARIFY_SEMANTIC_REQUEST because the canonical navigation cue did not recognize generalized movement verbs such as geç"
+      },
+      "fixEvidence": {
+        "owner": "backend/src/ai/chat/canonicalSemanticRequest.js + backend/scripts/canonical_conversation_core_01_check.js",
+        "contract": "Known authorized product surfaces now share a generalized explicit movement-verb behavior class; unique surface evidence is still required, vague navigation remains non-explicit, and downstream authorization/grounding boundaries are unchanged",
+        "focusedResult": "PASS"
+      },
+      "publicAcceptanceEvidence": {
+        "runtime": "same-source public tunnel after personel_api restart",
+        "sourceHash": "backend/src/ai/chat/canonicalSemanticRequest.js = 5cc38fbb854abbedb911da26f35cd4a18e638498d4a5b7f54eb80e9badebadd8",
+        "genuineOffTopicCanary": "PASS",
+        "ambiguousProductCanary": "PASS",
+        "deicticCurrentSurfaceCanary": "PASS",
+        "schoolExactNavigation": "PASS",
+        "schoolUnseenNavigationParaphrases": ["Sözleşmelere geç = PASS", "Sözleşme sayfasına ilerle = PASS"],
+        "roomRoleAwareGuidance": ["vardiya oluşturmak istiyorum = PASS", "Vardiyalar ekranına geç = PASS"],
+        "companyCreateShiftNegative": "PASS",
+        "businessWrites": 0
+      },
+      "currentStatus": "NEW_EPOCH_ATTEMPT_02_FOCUSED_AND_PUBLIC_PASS_ROOT_ACTIVE",
+      "evidencePaths": [
+        "backend/src/ai/chat/canonicalSemanticRequest.js",
+        "backend/src/ai/chat/conversationRouting.js",
+        "backend/src/ai/chat/authorizationGate.js",
+        "backend/src/ai/service.js",
+        "backend/src/ai/chat/canonicalConversationTrace.js",
+        "backend/scripts/canonical_conversation_core_01_check.js",
+        "SEMANTIC_SCOPE_BOUNDARY_RECURRENCE",
+        "same-source public tunnel /company",
+        "POST /api/ai/copilot only; businessWrites=0"
+      ]
+    },
+    "latestCompletedAttemptEvidence": {
+      "attemptId": "M18-CSA-SEMANTIC-ACTION-ATTEMPT-02",
+      "status": "PROVEN_PASS",
+      "rootClassId": "CANONICAL_SEMANTIC_CANDIDATE_DOMAIN_INTERPRETATION",
+      "architectureEpochId": "M18-ARCH-EPOCH-SEFER-ABI-SEMANTIC-ACTION-V1",
+      "architectureDecisionId": "M18-ARCH-DECISION-SEFER-ABI-SEMANTIC-ACTION-V1-2026-09-29",
+      "package": "V3_CONTINUATION_ROOT_CORRECTIVE",
+      "redEvidence": {
+        "activeTaskContinuation": "Kaldığımız yerden ilerleyelim previously resolved to UNRESOLVED / CLARIFY",
+        "equivalentContinuation": "Buradan sürdürelim, sıradaki adıma geçelim",
+        "restartContrast": "Akışı sıfırdan başlatalım remained distinct from CONTINUE",
+        "newIntentContrast": "Sözleşmeler ekranına geçelim must leave the active guided task"
+      },
+      "fixEvidence": {
+        "owner": "backend/src/ai/chat/canonicalSemanticRequest.js",
+        "supportingOwners": [
+          "backend/src/ai/chat/canonicalConversationTrace.js",
+          "backend/scripts/canonical_conversation_core_01_check.js"
+        ],
+        "contract": "Natural continuation evidence now resolves CONTINUE from active-task context without phrase-specific routing; restart/start-over remains typed and distinct, and explicit new intent wins",
+        "focusedResult": "PASS"
+      },
+      "productionPath": {
+        "continue": "CONTINUE_EXPLANATION / CONTINUE_CURRENT_REASONING / CREATE_SHIFT",
+        "restart": "RESTART remains distinct from CONTINUE and maps to the approved start-over path",
+        "newIntent": "Explicit Sözleşmeler navigation supersedes the previous guided target",
+        "ambiguityAndOos": "Active task alone does not steal genuine ambiguity, cost, or off-topic intent",
+        "businessWrites": 0
+      },
+      "realBrowser": {
+        "localCompany": [
+          "active COMPANY continuation preserved the guided task and Rehberi Başlat target",
+          "Baştan başlayalım and Akışı sıfırdan başlatalım remained distinct restart behavior",
+          "Sözleşmeler ekranına geçelim replaced the previous target without fake navigation",
+          "no generic clarification or business action for valid continuation"
+        ],
+        "publicCompany": [
+          "Vardiya oluşturmak istiyorum established the active COMPANY guided context",
+          "Kaldığımız yerden ilerleyelim returned CREATE_SHIFT continuation guidance with Rehberi Başlat target",
+          "Akışı sıfırdan başlatalım returned distinct start-over guidance",
+          "Sözleşmeler ekranına geçelim changed the visible target to Sözleşmeler"
+        ]
+      },
+      "publicAcceptance": {
+        "runtime": "https://room-queen-shares-wing.trycloudflare.com",
+        "frontendSourceIdentity": "public /src/main.jsx SHA256 B11E2B2A744681EF5986C3F75FDFD9ABB26671BABC019520565A096856D1F538; local Vite dev source matches",
+        "backendHealth": "version 0.1.0, dbOk=true, startup identity 2026-09-30T05:58:09.798Z; identical to local personel_api",
+        "companySession": "company@demo.com / Hizmet Alan Firma; normal public login",
+        "continue": "PASS: active COMPANY task continued with CREATE_SHIFT / CONTINUE_EXPLANATION",
+        "restart": "PASS: start-over remained distinct from CONTINUE",
+        "newIntent": "PASS: Sözleşmeler navigation replaced the prior Rehberi Başlat target",
+        "businessWrites": 0
+      },
+      "evidencePaths": [
+        "backend/src/ai/chat/canonicalSemanticRequest.js",
+        "backend/src/ai/chat/canonicalConversationTrace.js",
+        "backend/scripts/canonical_conversation_core_01_check.js",
+        "same-source local browser /company",
+        "same-source public tunnel /company",
+        "POST /api/ai/copilot only; businessWrites=0"
+      ],
+      "currentStatus": "V3_CONTINUATION_ROOT_CORRECTIVE_ATTEMPT_02_FOCUSED_REAL_PUBLIC_PASS_ROOT_ACTIVE"
+    },
+    "thirdRecurrenceAction": "ARCHITECTURAL_REVIEW_REQUIRED",
+    "milestoneTransitionResetsHistory": false,
+    "historicalRootClassRecords": [
+      {
+        "rootClassId": "CANONICAL_SEMANTIC_AUTHORITY_POST_CANONICAL_MUTATION",
+        "status": "SUPERSEDED_BY_NEW_ROOT_CLASS",
+        "totalLifetimeAttempts": null,
+        "currentArchitectureEpochAttempts": null,
+        "architectureEpochId": "M18-ARCH-EPOCH-SEFER-ABI-CORE-V1",
+        "architectureDecisionId": "M18-SEFER-ABI-CANONICAL-CONVERSATION-CORE-DESIGN-2026-09-28",
+        "independentAttemptIds": [
+          "M18-CSA-POSTCANONICAL-ATTEMPT-01"
+        ],
+        "evidence": "The post-canonical cost-routing corrective remains immutable historical evidence. Its valid canonical School evidence request passed focused and same-source public acceptance; the current stopped findings fail earlier at canonical interpretation.",
+        "boundedAttemptEvidence": {
+          "attemptId": "M18-CSA-POSTCANONICAL-ATTEMPT-01",
+          "status": "PROVEN_PASS",
+          "earliestFailingLayer": "post-canonical service routing",
+          "reference": "SCHOOL_PUBLIC_POST_CANONICAL_COST_TAKEOVER",
+          "owner": "backend/src/ai/service.js",
+          "businessWrites": 0
+        }
+      }
+    ]
+  },
+  "freezeCriteria": {
+    "OPEN_ROOT_CLASS_COUNT": "0",
+    "FRESH_SWEEP_1_NEW_ROOT_CLASS_DEFECT": "0",
+    "FRESH_SWEEP_2_NEW_ROOT_CLASS_DEFECT": "0",
+    "PACKAGE_SPECIFIC_ACCEPTANCE": "PASS",
+    "GLOBAL_LOCKED_INVARIANT_SUITE": "PASS"
+  },
+  "reopenCriteria": [
+    "new concrete root-class evidence",
+    "source/runtime identity invalidation",
+    "invariant regression"
+  ],
+  "closureRequirements": [
+    "final durable state",
+    "docs sync",
+    "committed-head validation",
+    "immutable tag",
+    "push",
+    "remote parity"
+  ]
+}
+-->
 
 ## PRE-#18 immutable closure (2026-09-25)
 

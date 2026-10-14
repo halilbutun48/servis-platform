@@ -2,6 +2,22 @@
 
 Bu primer yaşayan hattın resmi özetidir.
 
+## PROJECT_EXECUTION_CONTRACT_V1
+
+The Project Execution Operating System is adopted through the existing owners only. `docs/NEXT_BACKLOG_V1.md` is the sole `EXECUTING_ACTIVE_FRONTIER` owner; `docs/MILESTONE_REGISTRY_V1.md` owns Milestone Contract and Freeze provenance; `docs/LOCKED_INVARIANT_REGISTRY_V1.json` and its violation ledger own locked-invariant status; and the existing 40-step closure chain remains authoritative. Resume order is: latest concrete result → active frontier → blocker → next-if-green → smallest next action. Product state, evidence/harness state, and repository-closure state remain separate. M18 remains ACTIVE until its governed lifecycle changes.
+
+The current mutable progress checkpoint is the additive handoff at the top of `docs/NEXT_BACKLOG_V1.md` (2026-10-14). The dated overlays below are retained as historical contract/provenance material and must not override that handoff or current source/runtime evidence.
+
+## PRODUCT_QUALITY_AND_REAL_USER_ACCEPTANCE_V1
+
+SeferPakt'ın kalıcı ürün ilkesi **İÇERİDE GÜÇLÜ — DIŞARIDA BASİT**'tir: kullanıcı teknik mimariyi bilmeden ekranın amacını, mevcut durumu ve ilk güvenli eylemi yaklaşık beş saniyede anlamalıdır. Gereksiz seçenek, jargon, enum ve iç sistem işareti görünür yüzeye sızmaz; desktop/mobile/erişilebilirlik gerçek görevlerle doğrulanır.
+
+İlgili her rol ve milestone için gerçek kabul; source/runtime provenance, gerçek backend/frontend, doğal dil görevi, gerçek Chromium/cihaz, görünür ve kullanılabilir UI hedefi, role/tenant güvenlik negatifleri, responsive kullanım, gerektiğinde aynı-build public runtime ve kullanıcıya görünen semantic sonucu birlikte değerlendirir. Backend PASS, HTTP 200, statik checker veya intent etiketi tek başına kabul değildir. Kanıtlanan kusur kalıcı RED→GREEN regresyonla kapatılır; kapanan alan somut regresyon olmadan yeniden açılmaz.
+
+Genel sözleşme: yetkili seçili kayıt ve görev bağlamı korunur; stale/yanlış kayıtla cevap verilmez; uzun görevlerde güvenli devam/geri/kurtarma sürer; finansal metrik kimlikleri ayrılır; seçili kayıt yokken kayıt-özel chip/cevap üretilmez; hedef gerçekten görünür ve mobil drawer tarafından örtülmez; dış cevaplar sade ve teknik işaretsizdir; Sefer Abi `ANLA → BAĞLAMI KORU → ANLAT → GÖSTER → YÖNLENDİR` zinciriyle değerlendirilir; onay gerektiren veya yetkisiz işler sessizce uygulanmaz.
+
+Ayrıntılı zorunlu kanıt standardı `docs/AGENTS.md` içindedir. Bu ilke #18 ROOM ile sınırlı değildir; sonraki roller/milestone'lar, #39 Full 8-Role E2E ve #40 Field Acceptance için de geçerlidir.
+
 ## PRE-#18 current-state overlay (2026-09-24)
 
 ## PRE-#18 immutable-closure overlay (2026-09-25)

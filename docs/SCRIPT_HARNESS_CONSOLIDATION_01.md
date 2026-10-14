@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-09-26
+Tarih: 2026-09-29
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `490`
+- Toplam package script entry: `494`
 - Toplam executable tracked file: `1543`
-- Combined registry row: `2033`
-- Root/backend/web/mobile package dağılımı: root `303`, backend `1123`, web `103`, mobile `201`
+- Combined registry row: `2037`
+- Root/backend/web/mobile package dağılımı: root `307`, backend `1123`, web `103`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `1023`
+- NEEDS_REVIEW: `1027`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `431`
+- Eski sistem term eşleşmesi: `432`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 1023 |
+| NEEDS_REVIEW | 1027 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -535,6 +535,7 @@ Repo: `servis-platform`
 | root:check:copilotuielementanchor01 | package.json | root | node backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTUIELEMENTANCHOR-01 |  | Owner or chain unclear |  |
 | root:smoke:copilotuielementanchor01 | package.json | root | node backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-COPILOTUIELEMENTANCHOR-01 |  | Owner or chain unclear |  |
 | root:check:copilotdynamicquestionengine01 | package.json | root | node backend/scripts/copilot_dynamic_question_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-DYNAMIC-QUESTION-ENGINE-01 |  | Breaks canonical verification chain |  |
+| root:check:canonicalconversationcore01 | package.json | root | node backend/scripts/canonical_conversation_core_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-CANONICALCONVERSATIONCORE-01 |  | Owner or chain unclear |  |
 | root:check:copilotsmartdiagnosticengine01 | package.json | root | node backend/scripts/copilot_smart_diagnostic_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-SMART-DIAGNOSTIC-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotrootcauseengine01 | package.json | root | node backend/scripts/copilot_root_cause_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-ROOT-CAUSE-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotriskscoringengine01 | package.json | root | node backend/scripts/copilot_risk_scoring_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-RISK-SCORING-ENGINE-01 |  | Breaks canonical verification chain |  |
@@ -618,6 +619,9 @@ Repo: `servis-platform`
 | root:check:routechangefinal01 | package.json | root | node backend/scripts/route_change_final_01_check.js | core | ACTIVE_CORE |  | ROUTE-CHANGE-FINAL-01 |  | Breaks canonical verification chain |  |
 | root:check:dynamicsavings01 | package.json | root | node backend/scripts/dynamic_savings_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-DYNAMICSAVINGS-01 |  | Breaks canonical verification chain |  |
 | root:check:scriptharnessconsolidation01 | package.json | root | node backend/scripts/script_harness_consolidation_01_check.js | verify-core | ACTIVE_CORE |  | SCRIPT-HARNESS-CONSOLIDATION-01 |  | Breaks canonical verification chain |  |
+| root:check:lockedinvariantregistry01 | package.json | root | node backend/scripts/locked_invariant_registry_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-LOCKEDINVARIANTREGISTRY-01 |  | Owner or chain unclear |  |
+| root:check:globallockedinvariantsuite01 | package.json | root | node backend/scripts/global_locked_invariant_suite_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-GLOBALLOCKEDINVARIANTSUITE-01 |  | Owner or chain unclear |  |
+| root:check:lockedinvariantledger01 | package.json | root | node backend/scripts/locked_invariant_violation_ledger_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-LOCKEDINVARIANTLEDGER-01 |  | Owner or chain unclear |  |
 | root:check:docsbrandcleanup01 | package.json | root | node backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-DOCSBRANDCLEANUP-01 |  | Breaks canonical verification chain |  |
 | root:check:etasanity01 | package.json | root | node backend/scripts/eta_sanity_01_live_tracking_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-ETASANITY-01 |  | Breaks canonical verification chain |  |
 | root:check:etaosrm01 | package.json | root | node backend/scripts/eta_osrm_01_route_eta_service_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-ETAOSRM-01 |  | Breaks canonical verification chain |  |
@@ -1621,7 +1625,7 @@ Repo: `servis-platform`
 | levels.js | backend/src/ai/jobGuide/levels.js | backend |  | review | NEEDS_REVIEW |  | LEVELS |  | Owner or chain unclear |  |
 | precheck.js | backend/src/ai/jobGuide/precheck.js | backend |  | review | NEEDS_REVIEW |  | PRECHECK |  | Owner or chain unclear |  |
 | quickActions.js | backend/src/ai/jobGuide/quickActions.js | backend |  | review | NEEDS_REVIEW |  | QUICK-ACTIONS |  | Owner or chain unclear |  |
-| registry.js | backend/src/ai/jobGuide/registry.js | backend | backend:check:changeimpactregistryv1, backend:check:checkownershipregistryv1, backend:check:documentationregistryv1, backend:generate:documentationregistryv1 | review | NEEDS_REVIEW |  | REGISTRY |  | Owner or chain unclear |  |
+| registry.js | backend/src/ai/jobGuide/registry.js | backend | backend:check:changeimpactregistryv1, backend:check:checkownershipregistryv1, backend:check:documentationregistryv1, backend:generate:documentationregistryv1, root:check:lockedinvariantregistry01 | review | NEEDS_REVIEW |  | REGISTRY |  | Owner or chain unclear |  |
 | screenCatalog.js | backend/src/ai/jobGuide/screenCatalog.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-CATALOG |  | Owner or chain unclear |  |
 | screenCatalog.roomCompany.js | backend/src/ai/jobGuide/screenCatalog.roomCompany.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-CATALOG-ROOM-COMPANY |  | Owner or chain unclear |  |
 | screenCatalog.shared.js | backend/src/ai/jobGuide/screenCatalog.shared.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-CATALOG-SHARED |  | Owner or chain unclear |  |
@@ -1858,7 +1862,7 @@ Repo: `servis-platform`
 | hash.js | backend/src/telematics/hash.js | backend |  | review | NEEDS_REVIEW |  | HASH |  | Owner or chain unclear |  |
 | providers.js | backend/src/telematics/providers.js | backend |  | review | NEEDS_REVIEW |  | PROVIDERS |  | Owner or chain unclear |  |
 | service.js | backend/src/telematics/service.js | backend | backend:m63check, root:check:companybudgetandservicecost01, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
-| tr.js | backend/src/time/tr.js | backend | backend:check:changeimpactregistryv1, backend:check:checkownershipregistryv1, backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:accept:accountingexportcontract01, root:check:accountingexportcontract01, root:check:ai03bsemanticvisiblelivematrix01, root:check:auditlogandapprovaltrace01, root:check:boardingchangerequestentry01, root:check:cop04afix02, root:check:cop04afix04, root:check:copilotroletaskmatrix01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxcontractconversionopsbridgeclarity01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:smoke:accountingexportcontract01, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
+| tr.js | backend/src/time/tr.js | backend | backend:check:changeimpactregistryv1, backend:check:checkownershipregistryv1, backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:accept:accountingexportcontract01, root:check:accountingexportcontract01, root:check:ai03bsemanticvisiblelivematrix01, root:check:auditlogandapprovaltrace01, root:check:boardingchangerequestentry01, root:check:cop04afix02, root:check:cop04afix04, root:check:copilotroletaskmatrix01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:lockedinvariantregistry01, root:check:uxcontractconversionopsbridgeclarity01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:smoke:accountingexportcontract01, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
 | responseCache.js | backend/src/utils/responseCache.js | backend |  | review | NEEDS_REVIEW |  | RESPONSE-CACHE |  | Owner or chain unclear |  |
 | validators.js | backend/src/validators.js | backend |  | review | NEEDS_REVIEW |  | VALIDATORS |  | Owner or chain unclear |  |
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
@@ -2742,8 +2746,8 @@ Repo: `servis-platform`
 | backend/scripts/copilot_role_task_matrix_01_check.js | Hub | NEEDS_REVIEW |
 | backend/scripts/copilot_route_review_human_approval_01_check.js | Hub, Yer | NEEDS_REVIEW |
 | backend/scripts/copilot_stop_route_draft_01_check.js | Hub | NEEDS_REVIEW |
-| backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs | Yer | NEEDS_REVIEW |
-| backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js | Yer | NEEDS_REVIEW |
+| backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs | Hub, Yer | NEEDS_REVIEW |
+| backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js | Hub, Yer, personel-access | NEEDS_REVIEW |
 
 ## 11) Cleanup Raporu
 

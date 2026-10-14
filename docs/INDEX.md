@@ -2,6 +2,10 @@
 
 > This is the canonical engineering entrypoint for the repository at the current HEAD. It indexes owners; it does not replace code, schema, configuration, check output, or milestone SSOTs.
 
+## Execution contract
+
+Read the [Project Execution Contract](PRIMER_SSOT.md#project_execution_contract_v1) before bounded milestone work. It points to the sole frontier, milestone/freeze, invariant, and 40-step closure owners without duplicating their records.
+
 ## START HERE
 
 1. [Product and architecture](architecture/ENGINEERING_ARCHITECTURE.md)
@@ -13,6 +17,7 @@
 7. [Checks, evidence and CI](testing/TEST_CHECK_AND_CI_OWNERSHIP_MAP.md)
 8. [Integration ownership](integrations/INTEGRATION_OWNERSHIP_MAP.md)
 9. [ADR inventory](adr/INDEX.md)
+10. [Locked invariant registry and stop-the-line gate](LOCKED_INVARIANT_RECONCILIATION_01.md)
 
 The machine-readable companion is [the #16 documentation contract](PROJECT_DOCUMENTATION_ARCHITECTURE_AND_CODEBASE_INDEX_01.json). It is validated by `backend/scripts/project_documentation_architecture_and_codebase_index_01_check.js` and is an index, not a business-data SSOT.
 
@@ -53,6 +58,7 @@ The final accepted M18 surface also includes desktop drawer resize, mobile compa
 | Schema and generated client | `backend/prisma/schema.prisma`, `backend/prisma/schema/*.prisma`, #10 owner |
 | Business calculations | #1–#6 domain owners in [the capability map](domains/CAPABILITY_OWNERSHIP_MAP.md) |
 | Verification | `backend/scripts/run_repo_check_chain.js`, product-extension registry and focused check owners |
+| Locked invariants | [`LOCKED_INVARIANT_REGISTRY_V1.json`](LOCKED_INVARIANT_REGISTRY_V1.json), `backend/scripts/global_locked_invariant_suite_01_check.js`, and the violation ledger |
 | Documentation census | `backend/scripts/lib/documentationRegistryV1.js` and `backend/indexes/documentation_registry_v1.json` |
 
 ## Safe change path

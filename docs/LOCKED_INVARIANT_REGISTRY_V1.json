@@ -1,0 +1,3390 @@
+{
+  "registryId": "LOCKED_INVARIANT_REGISTRY_V1",
+  "version": 1,
+  "owner": "docs/LOCKED_INVARIANT_REGISTRY_V1.json",
+  "sourcePrecedence": [
+    "current repository/source",
+    "canonical repository docs",
+    "existing milestone/addendum docs",
+    "existing checker/harness owners",
+    "durable ratified governance/product decisions"
+  ],
+  "statusValues": [
+    "PROVEN_PASS",
+    "PROVEN_FAIL",
+    "UNPROVEN",
+    "COVERAGE_GAP",
+    "ENVIRONMENT_BLOCK",
+    "REPO_STATE_BLOCK",
+    "NOT_DUE_YET",
+    "NOT_APPLICABLE"
+  ],
+  "invariants": [
+    {
+      "invariantId": "TRUTH-CORE-SEPARATIONS",
+      "family": "TRUTH",
+      "canonicalRule": "MISSING != ZERO; UNKNOWN != ZERO; PARTIAL != COMPLETE; REFERENCE != ACTUAL; ESTIMATE != SUBMITTED_OFFER; NOT_APPLICABLE != PENDING; TIME_ELAPSED != OPERATION_COMPLETED; RECOMMENDATION != EXECUTION; derived results require a valid upstream basis.",
+      "applicability": "Any response, state, metric, cost, workflow, or evidence result that exposes completeness or execution.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md"
+      ],
+      "permanentOwner": "docs/PRIMER_SSOT.md",
+      "regressionOwner": "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+      "requiredEvidenceType": "semantic-and-evidence-check",
+      "realBrowserRequired": false,
+      "realDeviceRequired": false,
+      "publicRuntimeRequired": false,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "MISSING_NOT_ZERO",
+        "UNKNOWN_NOT_ZERO",
+        "PARTIAL_NOT_COMPLETE",
+        "REFERENCE_NOT_ACTUAL",
+        "RECOMMENDATION_NOT_EXECUTION"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "MISSING_NOT_ZERO",
+          "canonicalSubrule": "Missing values never serialize as zero.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+          "requiredEvidenceType": "semantic-and-evidence-check",
+          "activationPhases": [
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Missing values never serialize as zero.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "UNKNOWN_NOT_ZERO",
+          "canonicalSubrule": "Unknown or loading values never serialize as zero.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+          "requiredEvidenceType": "semantic-and-evidence-check",
+          "activationPhases": [
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Unknown or loading values never serialize as zero.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "PARTIAL_NOT_COMPLETE",
+          "canonicalSubrule": "Partial state never reports complete.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+          "requiredEvidenceType": "semantic-and-evidence-check",
+          "activationPhases": [
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Partial state never reports complete.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "REFERENCE_NOT_ACTUAL",
+          "canonicalSubrule": "Reference data never reports actual data.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+          "requiredEvidenceType": "semantic-and-evidence-check",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Reference data never reports actual data.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "ESTIMATE_NOT_SUBMITTED_OFFER",
+          "canonicalSubrule": "An estimate never reports a submitted offer.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+          "requiredEvidenceType": "semantic-and-evidence-check",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "An estimate never reports a submitted offer.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "NOT_APPLICABLE_NOT_PENDING",
+          "canonicalSubrule": "Not applicable never reports pending.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+          "requiredEvidenceType": "semantic-and-evidence-check",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Not applicable never reports pending.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "TIME_ELAPSED_NOT_OPERATION_COMPLETED",
+          "canonicalSubrule": "Elapsed time never proves operation completion.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+          "requiredEvidenceType": "semantic-and-evidence-check",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Elapsed time never proves operation completion.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "RECOMMENDATION_NOT_EXECUTION",
+          "canonicalSubrule": "Recommendation never claims execution.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+          "requiredEvidenceType": "semantic-and-evidence-check",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Recommendation never claims execution.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "DERIVED_RESULT_VALID_BASIS",
+          "canonicalSubrule": "Derived result requires a valid upstream basis.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+          "requiredEvidenceType": "semantic-and-evidence-check",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Derived result requires a valid upstream basis.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "EXISTING_PERMANENT_PROOF_NOT_WIRED",
+        "command": "npm run check:airesponsesemanticqualitygate01",
+        "evidence": "PASS: 122/122 semantic quality cases."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "EVIDENCE-PRODUCT-PARITY",
+      "family": "EVIDENCE",
+      "canonicalRule": "CHECKER_PASS != PRODUCT_PASS; code presence != live behavior; contradictory real UI evidence is a product defect; harness contradictions are harness defects; FALSE_PASS = 0.",
+      "applicability": "Every acceptance/checker/evidence package.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/CONVERSATION_CLOSURE_INDEX_V1.md"
+      ],
+      "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+      "regressionOwner": "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
+      "requiredEvidenceType": "evidence-ledger-and-real-observation",
+      "realBrowserRequired": true,
+      "realDeviceRequired": false,
+      "publicRuntimeRequired": false,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "CHECKER_PASS_NOT_PRODUCT_PASS",
+        "REAL_UI_OVERRIDES_FALSE_PASS"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "CHECKER_PASS_NOT_PRODUCT_PASS",
+          "canonicalSubrule": "A checker pass does not substitute for product acceptance.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
+          "requiredEvidenceType": "evidence-ledger-and-real-observation",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "A checker pass does not substitute for product acceptance.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "CODE_PRESENCE_NOT_LIVE_BEHAVIOR",
+          "canonicalSubrule": "Source presence does not prove live behavior.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
+          "requiredEvidenceType": "evidence-ledger-and-real-observation",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Source presence does not prove live behavior.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "REAL_UI_WRONG_IS_PRODUCT_DEFECT",
+          "canonicalSubrule": "Contradictory real UI evidence is a product defect.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
+          "requiredEvidenceType": "evidence-ledger-and-real-observation",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Contradictory real UI evidence is a product defect.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "HARNESS_CONTRADICTION_IS_HARNESS_DEFECT",
+          "canonicalSubrule": "Evidence contradiction is classified as a harness defect.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
+          "requiredEvidenceType": "evidence-ledger-and-real-observation",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Evidence contradiction is classified as a harness defect.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "FALSE_PASS_ZERO",
+          "canonicalSubrule": "False positive acceptance count is zero.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
+          "requiredEvidenceType": "evidence-ledger-and-real-observation",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "False positive acceptance count is zero.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "EXISTING_PERMANENT_PROOF_NOT_WIRED",
+        "command": "npm run check:uxsmokepassminusevidence01",
+        "evidence": "PASS: smoke evidence guard."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "AUTH-CONTEXT-BOUNDARIES",
+      "family": "AUTH",
+      "canonicalRule": "TASK_STATE, CURRENT_SCREEN_CONTEXT, and LOCAL_STATE never grant authorization. Role, tenant, entity, and selected-record scope are server-authoritative.",
+      "applicability": "Every authenticated semantic decision, navigation, guidance, and action-preparation path.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/KVKK_AYDINLATMA_ENVANTERI_V1.md"
+      ],
+      "permanentOwner": "docs/PRIMER_SSOT.md",
+      "regressionOwner": "backend/scripts/security_kvkk_final_01_check.js",
+      "requiredEvidenceType": "authorization-and-tenant-negative",
+      "realBrowserRequired": true,
+      "realDeviceRequired": false,
+      "publicRuntimeRequired": false,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "TASK_STATE_NOT_AUTH",
+        "SCREEN_CONTEXT_NOT_AUTH",
+        "LOCAL_STATE_NOT_AUTH"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "TASK_STATE_NOT_AUTHORIZATION",
+          "canonicalSubrule": "Task state never grants authorization.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/security_kvkk_final_01_check.js",
+          "requiredEvidenceType": "authorization-and-tenant-negative",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Task state never grants authorization.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "SCREEN_CONTEXT_NOT_AUTHORIZATION",
+          "canonicalSubrule": "Current screen context never grants authorization.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/security_kvkk_final_01_check.js",
+          "requiredEvidenceType": "authorization-and-tenant-negative",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Current screen context never grants authorization.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "LOCAL_STATE_NOT_AUTHORIZATION",
+          "canonicalSubrule": "Local or cached state never grants authorization.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/security_kvkk_final_01_check.js",
+          "requiredEvidenceType": "authorization-and-tenant-negative",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Local or cached state never grants authorization.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "CURRENT_SOURCE_SEMANTIC_PROOF",
+        "command": "node backend/scripts/role_data_isolation_redteam_01_check.js --semantic-proof-only",
+        "evidence": "PASS semantic authorization proof 215/215; exact current-source identities and role/tenant negative cases pass. Default owner mode continues to enforce working-tree/debug hygiene."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "AUTH-NO-LEAKAGE",
+      "family": "AUTH",
+      "canonicalRule": "ROLE_LEAKAGE = 0; TENANT_LEAKAGE = 0; CROSS_TENANT_LEAK = 0; AUTHORIZATION_CONTEXT_ERROR = 0; UNAUTHORIZED_TARGET_GUIDANCE = 0.",
+      "applicability": "Any role, tenant, entity, route, target, record, or capability resolution.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/KVKK_ROLE_PAYLOAD_DARALTMA_V1.md"
+      ],
+      "permanentOwner": "docs/KVKK_ROLE_PAYLOAD_DARALTMA_V1.md",
+      "regressionOwner": "backend/scripts/role_data_isolation_redteam_01_check.js",
+      "requiredEvidenceType": "role-tenant-negative",
+      "realBrowserRequired": true,
+      "realDeviceRequired": false,
+      "publicRuntimeRequired": true,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "ROLE_LEAKAGE_ZERO",
+        "TENANT_LEAKAGE_ZERO",
+        "CROSS_TENANT_LEAK_ZERO"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "ROLE_LEAKAGE_ZERO",
+          "canonicalSubrule": "Role leakage is zero.",
+          "permanentOwner": "docs/KVKK_ROLE_PAYLOAD_DARALTMA_V1.md",
+          "regressionOwner": "backend/scripts/role_data_isolation_redteam_01_check.js",
+          "requiredEvidenceType": "role-tenant-negative",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Role leakage is zero.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "TENANT_LEAKAGE_ZERO",
+          "canonicalSubrule": "Tenant leakage is zero.",
+          "permanentOwner": "docs/KVKK_ROLE_PAYLOAD_DARALTMA_V1.md",
+          "regressionOwner": "backend/scripts/role_data_isolation_redteam_01_check.js",
+          "requiredEvidenceType": "role-tenant-negative",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Tenant leakage is zero.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "CROSS_TENANT_LEAK_ZERO",
+          "canonicalSubrule": "Cross-tenant leakage is zero.",
+          "permanentOwner": "docs/KVKK_ROLE_PAYLOAD_DARALTMA_V1.md",
+          "regressionOwner": "backend/scripts/role_data_isolation_redteam_01_check.js",
+          "requiredEvidenceType": "role-tenant-negative",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Cross-tenant leakage is zero.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "AUTHORIZATION_CONTEXT_ERROR_ZERO",
+          "canonicalSubrule": "Authorization-context errors are zero.",
+          "permanentOwner": "docs/KVKK_ROLE_PAYLOAD_DARALTMA_V1.md",
+          "regressionOwner": "backend/scripts/role_data_isolation_redteam_01_check.js",
+          "requiredEvidenceType": "role-tenant-negative",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Authorization-context errors are zero.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "UNAUTHORIZED_TARGET_GUIDANCE_ZERO",
+          "canonicalSubrule": "Unauthorized targets never become visible guidance.",
+          "permanentOwner": "docs/KVKK_ROLE_PAYLOAD_DARALTMA_V1.md",
+          "regressionOwner": "backend/scripts/role_data_isolation_redteam_01_check.js",
+          "requiredEvidenceType": "role-tenant-negative",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Unauthorized targets never become visible guidance.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "CURRENT_SOURCE_SEMANTIC_PROOF",
+        "command": "node backend/scripts/role_data_isolation_redteam_01_check.js --semantic-proof-only",
+        "evidence": "PASS semantic role/tenant leakage proof 215/215; exact current-source identities and cross-role/cross-tenant negatives pass. Default owner mode continues to enforce working-tree/debug hygiene."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "NO-WRITE-M18-GUIDANCE",
+      "family": "NO-WRITE",
+      "canonicalRule": "Guidance != execution; navigation != business write; recommendation != execution; BUSINESS_WRITE_EXECUTED = 0 where M18 guidance/navigation applies.",
+      "applicability": "M18 Sefer Abi guidance, safe navigation, target highlighting, and read-only acceptance.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/MILESTONE_GATE_MATRIX.md"
+      ],
+      "permanentOwner": "docs/PRIMER_SSOT.md",
+      "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+      "requiredEvidenceType": "network-write-trace",
+      "realBrowserRequired": true,
+      "realDeviceRequired": true,
+      "publicRuntimeRequired": true,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "GUIDANCE_NOT_EXECUTION",
+        "NAVIGATION_NOT_BUSINESS_WRITE"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "GUIDANCE_NOT_EXECUTION",
+          "canonicalSubrule": "Guidance does not execute business actions.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "network-write-trace",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Guidance does not execute business actions.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "NAVIGATION_NOT_BUSINESS_WRITE",
+          "canonicalSubrule": "Navigation does not perform a business write.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "network-write-trace",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Navigation does not perform a business write.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "RECOMMENDATION_NOT_EXECUTION",
+          "canonicalSubrule": "A recommendation does not execute an action.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "network-write-trace",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "A recommendation does not execute an action.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "M18_BUSINESS_WRITE_ZERO",
+          "canonicalSubrule": "Prohibited M18 business writes are zero.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "network-write-trace",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Prohibited M18 business writes are zero.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "EXISTING_PERMANENT_PROOF_NOT_WIRED",
+        "command": "npm run check:copilotuielementanchor01",
+        "evidence": "PASS: prohibited guidance actions are zero."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "FABRICATION-PRODUCT-KNOWLEDGE",
+      "family": "FABRICATION",
+      "canonicalRule": "FABRICATED_PRODUCT_ELEMENT = 0; UNKNOWN_AUTHORIZED_PRODUCT_ELEMENT = 0; WRONG_PRODUCT_MEANING = 0; WRONG_ROLE_CAPABILITY = 0; UNSUPPORTED_EXPLANATION_FABRICATION = 0.",
+      "applicability": "Sefer Abi product knowledge, control/block explanation, capability, and role-aware guidance.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md"
+      ],
+      "permanentOwner": "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md",
+      "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+      "requiredEvidenceType": "canonical-screen-and-dom-evidence",
+      "realBrowserRequired": true,
+      "realDeviceRequired": true,
+      "publicRuntimeRequired": true,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "NO_INVENTED_BUTTON",
+        "NO_INVENTED_ACTION",
+        "NO_INVENTED_WORKFLOW_STATE"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "FABRICATED_PRODUCT_ELEMENT_ZERO",
+          "canonicalSubrule": "No invented product element is presented.",
+          "permanentOwner": "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "canonical-screen-and-dom-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "No invented product element is presented.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "UNKNOWN_AUTHORIZED_PRODUCT_ELEMENT_ZERO",
+          "canonicalSubrule": "No authorized product element remains unknown in accepted inventory.",
+          "permanentOwner": "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "canonical-screen-and-dom-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "No authorized product element remains unknown in accepted inventory.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "WRONG_PRODUCT_MEANING_ZERO",
+          "canonicalSubrule": "Product meaning is grounded in canonical knowledge.",
+          "permanentOwner": "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "canonical-screen-and-dom-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Product meaning is grounded in canonical knowledge.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "WRONG_ROLE_CAPABILITY_ZERO",
+          "canonicalSubrule": "Role capability is not borrowed across roles.",
+          "permanentOwner": "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "canonical-screen-and-dom-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Role capability is not borrowed across roles.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "UNSUPPORTED_EXPLANATION_ZERO",
+          "canonicalSubrule": "Unsupported explanations are not presented as product truth.",
+          "permanentOwner": "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "canonical-screen-and-dom-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Unsupported explanations are not presented as product truth.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "EXISTING_PERMANENT_PROOF_NOT_WIRED",
+        "command": "npm run check:copilotuielementanchor01",
+        "evidence": "PASS: target/product fabrication counters are zero."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "WORKFLOW-LIVE-STATE-AUTHORITY",
+      "family": "WORKFLOW",
+      "canonicalRule": "WRONG_WORKFLOW_ORDER = 0; WRONG_PRECONDITION = 0; WRONG_NEXT_STEP = 0; FALSE_WORKFLOW_ADVANCEMENT = 0. Known next step, future step, catalog knowledge, and expected transition never override proven live UI state.",
+      "applicability": "Any guided workflow, wizard, modal, tab, disclosure, or transition explanation.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/COPILOT_GUIDED_TASK_ENGINE_01.md"
+      ],
+      "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+      "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+      "requiredEvidenceType": "live-state-transition",
+      "realBrowserRequired": true,
+      "realDeviceRequired": true,
+      "publicRuntimeRequired": true,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "KNOWN_NEXT_STEP_NOT_CURRENT",
+        "FUTURE_STEP_NOT_CURRENT",
+        "EXPECTED_TRANSITION_NOT_COMPLETED"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "WRONG_WORKFLOW_ORDER_ZERO",
+          "canonicalSubrule": "Workflow order follows live state.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "live-state-transition",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Workflow order follows live state.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "WRONG_PRECONDITION_ZERO",
+          "canonicalSubrule": "Required preconditions are truthful.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "live-state-transition",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Required preconditions are truthful.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "WRONG_NEXT_STEP_ZERO",
+          "canonicalSubrule": "Next-step guidance follows proven state.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "live-state-transition",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Next-step guidance follows proven state.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "FALSE_WORKFLOW_ADVANCEMENT_ZERO",
+          "canonicalSubrule": "Uncompleted transitions never advance state.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "live-state-transition",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Uncompleted transitions never advance state.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "KNOWN_NEXT_STEP_NOT_CURRENT",
+          "canonicalSubrule": "Known next step is not reported as current.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "live-state-transition",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Known next step is not reported as current.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "FUTURE_STEP_NOT_CURRENT",
+          "canonicalSubrule": "Future step is not reported as current.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "live-state-transition",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Future step is not reported as current.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "EXPECTED_TRANSITION_NOT_COMPLETED",
+          "canonicalSubrule": "Expected transition is not treated as completed.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "live-state-transition",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Expected transition is not treated as completed.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "CURRENT_SOURCE_SEMANTIC_PROOF",
+        "command": "npm run check:copilotguidedtaskengine01",
+        "evidence": "PASS: current-source guided-task engine, workflow order, precondition, next-step, future-step and transition guards pass after exact current-head identity and route/service scope reconciliation."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "TASK-CONTINUITY-AUTHORITY",
+      "family": "TASK",
+      "canonicalRule": "ACTIVE_GOAL_LOST = 0; ACTIVE_TASK_LOST = 0; TASK_RESUME_FAILURE = 0; WRONG_DOMAIN_FALLBACK = 0. Current request, live workflow/surface, and settled task state remain authoritative where applicable.",
+      "applicability": "Active Sefer Abi workflow and recovery/continuation requests.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/COPILOT_GUIDED_TASK_ENGINE_01.md"
+      ],
+      "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+      "regressionOwner": "backend/scripts/copilot_context_memory_task_state_01_check.js",
+      "requiredEvidenceType": "conversation-state-transition",
+      "realBrowserRequired": true,
+      "realDeviceRequired": true,
+      "publicRuntimeRequired": true,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "LAST_SETTLED_RESULT_AUTHORITY",
+        "CURRENT_REQUEST_OPERATION_AUTHORITY"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "ACTIVE_GOAL_LOST_ZERO",
+          "canonicalSubrule": "Active user goal is preserved.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/copilot_context_memory_task_state_01_check.js",
+          "requiredEvidenceType": "conversation-state-transition",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Active user goal is preserved.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "ACTIVE_TASK_LOST_ZERO",
+          "canonicalSubrule": "Active task is preserved.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/copilot_context_memory_task_state_01_check.js",
+          "requiredEvidenceType": "conversation-state-transition",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Active task is preserved.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "TASK_RESUME_FAILURE_ZERO",
+          "canonicalSubrule": "Authorized task resume succeeds or reports a truthful block.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/copilot_context_memory_task_state_01_check.js",
+          "requiredEvidenceType": "conversation-state-transition",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Authorized task resume succeeds or reports a truthful block.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "WRONG_DOMAIN_FALLBACK_ZERO",
+          "canonicalSubrule": "Active task context does not fall into unrelated domain fallback.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/copilot_context_memory_task_state_01_check.js",
+          "requiredEvidenceType": "conversation-state-transition",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Active task context does not fall into unrelated domain fallback.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "CURRENT_REQUEST_OPERATION_AUTHORITY",
+          "canonicalSubrule": "Current request operation remains authoritative.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/copilot_context_memory_task_state_01_check.js",
+          "requiredEvidenceType": "conversation-state-transition",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Current request operation remains authoritative.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "EXISTING_PERMANENT_PROOF_NOT_WIRED",
+        "command": "npm run check:copilotcontextmemorytaskstate01",
+        "evidence": "PASS: context-memory task-state owner."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "TARGET-CANONICAL-IDENTITY",
+      "family": "TARGET",
+      "canonicalRule": "TARGET_EXPLANATION_MISMATCH = 0; WRONG_VISUAL_TARGET_ANCHOR = 0; DETACHED_OR_STALE_HIGHLIGHT = 0; EXACT_DOM_TARGET_BINDING_FAILURE = 0; STALE_BLOCK_HIGHLIGHT = 0; CALLOUT_TARGET_OBSTRUCTION = 0.",
+      "applicability": "Any CONTROL/BLOCK target response, scroll, focus, highlight, callout, and re-anchor path.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md"
+      ],
+      "permanentOwner": "docs/PRIMER_SSOT.md",
+      "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+      "requiredEvidenceType": "semantic-dom-geometry",
+      "realBrowserRequired": true,
+      "realDeviceRequired": true,
+      "publicRuntimeRequired": true,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "RESPONSE_SCROLL_FOCUS_HIGHLIGHT_CALLOUT_IDENTITY"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "TARGET_EXPLANATION_MISMATCH_ZERO",
+          "canonicalSubrule": "Explanation and target identity agree.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "semantic-dom-geometry",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Explanation and target identity agree.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "WRONG_VISUAL_TARGET_ANCHOR_ZERO",
+          "canonicalSubrule": "Highlight attaches to the exact target.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "semantic-dom-geometry",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Highlight attaches to the exact target.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "DETACHED_OR_STALE_HIGHLIGHT_ZERO",
+          "canonicalSubrule": "Detached or stale highlights are zero.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "semantic-dom-geometry",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Detached or stale highlights are zero.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "EXACT_DOM_TARGET_BINDING_ZERO",
+          "canonicalSubrule": "Canonical identity binds to the exact live DOM element.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "semantic-dom-geometry",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Canonical identity binds to the exact live DOM element.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "STALE_BLOCK_HIGHLIGHT_ZERO",
+          "canonicalSubrule": "Stale block highlights are zero.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "semantic-dom-geometry",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Stale block highlights are zero.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "CALLOUT_TARGET_OBSTRUCTION_ZERO",
+          "canonicalSubrule": "Callout does not materially obstruct its target.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "semantic-dom-geometry",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Callout does not materially obstruct its target.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "TARGET_IDENTITY_CHAIN_EQUAL",
+          "canonicalSubrule": "Response, scroll, focus, highlight, and callout identities agree.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "semantic-dom-geometry",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Response, scroll, focus, highlight, and callout identities agree.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "EXISTING_PERMANENT_PROOF_NOT_WIRED",
+        "command": "npm run check:copilotuielementanchor01",
+        "evidence": "PASS: canonical target and prohibited guidance checks."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "BLOCK-SEMANTIC-GROUNDING",
+      "family": "BLOCK",
+      "canonicalRule": "FABRICATED_SEMANTIC_BLOCK = 0; UNRESOLVED_SEMANTIC_BLOCK_COUNT = 0; BLOCK_TARGET_EXPLANATION_MISMATCH = 0; one active guided block at a time; blocks map to real product-owned regions.",
+      "applicability": "Semantic block explanation and guided walkthroughs.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md"
+      ],
+      "permanentOwner": "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md",
+      "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+      "requiredEvidenceType": "block-dom-identity",
+      "realBrowserRequired": true,
+      "realDeviceRequired": true,
+      "publicRuntimeRequired": true,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "ONE_ACTIVE_GUIDED_BLOCK"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "FABRICATED_SEMANTIC_BLOCK_ZERO",
+          "canonicalSubrule": "No semantic block is invented.",
+          "permanentOwner": "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "block-dom-identity",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "No semantic block is invented.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "UNRESOLVED_SEMANTIC_BLOCK_ZERO",
+          "canonicalSubrule": "Authorized semantic blocks resolve.",
+          "permanentOwner": "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "block-dom-identity",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Authorized semantic blocks resolve.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "BLOCK_TARGET_EXPLANATION_MATCH",
+          "canonicalSubrule": "Block explanation and block target agree.",
+          "permanentOwner": "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "block-dom-identity",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Block explanation and block target agree.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "ONE_ACTIVE_GUIDED_BLOCK",
+          "canonicalSubrule": "Only one guided block is active at a time.",
+          "permanentOwner": "docs/COPILOT_SCREEN_KNOWLEDGE_PARITY_V1.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+          "requiredEvidenceType": "block-dom-identity",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Only one guided block is active at a time.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "EXISTING_PERMANENT_PROOF_NOT_WIRED",
+        "command": "npm run check:copilotuielementanchor01",
+        "evidence": "PASS: semantic block/target checks in M18 owner."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "RECOVERY-USER-ERROR-TRUTH",
+      "family": "RECOVERY",
+      "canonicalRule": "USER_ERROR_MISDIAGNOSIS = 0; USER_ERROR_WRONG_RECOVERY = 0; USER_ERROR_FALSE_COMPLETION = 0; USER_ERROR_WRONG_NEXT_STEP = 0; education must not invent purpose, input, optionality, or authorization.",
+      "applicability": "Failure, blocked-step, recovery, and user-education responses with live context.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/COPILOT_GLOBAL_ANSWER_QUALITY_V1.md"
+      ],
+      "permanentOwner": "docs/COPILOT_GLOBAL_ANSWER_QUALITY_V1.md",
+      "regressionOwner": "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
+      "requiredEvidenceType": "semantic-recovery-evidence",
+      "realBrowserRequired": true,
+      "realDeviceRequired": true,
+      "publicRuntimeRequired": true,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "USER_EDUCATION_WRONG_EXPLANATION",
+        "USER_EDUCATION_AUTHORIZATION_ERROR"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "USER_ERROR_MISDIAGNOSIS_ZERO",
+          "canonicalSubrule": "User error is diagnosed against live context.",
+          "permanentOwner": "docs/COPILOT_GLOBAL_ANSWER_QUALITY_V1.md",
+          "regressionOwner": "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
+          "requiredEvidenceType": "semantic-recovery-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "User error is diagnosed against live context.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "USER_ERROR_WRONG_RECOVERY_ZERO",
+          "canonicalSubrule": "Recovery addresses the actual blocked step.",
+          "permanentOwner": "docs/COPILOT_GLOBAL_ANSWER_QUALITY_V1.md",
+          "regressionOwner": "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
+          "requiredEvidenceType": "semantic-recovery-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Recovery addresses the actual blocked step.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "USER_ERROR_FALSE_COMPLETION_ZERO",
+          "canonicalSubrule": "Recovery never fabricates completion.",
+          "permanentOwner": "docs/COPILOT_GLOBAL_ANSWER_QUALITY_V1.md",
+          "regressionOwner": "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
+          "requiredEvidenceType": "semantic-recovery-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Recovery never fabricates completion.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "USER_ERROR_WRONG_NEXT_STEP_ZERO",
+          "canonicalSubrule": "Recovery never invents the next step.",
+          "permanentOwner": "docs/COPILOT_GLOBAL_ANSWER_QUALITY_V1.md",
+          "regressionOwner": "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
+          "requiredEvidenceType": "semantic-recovery-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Recovery never invents the next step.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "USER_EDUCATION_WRONG_EXPLANATION_ZERO",
+          "canonicalSubrule": "Education explains the actual product element.",
+          "permanentOwner": "docs/COPILOT_GLOBAL_ANSWER_QUALITY_V1.md",
+          "regressionOwner": "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
+          "requiredEvidenceType": "semantic-recovery-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Education explains the actual product element.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "USER_EDUCATION_INVENTED_PURPOSE_ZERO",
+          "canonicalSubrule": "Education does not invent purpose.",
+          "permanentOwner": "docs/COPILOT_GLOBAL_ANSWER_QUALITY_V1.md",
+          "regressionOwner": "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
+          "requiredEvidenceType": "semantic-recovery-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Education does not invent purpose.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "USER_EDUCATION_WRONG_REQUIRED_INPUT_ZERO",
+          "canonicalSubrule": "Required input guidance is truthful.",
+          "permanentOwner": "docs/COPILOT_GLOBAL_ANSWER_QUALITY_V1.md",
+          "regressionOwner": "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
+          "requiredEvidenceType": "semantic-recovery-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Required input guidance is truthful.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "USER_EDUCATION_WRONG_OPTIONALITY_ZERO",
+          "canonicalSubrule": "Optionality guidance is truthful.",
+          "permanentOwner": "docs/COPILOT_GLOBAL_ANSWER_QUALITY_V1.md",
+          "regressionOwner": "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
+          "requiredEvidenceType": "semantic-recovery-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Optionality guidance is truthful.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "USER_EDUCATION_AUTHORIZATION_ERROR_ZERO",
+          "canonicalSubrule": "Education preserves authorization boundaries.",
+          "permanentOwner": "docs/COPILOT_GLOBAL_ANSWER_QUALITY_V1.md",
+          "regressionOwner": "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
+          "requiredEvidenceType": "semantic-recovery-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Education preserves authorization boundaries.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "CURRENT_SEMANTIC_PROOF_PASS",
+        "command": "npm run check:seferabiallrolesreasoningassistant01",
+        "evidence": "PASS: proof owner now consumes canonical authorized screen catalog and asserts semantic screen purpose/first action, non-fabricated unbound control handling, role boundaries, active-task continuation/recovery, missing-target fallback, next-step truth, and safe write boundaries; no current product contradiction reproduced."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "RESPONSIVE-BUSINESS-PARITY",
+      "family": "RESPONSIVE",
+      "canonicalRule": "Same server state, role, tenant/entity, and user intent/action sequence produce the same canonical semantic/business outcome on desktop/tablet/mobile; layout may differ but authorization, branch, lifecycle, meaning, and write boundary may not.",
+      "applicability": "Responsive web guided flows and Sefer Abi interactions.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/MOBILE_WEB_FINAL_01.md"
+      ],
+      "permanentOwner": "docs/PRIMER_SSOT.md",
+      "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
+      "requiredEvidenceType": "multi-viewport-real-browser",
+      "realBrowserRequired": true,
+      "realDeviceRequired": true,
+      "publicRuntimeRequired": true,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "VIEWPORT_NOT_BUSINESS_SEMANTICS"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "SAME_CANONICAL_OUTCOME",
+          "canonicalSubrule": "Same state and intent produce the same canonical outcome.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
+          "requiredEvidenceType": "multi-viewport-real-browser",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Same state and intent produce the same canonical outcome.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "VIEWPORT_NOT_AUTHORITY",
+          "canonicalSubrule": "Viewport does not choose authorization.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
+          "requiredEvidenceType": "multi-viewport-real-browser",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Viewport does not choose authorization.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "VIEWPORT_NOT_WORKFLOW_BRANCH",
+          "canonicalSubrule": "Viewport does not choose workflow branch.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
+          "requiredEvidenceType": "multi-viewport-real-browser",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Viewport does not choose workflow branch.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "VIEWPORT_NOT_LIFECYCLE_BRANCH",
+          "canonicalSubrule": "Viewport does not choose draft lifecycle branch.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
+          "requiredEvidenceType": "multi-viewport-real-browser",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Viewport does not choose draft lifecycle branch.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "VIEWPORT_NOT_SEMANTIC_MEANING",
+          "canonicalSubrule": "Viewport does not change semantic meaning.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
+          "requiredEvidenceType": "multi-viewport-real-browser",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Viewport does not change semantic meaning.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "VIEWPORT_NOT_WRITE_BOUNDARY",
+          "canonicalSubrule": "Viewport does not change the write boundary.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
+          "requiredEvidenceType": "multi-viewport-real-browser",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Viewport does not change the write boundary.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "EXISTING_PERMANENT_PROOF_NOT_WIRED",
+        "command": "npm run smoke:copilotuielementanchor01",
+        "evidence": "PASS: accepted desktop/tablet/mobile parity evidence."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "LIFECYCLE-GUIDED-DRAFT-AUTHORITY",
+      "family": "LIFECYCLE",
+      "canonicalRule": "Server-backed discovery is canonical; localStorage is optimization only; passive entry is read-only; existing resumable drafts require explicit choice; Devam et resumes the exact selected draft; Yeni plan and Taslağı sil require explicit protected intent.",
+      "applicability": "Guided draft discovery, entry, resume, new-plan, and discard lifecycle.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/COPILOT_GUIDED_TASK_ENGINE_01.md"
+      ],
+      "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+      "regressionOwner": "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
+      "requiredEvidenceType": "server-and-browser-lifecycle",
+      "realBrowserRequired": true,
+      "realDeviceRequired": true,
+      "publicRuntimeRequired": true,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "SERVER_BACKED_DISCOVERY",
+        "LOCAL_STORAGE_NOT_AUTHORITY",
+        "EXPLICIT_DRAFT_DECISION"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "SERVER_DISCOVERY_CANONICAL",
+          "canonicalSubrule": "Server-backed draft discovery is canonical.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
+          "requiredEvidenceType": "server-and-browser-lifecycle",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Server-backed draft discovery is canonical.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "LOCAL_STORAGE_OPTIMIZATION_ONLY",
+          "canonicalSubrule": "Local storage is an optimization only.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
+          "requiredEvidenceType": "server-and-browser-lifecycle",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Local storage is an optimization only.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "PASSIVE_ENTRY_READ_ONLY",
+          "canonicalSubrule": "Passive entry is read-only.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
+          "requiredEvidenceType": "server-and-browser-lifecycle",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Passive entry is read-only.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "EXPLICIT_RESUME_CHOICE",
+          "canonicalSubrule": "Existing drafts require explicit resume choice.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
+          "requiredEvidenceType": "server-and-browser-lifecycle",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Existing drafts require explicit resume choice.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "EXACT_DRAFT_RESUME",
+          "canonicalSubrule": "Devam et resumes the exact selected draft.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
+          "requiredEvidenceType": "server-and-browser-lifecycle",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Devam et resumes the exact selected draft.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "EXPLICIT_NEW_OR_DELETE",
+          "canonicalSubrule": "New-plan and discard require explicit protected intent.",
+          "permanentOwner": "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+          "regressionOwner": "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
+          "requiredEvidenceType": "server-and-browser-lifecycle",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "New-plan and discard require explicit protected intent.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "EXISTING_PERMANENT_PROOF_NOT_WIRED",
+        "command": "npm run check:copilotuielementanchor01",
+        "evidence": "PASS: accepted server-backed chooser/resume evidence."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "LIFECYCLE-NO-SILENT-DRAFT-MUTATION",
+      "family": "LIFECYCLE",
+      "canonicalRule": "SILENT_DRAFT_CREATION = 0; DUPLICATE_DRAFT_CREATION_ON_REENTRY = 0; DESTRUCTIVE_DRAFT_REPLACEMENT_WITHOUT_EXPLICIT_USER_INTENT = 0; a valid cached server-draft pointer must not bypass the chooser on any viewport.",
+      "applicability": "Normal guided entry and repeated/reloaded responsive entry.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/LOCKED_INVARIANT_RECONCILIATION_01.md"
+      ],
+      "permanentOwner": "docs/LOCKED_INVARIANT_REGISTRY_V1.json",
+      "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
+      "requiredEvidenceType": "network-write-trace-and-draft-identity",
+      "realBrowserRequired": true,
+      "realDeviceRequired": true,
+      "publicRuntimeRequired": true,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "VALID_CACHED_POINTER_MUST_NOT_BYPASS_CHOOSER"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "SILENT_DRAFT_CREATION_ZERO",
+          "canonicalSubrule": "Silent draft creation is zero.",
+          "permanentOwner": "docs/LOCKED_INVARIANT_REGISTRY_V1.json",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
+          "requiredEvidenceType": "network-write-trace-and-draft-identity",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Silent draft creation is zero.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "DUPLICATE_REENTRY_CREATION_ZERO",
+          "canonicalSubrule": "Repeated entry does not create duplicates.",
+          "permanentOwner": "docs/LOCKED_INVARIANT_REGISTRY_V1.json",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
+          "requiredEvidenceType": "network-write-trace-and-draft-identity",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Repeated entry does not create duplicates.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "REPLACEMENT_WITHOUT_INTENT_ZERO",
+          "canonicalSubrule": "Replacement without explicit intent is zero.",
+          "permanentOwner": "docs/LOCKED_INVARIANT_REGISTRY_V1.json",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
+          "requiredEvidenceType": "network-write-trace-and-draft-identity",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Replacement without explicit intent is zero.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "CACHED_POINTER_CANNOT_BYPASS_CHOOSER",
+          "canonicalSubrule": "A cached server pointer cannot bypass the chooser.",
+          "permanentOwner": "docs/LOCKED_INVARIANT_REGISTRY_V1.json",
+          "regressionOwner": "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
+          "requiredEvidenceType": "network-write-trace-and-draft-identity",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "A cached server pointer cannot bypass the chooser.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "EXISTING_PERMANENT_PROOF_NOT_WIRED",
+        "command": "npm run smoke:copilotuielementanchor01",
+        "evidence": "PASS: passive entry and repeated-entry writes are zero."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "TERM-CANONICAL-VISIBLE-LANGUAGE",
+      "family": "TERM",
+      "canonicalRule": "Visible terminology remains canonical: COMPANY = Hizmet Alan Firma/Firma; ROOM uses approved Taşımacılık Firması terminology; Agreement = sözleşme; inbound/outbound = toplama/dağıtım; human approval = Kullanıcı onayı/Onayınız gerekli; raw internal tokens never leak.",
+      "applicability": "User-visible product and Sefer Abi responses.",
+      "severity": "HIGH",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/MILESTONE_GATE_MATRIX.md"
+      ],
+      "permanentOwner": "docs/PRIMER_SSOT.md",
+      "regressionOwner": "backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js",
+  "requiredEvidenceType": "visible-terminology-static-runtime-real-browser",
+      "realBrowserRequired": true,
+      "realDeviceRequired": false,
+      "publicRuntimeRequired": false,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "VISIBLE_HUMAN_APPROVAL_LEAK_ZERO",
+        "RAW_INTERNAL_TOKEN_LEAK_ZERO"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "COMPANY_CANONICAL_TERM",
+          "canonicalSubrule": "COMPANY uses Hizmet Alan Firma/Firma.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js",
+          "requiredEvidenceType": "visible-terminology-audit",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "COMPANY uses Hizmet Alan Firma/Firma.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "ROOM_CANONICAL_TERM",
+          "canonicalSubrule": "ROOM uses approved Taşımacılık Firması terminology.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js",
+          "requiredEvidenceType": "visible-terminology-audit",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "ROOM uses approved Taşımacılık Firması terminology.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "AGREEMENT_CANONICAL_TERM",
+          "canonicalSubrule": "Agreement is presented as sözleşme.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js",
+          "requiredEvidenceType": "visible-terminology-audit",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Agreement is presented as sözleşme.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "INBOUND_OUTBOUND_CANONICAL_TERM",
+          "canonicalSubrule": "Inbound/outbound are toplama/dağıtım.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js",
+          "requiredEvidenceType": "visible-terminology-audit",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Inbound/outbound are toplama/dağıtım.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "HUMAN_APPROVAL_VISIBLE_LANGUAGE",
+          "canonicalSubrule": "Human approval is Kullanıcı onayı / Onayınız gerekli.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js",
+          "requiredEvidenceType": "visible-terminology-audit",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Human approval is Kullanıcı onayı / Onayınız gerekli.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "RAW_INTERNAL_TOKEN_LEAK_ZERO",
+          "canonicalSubrule": "Raw internal tokens never leak into visible language.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js",
+          "requiredEvidenceType": "visible-terminology-audit",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Raw internal tokens never leak into visible language.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+  "proofAdapter": {
+    "classification": "EXISTING_PERMANENT_PROOF_NOT_WIRED",
+    "command": "npm run check:seferabiturkishterminology01",
+    "evidence": "PASS: terminology audit.",
+    "evidenceTypes": ["STATIC", "RUNTIME", "REAL_BROWSER"],
+    "runtimeContract": {
+      "owner": "backend/src/ai/chat/userFacingLanguageNormalizer.js",
+      "check": "backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js",
+      "visibleFields": ["reply", "summary", "responseSections", "quickActions", "authorizedRecords", "retrievedFacts", "dataSources", "guidedTarget"]
+    },
+    "runtimeCheckCommand": "npm run check:seferabiturkishterminology01"
+  },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "KVKK-ROLE-TENANT-DATA-BOUNDARY",
+      "family": "KVKK",
+      "canonicalRule": "Raw-address/geocode, role/person/location, tenant, and external-research boundaries remain protected; cross-tenant privacy leakage = 0; unsupported external research receives no sensitive product data.",
+      "applicability": "Any personal, location, geocode, role, tenant, or external-data request.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/KVKK_AYDINLATMA_ENVANTERI_V1.md",
+        "docs/KVKK_ROLE_PAYLOAD_DARALTMA_V1.md"
+      ],
+      "permanentOwner": "docs/KVKK_AYDINLATMA_ENVANTERI_V1.md",
+      "regressionOwner": "backend/scripts/security_kvkk_final_01_check.js",
+      "requiredEvidenceType": "privacy-negative-and-payload",
+      "realBrowserRequired": true,
+      "realDeviceRequired": false,
+      "publicRuntimeRequired": true,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "RAW_ADDRESS_POLICY",
+        "CROSS_TENANT_PRIVACY_ZERO"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "RAW_ADDRESS_GEOCODE_POLICY",
+          "canonicalSubrule": "Raw address and geocode policy is preserved.",
+          "permanentOwner": "docs/KVKK_AYDINLATMA_ENVANTERI_V1.md",
+          "regressionOwner": "backend/scripts/security_kvkk_final_01_check.js",
+          "requiredEvidenceType": "privacy-negative-and-payload",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Raw address and geocode policy is preserved.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "ROLE_PERSON_LOCATION_BOUNDARY",
+          "canonicalSubrule": "Role/person/location boundaries are preserved.",
+          "permanentOwner": "docs/KVKK_AYDINLATMA_ENVANTERI_V1.md",
+          "regressionOwner": "backend/scripts/security_kvkk_final_01_check.js",
+          "requiredEvidenceType": "privacy-negative-and-payload",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Role/person/location boundaries are preserved.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "CROSS_TENANT_PRIVACY_ZERO",
+          "canonicalSubrule": "Cross-tenant privacy leakage is zero.",
+          "permanentOwner": "docs/KVKK_AYDINLATMA_ENVANTERI_V1.md",
+          "regressionOwner": "backend/scripts/security_kvkk_final_01_check.js",
+          "requiredEvidenceType": "privacy-negative-and-payload",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Cross-tenant privacy leakage is zero.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "UNSUPPORTED_EXTERNAL_RESEARCH_BLOCKED",
+          "canonicalSubrule": "Unsupported external research receives no sensitive product data.",
+          "permanentOwner": "docs/KVKK_AYDINLATMA_ENVANTERI_V1.md",
+          "regressionOwner": "backend/scripts/security_kvkk_final_01_check.js",
+          "requiredEvidenceType": "privacy-negative-and-payload",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Unsupported external research receives no sensitive product data.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "CURRENT_SOURCE_SEMANTIC_PROOF",
+        "command": "node backend/scripts/security_kvkk_final_01_check.js --semantic-proof-only",
+        "evidence": "PASS semantic KVKK/tenant boundary proof 260/260; exact current-source identities and privacy boundaries pass. Default owner mode continues to enforce working-tree/debug hygiene."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "FINANCE-REFERENCE-ACTUAL-SEPARATION",
+      "family": "FINANCE",
+      "canonicalRule": "External Market Reference != SeferPakt Platform Reference != User/Company Actual; source/as-of/freshness/region/confidence remain truthful; partial cost != complete cost; estimate != actual/submitted offer.",
+      "applicability": "Financial, cost, market-reference, forecast, savings, and commercial reasoning.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md",
+        "docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md"
+      ],
+      "permanentOwner": "docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md",
+      "regressionOwner": "backend/scripts/company_budget_and_service_cost_01_check.js",
+      "requiredEvidenceType": "financial-truth-matrix",
+      "realBrowserRequired": false,
+      "realDeviceRequired": false,
+      "publicRuntimeRequired": false,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "FINANCE_REFERENCE_NOT_ACTUAL",
+        "FINANCE_ESTIMATE_NOT_SUBMITTED_OFFER"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "EXTERNAL_REFERENCE_NOT_PLATFORM_REFERENCE",
+          "canonicalSubrule": "External market reference differs from platform reference.",
+          "permanentOwner": "docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md",
+          "regressionOwner": "backend/scripts/company_budget_and_service_cost_01_check.js",
+          "requiredEvidenceType": "financial-truth-matrix",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "External market reference differs from platform reference.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "PLATFORM_REFERENCE_NOT_ACTUAL",
+          "canonicalSubrule": "Platform reference differs from user/company actual.",
+          "permanentOwner": "docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md",
+          "regressionOwner": "backend/scripts/company_budget_and_service_cost_01_check.js",
+          "requiredEvidenceType": "financial-truth-matrix",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Platform reference differs from user/company actual.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "SOURCE_AS_OF_FRESHNESS_TRUTHFUL",
+          "canonicalSubrule": "Source, as-of, freshness, region, and confidence are truthful.",
+          "permanentOwner": "docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md",
+          "regressionOwner": "backend/scripts/company_budget_and_service_cost_01_check.js",
+          "requiredEvidenceType": "financial-truth-matrix",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Source, as-of, freshness, region, and confidence are truthful.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "PARTIAL_COST_NOT_COMPLETE",
+          "canonicalSubrule": "Partial cost is not complete cost.",
+          "permanentOwner": "docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md",
+          "regressionOwner": "backend/scripts/company_budget_and_service_cost_01_check.js",
+          "requiredEvidenceType": "financial-truth-matrix",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Partial cost is not complete cost.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "ESTIMATE_NOT_ACTUAL_OR_OFFER",
+          "canonicalSubrule": "Estimate is not actual or submitted offer.",
+          "permanentOwner": "docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md",
+          "regressionOwner": "backend/scripts/company_budget_and_service_cost_01_check.js",
+          "requiredEvidenceType": "financial-truth-matrix",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Estimate is not actual or submitted offer.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "CURRENT_SOURCE_SEMANTIC_PROOF",
+        "command": "node backend/scripts/company_budget_and_service_cost_01_check.js --semantic-proof-only",
+        "evidence": "PASS finance reference/actual separation proof 632/632; current read-only commercial semantics pass. Default owner mode continues to enforce debug/repository hygiene."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "COMMERCIAL-CURRENT-POLICY",
+      "family": "COMMERCIAL",
+      "canonicalRule": "Current commercial policy is the only source for commission, success-fee, platform-percentage, supplier, offer, and approval claims; stale excluded claims must not leak.",
+      "applicability": "Commercial and supplier-related product explanations.",
+      "severity": "HIGH",
+      "sourceProvenance": [
+        "docs/PRIMER_SSOT.md",
+        "docs/MILESTONE_REGISTRY_V1.md"
+      ],
+      "permanentOwner": "docs/MILESTONE_REGISTRY_V1.md",
+      "regressionOwner": "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+      "requiredEvidenceType": "current-policy-semantic-check",
+      "realBrowserRequired": false,
+      "realDeviceRequired": false,
+      "publicRuntimeRequired": false,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "NO_STALE_COMMERCIAL_CLAIMS"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "CURRENT_COMMERCIAL_POLICY_ONLY",
+          "canonicalSubrule": "Current commercial policy is the only source for commercial claims.",
+          "permanentOwner": "docs/MILESTONE_REGISTRY_V1.md",
+          "regressionOwner": "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+          "requiredEvidenceType": "current-policy-semantic-check",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Current commercial policy is the only source for commercial claims.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "EXISTING_PERMANENT_PROOF_NOT_WIRED",
+        "command": "npm run check:projectwideturkishterminology01",
+        "evidence": "PASS: rendered terminology acceptance covers all 8 contexts and 17 state families; VISIBLE_LEGACY_COMMERCIAL_RESIDUE_COUNT=0."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "REPO-GOVERNANCE-NO-SURPRISE",
+      "family": "REPO-GOV",
+      "canonicalRule": "STAGING_CHANGE != CONTENT_CHANGE; inherited durable path != new unowned delta; closed work is not reopened without concrete regression; no-surprise repository exit remains mandatory.",
+      "applicability": "Every bounded package, evidence package, ownership change, and closure.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/AGENTS.md",
+        "docs/MILESTONE_GATE_MATRIX.md"
+      ],
+      "permanentOwner": "docs/AGENTS.md",
+      "regressionOwner": "backend/scripts/package_ownership_delta_01_check.js",
+      "requiredEvidenceType": "ownership-and-repository-exit",
+      "realBrowserRequired": false,
+      "realDeviceRequired": false,
+      "publicRuntimeRequired": false,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "INHERITED_DURABLE_PATH_NOT_NEW_UNOWNED_DELTA"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "STAGING_NOT_CONTENT",
+          "canonicalSubrule": "Staging changes are distinct from content changes.",
+          "permanentOwner": "docs/AGENTS.md",
+          "regressionOwner": "backend/scripts/package_ownership_delta_01_check.js",
+          "requiredEvidenceType": "ownership-and-repository-exit",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Staging changes are distinct from content changes.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "INHERITED_PATH_NOT_NEW_UNOWNED",
+          "canonicalSubrule": "Inherited durable paths are not new unowned deltas.",
+          "permanentOwner": "docs/AGENTS.md",
+          "regressionOwner": "backend/scripts/package_ownership_delta_01_check.js",
+          "requiredEvidenceType": "ownership-and-repository-exit",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Inherited durable paths are not new unowned deltas.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "CLOSED_WORK_NOT_REOPENED",
+          "canonicalSubrule": "Closed work is not reopened without concrete regression.",
+          "permanentOwner": "docs/AGENTS.md",
+          "regressionOwner": "backend/scripts/package_ownership_delta_01_check.js",
+          "requiredEvidenceType": "ownership-and-repository-exit",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Closed work is not reopened without concrete regression.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "NO_SURPRISE_REPOSITORY_EXIT",
+          "canonicalSubrule": "Repository exit has no unexplained residue.",
+          "permanentOwner": "docs/AGENTS.md",
+          "regressionOwner": "backend/scripts/package_ownership_delta_01_check.js",
+          "requiredEvidenceType": "ownership-and-repository-exit",
+          "activationPhases": [
+            "REPOSITORY_EXIT",
+            "MILESTONE_CLOSURE"
+          ],
+          "ruleLifecycleStatus": "CONTEXTUAL",
+          "lifecycleAudit": {
+            "status": "CONTEXTUAL",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "Durable rule remains valid but is scoped to a later declared lifecycle phase; it is retained and not due now.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Repository exit has no unexplained residue.",
+            "effectOnTestOwner": "Owner remains registered; proof activates at the declared phase."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "CURRENT_REPO_GOVERNANCE_PROOF_PASS",
+        "command": "npm run check:package-ownership-delta",
+        "evidence": "PASS: staging/content distinction, inherited durable paths are explicitly owned, and no closed M18 work was reopened without a concrete regression. Root debug.log is separately classified as a locked acceptance-transient Chromium diagnostic; final repository-exit cleanup remains phase-gated and is not claimed here."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "CLOSURE-DURABLE-CHAIN",
+      "family": "CLOSURE",
+      "canonicalRule": "IMPLEMENT → VERIFY → REAL ACCEPTANCE → FINAL DURABLE STATE → DOC SYNC → CONTRADICTION/COMPLETENESS CHECK → NO-SURPRISE EXIT → EXACT STAGING → COMMIT → COMMITTED-HEAD VALIDATION → IMMUTABLE TAG → PUSH → REMOTE SHA PARITY → CLOSED.",
+      "applicability": "Milestone and bounded-package closure.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/AGENTS.md",
+        "docs/MILESTONE_GATE_MATRIX.md",
+        "docs/CONVERSATION_CLOSURE_INDEX_V1.md"
+      ],
+      "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+      "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+      "requiredEvidenceType": "closure-chain-evidence",
+      "realBrowserRequired": false,
+      "realDeviceRequired": false,
+      "publicRuntimeRequired": false,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "IMPLEMENT_VERIFY_ACCEPT_CLOSE_CHAIN"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "IMPLEMENT",
+          "canonicalSubrule": "Implementation state is recorded before closure.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "closure-chain-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Implementation state is recorded before closure.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "VERIFY",
+          "canonicalSubrule": "Required verification gates are run before closure.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "closure-chain-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Required verification gates are run before closure.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "REAL_ACCEPTANCE",
+          "canonicalSubrule": "Required real-user acceptance is complete before closure.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "closure-chain-evidence",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Required real-user acceptance is complete before closure.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "FINAL_DURABLE_STATE",
+          "canonicalSubrule": "Final durable state is synchronized before closure.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "closure-chain-evidence",
+          "activationPhases": [
+            "FINAL_REAL_ACCEPTANCE",
+            "MILESTONE_CLOSURE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "The durable-state step is required at final real acceptance/closure; it is retained but not due while M18 product acceptance is still in progress.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Final durable state is synchronized before closure.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "DOC_SYNC",
+          "canonicalSubrule": "Canonical documentation is synchronized before closure.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "closure-chain-evidence",
+          "activationPhases": [
+            "FINAL_REAL_ACCEPTANCE",
+            "MILESTONE_CLOSURE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "Documentation synchronization is required at final real acceptance/closure; it is retained but not due while M18 product acceptance is still in progress.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Canonical documentation is synchronized before closure.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "CONTRADICTION_COMPLETENESS",
+          "canonicalSubrule": "Evidence contradiction and completeness checks are complete before closure.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "closure-chain-evidence",
+          "activationPhases": [
+            "FINAL_REAL_ACCEPTANCE",
+            "MILESTONE_CLOSURE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "Contradiction/completeness closure is required at final real acceptance/closure; it is retained but not due while M18 product acceptance is still in progress.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Evidence contradiction and completeness checks are complete before closure.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "NO_SURPRISE_EXIT",
+          "canonicalSubrule": "No-surprise repository exit is complete before closure.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "closure-chain-evidence",
+          "activationPhases": [
+            "REPOSITORY_EXIT",
+            "MILESTONE_CLOSURE"
+          ],
+          "ruleLifecycleStatus": "CONTEXTUAL",
+          "lifecycleAudit": {
+            "status": "CONTEXTUAL",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "Durable rule remains valid but is scoped to a later declared lifecycle phase; it is retained and not due now.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "No-surprise repository exit is complete before closure.",
+            "effectOnTestOwner": "Owner remains registered; proof activates at the declared phase."
+          }
+        },
+        {
+          "subruleKey": "EXACT_STAGING",
+          "canonicalSubrule": "Exact staging is completed before the closure commit.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "closure-chain-evidence",
+          "activationPhases": [
+            "PRE_COMMIT",
+            "MILESTONE_CLOSURE"
+          ],
+          "ruleLifecycleStatus": "CONTEXTUAL",
+          "lifecycleAudit": {
+            "status": "CONTEXTUAL",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "Durable rule remains valid but is scoped to a later declared lifecycle phase; it is retained and not due now.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Exact staging is completed before the closure commit.",
+            "effectOnTestOwner": "Owner remains registered; proof activates at the declared phase."
+          }
+        },
+        {
+          "subruleKey": "COMMIT",
+          "canonicalSubrule": "The closure commit is created in the pre-commit phase.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "closure-chain-evidence",
+          "activationPhases": [
+            "PRE_COMMIT",
+            "MILESTONE_CLOSURE"
+          ],
+          "ruleLifecycleStatus": "CONTEXTUAL",
+          "lifecycleAudit": {
+            "status": "CONTEXTUAL",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "Durable rule remains valid but is scoped to a later declared lifecycle phase; it is retained and not due now.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "The closure commit is created in the pre-commit phase.",
+            "effectOnTestOwner": "Owner remains registered; proof activates at the declared phase."
+          }
+        },
+        {
+          "subruleKey": "COMMITTED_HEAD_VALIDATION",
+          "canonicalSubrule": "Committed-head validation is complete after the closure commit.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "closure-chain-evidence",
+          "activationPhases": [
+            "POST_COMMIT",
+            "MILESTONE_CLOSURE"
+          ],
+          "ruleLifecycleStatus": "CONTEXTUAL",
+          "lifecycleAudit": {
+            "status": "CONTEXTUAL",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "Durable rule remains valid but is scoped to a later declared lifecycle phase; it is retained and not due now.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Committed-head validation is complete after the closure commit.",
+            "effectOnTestOwner": "Owner remains registered; proof activates at the declared phase."
+          }
+        },
+        {
+          "subruleKey": "IMMUTABLE_TAG",
+          "canonicalSubrule": "The immutable closure tag is created in the tag-and-push phase.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "closure-chain-evidence",
+          "activationPhases": [
+            "TAG_AND_PUSH",
+            "MILESTONE_CLOSURE"
+          ],
+          "ruleLifecycleStatus": "CONTEXTUAL",
+          "lifecycleAudit": {
+            "status": "CONTEXTUAL",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "Durable rule remains valid but is scoped to a later declared lifecycle phase; it is retained and not due now.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "The immutable closure tag is created in the tag-and-push phase.",
+            "effectOnTestOwner": "Owner remains registered; proof activates at the declared phase."
+          }
+        },
+        {
+          "subruleKey": "PUSH",
+          "canonicalSubrule": "The closure branch and tag are pushed in the tag-and-push phase.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "closure-chain-evidence",
+          "activationPhases": [
+            "TAG_AND_PUSH",
+            "MILESTONE_CLOSURE"
+          ],
+          "ruleLifecycleStatus": "CONTEXTUAL",
+          "lifecycleAudit": {
+            "status": "CONTEXTUAL",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "Durable rule remains valid but is scoped to a later declared lifecycle phase; it is retained and not due now.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "The closure branch and tag are pushed in the tag-and-push phase.",
+            "effectOnTestOwner": "Owner remains registered; proof activates at the declared phase."
+          }
+        },
+        {
+          "subruleKey": "REMOTE_SHA_PARITY",
+          "canonicalSubrule": "Remote branch and tag SHA parity is proven in the remote-parity phase.",
+          "permanentOwner": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "closure-chain-evidence",
+          "activationPhases": [
+            "REMOTE_PARITY",
+            "MILESTONE_CLOSURE"
+          ],
+          "ruleLifecycleStatus": "CONTEXTUAL",
+          "lifecycleAudit": {
+            "status": "CONTEXTUAL",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "Durable rule remains valid but is scoped to a later declared lifecycle phase; it is retained and not due now.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Remote branch and tag SHA parity is proven in the remote-parity phase.",
+            "effectOnTestOwner": "Owner remains registered; proof activates at the declared phase."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "CURRENT_BOUNDED_PACKAGE_ACCEPTANCE_PASS",
+        "command": "npm run verify:repo; npm run verify:final",
+        "evidence": "PASS for bounded M18 implementation, verification, and real-acceptance obligations already completed. FINAL_DURABLE_STATE, DOC_SYNC, CONTRADICTION_COMPLETENESS and later commit/tag/push/remote parity remain phase-gated by their subrules."
+      },
+      "activationPhases": [
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE",
+        "FINAL_REAL_ACCEPTANCE",
+        "MILESTONE_CLOSURE"
+      ]
+    },
+    {
+      "invariantId": "GATE-GLOBAL-LOCKED-INVARIANT-STOP",
+      "family": "HARNESS",
+      "canonicalRule": "Every bounded package requires PACKAGE_SPECIFIC_ACCEPTANCE = PASS and GLOBAL_LOCKED_INVARIANT_SUITE = PASS. Applicable FAIL, UNPROVEN, contradiction, unknown owner, or coverage gap stops progression.",
+      "applicability": "Every future bounded product package and closure.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/LOCKED_INVARIANT_RECONCILIATION_01.md",
+        "docs/AGENTS.md"
+      ],
+      "permanentOwner": "backend/scripts/global_locked_invariant_suite_01_check.js",
+      "regressionOwner": "backend/scripts/locked_invariant_registry_01_check.js",
+      "requiredEvidenceType": "global-suite-ledger",
+      "realBrowserRequired": false,
+      "realDeviceRequired": false,
+      "publicRuntimeRequired": false,
+      "currentCoverageState": "PROVEN",
+      "aliases": [
+        "STOP_THE_LINE_PACKAGE_GATE"
+      ],
+      "subrules": [
+        {
+          "subruleKey": "PACKAGE_ACCEPTANCE_REQUIRED",
+          "canonicalSubrule": "Package-specific acceptance must pass.",
+          "permanentOwner": "backend/scripts/global_locked_invariant_suite_01_check.js",
+          "regressionOwner": "backend/scripts/locked_invariant_registry_01_check.js",
+          "requiredEvidenceType": "global-suite-ledger",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Package-specific acceptance must pass.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "GLOBAL_SUITE_REQUIRED",
+          "canonicalSubrule": "The global suite must pass.",
+          "permanentOwner": "backend/scripts/global_locked_invariant_suite_01_check.js",
+          "regressionOwner": "backend/scripts/locked_invariant_registry_01_check.js",
+          "requiredEvidenceType": "global-suite-ledger",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "The global suite must pass.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        },
+        {
+          "subruleKey": "UNPROVEN_STOPS_PROGRESS",
+          "canonicalSubrule": "Applicable unproven or failed invariants stop progression.",
+          "permanentOwner": "backend/scripts/global_locked_invariant_suite_01_check.js",
+          "regressionOwner": "backend/scripts/locked_invariant_registry_01_check.js",
+          "requiredEvidenceType": "global-suite-ledger",
+          "activationPhases": [
+            "ALWAYS",
+            "BOUNDED_PACKAGE",
+            "M18_PRODUCT_ACCEPTANCE"
+          ],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {
+            "status": "ACTIVE",
+            "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+            "canonicalReason": "No newer canonical source in the declared precedence chain supersedes or retires this rule; it remains current.",
+            "supersedingSource": null,
+            "oldRule": null,
+            "currentRule": "Applicable unproven or failed invariants stop progression.",
+            "effectOnTestOwner": "Owner remains the declared permanent/regression owner."
+          }
+        }
+      ],
+      "proofAdapter": {
+        "classification": "EXISTING_PERMANENT_PROOF_NOT_WIRED",
+        "command": "npm run check:lockedinvariantregistry01",
+        "evidence": "PASS: registry and stop-line orchestration."
+      },
+      "activationPhases": [
+        "ALWAYS",
+        "BOUNDED_PACKAGE",
+        "M18_PRODUCT_ACCEPTANCE"
+      ]
+    },
+    {
+      "invariantId": "EXECUTION-GOVERNANCE-BOUNDED-PROGRESS",
+      "family": "REPO-GOV",
+      "canonicalRule": "The execution operating system preserves one executing frontier, immutable lifetime root history, two fresh sweeps before freeze, and applicable AI holdout proof.",
+      "applicability": "M18_PRODUCT_ACCEPTANCE adoption and later milestone execution phases.",
+      "severity": "BLOCKER",
+      "sourceProvenance": [
+        "docs/superpowers/specs/2026-09-28-seferpakt-project-execution-operating-system-design.md",
+        "docs/NEXT_BACKLOG_V1.md",
+        "docs/MILESTONE_REGISTRY_V1.md"
+      ],
+      "permanentOwner": "docs/MILESTONE_REGISTRY_V1.md",
+      "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+      "requiredEvidenceType": "governance-and-lifecycle-check",
+      "realBrowserRequired": false,
+      "realDeviceRequired": false,
+      "publicRuntimeRequired": false,
+      "currentCoverageState": "REGISTERED_UNPROVEN",
+      "aliases": [],
+      "subrules": [
+        {
+          "subruleKey": "ROOT_CLASS_REPEATED_AFTER_TWO_ATTEMPTS_ESCALATES",
+          "canonicalSubrule": "A third recurrence in one architecture epoch requires architectural review and never resets lifetime history.",
+          "permanentOwner": "docs/MILESTONE_REGISTRY_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "root-class-epoch-ledger",
+          "activationPhases": ["M18_PRODUCT_ACCEPTANCE"],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {"status": "ACTIVE", "auditedPhase": "M18_PRODUCT_ACCEPTANCE", "canonicalReason": "No equivalent invariant family exists; this subrule is registered by the approved adoption plan.", "supersedingSource": null, "oldRule": null, "currentRule": "A third recurrence in one architecture epoch requires architectural review and never resets lifetime history.", "effectOnTestOwner": "Owner is the adoption validator inside the existing repository check chain."}
+        },
+        {
+          "subruleKey": "TWO_FRESH_SWEEPS_ZERO_NEW_ROOT_FREEZE",
+          "canonicalSubrule": "Freeze eligibility requires two fresh sweeps with zero new root-class defects, together with every other formula term.",
+          "permanentOwner": "docs/MILESTONE_REGISTRY_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "freeze-formula-check",
+          "activationPhases": ["M18_PRODUCT_ACCEPTANCE"],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {"status": "ACTIVE", "auditedPhase": "M18_PRODUCT_ACCEPTANCE", "canonicalReason": "No equivalent invariant family exists; this subrule is registered by the approved adoption plan.", "supersedingSource": null, "oldRule": null, "currentRule": "Freeze eligibility requires two fresh sweeps with zero new root-class defects, together with every other formula term.", "effectOnTestOwner": "Owner is the adoption validator inside the existing repository check chain."}
+        },
+        {
+          "subruleKey": "AI_HOLDOUT_REQUIRED_WHERE_APPLICABLE",
+          "canonicalSubrule": "Applicable AI semantic capabilities require behavior-class holdout proof with zero phrase-specific production patches.",
+          "permanentOwner": "docs/PRIMER_SSOT.md",
+          "regressionOwner": "backend/scripts/sefer_abi_reasoning_assistant_01_check.js",
+          "requiredEvidenceType": "semantic-holdout-check",
+          "activationPhases": ["M18_PRODUCT_ACCEPTANCE"],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {"status": "ACTIVE", "auditedPhase": "M18_PRODUCT_ACCEPTANCE", "canonicalReason": "No equivalent invariant family exists; this subrule is registered by the approved adoption plan.", "supersedingSource": null, "oldRule": null, "currentRule": "Applicable AI semantic capabilities require behavior-class holdout proof with zero phrase-specific production patches.", "effectOnTestOwner": "Owner is the existing Sefer Abi reasoning acceptance check."}
+        },
+        {
+          "subruleKey": "SINGLE_ACTIVE_FRONTIER",
+          "canonicalSubrule": "Exactly one EXECUTING_ACTIVE_FRONTIER exists at all times; a stop-the-line suspends the prior frontier and becomes the sole active frontier.",
+          "permanentOwner": "docs/NEXT_BACKLOG_V1.md",
+          "regressionOwner": "backend/scripts/run_repo_check_chain.js",
+          "requiredEvidenceType": "frontier-marker-check",
+          "activationPhases": ["M18_PRODUCT_ACCEPTANCE"],
+          "ruleLifecycleStatus": "ACTIVE",
+          "lifecycleAudit": {"status": "ACTIVE", "auditedPhase": "M18_PRODUCT_ACCEPTANCE", "canonicalReason": "No equivalent invariant family exists; this subrule is registered by the approved adoption plan.", "supersedingSource": null, "oldRule": null, "currentRule": "Exactly one EXECUTING_ACTIVE_FRONTIER exists at all times; a stop-the-line suspends the prior frontier and becomes the sole active frontier.", "effectOnTestOwner": "Owner is the adoption validator inside the existing repository check chain."}
+        }
+      ],
+  "proofAdapter": {
+    "classification": "REGISTERED_UNPROVEN",
+    "command": "node backend/scripts/run_repo_check_chain.js --adoption-only",
+    "evidence": "Registered by the approved adoption plan; the existing adoption owner now emits typed per-subrule proof states and retains any missing root-class, fresh-sweep, or runtime-holdout evidence as UNPROVEN.",
+    "runtimeContract": true,
+    "runtimeCheckCommand": "node backend/scripts/run_repo_check_chain.js --adoption-proof",
+    "runtimeProtocol": "EXECUTION_GOVERNANCE_BOUNDED_PROGRESS_PROOF_V1"
+  },
+      "activationPhases": ["M18_PRODUCT_ACCEPTANCE"]
+    }
+  ],
+  "currentPhase": "M18_PRODUCT_ACCEPTANCE",
+  "phaseOrder": [
+    "ALWAYS",
+    "BOUNDED_PACKAGE",
+    "M18_PRODUCT_ACCEPTANCE",
+    "FINAL_REAL_ACCEPTANCE",
+    "REPOSITORY_EXIT",
+    "PRE_COMMIT",
+    "POST_COMMIT",
+    "TAG_AND_PUSH",
+    "REMOTE_PARITY",
+    "MILESTONE_CLOSURE"
+  ],
+  "ruleLifecycleStatusValues": [
+    "ACTIVE",
+    "REVISED",
+    "SUPERSEDED",
+    "RETIRED",
+    "CONTEXTUAL",
+    "REQUIRES_REVIEW"
+  ],
+  "lifecycleAudit": {
+    "auditVersion": 1,
+    "auditedPhase": "M18_PRODUCT_ACCEPTANCE",
+    "authorityPrecedence": [
+      "current repository/source",
+      "canonical repository docs",
+      "existing milestone/addendum docs",
+      "existing checker/harness owners",
+      "durable ratified governance/product decisions"
+    ],
+    "historicalTraceability": "Every subrule keeps its stable invariantId/subruleKey; status changes must retain oldRule/currentRule/reason/supersedingSource/effectOnTestOwner.",
+    "defaultDisposition": "ACTIVE unless the rule is explicitly scoped to a later lifecycle phase; later-phase-only closure rules are CONTEXTUAL.",
+    "unresolvedPolicy": "REQUIRES_REVIEW is used only when canonical sources conflict or cannot establish a safe current interpretation.",
+    "statusCounts": {
+      "ACTIVE": 111,
+      "REVISED": 0,
+      "SUPERSEDED": 0,
+      "RETIRED": 0,
+      "CONTEXTUAL": 8,
+      "REQUIRES_REVIEW": 0
+    }
+  },
+  "currentSourceIdentityMethod": {
+    "authority": "existing current-head/current-closure identity owners",
+    "algorithm": "RAW_SHA256_PER_FILE",
+    "sourceSets": [
+      "CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF",
+      "CURRENT_HEAD_APPROVED_PRESENTATION_IDENTITY",
+      "CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE",
+      "CURRENT_HEAD_APPROVED_SEFER_ABI_SEMANTIC_REASONING_ACCEPTANCE",
+      "CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES"
+    ],
+    "workingTreeProof": "Deterministic per-file identity is recorded for proof-relevant current source inputs during M18_PRODUCT_ACCEPTANCE.",
+    "closureBoundary": "COMMITTED_HEAD_VALIDATION, IMMUTABLE_TAG, PUSH, and REMOTE_SHA_PARITY remain separate mandatory later-phase checks."
+  }
+}
