@@ -44,6 +44,8 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: development
+      LOCAL_MAINTENANCE_MODE: ${LOCAL_MAINTENANCE_MODE:-0}
+      LOCAL_MAINTENANCE_SCOPE: ${LOCAL_MAINTENANCE_SCOPE:-}
       TZ: Europe/Istanbul
       PORT: ${API_PORT:-3000}
       JWT_SECRET: ${JWT_SECRET:-dev_secret_change_me}

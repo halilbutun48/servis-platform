@@ -376,7 +376,7 @@ function referenceId(scope, entity) {
 
 async function findPreferredShift(where) {
   const validated = await prisma.shift.findFirst({
-    where: { ...where, status: PUBLIC_SHIFT_STATUSES, routeSnapshotValidatedAt: { not: null } },
+    where: preferredValidatedRouteWhere(where),
     orderBy: [{ routeSnapshotValidatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
     select: SHIFT_SELECT,
   });
@@ -387,6 +387,20 @@ async function findPreferredShift(where) {
     select: SHIFT_SELECT,
   });
   return published ? { shift: published, selection: "PUBLISHED_SHIFT_FALLBACK" } : { shift: null, selection: "NO_SHIFT" };
+}
+
+// A non-null validation timestamp is not sufficient route evidence: older
+// preview rows can carry a timestamp while their measured route is zero.
+// Keep those rows out of the validated baseline so the scenario adapter cannot
+// silently bind to an incomplete/preflight-only shift.
+export function preferredValidatedRouteWhere(where = {}) {
+  return {
+    ...where,
+    status: PUBLIC_SHIFT_STATUSES,
+    routeSnapshotValidatedAt: { not: null },
+    routeSnapshotDistanceM: { gt: 0 },
+    routeSnapshotDurationSec: { gt: 0 },
+  };
 }
 
 async function loadCompanyBaseline(companyId) {

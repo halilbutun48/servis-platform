@@ -1,5 +1,16 @@
 export const OSRM_ROUTE_DRAFT_FROM_EXCEL_VERSION = 'OSRM-ROUTE-DRAFT-FROM-EXCEL-01';
 
+// Existing product action used when route order is missing or unverified.
+// This is a read-only semantic handoff: the assistant may identify and guide
+// to it, but cannot execute the route reorder/write itself.
+export const OSRM_ROUTE_ORDER_ACTION = Object.freeze({
+  key: 'ROUTE_ORDER_CREATE',
+  label: 'Rota sırasını oluştur',
+  precondition: 'ROUTE_ORDER_MISSING_OR_UNVERIFIED',
+  writeBoundary: 'USER_INITIATED_BUSINESS_WRITE',
+  assistantExecution: 'FORBIDDEN',
+});
+
 export const OSRM_ROUTE_DRAFT_FROM_EXCEL_STAGES = Object.freeze([
   Object.freeze({ id: 'STAGE_1', label: 'STAGE 1 — Source Draft Readiness', title: 'Source Draft Readiness', status: 'current baseline', futureOnly: false }),
   Object.freeze({ id: 'STAGE_2', label: 'STAGE 2 — Coordinate Readiness', title: 'Coordinate Readiness', status: 'current baseline', futureOnly: false }),

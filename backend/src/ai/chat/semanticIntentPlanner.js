@@ -1,8 +1,9 @@
 import { hasCrossTenantBoundarySignal, isExplicitRoleHelpIntent, isGenericProductHelpIntent, resolveConversationRoute } from "./conversationRouting.js";
-import { buildCanonicalTypedRequest, inferCanonicalSemanticRequest, validateCanonicalTypedRequest } from "./canonicalSemanticRequest.js";
+import { buildCanonicalTypedRequest, explicitShiftReferenceFromText, hasActiveWorkflowStepReference, hasLiveWorkflowGroundingReference, hasProductNoteLookupCue, inferCanonicalSemanticRequest, inferRoleScopedUiTarget, resolvePreviousRecordReference, resolveProductNoteFields, validateCanonicalTypedRequest } from "./canonicalSemanticRequest.js";
+import { resolveCurrentSelection } from "./canonicalSemanticContext.js";
 
 const INTENT_FAMILIES = [
-  "SCREEN_CONTEXT", "SELECTED_RECORD_CONTEXT", "RECORD_DETAILS", "CONTINUE_CURRENT_REASONING",
+  "SCREEN_CONTEXT", "SELECTED_RECORD_CONTEXT", "RECORD_DETAILS", "CONTINUE_CURRENT_REASONING", "EXPLAIN_CURRENT_TARGET",
   "CURRENT_SITUATION", "SCREEN_OR_SITUATION_SUMMARY", "ISSUE_DIAGNOSTIC", "RESOLUTION_PLAN", "PRIORITY", "NEXT_STEP", "CAUSE_WHY", "STATUS",
   "TEMPORAL_STATUS", "COUNT", "ENTITY_LOOKUP", "COMPARISON", "COST_TREND", "COMMERCIAL_SUMMARY",
   "SERVICE_SUMMARY", "LOCATION_GPS", "ETA", "PLAN_STATUS", "REQUEST_STATUS", "APPROVAL_STATUS",
@@ -20,7 +21,7 @@ const ALL_READ_DOMAINS = [
 const ROLE_DOMAIN_CAPABILITIES = {
   ROOM: {
     OFFERS: "ALLOW_READ", AGREEMENTS: "ALLOW_READ", SHIFTS: "ALLOW_READ", VEHICLES: "ALLOW_READ",
-    DRIVERS: "ALLOW_READ", OPERATIONS: "ALLOW_READ", BUDGET: "ALLOW_READ", FINANCE: "ALLOW_READ", NOTIFICATIONS: "ALLOW_READ",
+    DRIVERS: "ALLOW_READ", SERVICE_REQUESTS: "ALLOW_READ", OPERATIONS: "ALLOW_READ", BUDGET: "ALLOW_READ", FINANCE: "ALLOW_READ", NOTIFICATIONS: "ALLOW_READ",
   },
   COMPANY: {
     OFFERS: "ALLOW_READ", AGREEMENTS: "ALLOW_READ", SHIFTS: "ALLOW_READ", VEHICLES: "ALLOW_READ",
@@ -28,8 +29,8 @@ const ROLE_DOMAIN_CAPABILITIES = {
     FINANCE: "ALLOW_READ", NOTIFICATIONS: "ALLOW_READ",
   },
   SCHOOL: {
-    SHIFTS: "ALLOW_READ", PERSONNEL: "ALLOW_READ", OPERATIONS: "ALLOW_READ", VEHICLES: "ALLOW_READ",
-    FINANCE: "ALLOW_READ", NOTIFICATIONS: "ALLOW_READ", OFFERS: "DENY_READ", AGREEMENTS: "DENY_READ", BUDGET: "DENY_READ",
+    SHIFTS: "ALLOW_READ", AGREEMENTS: "ALLOW_READ", PERSONNEL: "ALLOW_READ", OPERATIONS: "ALLOW_READ", VEHICLES: "ALLOW_READ",
+    FINANCE: "ALLOW_READ", NOTIFICATIONS: "ALLOW_READ", OFFERS: "DENY_READ", BUDGET: "DENY_READ",
   },
   ORGANIZATION: {
     ORGANIZATION_PLANS: "ALLOW_READ", SHIFTS: "ALLOW_READ", PERSONNEL: "ALLOW_READ", OPERATIONS: "ALLOW_READ",
@@ -87,17 +88,19 @@ const FIELD_DEFINITIONS = [
     "hizmet alan teklif", "hizmet alanın teklifi", "hizmet alanin teklifi", "anlaşmadaki firma bedeli", "anlasmadaki firma bedeli",
     "sözleşmedeki firma bedeli", "sozlesmedeki firma bedeli", "firma ne teklif etmiş", "firma ne teklif etmis",
   ] },
+  { key: "NOTE", domain: "OFFERS", words: ["not", "notlar", "açıklama", "açıklaması", "açıklamaları", "aciklama", "aciklamasi", "aciklamalari"] },
   { key: "QUALITY_STATE", domain: "OFFERS", words: ["kalite", "kalite durumu", "veri kalitesi", "eksik veri"] },
   { key: "RISK_STATE", domain: "OFFERS", words: ["risk durumu", "risk seviyesi", "risk düzeyi", "risk duzeyi"] },
-  { key: "VEHICLE", domain: "VEHICLES", words: ["araç", "arac", "plaka", "vehicle"] },
-  { key: "DRIVER", domain: "DRIVERS", words: ["sürücü", "surucu", "şoför", "sofor", "driver"] },
+  { key: "OPERATION_STATUS", domain: "OPERATIONS", words: ["operasyon durumu", "operasyon durumunu", "operasyon durumunda", "uygunluk durumu", "uygunluk durumunu"] },
+  { key: "VEHICLE", domain: "VEHICLES", words: ["araç", "arac", "aracı", "araci", "aracını", "aracini", "aracının", "aracinin", "plaka", "vehicle", "bağlı araç", "bagli arac", "bağlı aracı", "bagli araci", "bağlı aracını", "bagli aracini"] },
+  { key: "DRIVER", domain: "DRIVERS", words: ["sürücü", "surucu", "sürücüsü", "surucusu", "sürücünün", "surucunun", "sürücüyü", "surucuyu", "şoför", "sofor", "driver"] },
   { key: "ETA", domain: "OPERATIONS", words: ["eta", "tahmini süre", "tahmini sure", "kaç dakika", "kac dakika", "kaç dk", "kac dk"] },
   { key: "GPS", domain: "OPERATIONS", words: ["konum", "gps", "nerede", "takip"] },
   { key: "ROUTE", domain: "OPERATIONS", words: ["rota", "durak", "dura", "güzergah", "guzergah"] },
   { key: "STOP_COUNT", domain: "OPERATIONS", words: ["durak sayısı", "durak sayisi", "durak adedi", "kaç durak", "kac durak", "kaç durağı", "kac duragi"] },
   { key: "PERSONNEL_COUNT", domain: "OPERATIONS", words: ["personel sayısı", "personel sayisi", "personel adedi", "kaç personel", "kac personel"] },
   { key: "OFFER", domain: "OFFERS", words: ["teklif", "offer", "rfq"] },
-  { key: "AGREEMENT", domain: "AGREEMENTS", words: ["sözleşme", "sozlesme", "anlaşma", "anlasma", "agreement", "contract"] },
+  { key: "AGREEMENT", domain: "AGREEMENTS", words: ["sözleşme", "sozlesme", "anlaşma", "anlasma", "agreement", "contract", "kontrat"] },
   { key: "SHIFT", domain: "SHIFTS", words: ["vardiya", "sefer", "shift"] },
   { key: "PLAN", domain: "ORGANIZATION_PLANS", words: ["organizasyon plan", "servis plan", "gezi plan", "planım", "planim", "planlarım", "planlarim"] },
   { key: "SERVICE_REQUEST", domain: "SERVICE_REQUESTS", words: ["servis talebi", "talebim", "başvuru", "basvuru"] },
@@ -185,6 +188,14 @@ function contextualPublicTypeDecision({ message, context } = {}) {
     taskVariant,
     guidedTaskMeta,
   });
+
+  // An explicit current-screen question outranks a selected record carried by
+  // the UI shell.  The selected record is useful evidence only when the user
+  // asks about that record; it must not turn “Bu ekran ne işe yarıyor?” into
+  // a stale record summary on personel/parent/live surfaces.
+  if (/(?:^|\b)(?:bu|su)\s+(?:ekran|sayfa|panel)\p{L}*\s+ne\s+(?:ise\s+yar\p{L}*|icin)\b|\b(?:burada|burda|burasi)\s+ne\s+(?:yap(?:abil\p{L}*)?|ise\s+yar\p{L}*)\b/iu.test(text)) {
+    return decision("SCREEN_PURPOSE", "explicit-current-screen-purpose", "SCREEN_CONTEXT");
+  }
 
   if (
     context.requestEntityType === "shift"
@@ -475,6 +486,10 @@ function parseExplicitEntities(message) {
   // ("Vardiya 151in") or after an apostrophe.  Retain the numeric entity
   // while leaving sentence semantics to the canonical request.
   collectTypedList(/\b(?:vardiya|sefer|shift)\s*#?\s*(\d+)(?:['’]?(?:in|ın|un|ün|i|ı|u|ü|e|a|de|da|den|dan))?\b((?:\s*(?:ve|ile|,|\/)\s*#?\s*\d+)*)/gu, "shift");
+  const numericFirstShift = explicitShiftReferenceFromText(text);
+  if (numericFirstShift) {
+    add({ ...numericFirstShift, type: "shift", token: text });
+  }
   const plates = original.matchAll(/\b(\d{2})\s*([A-ZÇĞİÖŞÜ]{1,3})\s*(\d{2,4})\b/giu);
   for (const match of plates) {
     // Turkish comparison particles ("35 mi 34 mü") match the visual plate
@@ -571,8 +586,8 @@ function parseEntity(message, selected, conversationState, screenContext, reques
   const explicit = parseExplicitEntities(message);
   if (explicit.length) return explicit[0];
   const normalizedMessage = normalize(message);
-  const selectedId = Number(selected?.entityId || conversationState?.selectedEntityId || screenContext?.selectedEntityId || 0);
-  const selectedType = typeForSelected(selected?.entityType || conversationState?.selectedEntityType || screenContext?.selectedEntityType);
+  const selectedId = Number(selected?.entityId || 0);
+  const selectedType = typeForSelected(selected?.entityType);
   const selectedRecordTerms = selectedType === "vehicle"
     ? ["araç", "arac", "plaka", "eta", "konum", "gps", "durak", "rota", "takip", "durum"]
     : selectedType === "shift"
@@ -600,8 +615,12 @@ function parseEntity(message, selected, conversationState, screenContext, reques
   const screenType = typeForSelected(screenContext?.selectedEntityType);
   const referential = isReferentialRequest(message);
   const discourseEntityReference = isDiscourseEntityReference(message);
-  const conversationEntities = conversationEntitiesFor(conversationState, { preferUniqueDiscourseReferent: discourseEntityReference });
+  const numericReferent = normalizedMessage.match(/^#?(\d+)\s+(?:acikla|açıkla|detay(?:landir|landır)?|anlat)\p{L}*\s*$/iu);
+  const conversationEntities = conversationEntitiesFor(conversationState, { preferUniqueDiscourseReferent: discourseEntityReference || referential || Boolean(numericReferent) });
   const inherited = conversationEntities.length === 1 ? conversationEntities[0] : null;
+  if (numericReferent && inherited && Number(inherited.id) === Number(numericReferent[1]) && entityDomainsCompatible(inherited.type, requestedDomains)) {
+    return { ...inherited, source: "FOLLOW_UP_CONTEXT" };
+  }
   // "Onun/şunun" and named discourse references identify what was being
   // discussed. They must not silently bind to a UI card that happens to stay
   // selected after a multi-record comparison. A unique retained entity is
@@ -690,7 +709,7 @@ function resolveEntities(message, selected, conversationState, screenContext, re
     && hasAny(normalizedMessage, ["risk", "riskler", "tehlike", "sorun", "problem", "gerekçe", "gerekce", "neden", "fark", "durum"]);
   const activeComparisonTask = activeComparisonSet.length > 1
     && (priorityComparisonSignal || riskComparisonSignal || twoEntityReasoningSignal);
-  const selectedType = typeForSelected(selected?.entityType || conversationState?.selectedEntityType || screenContext?.selectedEntityType);
+  const selectedType = typeForSelected(selected?.entityType);
   const storedCandidates = conversationEntitiesFor(conversationState);
   const uiCandidates = Array.isArray(screenContext?.selectedEntitySet) ? screenContext.selectedEntitySet.filter(Boolean) : [];
   const conversationCandidates = storedCandidates.length > 1 ? storedCandidates : uiCandidates.length > 1 ? uiCandidates : storedCandidates;
@@ -706,6 +725,14 @@ function resolveEntities(message, selected, conversationState, screenContext, re
     return conversationCandidates.map((item) => ({ ...item, source: "ACTIVE_COMPARISON_CONTEXT" }));
   }
   const entity = parseEntity(message, selected, conversationState, screenContext, requestedDomains);
+  const previousRecord = resolvePreviousRecordReference({
+    message,
+    conversationState,
+    selectedEntity: selected,
+    screenContext,
+    requestedDomains,
+  });
+  if (previousRecord && entityKey(previousRecord) !== entityKey(entity)) return [previousRecord];
   if (!entity) return [];
   const contextualRelated = conversationEntitiesFor(conversationState).find((candidate) => candidate && entityKey(candidate) !== entityKey(entity) && ["shift", "vehicle", "driver", "agreement"].includes(candidate.type));
   const relatedType = typeForSelected(selected?.relatedEntityType || conversationState?.selectedRelatedEntityType || screenContext?.selectedRelatedEntityType) || contextualRelated?.type || "";
@@ -713,6 +740,10 @@ function resolveEntities(message, selected, conversationState, screenContext, re
   const relatedDomain = domainForEntityType(relatedType);
   const asksForRelatedEntity = relatedType
     && relatedId > 0
+    // A retained same-type record is stale context, not a relation target.
+    // Without this boundary, a selected shift question can append a previous
+    // shift and later render as a side-by-side result.
+    && relatedType !== entity.type
     && requestedDomains.includes(relatedDomain)
     && (entity.type === "offer" || entity.type === "agreement" || entity.type === "shift")
     && hasAny(normalize(message), ["karşılaştır", "karsilastir", "fark", "vardiya", "sefer", "bağlı", "bagli", "ilişkili", "iliskili"]);
@@ -734,11 +765,11 @@ function resolveRelationshipIntent(text, entities, selected, conversationState, 
   const relationTarget = hasAny(text, [
     "vardiya", "sefer", "shift", "araç", "arac", "vehicle", "sürücü", "surucu", "şoför", "sofor", "sözleşme", "sozlesme",
     "agreement", "bağlı kayıt", "bagli kayit", "ilişkili kayıt", "iliskili kayit", "kayıt", "kayit",
-  ]) || /\bkay\p{L}*/iu.test(text);
+  ]) || /\bkay(?:it|d)\p{L}*/iu.test(text);
   const relationGrammar = /(?:bagl\p{L}*|ait\p{L}*|ilisk\p{L}*|baglanti\p{L}*|esles\p{L}*|kayn\p{L}*)/iu.test(text)
     || /\bhangi\s+vardiyan\p{L}*/iu.test(text)
     || /(?:hangi|ne|numarasi|no|id)\s+(?:vardiya|sefer|shift|arac\p{L}*|surucu\p{L}*|sofor\p{L}*|sozlesme\p{L}*|kayit\p{L}*)/iu.test(text)
-    || /(?:vardiya|sefer|shift|arac\p{L}*|surucu\p{L}*|sofor\p{L}*|sozlesme\p{L}*|kayit\p{L}*).{0,24}(?:hangisi|ne|numarasi|no|id)/iu.test(text);
+    || /(?:vardiya|sefer|shift|arac\p{L}*|surucu\p{L}*|sofor\p{L}*|sozlesme\p{L}*|kayit\p{L}*).{0,24}(?:hangisi|kim|ne|numarasi|no|id)/iu.test(text);
   if (!relationTarget || (!hasAny(text, relationWords) && !relationGrammar)) return null;
   const contextualTarget = conversationEntitiesFor(conversationState).find((candidate) => candidate && entityKey(candidate) !== entityKey(source) && ["shift", "vehicle", "driver", "agreement"].includes(candidate.type));
   const selectedRelatedType = typeForSelected(selected?.relatedEntityType || conversationState?.selectedRelatedEntityType || screenContext?.selectedRelatedEntityType);
@@ -758,8 +789,16 @@ function resolveRelationshipIntent(text, entities, selected, conversationState, 
     || contextualTarget?.type
     || "";
   if (!targetType || targetType === source.type) return null;
-  const target = entities.find((entity) => entity.type === targetType && entityKey(entity) !== entityKey(source)) || contextualTarget || (() => {
-    const relatedId = selectedRelatedId;
+  const target = entities.find((entity) => entity.type === targetType && entityKey(entity) !== entityKey(source))
+    // A retained candidate is usable only when it has the requested relation
+    // type.  Falling back to any contextual record lets a stale same-type
+    // shift masquerade as the vehicle/driver target of the current shift.
+    || (contextualTarget?.type === targetType ? contextualTarget : null)
+    || (() => {
+    // The selected related id is typed UI evidence, not a generic numeric
+    // referent.  Never reuse a shift id as an agreement (or another target
+    // type) merely because the question names that relation.
+    const relatedId = selectedRelatedType === targetType ? selectedRelatedId : 0;
     return relatedId > 0 ? { type: targetType, id: relatedId, source: "SELECTED_RELATION" } : null;
   })();
   const fieldTargetType = {
@@ -775,11 +814,14 @@ function resolveRelationshipIntent(text, entities, selected, conversationState, 
   // preserve a typed target descriptor so the executor can derive the value
   // from the selected source fact without widening authorization or reading
   // an arbitrary Driver record.
-  const resolvedTarget = target || (targetType && targetType !== source.type
-    ? { type: targetType, id: null, source: "RELATION_FIELD_TARGET" }
-    : fieldTargetType && fieldTargetType !== source.type
-      ? { type: fieldTargetType, id: null, source: "RELATION_FIELD_TARGET" }
-      : null);
+  const derivedTargetType = targetType || fieldTargetType;
+  const canUseDerivedRelationField = fieldTargetType
+    && fieldTargetType === derivedTargetType
+    && derivedTargetType !== source.type
+    && derivedTargetType !== "agreement";
+  const resolvedTarget = target || (canUseDerivedRelationField
+    ? { type: derivedTargetType, id: null, source: "RELATION_FIELD_TARGET" }
+    : null);
   if (!resolvedTarget) return null;
   const authorizedTarget = source.type === "offer" && resolvedTarget.type === "shift" && Number(source.id) > 0
     ? { ...resolvedTarget, source: "OFFER_RELATION", relatedOfferId: Number(source.id) }
@@ -807,12 +849,16 @@ function resolveTemporalMode(text) {
 function resolveDomains(text, role) {
   const domains = [];
   if (hasAny(text, ["teklif", "rfq", "fiyat teklifi"])) domains.push("OFFERS");
-  if (hasAny(text, ["sözleşme", "sozlesme", "anlaşma", "anlasma", "contract", "agreement"])) domains.push("AGREEMENTS");
+  if (hasAny(text, ["sözleşme", "sozlesme", "anlaşma", "anlasma", "contract", "agreement", "kontrat"])) domains.push("AGREEMENTS");
   if (hasAny(text, ["vardiya", "sefer", "shift", "görev", "gorev"])) domains.push("SHIFTS");
   if (hasAny(text, ["araç", "arac", "plaka", "vehicle"])) domains.push("VEHICLES");
   if (hasAny(text, ["sürücü", "surucu", "şoför", "sofor", "driver"])) domains.push("DRIVERS");
   if (hasAny(text, ["öğrenci", "ogrenci", "çocuk", "cocuk", "personel", "çalışan", "calisan", "veli erişimi", "veli erisimi"])) domains.push("PERSONNEL");
   if (hasAny(text, ["servis talebi", "talebim", "talep", "taleb", "başvuru", "basvuru", "istek"])) domains.push("SERVICE_REQUESTS");
+  if (role === "ROOM" && hasAny(text, [
+    "biniş değişikliği", "binis degisikligi", "biniş değişiklik", "binis degisiklik",
+    "biniş talebi", "binis talebi", "pickup request", "pickup değiş", "pickup degis",
+  ])) domains.push("SERVICE_REQUESTS");
   if (hasAny(text, ["servis", "service"]) && !hasAny(text, ["servis talebi", "talebim", "talep", "taleb"])) domains.push("OPERATIONS", "SHIFTS");
   if (hasAny(text, ["servis plan", "servisim", "servis durumu", "service plan", "service status"])) domains.push("OPERATIONS", "SHIFTS");
   if (hasAny(text, ["konum", "gps", "rota", "durak", "dura", "takip", "operasyon", "gecik", "sorun", "risk"]) || hasEtaSignal(text) || hasWord(text, "nerede")) domains.push("OPERATIONS");
@@ -849,12 +895,17 @@ function resolveRequestedFields(text, { inferGenericCommercialValue = false, rol
         return normalizedWord.includes(" ") ? text.includes(normalizedWord) : hasWord(text, normalizedWord);
       });
       if (!matchedWords.length) return [];
+      if (field.key === "NOTE" && !hasProductNoteLookupCue(text)) return [];
       const onlyDecisionWord = matchedWords.every((word) => ["karar", "kararı", "karari"].includes(normalize(word)));
       if (field.key === "STATUS" && decisionProcessLanguage && onlyDecisionWord) return [];
       return [{ key: field.key, domain: field.domain }];
     }),
     ...(inferGenericCommercialValue ? inferCommercialValueFields(text, { role }) : []),
   ];
+  if (hasProductNoteLookupCue(text)) {
+    fields.push(...resolveProductNoteFields(text));
+  }
+  const noteSpecificRequested = fields.some((field) => ["NOTE_COMPANY", "NOTE_ROOM"].includes(field.key));
   // Turkish case suffixes preserve the status concept (for example
   // "durumda", "durumdaydı"). Resolve those forms as STATUS without
   // requiring one literal inflection for every user wording.
@@ -895,6 +946,11 @@ function resolveRequestedFields(text, { inferGenericCommercialValue = false, rol
     && /(?:hangi|ne)\s+(?:saat|zaman)|(?:saatler|tarih\p{L}*(?:\s+\p{L}+){0,3}\s+(?:aralig|saat|zaman)\p{L}*)/iu.test(text));
   if (dateRangeSignal && !fields.some((field) => field.key === "DATE_RANGE")) fields.push({ key: "DATE_RANGE", domain: null });
   if (shiftTimeRangeSignal && !fields.some((field) => field.key === "TIME_RANGE")) fields.push({ key: "TIME_RANGE", domain: null });
+  const checkinQuestionSignal = /\b(?:durum|say|kac|acikla|goster)\p{L}*\b/iu.test(text);
+  const boardingCountSignal = checkinQuestionSignal && /\bbinis\p{L}*\b/iu.test(text);
+  const alightingCountSignal = checkinQuestionSignal && /\binis\p{L}*\b/iu.test(text);
+  if (boardingCountSignal && !fields.some((field) => field.key === "BOARDING_COUNT")) fields.push({ key: "BOARDING_COUNT", domain: "OPERATIONS" });
+  if (alightingCountSignal && !fields.some((field) => field.key === "ALIGHTING_COUNT")) fields.push({ key: "ALIGHTING_COUNT", domain: "OPERATIONS" });
   const compositeKeys = new Set(fields.map((field) => field.key));
   const completeFields = compositeKeys.has("DATE_RANGE") || compositeKeys.has("TIME_RANGE")
     ? fields.filter((field) => !["DATE", "START_TIME", "END_TIME"].includes(field.key))
@@ -911,6 +967,7 @@ function resolveRequestedFields(text, { inferGenericCommercialValue = false, rol
   return completeFields
     .filter((field) => !(timeSpecificComposite && field.key === "DATE_RANGE"))
     .filter((field) => !entityFields.has(field.key))
+    .filter((field) => !(noteSpecificRequested && field.key === "NOTE"))
     .filter((field) => !(field.key === "SERVICE_BUYER_AMOUNT" && carrierAmountSignal && !buyerAmountSignal))
     .filter((field, index, all) => all.findIndex((candidate) => candidate.key === field.key) === index);
 }
@@ -991,6 +1048,26 @@ function isDirectBlockedControlQuestion(text) {
 
 function isFieldDefinitionQuestion(text) {
   return /\b(?:ne\s+(?:işe|ise)\s+yarar|ne\s+demek)\b/iu.test(text);
+}
+
+function isCollectionStatusDistributionRequest(text, { screenContext = null, canonicalShape = null } = {}) {
+  const value = normalize(text);
+  const agreementScope = canonicalShape?.domain === "AGREEMENTS"
+    || canonicalShape?.targetEntityType === "AGREEMENT"
+    || /\/agreements\b/iu.test(String(screenContext?.path || ""))
+    || /\b(?:sozlesme|anlasma|agreement|contract|kontrat)\p{L}*\b/iu.test(value);
+  if (!agreementScope) return false;
+  const explicitSingleRecord = /\b(?:bu|su|secil(?:i|en)?|aktif|mevcut|baktigim)\s+(?:sozlesme|anlasma|agreement|contract|kontrat)\p{L}*\b/iu.test(value)
+    || /\b(?:sozlesmenin|anlasmanin|agreementin|contractin)\b/iu.test(value)
+    || /\b(?:sozlesme|anlasma|agreement|contract|kontrat)\s*#?\d+\b/iu.test(value);
+  if (explicitSingleRecord) return false;
+  const statusWord = /\b(?:durum|statu|status)\p{L}*\b/iu.test(value);
+  const distributionWord = /\b(?:dagilim|dagilimi|dagilimini|hangi\s+durum|durumlar\p{L}*|durum\w*\s+(?:ozet|acikla|anlat))\b/iu.test(value);
+  const pluralAgreement = /\b(?:sozlesme|anlasma|agreement|contract|kontrat)(?:ler|lar|lerin|larin|lerim|larim|lerimin|larimin|lerimizin|larimizin)\b/iu.test(value);
+  const multipleStatusQuestions = (value.match(/\bkac(?:i|ı)\b/giu) || []).length >= 2;
+  return distributionWord
+    || (pluralAgreement && statusWord)
+    || (multipleStatusQuestions && (statusWord || agreementScope));
 }
 
 function resolveFamily({ text, domains, entity, entities, temporalMode, relationshipIntent, requestedFields = [] }) {
@@ -1129,6 +1206,89 @@ function buildContinuationSemanticPlan({ role, text, conversationRoute, conversa
   for (let depth = 0; depth < 6 && basePlan && ["STYLE", "CONTINUE_CURRENT_REASONING"].includes(basePlan.family); depth += 1) {
     basePlan = basePlan.family === "STYLE" ? basePlan.styleTargetPlan || null : basePlan.continuationBasePlan || null;
   }
+  const workflowModel = basePlan?.workflowModel || canonicalShape?.workflowModel || null;
+  const workflowAction = canonicalShape?.continuationAction || "CONTINUE";
+  const analyticFamily = ["RISK_RANKING", "COMPARISON", "PRIORITY", "CAUSE_WHY"].includes(String(basePlan?.family || ""))
+    ? String(basePlan.family)
+    : "";
+  const storedAnalyticState = conversationState?.lastSettledResult?.analyticStepState;
+  const sameAnalyticScope = Boolean(
+    analyticFamily
+      && storedAnalyticState?.family === analyticFamily
+      && Number(storedAnalyticState?.authScopeVersion || 0) === Number(conversationState?.authScopeVersion || 0)
+      && String(storedAnalyticState?.screenPath || "") === String(screenContext?.path || "")
+      && Array.isArray(storedAnalyticState?.steps),
+  );
+  const analyticCurrentOrdinal = sameAnalyticScope
+    ? Math.max(1, Number(storedAnalyticState.cursor || 1) || 1)
+    : 1;
+  const analyticTargetOrdinal = workflowAction === "BACK"
+    ? Math.max(1, analyticCurrentOrdinal - 1)
+    : workflowAction === "RECOVER"
+      ? analyticCurrentOrdinal
+      : analyticCurrentOrdinal + 1;
+  const analyticStepState = sameAnalyticScope
+    ? {
+      family: analyticFamily,
+      screenPath: String(screenContext?.path || ""),
+      authScopeVersion: Number(conversationState?.authScopeVersion || 0) || 0,
+      cursor: analyticCurrentOrdinal,
+      targetOrdinal: analyticTargetOrdinal,
+      action: workflowAction,
+      canRestorePrevious: workflowAction === "BACK" && analyticCurrentOrdinal > 1,
+      steps: storedAnalyticState.steps.slice(0, 8),
+    }
+    : null;
+  const baseWorkflowStep = Number(basePlan?.workflowStepReference?.ordinal || basePlan?.workflowStepOrdinal || 1) || 1;
+  const explicitWorkflowStep = canonicalShape?.workflowStepReference?.ordinal
+    ? Number(canonicalShape.workflowStepReference.ordinal)
+    : null;
+  const actualUiState = screenContext?.uiHints?.workflowState && typeof screenContext.uiHints.workflowState === "object"
+    ? screenContext.uiHints.workflowState
+    : null;
+  const actualUiStepOrdinal = Number(actualUiState?.activeStepOrdinal || 0) || null;
+  const actualCompletedThroughOrdinal = Number(actualUiState?.completedThroughOrdinal || 0) || 0;
+  const boundedWorkflowStep = (value) => Math.max(1, Math.min(workflowModel?.steps?.length || 4, Number(value) || 1));
+  let workflowStepOrdinal = workflowModel
+    ? boundedWorkflowStep(explicitWorkflowStep || baseWorkflowStep)
+    : null;
+  let workflowProgressionAction = workflowAction;
+  let workflowCompletionVerified = false;
+  let workflowPreconditionBlocked = false;
+  if (workflowModel && !explicitWorkflowStep) {
+    if (workflowAction === "BACK") {
+      // BACK is a presentation transition over the settled workflow, not a
+      // claim that the live UI moved.  Explain the immediately preceding
+      // canonical step while retaining the observed UI state for safety.
+      workflowStepOrdinal = boundedWorkflowStep(baseWorkflowStep - 1);
+    } else if (workflowAction === "NEXT") {
+      const verifiedLiveAdvance = Boolean(
+        actualUiStepOrdinal
+        && actualUiStepOrdinal > baseWorkflowStep
+        && actualCompletedThroughOrdinal >= baseWorkflowStep,
+      );
+      if (verifiedLiveAdvance) {
+        workflowStepOrdinal = boundedWorkflowStep(actualUiStepOrdinal);
+        workflowCompletionVerified = true;
+      } else {
+        // Conversation turns never prove a guided step.  Without a live UI
+        // transition that shows the prior step completed, keep the current
+        // step and expose a truthful blocked progression instead of inventing
+        // task progress.
+        workflowStepOrdinal = boundedWorkflowStep(actualUiStepOrdinal || baseWorkflowStep);
+        workflowProgressionAction = "BLOCKED_PRECONDITION";
+        workflowPreconditionBlocked = true;
+      }
+    } else if (actualUiStepOrdinal && actualUiStepOrdinal > baseWorkflowStep) {
+      // The UI may have advanced after an earlier assistant turn. Reconcile
+      // the canonical task to that observed current step without treating a
+      // message as completion evidence.
+      workflowStepOrdinal = boundedWorkflowStep(actualUiStepOrdinal);
+    }
+  }
+  const workflowStepReference = workflowModel?.steps?.find((step) => step.ordinal === workflowStepOrdinal)
+    ? { ordinal: workflowStepOrdinal, key: workflowModel.steps[workflowStepOrdinal - 1].key, label: workflowModel.steps[workflowStepOrdinal - 1].label }
+    : basePlan?.workflowStepReference || null;
   const screenEntity = screenContext?.selectedEntityId && screenContext?.selectedEntityType
     ? [{ type: typeForSelected(screenContext.selectedEntityType), id: Number(screenContext.selectedEntityId), source: "SCREEN_RECORD" }]
     : [];
@@ -1144,14 +1304,25 @@ function buildContinuationSemanticPlan({ role, text, conversationRoute, conversa
   const previousAnswerText = [...recentMessages].reverse().find((item) => item?.role === "assistant" && item?.text)?.text || "";
   const continuationOfFamily = basePlan?.continuationOfFamily || basePlan?.family || null;
   const continuationDepth = priorContinuationDepth > 0 ? priorContinuationDepth + 1 : 1;
-  const hasGroundedBase = Boolean(basePlan && (basePlan.dialogueTopic === "PRODUCT" || basePlan.requestedDomains?.length || basePlan.entities?.length));
+  const hasGroundedBase = Boolean(basePlan && (
+    basePlan.dialogueTopic === "PRODUCT"
+    || basePlan.requestedDomains?.length
+    || basePlan.entities?.length
+    || ["GENERIC_PRODUCT_HELP", "ROLE_EXPLANATION_HELP"].includes(String(basePlan.family || ""))
+    || String(basePlan.conversationRoute || "") === "GENERIC_PRODUCT_HELP"
+  ));
   const clarificationNeed = hasGroundedBase ? null : "CONTINUATION_BASE_NOT_FOUND";
   const shape = {
     taskType: "CONTINUE_CURRENT_REASONING",
     domain: requestedDomains[0] || null,
     targetEntityType: entities[0]?.type ? String(entities[0].type).toUpperCase() : null,
     continuationIntent: true,
-    continuationAction: canonicalShape?.continuationAction || "CONTINUE",
+    continuationAction: workflowAction,
+    workflowIntent: basePlan?.workflowIntent || canonicalShape?.workflowIntent || null,
+    capabilityIntent: basePlan?.capabilityIntent || canonicalShape?.capabilityIntent || null,
+    workflowModel,
+    workflowStepReference,
+    workflowStepIntent: Boolean(workflowStepReference),
     explicitUserTarget: hasGroundedBase,
     confidence: hasGroundedBase ? 0.98 : 0.45,
   };
@@ -1191,7 +1362,23 @@ function buildContinuationSemanticPlan({ role, text, conversationRoute, conversa
     taskVariant: "CONTINUE_CURRENT_REASONING",
     continuationOfFamily,
     continuationDepth,
-    continuationAction: canonicalShape?.continuationAction || "CONTINUE",
+    continuationAction: workflowAction,
+    workflowIntent: basePlan?.workflowIntent || canonicalShape?.workflowIntent || null,
+    capabilityIntent: basePlan?.capabilityIntent || canonicalShape?.capabilityIntent || null,
+    workflowModel,
+    workflowStepReference,
+    workflowStepOrdinal,
+    workflowProgression: workflowModel ? {
+      action: workflowProgressionAction,
+      fromOrdinal: baseWorkflowStep,
+      toOrdinal: workflowStepOrdinal,
+      preconditionSatisfied: workflowCompletionVerified,
+      blockedByPrecondition: workflowPreconditionBlocked,
+    } : null,
+    workflowActualUiState: actualUiState,
+    workflowCompletionVerified,
+    workflowPreconditionBlocked,
+    analyticStepState,
     continuationBasePlan: basePlan,
     previousAnswerText,
     requestedStyle: "",
@@ -1223,7 +1410,7 @@ function buildContinuationSemanticPlan({ role, text, conversationRoute, conversa
       requestedFieldKeys: requestedFields.map((field) => field.key || field),
       requestedTaskSlots: [],
       taskType: "CONTINUE_CURRENT_REASONING",
-      continuationAction: canonicalShape?.continuationAction || "CONTINUE",
+      continuationAction: workflowAction,
       followUp: true,
       previousIntentFamily: continuationOfFamily,
       dialogueTopic: "PRODUCT",
@@ -1239,6 +1426,210 @@ function buildContinuationSemanticPlan({ role, text, conversationRoute, conversa
       comparisonSpec,
       outputStyle: "CONTINUATION",
       typedRequest,
+    },
+  };
+}
+
+function blockLevelTargetIntent(value, canonicalShape = null, screenContext = null) {
+  // A capability named by the user is still a CONTROL request (for example
+  // how to enter an address or add personnel).  BLOCK intent is reserved for
+  // structural/deictic questions about the current region, step, or the next
+  // proven region in the live workflow.
+  if (canonicalShape?.capabilityIntent) return false;
+  const normalized = normalize(value);
+  const structuralReference = /\b(?:bu|su|burasi|burayi|burada|burda|mevcut|sonraki|bir\s+sonraki)\b/iu.test(normalized);
+  const structuralNoun = /\b(?:bolum|blok|alan|kisim|adim|ekran|yuzey)\b/iu.test(normalized);
+  const explanationOperator = /\b(?:ne|nasil|amac|neden|ise\s+yar|yap|nap|anlat|acikla|sirada|siradaki|sonraki)\p{L}*/iu.test(normalized);
+  const walkthroughOperator = /\badim\s+adim\b/iu.test(normalized) && /\b(?:anlat|acikla|goster|yap)\p{L}*/iu.test(normalized);
+  const nextBlockOperator = /\b(?:sonraki|bir\s+sonraki)\s+(?:bolum|blok|alan|kisim)\b/iu.test(normalized);
+  const hasLiveBlock = Array.isArray(screenContext?.uiHints?.semanticBlocks)
+    && screenContext.uiHints.semanticBlocks.some((row) => row && typeof row === "object" && (row.blockKey || row.semanticId) && row.label);
+  const deicticSurfaceQuestion = /\b(?:burasi|burada|burda|su\s+an)\b.{0,48}\b(?:ne|napiyoruz|ne\s+var|nasil|neredeyim|ne\s+ise\s+yar|yapiliyor|yapiyoruz|ne\s+yap|nap)\p{L}*/iu.test(normalized)
+    || /\bbu\s+(?:alan|bolum|kisim|adim|ekran)(?:da|de)?\b.{0,48}\b(?:ne|nasil|var|yap|nap|ise\s+yar)\p{L}*/iu.test(normalized);
+  return nextBlockOperator
+    || (structuralReference && structuralNoun && explanationOperator)
+    || (structuralReference && (walkthroughOperator || /\b(?:ne\s+yap|nap)\p{L}*\b/iu.test(normalized)))
+    || (hasLiveBlock && deicticSurfaceQuestion);
+}
+
+function nextBlockTargetIntent(value) {
+  return /\b(?:sonraki|bir\s+sonraki)\s+(?:bolum|blok|alan|kisim)\b/iu.test(normalize(value));
+}
+
+function liveCanonicalBlockReference({ text, screenContext, currentTarget } = {}) {
+  const liveBlocks = Array.isArray(screenContext?.uiHints?.semanticBlocks)
+    ? screenContext.uiHints.semanticBlocks
+      .filter((row) => row && typeof row === "object" && (row.blockKey || row.semanticId) && row.label)
+      .slice()
+      .sort((left, right) => Number(left.order || 0) - Number(right.order || 0))
+    : [];
+  if (!liveBlocks.length) return null;
+  const nextBlock = nextBlockTargetIntent(text);
+  if (nextBlock) {
+    const currentKey = String(currentTarget?.blockKey || currentTarget?.targetKey || "").trim();
+    const currentIndex = liveBlocks.findIndex((row) =>
+      row.blockKey === currentKey
+      || row.semanticId === currentKey
+      || (Array.isArray(row.controlSemanticIds) && row.controlSemanticIds.includes(currentKey))
+    );
+    if (currentIndex >= 0 && liveBlocks[currentIndex + 1]) return liveBlocks[currentIndex + 1];
+  }
+  // If there is no distinct next block on the live surface, use the first
+  // proven canonical block rather than carrying a previous CONTROL forward.
+  // The target resolver still verifies the block identity against the live
+  // authorized surface before returning FOUND.
+  return liveBlocks[0];
+}
+
+function hasLiveCanonicalBlock(screenContext) {
+  return Array.isArray(screenContext?.uiHints?.semanticBlocks)
+    && screenContext.uiHints.semanticBlocks.some((row) => row && typeof row === "object" && (row.blockKey || row.semanticId) && row.label);
+}
+
+function buildExplainCurrentTargetSemanticPlan({ role, text, conversationRoute, conversationState, screenContext, selectedEntity, canonicalShape } = {}) {
+  const activeTaskPlan = conversationState?.activeGuidedTask?.semanticPlan || null;
+  const currentTarget = conversationState?.guidedTarget?.status === 'FOUND' ? conversationState.guidedTarget : null;
+  const liveTargetReference = canonicalShape?.currentTargetReference && typeof canonicalShape.currentTargetReference === 'object'
+    ? canonicalShape.currentTargetReference
+    : null;
+  const blockIntent = blockLevelTargetIntent(text, canonicalShape, screenContext) && hasLiveCanonicalBlock(screenContext);
+  const canonicalBlock = blockIntent ? liveCanonicalBlockReference({ text, screenContext, currentTarget }) : null;
+  const basePlan = activeTaskPlan || conversationState?.productContext?.semanticPlan || null;
+  const entities = Array.isArray(basePlan?.entities) && basePlan.entities.length
+    ? basePlan.entities
+    : selectedEntity?.entityId && selectedEntity?.entityType
+      ? [{ type: typeForSelected(selectedEntity.entityType), id: Number(selectedEntity.entityId), source: "SELECTED_RECORD" }]
+      : [];
+  const requestedDomains = unique(basePlan?.requestedDomains || (screenContext?.path ? resolveScreenDomains(screenContext, role) : []));
+  const workflowModel = basePlan?.workflowModel || canonicalShape?.workflowModel || null;
+  const workflowStepReference = canonicalShape?.workflowStepReference || basePlan?.workflowStepReference || null;
+  const liveWorkflowActive = Boolean(
+    canonicalShape?.workflowActualUiState?.workflowId
+      || workflowStepReference?.ordinal,
+  );
+  const workflowEntryState = liveWorkflowActive
+    ? null
+    : (canonicalShape?.workflowEntryState || basePlan?.workflowEntryState || null);
+  const workflowEntryTarget = liveWorkflowActive
+    ? null
+    : (canonicalShape?.workflowEntryTarget || basePlan?.workflowEntryTarget || null);
+  const workflowNextStepReference = liveWorkflowActive
+    ? null
+    : (canonicalShape?.workflowNextStepReference || basePlan?.workflowNextStepReference || null);
+  const workflowNextState = liveWorkflowActive
+    ? null
+    : (canonicalShape?.workflowNextState || basePlan?.workflowNextState || null);
+  const workflowDraftAvailability = liveWorkflowActive
+    ? null
+    : (canonicalShape?.workflowDraftAvailability || basePlan?.workflowDraftAvailability || null);
+  const typedRequest = buildCanonicalTypedRequest({
+    shape: {
+      taskType: "EXPLAIN_CURRENT_TARGET",
+      domain: requestedDomains[0] || null,
+      targetEntityType: entities[0]?.type ? String(entities[0].type).toUpperCase() : null,
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      currentTargetExplanationIntent: true,
+      continuationAction: canonicalShape?.continuationAction || null,
+      explicitUserTarget: Boolean(currentTarget || liveTargetReference),
+      workflowIntent: basePlan?.workflowIntent || canonicalShape?.workflowIntent || null,
+      workflowModel,
+      workflowEntryState,
+      workflowEntryTarget,
+      workflowNextStepReference,
+      workflowNextState,
+      workflowDraftAvailability,
+      workflowStepIntent: Boolean(workflowStepReference),
+      workflowStepReference,
+    },
+    family: "EXPLAIN_CURRENT_TARGET",
+    domains: requestedDomains,
+    entities,
+    clarificationNeed: null,
+    productContextHint: "ACTIVE_GUIDED_TARGET",
+    retrieveProductData: false,
+  });
+  return {
+    ...(activeTaskPlan || {}),
+    planVersion: "SEFER_ABI_QUERY_PLAN_V2",
+    planStatus: "READY",
+    family: "EXPLAIN_CURRENT_TARGET",
+    intentFamily: "EXPLAIN_CURRENT_TARGET",
+    answerMode: "TARGET_EXPLANATION",
+    confidence: 0.99,
+    role,
+    normalizedText: text,
+    requestedDomains,
+    entities,
+    entity: entities[0] || null,
+    explicitEntity: entities.find((entity) => entity.source === "EXPLICIT_QUERY") || null,
+    requestedFields: [],
+    requestedTaskSlots: [],
+    taskVariant: "EXPLAIN_CURRENT_TARGET",
+    explicitUiGuidance: true,
+    currentTargetExplanationIntent: true,
+    currentTargetRecoveryIntent: Boolean(canonicalShape?.currentTargetRecoveryIntent),
+    continuationAction: canonicalShape?.continuationAction || null,
+    currentTargetReference: liveTargetReference,
+    targetKind: blockIntent ? "BLOCK" : ((currentTarget || liveTargetReference)?.targetKind || null),
+    targetKey: blockIntent
+      ? (canonicalBlock?.targetKey || canonicalBlock?.blockKey || canonicalBlock?.semanticId || null)
+      : ((currentTarget || liveTargetReference)?.targetKey || null),
+    blockKey: blockIntent ? (canonicalBlock?.blockKey || canonicalBlock?.semanticId || null) : ((currentTarget || liveTargetReference)?.blockKey || null),
+    semanticId: blockIntent ? (canonicalBlock?.semanticId || canonicalBlock?.blockKey || null) : ((currentTarget || liveTargetReference)?.semanticId || null),
+    guidedTargetReference: blockIntent
+      ? {
+        targetKind: "BLOCK",
+        targetKey: canonicalBlock?.targetKey || canonicalBlock?.blockKey || canonicalBlock?.semanticId || null,
+        semanticId: canonicalBlock?.semanticId || null,
+        blockKey: canonicalBlock?.blockKey || canonicalBlock?.semanticId || null,
+        label: canonicalBlock?.label || null,
+        semanticType: "block",
+        locator: null,
+        callout: null,
+      }
+      : (currentTarget || liveTargetReference) ? {
+      targetKind: (currentTarget || liveTargetReference).targetKind || "CONTROL",
+      targetKey: (currentTarget || liveTargetReference).targetKey || null,
+      semanticId: (currentTarget || liveTargetReference).semanticId || null,
+      blockKey: (currentTarget || liveTargetReference).blockKey || null,
+      label: (currentTarget || liveTargetReference).label || null,
+      semanticType: (currentTarget || liveTargetReference).semanticType || null,
+      locator: (currentTarget || liveTargetReference).locator || null,
+      callout: (currentTarget || liveTargetReference).callout || null,
+    } : null,
+    dialogueTopic: "PRODUCT",
+    conversationRoute: conversationRoute?.route || "PRODUCT_TASK",
+    routingReason: "ACTIVE_GUIDED_TARGET_EXPLANATION",
+    productContextHint: "ACTIVE_GUIDED_TARGET",
+    retrieveProductData: false,
+    authorizationDecision: { status: "ALLOW", allowedDomains: requestedDomains, deniedDomains: [], conditionalDomains: [], reason: "CURRENT_GUIDED_TARGET_AUTHORIZED" },
+    clarificationNeed: null,
+    evidenceRequirements: [],
+    temporalMode: "UNKNOWN",
+    temporalScope: { mode: "UNKNOWN", explicit: false },
+    multiDomain: false,
+    multiEntity: false,
+    followUp: true,
+    previousIntentFamily: activeTaskPlan?.family || null,
+    continuationBasePlan: activeTaskPlan || null,
+    workflowIntent: basePlan?.workflowIntent || canonicalShape?.workflowIntent || null,
+    capabilityIntent: canonicalShape?.capabilityIntent || basePlan?.capabilityIntent || null,
+    workflowModel,
+    workflowEntryState,
+    workflowEntryTarget,
+    workflowNextStepReference,
+    workflowNextState,
+    workflowDraftAvailability,
+    workflowStepIntent: Boolean(workflowStepReference),
+    workflowStepReference,
+    workflowStepOrdinal: workflowStepReference?.ordinal || basePlan?.workflowStepOrdinal || null,
+    workflowActualUiState: canonicalShape?.workflowActualUiState || activeTaskPlan?.workflowActualUiState || null,
+    typedRequest,
+    typedRequestValidation: validateCanonicalTypedRequest(typedRequest),
+    screenContext: {
+      path: String(screenContext?.path || ""),
+      label: String(screenContext?.label || ""),
     },
   };
 }
@@ -1325,15 +1716,20 @@ function buildReturnToProductSemanticPlan({ role, text, conversationRoute, conve
   };
 }
 
-function buildGenericProductHelpSemanticPlan({ text } = {}) {
+function buildGenericProductHelpSemanticPlan({ text, scopeTarget = "NONE", productTeachingIntent = null } = {}) {
+  const resolvedProductTeachingIntent = productTeachingIntent == null
+    ? /\b(?:ogret(?:ir|in)?|öğret(?:ir|in)?|başından\s+anlat|basindan\s+anlat|adım\s+adım|adim\s+adim)\b/iu.test(String(text || ""))
+    : Boolean(productTeachingIntent);
   const typedRequest = buildCanonicalTypedRequest({
     shape: {
       taskType: "OFF_TOPIC",
-      scopeTarget: "NONE",
+      scopeTarget,
       domain: null,
       targetEntityType: null,
       explicitUserTarget: false,
       generalInformationIntent: true,
+      generalProductHelpIntent: true,
+      productTeachingIntent: resolvedProductTeachingIntent,
       primaryTask: "GENERIC_PRODUCT_HELP",
     },
     family: "OFF_TOPIC_SAFE",
@@ -1342,7 +1738,7 @@ function buildGenericProductHelpSemanticPlan({ text } = {}) {
     topicTransition: "TEMPORARY_LEAVE_PRODUCT",
     suspendProductContext: true,
     retrieveProductData: false,
-    scopeTarget: "NONE",
+    scopeTarget,
   });
   return {
     planVersion: "SEFER_ABI_QUERY_PLAN_V2",
@@ -1366,6 +1762,7 @@ function buildGenericProductHelpSemanticPlan({ text } = {}) {
     comparisonSpec: null,
     comparison: null,
     taskVariant: "GENERIC_PRODUCT_HELP",
+    productTeachingIntent: resolvedProductTeachingIntent,
     authorizationDecision: { status: "ALLOW", allowedDomains: [], deniedDomains: [], conditionalDomains: [], reason: "SAFE_STATIC_PRODUCT_HELP" },
     clarificationNeed: null,
     evidenceRequirements: [],
@@ -1384,7 +1781,7 @@ function buildGenericProductHelpSemanticPlan({ text } = {}) {
     suspendProductContext: true,
     retrieveProductData: false,
     crossTenantRequested: false,
-    scopeTarget: "NONE",
+    scopeTarget,
     signals: {
       authorization: "ALLOW",
       domains: [],
@@ -1442,6 +1839,7 @@ function buildRoleExplanationSemanticPlan({ text, role } = {}) {
     comparisonSpec: null,
     comparison: null,
     taskVariant: "ROLE_EXPLANATION_HELP",
+    roleHelpIntent: true,
     authorizationDecision: { status: "ALLOW", allowedDomains: [], deniedDomains: [], conditionalDomains: [], reason: "SAFE_ROLE_HELP" },
     clarificationNeed: null,
     evidenceRequirements: [],
@@ -1486,7 +1884,18 @@ export function toPublicQuestionType(semanticPlan) {
   if (family === "CONTEXTUAL_PUBLIC_TYPE") return String(semanticPlan?.publicQuestionType || "");
   if (family === "GENERIC_PRODUCT_HELP") return "PRODUCT_OVERVIEW_HELP";
   if (family === "ROLE_EXPLANATION_HELP") return "ROLE_EXPLANATION_HELP";
+  if (family === "EXPLAIN_CURRENT_TARGET") return "EXPLAIN_CURRENT_TARGET";
   if (family === "UNCLEAR_OR_AMBIGUOUS") return "CLARIFYING_QUESTION";
+  if (family === "SCREEN_CONTEXT" && semanticPlan?.screenKnowledgeIntent) {
+    return semanticPlan.screenKnowledgeKind === "NEXT_STEP" ? "NEXT_STEP"
+      : semanticPlan.screenKnowledgeKind === "TERM_DEFINITION" ? "TERM_HELP"
+      : semanticPlan.screenKnowledgeKind === "BUTTON_HELP" ? "FIELD_BUTTON_HELP"
+      : semanticPlan.screenKnowledgeKind === "SCREEN_PURPOSE" ? "SCREEN_PURPOSE"
+      : semanticPlan.screenKnowledgeKind === "SCREEN_RISK" ? "RISK_LIST"
+      : semanticPlan.screenKnowledgeKind === "NEXT_ACTION" ? "NEXT_BEST_ACTION"
+      : semanticPlan.screenKnowledgeKind === "NEXT_STEP" ? "NEXT_STEP"
+        : "HOW_TO_HELP";
+  }
   if (family === "SCREEN_CONTEXT" && semanticPlan?.screenDetailIntent) return "SCREEN_PURPOSE";
   if (family === "SHIFT_START_READINESS") return "READINESS_CHECK";
   if (family === "RISK_RANKING") return "RISK_LIST";
@@ -1499,18 +1908,299 @@ export function toPublicQuestionType(semanticPlan) {
   return "";
 }
 
-export function resolveSemanticIntent({ message, user, selectedEntity, conversationState, screenContext } = {}) {
-  const text = normalize(message);
+function normalizeCanonicalPlannerInput(canonicalRequest) {
+  const request = canonicalRequest?.request?.version
+    ? canonicalRequest.request
+    : canonicalRequest?.version
+      ? canonicalRequest
+      : null;
+  if (!request) return { request: null, shape: null, isV3: false, normalizedMeaning: "" };
+  if (request.version !== "SEFER-ABI-CANONICAL-REQUEST-V3") {
+    return { request, shape: canonicalRequest?.canonicalShape || null, isV3: false, normalizedMeaning: "" };
+  }
+  if (canonicalRequest?.canonicalShape) {
+    const canonicalShape = canonicalRequest.canonicalShape;
+    const targetExplanation = request.operation === "EXPLAIN_CURRENT_TARGET"
+      || canonicalShape.currentTargetExplanationIntent === true
+      || canonicalShape.currentTargetRecoveryIntent === true;
+    return {
+      request,
+      // V3 operation is the canonical semantic decision.  A recovery turn
+      // may retain workflow metadata such as CREATE_SHIFT in its typed
+      // evidence, but that metadata must not replace the already-resolved
+      // target-explanation operation while the planner projects the request.
+      shape: targetExplanation
+        ? {
+          ...canonicalShape,
+          taskType: "EXPLAIN_CURRENT_TARGET",
+          requestedTasks: ["EXPLAIN_CURRENT_TARGET"],
+          primaryTask: "EXPLAIN_CURRENT_TARGET",
+          explicitTaskIntent: true,
+          explicitUiGuidance: true,
+          currentTargetExplanationIntent: true,
+          currentTargetRecoveryIntent: Boolean(
+            canonicalShape.currentTargetRecoveryIntent === true
+            || request.operation === "EXPLAIN_CURRENT_TARGET",
+          ),
+          screenContextIntent: false,
+          screenDetailIntent: false,
+          screenKnowledgeIntent: false,
+        }
+        : canonicalShape,
+      isV3: true,
+      normalizedMeaning: normalize(request.currentRequest?.normalizedMeaning || ""),
+    };
+  }
+  const action = request.semanticAction || {};
+  const actionClass = String(action.actionClass || "NONE").toUpperCase();
+  const objectClass = action.objectClass ? String(action.objectClass).toUpperCase() : null;
+  const operation = String(request.operation || "").toUpperCase();
+  const scopeClass = String(request.semanticScope?.class || "").toUpperCase();
+  const screenOperation = [
+    "EXPLAIN_CURRENT_SURFACE",
+    "VIEW_AUTHORIZED_SURFACE",
+    "NAVIGATE_AUTHORIZED_SURFACE",
+  ].includes(operation);
+  const generalProductHelpIntent = operation === "GENERAL_INFORMATION"
+    && actionClass === "EXPLAIN"
+    && objectClass === "SURFACE";
+  const taskType = operation === "EXPLAIN_RECORD_DETAILS"
+    ? "RECORD_DETAILS"
+    : operation === "CLARIFY_SEMANTIC_REQUEST"
+      ? "CLARIFY"
+      : generalProductHelpIntent
+        ? "OFF_TOPIC"
+        : screenOperation
+          ? "SCREEN_CONTEXT"
+          : null;
+  const screenGuidance = ["VIEW", "NAVIGATE"].includes(actionClass)
+    && screenOperation;
+  const workflowIntent = request.workflowRef?.workflowIntent
+    || (screenGuidance && objectClass ? `OPEN_${objectClass}_SURFACE` : null);
+  return {
+    request,
+    isV3: true,
+    normalizedMeaning: normalize(request.currentRequest?.normalizedMeaning || ""),
+    shape: {
+      taskType,
+      confidence: Number(request.semanticScope?.confidence || 0) || 0,
+      domain: request.domain && request.domain !== "PRODUCT" ? String(request.domain).toUpperCase() : null,
+      targetEntityType: objectClass && objectClass !== "SURFACE" ? objectClass : null,
+      ambiguity: request.ambiguity?.status === "UNRESOLVED" ? request.ambiguity.reason || "CANONICAL_REQUEST_UNRESOLVED" : null,
+      targetCandidates: Array.isArray(request.ambiguity?.candidates) ? [...request.ambiguity.candidates] : [],
+      requestedTasks: taskType ? [taskType] : [],
+      requestedFields: Array.isArray(request.requestedFields) ? request.requestedFields.map((field) => ({ ...field })) : [],
+      explicitTaskIntent: action.explicitness === "EXPLICIT" || action.resolutionStatus === "RESOLVED",
+      explicitUserTarget: Boolean(action.modifiers?.explicitTarget),
+      generalProductHelpIntent,
+      screenContextIntent: screenOperation,
+      explicitUiGuidance: screenGuidance,
+      workflowIntent,
+      scopeTarget: generalProductHelpIntent ? "ROLE_GLOBAL" : scopeClass === "PRODUCT_CONTEXTUAL" ? "CURRENT_SCREEN" : "CURRENT_SCREEN",
+    },
+  };
+}
+
+function canonicalRecordCandidates(canonicalRequest) {
+  const request = canonicalRequest?.request?.version
+    ? canonicalRequest.request
+    : canonicalRequest?.version
+      ? canonicalRequest
+      : null;
+  return (Array.isArray(request?.candidateEntityRefs) ? request.candidateEntityRefs : [])
+    .map((candidate) => ({
+      type: String(candidate?.type || "").trim().toLowerCase(),
+      id: Number(candidate?.id || 0) || null,
+      source: String(candidate?.source || "CANONICAL_REQUEST_CANDIDATE").trim() || "CANONICAL_REQUEST_CANDIDATE",
+    }))
+    .filter((candidate) => ["shift", "offer", "vehicle", "driver", "agreement", "personnel", "organizationplan", "organization_plan", "servicerequest", "service_request"].includes(candidate.type)
+      && Number.isInteger(candidate.id)
+      && candidate.id > 0)
+    .map((candidate) => ({
+      ...candidate,
+      type: candidate.type === "organization_plan" ? "organizationPlan"
+        : candidate.type === "service_request" ? "serviceRequest"
+          : candidate.type,
+    }));
+}
+
+export function resolveSemanticIntent({ message, user, selectedEntity: incomingSelectedEntity, conversationState, screenContext, canonicalRequest = null } = {}) {
+  const rawText = normalize(message);
+  const canonicalInput = normalizeCanonicalPlannerInput(canonicalRequest);
+  const hasCanonicalEnvelope = Boolean(canonicalInput.request?.version);
+  const text = canonicalInput.isV3 ? canonicalInput.normalizedMeaning : rawText;
+  const role = roleKey(user);
+  const roomRequestDomainSignal = role === "ROOM" && hasAny(text, [
+    "biniş değişikliği", "binis degisikligi", "biniş değişiklik", "binis degisiklik",
+    "biniş talebi", "binis talebi", "pickup request", "pickup değiş", "pickup degis",
+  ]);
+  const roomServiceProcurementSignal = role === "ROOM" && hasAny(text, [
+    "servis tedarik", "hizmet tedarik", "tedarik talebi", "servis satin alma", "servis satın alma",
+  ]);
+  const roomRequestBoundarySignal = roomRequestDomainSignal || roomServiceProcurementSignal;
+  const collectionStatusDistributionIntent = role === "ROOM"
+    && isCollectionStatusDistributionRequest(text, { screenContext });
+  const currentSelection = resolveCurrentSelection({ screenContext, conversationState });
+  // A current non-record surface or route transition invalidates a retained
+  // record. The server authorization layer still decides whether any live
+  // typed record may be read; this projection only prevents stale inheritance.
+  const selectedEntity = currentSelection.entity
+    ? { entityType: currentSelection.entity.type.toLowerCase(), entityId: currentSelection.entity.id }
+    : currentSelection.historicalSuppressed
+      ? null
+      : incomingSelectedEntity || null;
   // Evaluate the one context-free public-product rule before canonical shape
   // inference, because the latter intentionally receives persisted discourse
   // state for genuine contextual follow-ups.
-  if (isGenericProductHelpIntent(message)) return buildGenericProductHelpSemanticPlan({ text });
-  const role = roleKey(user);
-  if (isExplicitRoleHelpIntent(message)) return buildRoleExplanationSemanticPlan({ text, role });
-  const canonicalShape = inferCanonicalSemanticRequest({ message, screenContext, conversationState });
-  const conversationRoute = resolveConversationRoute({ message, user, conversationState, screenContext, canonicalShape });
+  if (!hasCanonicalEnvelope && !collectionStatusDistributionIntent && isGenericProductHelpIntent(message, { roleContext: role })
+    && !roomRequestBoundarySignal
+    && !inferRoleScopedUiTarget(text)
+    && !hasActiveWorkflowStepReference(message, conversationState)
+    && !hasLiveWorkflowGroundingReference(message, screenContext, conversationState)) {
+    return buildGenericProductHelpSemanticPlan({ text });
+  }
+  if (!hasCanonicalEnvelope
+    && isExplicitRoleHelpIntent(message, { roleContext: role })
+    && !roomRequestBoundarySignal
+    // A live guided UI is the stronger authority for deictic/how-to follow-ups.
+    // Keep the context-free role-help shortcut from swallowing a current
+    // workflow block, target, or step explanation before canonical composition.
+    && !hasActiveWorkflowStepReference(message, conversationState)
+    && !hasLiveWorkflowGroundingReference(message, screenContext, conversationState)) {
+    return buildRoleExplanationSemanticPlan({ text, role });
+  }
+  let canonicalShape = canonicalInput.shape || inferCanonicalSemanticRequest({ message, screenContext, conversationState });
+  if (collectionStatusDistributionIntent) {
+    canonicalShape = {
+      ...canonicalShape,
+      taskType: "COUNT",
+      domain: "AGREEMENTS",
+      targetEntityType: "AGREEMENT",
+      countTarget: { targetEntityType: "AGREEMENT", domain: "AGREEMENTS" },
+      collectionSummaryIntent: true,
+      collectionStatusDistributionIntent: true,
+      requestedFields: [],
+      requestedFieldsAuthoritative: true,
+      requestedTasks: ["COUNT"],
+      explicitTaskIntent: true,
+      scopeTarget: "CURRENT_SCREEN",
+      selectedRecordIntent: false,
+      explicitUserTarget: true,
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: false,
+      workflowIntent: null,
+    };
+  }
+  const canonicalCandidates = canonicalRecordCandidates(canonicalInput.request);
+  const hasCanonicalRecordCandidate = canonicalCandidates.length > 0;
+  const canonicalRecordView = hasCanonicalRecordCandidate
+    && String(canonicalInput.request?.operation || "").toUpperCase() === "VIEW_AUTHORIZED_SURFACE"
+    && canonicalCandidates.some((candidate) => candidate.type === "offer");
+  // When the server has a settled guided task but the browser has not yet
+  // supplied a live step snapshot, the canonical interpreter can describe a
+  // follow-up as EXPLAIN_CURRENT_TARGET.  It is still a continuation of the
+  // persisted workflow, not a new generic-help turn.  A live UI snapshot
+  // remains authoritative for the more specific target-explanation path.
+  if (canonicalShape.taskType === "EXPLAIN_CURRENT_TARGET"
+    && !screenContext?.workflowState
+    && !screenContext?.uiHints?.workflowState
+    && canonicalShape.workflowEntryState !== "PRE_WIZARD"
+    && canonicalShape.workflowIntent
+    && !canonicalShape.currentTargetExplanationIntent
+    && !canonicalShape.workflowStepIntent
+    && !hasActiveWorkflowStepReference(message, conversationState)
+    && hasLiveWorkflowGroundingReference(message, screenContext, conversationState)) {
+    canonicalShape = {
+      ...canonicalShape,
+      taskType: "CONTINUE_CURRENT_REASONING",
+      continuationIntent: true,
+    };
+  }
+  if (roomRequestDomainSignal) {
+    const requestTaskType = hasAny(text, ["kaç", "kac"])
+      ? "COUNT"
+      : hasAny(text, ["göster", "goster", "listele", "görüntüle", "goruntule"])
+        ? "SCREEN_CONTEXT"
+        : "STATUS";
+    canonicalShape = {
+      ...canonicalShape,
+      taskType: requestTaskType,
+      domain: "SERVICE_REQUESTS",
+      primaryTask: "ROOM_REQUEST_DOMAIN",
+      roleHelpIntent: false,
+      generalProductHelpIntent: false,
+      screenKnowledgeIntent: false,
+      scopeTarget: "CURRENT_SCREEN",
+      explicitUserTarget: true,
+      explicitUiGuidance: requestTaskType === "SCREEN_CONTEXT",
+      retrieveProductData: true,
+    };
+  }
+  if (roomServiceProcurementSignal) {
+    canonicalShape = {
+      ...canonicalShape,
+      taskType: "CLARIFY",
+      domain: null,
+      primaryTask: "ROOM_SERVICE_PROCUREMENT_UNAVAILABLE",
+      roleHelpIntent: false,
+      generalProductHelpIntent: false,
+      screenKnowledgeIntent: false,
+      scopeTarget: "CURRENT_SCREEN",
+      explicitUserTarget: false,
+      explicitUiGuidance: false,
+      retrieveProductData: false,
+    };
+  }
+  const canonicalRoleExplanation = !roomRequestBoundarySignal && (
+    canonicalShape.primaryTask === "ROLE_EXPLANATION_HELP"
+    || canonicalShape.roleHelpIntent === true
+  );
+  const routeCanonicalRequest = roomRequestDomainSignal && canonicalInput.request
+    ? {
+      ...(canonicalRequest || {}),
+      request: {
+        ...canonicalInput.request,
+        operation: "COUNT_AUTHORIZED_RECORDS",
+        domain: "SERVICE_REQUESTS",
+        capability: "COUNT_AUTHORIZED_RECORDS",
+        semanticAction: {
+          ...(canonicalInput.request.semanticAction || {}),
+          actionClass: "VIEW",
+          objectClass: "RECORDS",
+        },
+      },
+    }
+    : roomServiceProcurementSignal
+      ? null
+      : canonicalRequest;
+  const conversationRoute = resolveConversationRoute({ message, user, conversationState, screenContext, canonicalShape, canonicalRequest: routeCanonicalRequest });
+  const contextualNextActionBasePlan = conversationState?.lastSettledResult?.semanticPlan
+    || conversationState?.authorizedProductContext?.semanticPlan
+    || conversationState?.lastProductSemanticPlan
+    || conversationState?.lastSemanticPlan
+    || null;
+  const contextualNextActionContinuation = canonicalShape.taskType === "NEXT_ACTION"
+    && conversationRoute.route === "RETURN_TO_PRODUCT_TASK"
+    && Boolean(contextualNextActionBasePlan?.workflowIntent)
+    && (
+      String(contextualNextActionBasePlan?.dialogueTopic || "").toUpperCase() === "PRODUCT"
+      || Array.isArray(contextualNextActionBasePlan?.requestedDomains) && contextualNextActionBasePlan.requestedDomains.length > 0
+    );
+  if (contextualNextActionContinuation) {
+    canonicalShape = {
+      ...canonicalShape,
+      taskType: "CONTINUE_CURRENT_REASONING",
+      continuationIntent: true,
+      continuationAction: "NEXT",
+      workflowIntent: canonicalShape.workflowIntent || contextualNextActionBasePlan.workflowIntent,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+    };
+  }
   const transportedContext = semanticResolutionContext(screenContext);
-  const contextualDecision = hasCrossTenantBoundarySignal(message)
+  const contextualDecision = hasCanonicalEnvelope || hasCrossTenantBoundarySignal(message)
     || (transportedContext?.authorizedRole && transportedContext.authorizedRole !== role)
     ? null
     : contextualPublicTypeDecision({ message, context: transportedContext });
@@ -1524,12 +2214,36 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     });
   }
   const requestedOwnershipScope = canonicalShape.requestedOwnershipScope || null;
+  if (conversationRoute.route === "GENERIC_PRODUCT_HELP" && !canonicalRoleExplanation) {
+    return buildGenericProductHelpSemanticPlan({
+      text,
+      scopeTarget: canonicalShape.scopeTarget || "NONE",
+      productTeachingIntent: canonicalShape.productTeachingIntent,
+    });
+  }
   if (canonicalShape.taskType === "RETURN_TO_PRODUCT") {
     return buildReturnToProductSemanticPlan({ role, text, conversationRoute, conversationState });
   }
+  if (canonicalShape.taskType === "EXPLAIN_CURRENT_TARGET") {
+    return buildExplainCurrentTargetSemanticPlan({ role, text, conversationRoute, conversationState, screenContext, selectedEntity, canonicalShape });
+  }
   if (canonicalShape.taskType === "CONTINUE_CURRENT_REASONING") {
-    const previousPlan = conversationState?.activeGuidedTask?.semanticPlan
-      || conversationState?.lastSettledResult?.semanticPlan
+    // Continuation is a presentation operation over the latest settled
+    // result.  An active guided task may only carry workflow coordination
+    // metadata and therefore be an incomplete explanation base.  Prefer the
+    // latest settled product result, then fall back to the task context when
+    // no settled result exists.
+    const activeTaskPlan = conversationState?.activeGuidedTask?.semanticPlan || null;
+    const activeTaskHasWorkflowEvidence = Boolean(
+      activeTaskPlan?.workflowModel
+      || activeTaskPlan?.workflowStepReference
+      || activeTaskPlan?.workflowStepOrdinal
+      || ["CREATE_SHIFT", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE"].includes(String(activeTaskPlan?.workflowIntent || "").toUpperCase()),
+    );
+    const previousPlan = activeTaskHasWorkflowEvidence
+      ? activeTaskPlan
+      : conversationState?.lastSettledResult?.semanticPlan
+      || activeTaskPlan
       || conversationState?.authorizedProductContext?.semanticPlan
       || conversationState?.lastProductSemanticPlan
       || conversationState?.lastSemanticPlan
@@ -1620,11 +2334,29 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
       typedRequestValidation: validateCanonicalTypedRequest(safeTypedRequest),
     };
   }
-  const temporalMode = resolveTemporalMode(text);
-  let requestedFields = removeBusinessDateFieldsForFreshness(
-    resolveRequestedFields(text),
-    canonicalShape.taskType,
-  );
+  const temporalMode = collectionStatusDistributionIntent ? "UNKNOWN" : resolveTemporalMode(text);
+  // A canonical interpretation may explicitly settle the requested-field
+  // set (including an intentional empty set).  Downstream planning must not
+  // re-read raw text and reintroduce a field/domain that the canonical
+  // authority rejected.
+  let requestedFields = canonicalShape.requestedFieldsAuthoritative
+    ? (Array.isArray(canonicalShape.requestedFields) ? canonicalShape.requestedFields.map((field) => ({ key: String(field?.key || field), domain: field?.domain || null })) : [])
+    : removeBusinessDateFieldsForFreshness(
+      resolveRequestedFields(text),
+      canonicalShape.taskType,
+    );
+  if (canonicalShape.discourseReferentFieldFollowUp && !requestedFields.length) {
+    const referentialField = /\b(?:saat|zaman|baslangic|baslama|bitis|giris|cikis)\p{L}*\b/iu.test(text)
+      ? { key: "TIME_RANGE", domain: null }
+      : /\b(?:gun|gün|tarih)\p{L}*\b/iu.test(text)
+        ? { key: "DATE_RANGE", domain: null }
+        : /\b(?:durum|status|statu)\p{L}*\b/iu.test(text)
+          ? { key: "STATUS", domain: null }
+          : /\b(?:konum|rota|durak)\p{L}*\b/iu.test(text)
+            ? { key: "LOCATION", domain: null }
+            : null;
+    if (referentialField) requestedFields = [referentialField];
+  }
   if (canonicalShape.productGroundedWritingIntent && canonicalShape.outputAudience === "DRIVER") {
     // The addressee of the composed message is not an extra field request.
     requestedFields = requestedFields.filter((field) => field.key !== "DRIVER");
@@ -1649,7 +2381,9 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
   // An explicit cardinality target is a complete request contract.  Entity
   // nouns that are grammatically excluded (for example "sözleşme sayma")
   // are not field requests and must not leak a second domain into COUNT.
-  if (canonicalShape.taskType === "COUNT") requestedFields = [];
+  const hasSelectedPassengerCountField = canonicalShape.taskType === "COUNT"
+    && requestedFields.some((field) => field?.key === "PASSENGER_COUNT");
+  if (canonicalShape.taskType === "COUNT" && !hasSelectedPassengerCountField) requestedFields = [];
   if (["SCREEN_CONTEXT", "SELECTED_RECORD_CONTEXT"].includes(canonicalShape.taskType)) requestedFields = [];
   const taskSlotsFromCanonicalRequest = (canonicalShape.requestedTasks || []).flatMap((task) => ({
     ISSUE: ["ISSUE"],
@@ -1674,7 +2408,8 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     || conversationState?.lastProductSemanticPlan
     || conversationState?.lastSemanticPlan
     || null;
-  const styleOnlyRequest = !canonicalShape.productGroundedWritingIntent && (canonicalShape.taskType === "STYLE" || (Boolean(requestedStyle) && !hasAny(text, [
+  const styleOnlyRequest = !canonicalRoleExplanation
+    && !canonicalShape.productGroundedWritingIntent && (canonicalShape.taskType === "STYLE" || (Boolean(requestedStyle) && !hasAny(text, [
     "sorun", "problem", "sıkıntı", "sikinti", "risk", "öncelik", "oncelik", "çöz", "coz", "durum",
     "vardiya", "sefer", "araç", "arac", "gps", "konum", "rota", "teklif", "sözleşme", "sozlesme",
     "operasyon", "servis", "kayıt", "kayit", "ekran", "panel", "öğrenci", "ogrenci", "personel", "çalışan", "calisan", "veli",
@@ -1692,14 +2427,18 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
   // the unique discourse entity before resolution.
   const screenScopedDecision = canonicalShape.scopeTarget === "CURRENT_SCREEN"
     && ["SCREEN_CONTEXT", "NEXT_ACTION", "PRIORITY", "RISK", "CAUSE", "RESOLUTION"].includes(canonicalShape.taskType)
-    && !isDiscourseEntityReference(message);
+    && !isDiscourseEntityReference(message)
+    && !hasCanonicalRecordCandidate;
   // scopeTarget is frozen by the canonical request.  A ROLE_GLOBAL turn may
   // retain the selected record in conversation memory, but it must not inject
   // that record into this turn's entity set.
   const roleGlobalScope = canonicalShape.scopeTarget === "ROLE_GLOBAL";
-  let entities = canonicalShape.taskType === "COUNT" || screenScopedDecision || roleGlobalScope
+  let entities = (canonicalShape.taskType === "COUNT" && !hasCanonicalRecordCandidate) || screenScopedDecision || roleGlobalScope
     ? []
     : resolveEntities(message, selectedEntity, conversationState, screenContext, entityDomains);
+  if (!roleGlobalScope && hasCanonicalRecordCandidate && !entities.length) {
+    entities = canonicalCandidates.map((candidate) => ({ ...candidate }));
+  }
   // An explicit external owner/subject is a first-class request scope.  Do
   // not let the current UI selection or prior conversation entity silently
   // become the target when that scope has not been resolved and authorized.
@@ -1746,7 +2485,7 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     entities = targetEntities.map((entity) => ({ ...entity, source: entity.source || "STYLE_TARGET_CONTEXT" }));
     if (!requestedFields.length && Array.isArray(styleTargetPlan.requestedFields)) requestedFields = styleTargetPlan.requestedFields;
   }
-  if (["SELECTED_RECORD_CONTEXT", "RECORD_DETAILS"].includes(canonicalShape.taskType) && !entities.length && canonicalShape.uiContext.selectedId && canonicalShape.uiContext.selectedType) {
+  if (["SELECTED_RECORD_CONTEXT", "RECORD_DETAILS"].includes(canonicalShape.taskType) && !entities.length && canonicalShape.uiContext?.selectedId && canonicalShape.uiContext?.selectedType) {
     entities = [{ type: canonicalShape.uiContext.selectedType.toLowerCase(), id: canonicalShape.uiContext.selectedId, source: "SELECTED_RECORD_CONTEXT" }];
   }
   const relationshipIntent = resolveRelationshipIntent(text, entities, selectedEntity, conversationState, screenContext, requestedFields);
@@ -1758,26 +2497,28 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
       if (!entities.some((current) => entityKey(current) === targetKey)) entities = [...entities, relationshipIntent.toEntity];
     }
   }
-  const selectedTypeText = typeForSelected(selectedEntity?.entityType || conversationState?.selectedEntityType || screenContext?.selectedEntityType);
+  const selectedTypeText = typeForSelected(selectedEntity?.entityType);
   const activeOfferContext = entities.some((current) => current.type === "offer")
     || selectedTypeText === "offer"
     || lexicalDomains.includes("OFFERS")
     || /\/offers\b|commercial-flow/iu.test(String(screenContext?.path || ""));
   if (activeOfferContext && canonicalShape.taskType !== "COUNT") {
-    requestedFields = removeBusinessDateFieldsForFreshness(
+    const refreshedFields = removeBusinessDateFieldsForFreshness(
       resolveRequestedFields(text, { inferGenericCommercialValue: true, role }),
       canonicalShape.taskType,
     );
+    requestedFields = refreshedFields.length ? refreshedFields : requestedFields;
   }
   const activeAgreementContext = entities.some((current) => current.type === "agreement")
     || selectedTypeText === "agreement"
     || lexicalDomains.includes("AGREEMENTS")
     || /\/agreements\b/iu.test(String(screenContext?.path || ""));
   if (activeAgreementContext && canonicalShape.taskType !== "COUNT") {
-    requestedFields = removeBusinessDateFieldsForFreshness(
+    const refreshedFields = removeBusinessDateFieldsForFreshness(
       resolveRequestedFields(text, { role }),
       canonicalShape.taskType,
     );
+    requestedFields = refreshedFields.length ? refreshedFields : requestedFields;
   }
   const entityFieldByType = { shift: "SHIFT", vehicle: "VEHICLE", driver: "DRIVER", offer: "OFFER", agreement: "AGREEMENT", organizationPlan: "PLAN", serviceRequest: "SERVICE_REQUEST" };
   const resolvedEntityFieldKeys = new Set(entities.map((current) => entityFieldByType[current.type]).filter(Boolean));
@@ -1794,7 +2535,7 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     && (discourseReferentialFieldLookup || canonicalShape.scopeTarget === "SELECTED_RECORD");
   const domains = canonicalShape.taskType === "SCREEN_CONTEXT"
     ? (canonicalShape.explicitUiGuidance && canonicalShape.domain ? [canonicalShape.domain] : [])
-    : ["COUNT", "PLAN_REVIEW"].includes(canonicalShape.taskType) && canonicalShape.domain
+    : ["COUNT", "PLAN_REVIEW", "RISK"].includes(canonicalShape.taskType) && canonicalShape.domain
       ? [canonicalShape.domain]
       : styleOnlyRequest
     ? [...(previousPlanForStyle?.requestedDomains || resolveScreenDomains(screenContext, role))]
@@ -1823,6 +2564,19 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
       "plan", "organizasyon", "maliyet", "bütçe", "butce",
     ]);
   let requestedDomains = unique(requestOnly ? domains.filter((domain) => domain === "SERVICE_REQUESTS") : domains);
+  if (roomServiceProcurementSignal) requestedDomains = [];
+  const canonicalHelpOnly = !roomRequestBoundarySignal && (canonicalRoleExplanation
+    || (canonicalRequest?.operation === "GENERAL_INFORMATION"
+      && canonicalRequest?.capability === "GENERAL_INFORMATION"
+      && canonicalRequest?.semanticAction?.actionClass === "EXPLAIN"
+      && canonicalShape.scopeTarget === "ROLE_GLOBAL"));
+  if (canonicalHelpOnly) {
+    // A canonical role/product explanation is already semantically resolved.
+    // Do not reintroduce the current screen's protected domains here: that
+    // would turn a read-only explanation into an authorization-boundary
+    // family after the single semantic authority has finished.
+    requestedDomains = [];
+  }
   // In grounded writing, an audience word (for example "sürücüye") names
   // the addressee of the new message, not another record to retrieve.  Read
   // only the selected record and its explicitly requested fact.
@@ -1842,6 +2596,17 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     requestedDomains = unique([...groundedEntityDomains, ...requestedFields.map((field) => field.domain)]);
   }
   const capabilities = getRoleDomainCapabilities(role).capabilities;
+  const requestedRoleTarget = canonicalShape.requestedRoleTarget && typeof canonicalShape.requestedRoleTarget === "object"
+    ? canonicalShape.requestedRoleTarget
+    : null;
+  const roleTargetResolution = requestedRoleTarget
+    ? requestedRoleTarget.explicitlyMissing
+      ? "NOT_FOUND"
+      : String(requestedRoleTarget.roleKey || "").toUpperCase() === role
+        ? "AUTHORIZED"
+        : "UNAUTHORIZED"
+    : null;
+  const roleTargetDenied = roleTargetResolution === "UNAUTHORIZED";
   const crossTenantRequested = conversationRoute.route === "AUTHORIZATION_NEGATIVE"
     || hasCrossTenantBoundarySignal(text)
     || Boolean(requestedOwnershipScope?.explicitExternalScope);
@@ -1870,9 +2635,19 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     && (hasAny(text, ["rota", "gps"]) || approvedLastLocationInfoTimeLookup || approvedDriverPhoneLocationSignalLookup)
     ? "LOCATION_GPS"
     : "ENTITY_LOOKUP";
-  const shapeFamily = canonicalShape.explicitUiGuidance
-    ? "UI_GUIDANCE"
-    : {
+  const shapeFamily = canonicalRoleExplanation
+    ? "ROLE_EXPLANATION_HELP"
+    : canonicalShape.generalProductHelpIntent && canonicalShape.scopeTarget === "ROLE_GLOBAL"
+      ? "GENERIC_PRODUCT_HELP"
+    : canonicalRecordView
+      ? "RECORD_DETAILS"
+    : canonicalShape.explicitUiGuidance
+      ? "UI_GUIDANCE"
+    : canonicalShape.screenKnowledgeKind === "SCREEN_RISK"
+      ? "RISK_RANKING"
+      : canonicalShape.screenKnowledgeKind === "NEXT_ACTION"
+        ? "NEXT_STEP"
+      : {
     SCREEN_CONTEXT: "SCREEN_CONTEXT",
     SELECTED_RECORD_CONTEXT: "SELECTED_RECORD_CONTEXT",
     RECORD_DETAILS: "RECORD_DETAILS",
@@ -1895,10 +2670,16 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     PLAN_REVIEW: "PLAN_REVIEW",
     CLARIFY: "UNCLEAR_OR_AMBIGUOUS",
   }[canonicalShape.taskType] || null;
-  const resolvedFamily = shapeFamily || (requestedTaskSlots.includes("RISK") && requestedTaskSlots.includes("EVIDENCE") && requestedTaskSlots.includes("NEXT_STEP")
+  const resolvedFamily = roomServiceProcurementSignal
+    ? "UNCLEAR_OR_AMBIGUOUS"
+    : shapeFamily || (requestedTaskSlots.includes("RISK") && requestedTaskSlots.includes("EVIDENCE") && requestedTaskSlots.includes("NEXT_STEP")
     ? "RISK_RANKING"
     : resolveFamily({ text, domains: requestedDomains, entity, entities, temporalMode, relationshipIntent, requestedFields }));
-  const family = deniedDomains.length
+  const family = canonicalHelpOnly
+    ? resolvedFamily
+    : roleTargetDenied
+    ? "AUTHORIZATION_BOUNDARY"
+    : deniedDomains.length
     ? "AUTHORIZATION_BOUNDARY"
     : styleOnlyRequest
       ? "STYLE"
@@ -1926,7 +2707,7 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     && (isBareAmbiguousReference(message) || discourseReferentialFieldLookup)
     && referential
     && conversationCandidates.length !== 1;
-  const clarificationNeed = styleOnlyRequest
+  const clarificationNeed = styleOnlyRequest || canonicalHelpOnly || ["GENERIC_PRODUCT_HELP", "ROLE_EXPLANATION_HELP"].includes(family)
     ? null
     : canonicalShape.ambiguity
       || (["SCREEN_CONTEXT", "SELECTED_RECORD_CONTEXT", "COUNT"].includes(canonicalShape.taskType)
@@ -1937,7 +2718,9 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
       ? null
       : relationshipIntent ? null
       : reasoningTaskFamily || evidenceAssessmentFamily ? null : resolveClarification(text, entities, requestedFields, requestedDomains));
-  const authorizationStatus = deniedDomains.length ? "DENY" : conditionalDomains.length ? "CONDITIONAL_SCOPE" : "ALLOW";
+  const authorizationStatus = canonicalHelpOnly
+    ? "ALLOW"
+    : roleTargetDenied || deniedDomains.length ? "DENY" : conditionalDomains.length ? "CONDITIONAL_SCOPE" : "ALLOW";
   const retainedComparisonSpec = canReuseComparisonForFollowUp
     ? (previousSettledPlan?.comparisonSpec || previousSettledPlan?.styleTargetPlan?.comparisonSpec || null)
     : null;
@@ -1978,6 +2761,18 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
             : family;
   const relationshipTraversal = resolveRelationships(entities, requestedFields, requestedDomains);
   if (relationshipIntent) relationshipTraversal.push({ key: `${relationshipIntent.fromEntity.type}->${relationshipIntent.toEntity.type}`, from: relationshipIntent.fromEntity.type, to: relationshipIntent.toEntity.type, reason: "semantic relationship lookup" });
+  const offerRelationLookup = relationshipTraversal.some((link) => link.from === "shift" && link.to === "offer")
+    && requestedFields.some((field) => field.domain === "OFFERS");
+  if (offerRelationLookup) {
+    // STATUS is neutral until the request names a typed commercial relation.
+    // When a shift is explicitly used as the source of an offer lookup and
+    // the other requested fields are offer-owned, keep the status on that
+    // same authorized offer target instead of letting the source shift win
+    // by incidental domain ordering downstream.
+    requestedFields = requestedFields.map((field) => field.key === "STATUS" && !field.domain
+      ? { ...field, domain: "OFFERS" }
+      : field);
+  }
   const evidenceRequirements = unique([
     ...requestedDomains.map((domain) => `DOMAIN:${domain}`),
     ...entities.map((current) => `ENTITY:${entityKey(current)}`),
@@ -1999,7 +2794,12 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     allowedDomains: requestedDomains.filter((domain) => !deniedDomains.includes(domain)),
     deniedDomains,
     conditionalDomains,
-    reason: deniedDomains.length
+    roleTarget: requestedRoleTarget
+      ? { ...requestedRoleTarget, resolution: roleTargetResolution }
+      : null,
+    reason: roleTargetDenied
+      ? "ROLE_SCOPED_TARGET_DENIED"
+      : deniedDomains.length
       ? (explicitCrossTenantRequest ? "TENANT_SCOPE_DENIED_BEFORE_RETRIEVAL" : conditionalRecordScopeRequest ? "RECORD_SCOPE_DENIED_BEFORE_RETRIEVAL" : "DOMAIN_CAPABILITY_DENIED")
       : conditionalDomains.length ? "RECORD_SCOPE_MUST_BE_VERIFIED" : crossTenantRequested && role === "SUPER_ADMIN" ? "SUPER_ADMIN_CROSS_TENANT_READ_ALLOWED" : "ROLE_DOMAIN_ALLOWED",
   };
@@ -2037,6 +2837,10 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     retrieveProductData: deniedDomains.length === 0 && !styleOnlyRequest,
     requestedOwnershipScope,
   });
+  const liveWorkflowActive = Boolean(
+    canonicalShape?.workflowActualUiState?.workflowId
+      || canonicalShape?.workflowStepReference?.ordinal,
+  );
   return {
     planVersion: "SEFER_ABI_QUERY_PLAN_V2",
     planStatus: clarificationNeed ? "AMBIGUOUS" : deniedDomains.length ? "UNAUTHORIZED" : "READY",
@@ -2052,6 +2856,24 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
       : semanticEntityType,
     currentAssignmentIntent: Boolean(canonicalShape.currentAssignmentIntent),
     workflowIntent: canonicalShape.workflowIntent || null,
+    roleCapabilityBoundary: canonicalShape.roleCapabilityBoundary || null,
+    generalProductHelpIntent: Boolean(canonicalShape.generalProductHelpIntent || typedRequest.generalProductHelpIntent),
+    productTeachingIntent: Boolean(canonicalShape.productTeachingIntent || typedRequest.productTeachingIntent),
+    roleHelpIntent: Boolean(canonicalRoleExplanation || canonicalShape.roleHelpIntent || typedRequest.roleHelpIntent),
+    workflowModel: canonicalShape.workflowModel || previousPlan?.workflowModel || null,
+    workflowEntryState: liveWorkflowActive ? null : (canonicalShape.workflowEntryState || previousPlan?.workflowEntryState || null),
+    workflowEntryTarget: liveWorkflowActive ? null : (canonicalShape.workflowEntryTarget || previousPlan?.workflowEntryTarget || null),
+    workflowNextStepReference: liveWorkflowActive ? null : (canonicalShape.workflowNextStepReference || previousPlan?.workflowNextStepReference || null),
+    workflowNextState: liveWorkflowActive ? null : (canonicalShape.workflowNextState || previousPlan?.workflowNextState || null),
+    workflowDraftAvailability: liveWorkflowActive ? null : (canonicalShape.workflowDraftAvailability || previousPlan?.workflowDraftAvailability || null),
+    guidedDraftChooserIntent: Boolean(canonicalShape.guidedDraftChooserIntent),
+    guidedDraftChooser: canonicalShape.guidedDraftChooser || null,
+    routeOrderIntent: Boolean(canonicalShape.routeOrderIntent),
+    routeOrderState: canonicalShape.routeOrderState || null,
+    routeOrderAction: canonicalShape.routeOrderAction || null,
+    workflowStepIntent: Boolean(canonicalShape.workflowStepIntent),
+    workflowStepReference: canonicalShape.workflowStepReference || previousPlan?.workflowStepReference || null,
+    workflowStepOrdinal: canonicalShape.workflowStepReference?.ordinal || previousPlan?.workflowStepOrdinal || null,
     deniedDomains,
     conditionalDomains,
     entities,
@@ -2078,6 +2900,23 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     relationSpec: relationshipIntent,
     taskVariant,
     screenDetailIntent: Boolean(typedRequest.screenDetailIntent),
+    screenKnowledgeIntent: Boolean(typedRequest.screenKnowledgeIntent),
+    screenKnowledgeKind: typedRequest.screenKnowledgeKind || null,
+    termDefinitionIntent: Boolean(typedRequest.termDefinitionIntent),
+    operationHealthMetricIntent: Boolean(typedRequest.operationHealthMetricIntent),
+    operationHealthMetricMode: typedRequest.operationHealthMetricMode || null,
+    agreementCollectionViewIntent: Boolean(
+      typedRequest.agreementCollectionViewIntent
+      || canonicalShape.agreementCollectionViewIntent,
+    ),
+    collectionStatusDistributionIntent: Boolean(
+      typedRequest.collectionStatusDistributionIntent
+      || canonicalShape.collectionStatusDistributionIntent,
+    ),
+    agreementOperationBridgeIntent: Boolean(
+      typedRequest.agreementOperationBridgeIntent
+      || canonicalShape.agreementOperationBridgeIntent,
+    ),
     styleTargetFamily: styleOnlyRequest ? (styleTargetPlan?.family || null) : null,
     styleTargetPlan: styleTargetPlan || null,
     requestedStyle,
@@ -2099,6 +2938,10 @@ export function resolveSemanticIntent({ message, user, selectedEntity, conversat
     ownershipRelation: requestedOwnershipScope?.ownershipRelation || null,
     explicitExternalScope: Boolean(requestedOwnershipScope?.explicitExternalScope),
     authorizationDecision,
+    requestedRoleTarget: requestedRoleTarget
+      ? { ...requestedRoleTarget, resolution: roleTargetResolution }
+      : null,
+    roleTargetResolution,
     clarificationNeed,
     evidenceRequirements,
     temporalMode,

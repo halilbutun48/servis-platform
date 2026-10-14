@@ -31,6 +31,15 @@ function formatTRY(amount) {
   return new Intl.NumberFormat("tr-TR").format(n);
 }
 
+function offerIdFromRoute() {
+  if (typeof window === "undefined") return 0;
+  const hash = String(window.location.hash || "");
+  const queryStart = hash.indexOf("?");
+  if (queryStart < 0) return 0;
+  const value = new URLSearchParams(hash.slice(queryStart + 1)).get("offerId");
+  return toPositiveIntOrZero(value);
+}
+
 function pill(status) {
   const s = String(status || "").toUpperCase();
   const label = displayStatusLabel(s);
@@ -158,9 +167,13 @@ export default function RoomOffersPanel() {
   const [poolSummary, setPoolSummary] = useState({ status: "idle", data: null, error: "" });
   const poolInflight = useRef(false);
 
-  const [statusFilter, setStatusFilter] = useState("OPEN,COUNTERED");
+  // A deep-linked authorized offer must remain visible even when its current
+  // status is outside the default inbox filter. The API still enforces ROOM
+  // scope; this only prevents the UI filter from hiding the requested record.
+  const [statusFilter, setStatusFilter] = useState(() => (offerIdFromRoute() > 0 ? "" : "OPEN,COUNTERED"));
   const [q, setQ] = useState("");
-  const [focusedOfferId, setFocusedOfferId] = useState(0);
+  const [deepLinkedOfferId, setDeepLinkedOfferId] = useState(() => offerIdFromRoute());
+  const [focusedOfferId, setFocusedOfferId] = useState(() => offerIdFromRoute());
 
   // per-offer counter input
   const [counterSel, setCounterSel] = useState({}); // { [offerId]: { amountRoom, noteRoom } }
@@ -199,6 +212,14 @@ export default function RoomOffersPanel() {
     load();
     loadAssets();
   }, [load, loadAssets, statusFilter]);
+
+  useEffect(() => {
+    const id = offerIdFromRoute();
+    if (id > 0) {
+      setDeepLinkedOfferId(id);
+      setFocusedOfferId(id);
+    }
+  }, []);
 
   useAutoReload("offers", load, true);
 
@@ -243,10 +264,15 @@ export default function RoomOffersPanel() {
     return map;
   }, [items]);
 
-  const focusedOffer = useMemo(
-    () => filtered.find((o) => Number(o?.id || 0) === Number(focusedOfferId || 0)) || filtered[0] || null,
-    [filtered, focusedOfferId]
-  );
+  const focusedOffer = useMemo(() => {
+    const explicitId = Number(focusedOfferId || 0);
+    const matched = explicitId > 0
+      ? filtered.find((o) => Number(o?.id || 0) === explicitId) || null
+      : null;
+    // An explicit deep-link must fail closed when the authorized list does
+    // not contain that record; never silently ground Copilot on another card.
+    return explicitId > 0 ? matched : filtered[0] || null;
+  }, [filtered, focusedOfferId]);
 
   const focusedPackageIds = useMemo(() => {
     if (!focusedOffer) return [];
@@ -618,7 +644,7 @@ export default function RoomOffersPanel() {
         const canQuickApprove = String(o.status) === "ACCEPTED" && ["REQUESTED"].includes(String(shift?.status || ""));
 
         return (
-          <div className="card pre18-room-offer-card" key={o.id} onClick={() => setFocusedOfferId(Number(o.id) || 0)} style={rowSelectionStyle(Number(focusedOfferId || 0) === Number(o.id || 0))}>
+          <div className="card pre18-room-offer-card" key={o.id} onClick={() => setFocusedOfferId(Number(o.id) || 0)} style={rowSelectionStyle(Number(focusedOfferId || 0) === Number(o.id || 0))} data-copilot-record-type="OFFER" data-copilot-record-id={Number(o.id) || 0}>
             <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontWeight: 700 }}>
@@ -654,8 +680,19 @@ export default function RoomOffersPanel() {
               </div>
             </div>
 
-            <details className="pre18-offer-secondary" onClick={(e) => e.stopPropagation()}>
-              <summary>Teklif ayrıntılarını göster</summary>
+            <details className="pre18-offer-secondary" open={deepLinkedOfferId === Number(o.id) ? true : undefined} onClick={(e) => {
+              // A canonical previous-record target activates its existing
+              // disclosure. Let that summary click bubble to the card so the
+              // selected offer is restored; controls inside the disclosure
+              // remain isolated from card selection.
+              if (e.target?.closest?.('summary')) return;
+              e.stopPropagation();
+            }}>
+              <summary
+                data-copilot-target={`room:offers:offer:${Number(o.id) || 0}`}
+                data-copilot-semantic-id={`product:room:offer:${Number(o.id) || 0}`}
+                data-copilot-label={`Teklif #${Number(o.id) || 0}`}
+              >Teklif ayrıntılarını göster</summary>
               <div className="pre18-offer-secondary-body">
                 <div className="row pre18-offer-secondary-values" style={{ gap: 12, flexWrap: "wrap" }}>
                   <div className="muted">

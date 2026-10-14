@@ -8,6 +8,7 @@ export const COPILOT_REASONING_ANSWER_COMPOSER_DIRECT_QUESTION_TYPES = Object.fr
   'SCREEN_EXPLANATION_HELP',
   'HOW_TO_HELP',
   'FIELD_BUTTON_HELP',
+  'TERM_HELP',
 ]);
 
 export const COPILOT_REASONING_ANSWER_COMPOSER_ACTION_LEAD_QUESTION_TYPES = Object.freeze([
@@ -367,7 +368,7 @@ function buildFallbackReply(snapshot = {}) {
     ], profile?.maxLength || 360);
   }
 
-  if (questionType === 'SCREEN_EXPLANATION_HELP' || questionType === 'SCREEN_PURPOSE') {
+  if (questionType === 'SCREEN_EXPLANATION_HELP' || questionType === 'SCREEN_PURPOSE' || questionType === 'TERM_HELP') {
     return joinParts([
       screen ? `Şu an ${screen} ekranındaysan` : 'Şu ekrandaysan',
       firstNonEmpty(summary, 'önce seçili kayıt ve ilk kontrol alanına bak.'),

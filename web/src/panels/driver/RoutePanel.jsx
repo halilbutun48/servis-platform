@@ -600,7 +600,7 @@ async function undoLast() {
 
   return (
     <div>
-      <div className="card">
+      <div className="card" data-copilot-block-key="driver-route:route-block" data-copilot-semantic-id="product:driver-route:route-block" data-copilot-label="Rota ve Sıradaki Durak">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <h3 style={{ margin: 0 }}>Bugün Rotam</h3>
           <div className="row" style={{ gap: 8, alignItems: "center" }}>

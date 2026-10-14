@@ -1,5 +1,6 @@
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { ensureM18RoomFinanceFoundation } from "./m18DemoFixtureFoundation.js";
 
 const prisma = new PrismaClient();
 
@@ -372,6 +373,8 @@ async function main() {
     ],
     skipDuplicates: true,
   });
+
+  await ensureM18RoomFinanceFoundation(prisma);
 
   console.log("✅ Seed tamamlandı. Şifre (hepsi): demo123");
   console.log("Users:", {

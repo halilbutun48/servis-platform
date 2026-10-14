@@ -4,6 +4,7 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { formatDateTimeTR } from "../../utils/time";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 function fmt(dt) {
   try {
@@ -85,6 +86,31 @@ export default function RoomCheckinPanel() {
   useAutoReload("checkin", async () => {
     if (selectedShiftId) await loadEvents(selectedShiftId);
   }, featureOn);
+
+  useEffect(() => {
+    const shiftId = Number(selectedShift?.id || 0);
+    if (!shiftId) {
+      clearCopilotSelection("/room/checkin");
+      return;
+    }
+    const status = String(selectedShift?.status || "").toUpperCase();
+    const boardingCount = Number(counts?.BOARD || 0);
+    const alightingCount = Number(counts?.ALIGHT || 0);
+    setCopilotSelection({
+      scopeKey: "/room/checkin",
+      entityType: "shift",
+      entityId: shiftId,
+      label: `Vardiya ${shiftId}`,
+      summary: [displayStatusLabel(status), `Biniş ${boardingCount}`, `İniş ${alightingCount}`].filter(Boolean).join(" • "),
+      fields: [
+        { label: "Durum", value: displayStatusLabel(status), help: "Seçili vardiyanın güncel durumunu gösterir." },
+        { label: "Biniş", value: String(boardingCount), help: "Yetkili biniş olaylarının sayısını gösterir." },
+        { label: "İniş", value: String(alightingCount), help: "Yetkili iniş olaylarının sayısını gösterir." },
+      ],
+      facts: { screenType: "CHECKIN", status, boardingCount, alightingCount },
+    });
+    return () => clearCopilotSelection("/room/checkin");
+  }, [counts, selectedShift]);
 
 
   return (

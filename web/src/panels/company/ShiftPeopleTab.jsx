@@ -4,7 +4,7 @@ const normalizeCoord = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 // web/src/panels/company/ShiftPeopleTab.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { apiOr404Fallback } from "../../utils/apiFallback";
 import { personLabel, peopleLabel } from "../../utils/labels";
@@ -28,9 +28,12 @@ import {
   warningLabel,
   stripHubStop,
   withHubStop,
+  mapPersistedStopsForDisplay,
   buildStopSummary,
   readPeopleFromStorage,
   writePeopleToStorage,
+  peopleSnapshot,
+  shouldPersistPeopleSnapshot,
   loadPeopleFromBackend as loadPeopleFromBackendApi,
   savePeopleToBackend as savePeopleToBackendApi,
   importPeopleToBackend as importPeopleToBackendApi,
@@ -97,6 +100,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const [draftStops, setDraftStops] = useState([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [stopSummary, setStopSummary] = useState(null);
+  const [stopEvidenceSource, setStopEvidenceSource] = useState("UNKNOWN");
 
   const [busy, setBusy] = useState(false);
   const [stopActionBusy, setStopActionBusy] = useState(false);
@@ -112,6 +116,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   // M16.2 soft-switch: backend varsa kullan; endpoint yoksa (404) localStorage fallback
   const [peopleBackend, setPeopleBackend] = useState("unknown"); // unknown | on | off
   const [shiftPatchById, setShiftPatchById] = useState({});
+  const peoplePersistedBaselineRef = useRef(null);
 
   const shiftOptions = useMemo(() => {
     const list = Array.isArray(shifts) ? shifts : [];
@@ -177,12 +182,17 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     if (!validShiftIdSet.has(Number(selectedShiftId || 0))) return;
 
     let alive = true;
+    // A new selection starts a read-only hydration cycle. Until the
+    // persisted baseline is installed, no save may be inferred from state
+    // initialization or from the previous shift's list.
+    peoplePersistedBaselineRef.current = null;
     setBusy(true);
     setErr("");
     setInfo("");
     setImportSummary(null);
     setImportWarnings([]);
     setStopSummary(null);
+    setStopEvidenceSource("LOADING");
     setImportQuickStats({ found: 0, notFound: 0, error: 0 });
 
     const sid = String(selectedShiftId);
@@ -202,8 +212,24 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         );
 
         if (!alive) return;
+        peoplePersistedBaselineRef.current = peopleSnapshot(list);
         setPeople(list);
-        setDraftStops([]);
+        const persistedStops = Array.isArray(selectedShiftBase?.stops)
+          ? mapPersistedStopsForDisplay(selectedShiftBase.stops, selectedShiftBase)
+          : null;
+        if (persistedStops) {
+          setDraftStops(persistedStops);
+          setStopSummary(buildStopSummary({
+            base: { source: "PERSISTED_SHIFT" },
+            stopsInput: persistedStops,
+            peopleInput: list,
+            computeGeoStatus,
+          }));
+          setStopEvidenceSource("PERSISTED_SHIFT");
+        } else {
+          setDraftStops([]);
+          setStopEvidenceSource("UNKNOWN");
+        }
         setInfo("");
       } catch (e) {
         if (!alive) return;
@@ -217,7 +243,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     return () => {
       alive = false;
     };
-  }, [peopleStorageKey, selectedShiftId, validShiftIdSet, token]);
+  }, [peopleStorageKey, selectedShiftBase, selectedShiftId, validShiftIdSet, token]);
 
   // keep localStorage in sync + (soft) persist to backend
   useEffect(() => {
@@ -227,10 +253,16 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     // always keep local fallback updated
     writePeopleToStorage(peopleStorageKey, people);
 
-    // debounce backend save; only if backend not known as missing
+    // debounce backend save; only if backend not known as missing. Hydration
+    // installs a baseline first, so passive resume/display never issues a
+    // personnel REPLACE write. Only a subsequent user edit is dirty.
     if (peopleBackend === "off") return;
+    const persistedBaseline = peoplePersistedBaselineRef.current;
+    if (!persistedBaseline) return;
+    if (!shouldPersistPeopleSnapshot(people, JSON.parse(persistedBaseline))) return;
 
     const sid = String(selectedShiftId);
+    const snapshotAtSchedule = peopleSnapshot(people);
     const t = setTimeout(async () => {
       try {
         await apiOr404Fallback(
@@ -242,6 +274,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
               await savePeopleToBackendApi(api, token, String(id), people);
             }
             setPeopleBackend("on");
+            peoplePersistedBaselineRef.current = snapshotAtSchedule;
             return true;
           },
           async () => {
@@ -654,6 +687,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setPName,
     setRowGeocodeBusyId,
     setStopSummary,
+    setStopEvidenceSource,
     setShiftPatchById,
     setStopActionBusy,
     stripHubStop,
@@ -709,6 +743,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         onOpenGuidedGeoPicker={openGuidedGeoPicker}
         geoReviewPath={geoReviewPath}
         draftStopsLength={draftStops.length}
+        stopEvidenceSource={stopEvidenceSource}
         stopSummary={stopSummary}
         hubDirection={hubDirection}
         setHubDirection={setHubDirection}

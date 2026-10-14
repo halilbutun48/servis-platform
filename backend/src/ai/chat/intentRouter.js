@@ -11,6 +11,7 @@ import { buildRiskScoringChips } from './conversationRiskScoringEngine.js';
 import { buildPlanReviewChips } from './conversationPlanReviewEngine.js';
 import { uniqueStrings } from './replyShapes.js';
 import { resolveSemanticIntent, toPublicQuestionType } from './semanticIntentPlanner.js';
+import { hasActiveWorkflowStepReference } from './canonicalSemanticRequest.js';
 import { isGenericProductHelpIntent } from './conversationRouting.js';
 import {
   BASE_RULES,
@@ -81,6 +82,13 @@ selectedEntityPresent: Boolean(
     && options.conversationState?.selectedEntityId
   )
 ),
+      uiHints: {
+        visibleButtons: Array.isArray(source.visibleTargets) ? source.visibleTargets : [],
+        currentTarget: source.currentTarget && typeof source.currentTarget === 'object' ? source.currentTarget : null,
+        workflowState: source.workflowState && typeof source.workflowState === 'object' ? source.workflowState : null,
+        guidedDraftAvailability: source.guidedDraftAvailability && typeof source.guidedDraftAvailability === 'object' ? source.guidedDraftAvailability : null,
+      },
+      visibleControlCount: Number(source.visibleControlCount || 0) || 0,
 planningSurfaceText: String(source.planningSurfaceText || ''),
     }
     : undefined;
@@ -88,8 +96,36 @@ planningSurfaceText: String(source.planningSurfaceText || ''),
   path: options.screenPath,
   selectedEntityId: options.conversationState?.selectedEntityId,
   selectedEntityType: options.conversationState?.selectedEntityType,
+  uiHints: semanticResolutionContext?.uiHints || undefined,
   ...(semanticResolutionContext ? { semanticResolutionContext } : {}),
 };
+}
+
+function canonicalQuestionIntent(semanticIntent, canonicalRequest) {
+  const request = canonicalRequest?.request || (canonicalRequest?.version ? canonicalRequest : null);
+  if (!request?.version) return null;
+  const shape = canonicalRequest?.canonicalShape || {};
+  const action = request.semanticAction?.actionClass;
+  const operation = String(request.operation || '').toUpperCase();
+  if (shape.roleHelpIntent || semanticIntent?.family === 'ROLE_EXPLANATION_HELP') return 'ROLE_EXPLANATION_HELP';
+  if (request.ambiguity?.status === 'UNRESOLVED' || request.semanticScope?.class === 'UNRESOLVED' || operation === 'CLARIFY_SEMANTIC_REQUEST') return 'CLARIFYING_QUESTION';
+  if (operation === 'EXPLAIN_RECORD_DETAILS') return 'SEMANTIC_RECORD_DETAILS';
+  if (operation === 'EXPLAIN_CURRENT_SURFACE') {
+    // The canonical operation identifies the surface-help owner, while the
+    // typed screenKnowledgeKind selects the narrower public question family
+    // (for example HOW_TO_HELP vs SCREEN_PURPOSE).  Preserve the legacy
+    // screen-explanation type only when the canonical plan has no narrower
+    // public adapter value.
+    const canonicalPublicType = toPublicQuestionType(semanticIntent);
+    return canonicalPublicType && canonicalPublicType !== 'SCREEN_CONTEXT'
+      ? canonicalPublicType
+      : 'SCREEN_EXPLANATION_HELP';
+  }
+  if (operation === 'GENERAL_INFORMATION') return 'PRODUCT_OVERVIEW_HELP';
+  if (operation === 'NAVIGATE_AUTHORIZED_SURFACE' || action === 'NAVIGATE') return 'GO_TO';
+  if (operation === 'VIEW_AUTHORIZED_SURFACE' || action === 'VIEW') return 'DETAIL_FLOW';
+  if (request.semanticScope?.class === 'OFF_TOPIC_GENUINE') return 'SEMANTIC_OFF_TOPIC_SAFE';
+  return null;
 }
 
 // These questions describe the current situation, even when the user does
@@ -125,12 +161,13 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
   const originalText = normalizeText(options.originalMessage || '');
   const combinedText = originalText && originalText !== text ? `${text} ${originalText}` : text;
   if (!text) return { questionType: 'OPEN', confidence: 0.42, matchedSignals: [], preferRoute: false, routeRequest: false };
-  if (isGenericProductHelpIntent(combinedText)) {
+  if (!options.canonicalRequest && isGenericProductHelpIntent(combinedText) && !hasActiveWorkflowStepReference(combinedText, options.conversationState)) {
     const semanticIntent = resolveSemanticIntent({
       message: options.originalMessage || message,
       user: { role: options.userRole || options.roleMode || '' },
       conversationState: options.conversationState,
       screenContext: plannerScreenContext(options),
+      canonicalRequest: options.canonicalRequest,
     });
     return {
       questionType: 'PRODUCT_OVERVIEW_HELP',
@@ -153,6 +190,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
       user: { role: options.userRole || options.roleMode || '' },
       conversationState: options.conversationState,
       screenContext: semanticScreenContext,
+      canonicalRequest: options.canonicalRequest,
     })
     : null;
   const currentMessageOwnsSemanticTurn = Boolean(currentMessageSemanticIntent && (
@@ -166,7 +204,22 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
       user: { role: options.userRole || options.roleMode || '' },
       conversationState: options.conversationState,
       screenContext: semanticScreenContext,
+      canonicalRequest: options.canonicalRequest,
   });
+  if (options.canonicalRequest) {
+    const canonicalType = canonicalQuestionIntent(semanticIntent, options.canonicalRequest);
+    if (canonicalType) {
+      return {
+        questionType: canonicalType,
+        confidence: Number(semanticIntent.confidence || 0.98),
+        matchedSignals: [`SEMANTIC_${canonicalType}`, `CANONICAL_${semanticIntent.family || 'REQUEST'}`],
+        preferRoute: false,
+        routeRequest: false,
+        guidedTaskMeta: semanticIntent.guidedTaskMeta || null,
+        semanticIntent,
+      };
+    }
+  }
   const publicQuestionType = toPublicQuestionType(semanticIntent);
   if (publicQuestionType) {
     return {

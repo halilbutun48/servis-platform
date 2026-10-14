@@ -180,8 +180,8 @@ function LoginCard() {
           <div className="authHeroSurface">
             <div className="authHeroIntro">
               <div className="authKickerRow">
-                <span className="authKickerPill">Final marka sistemi</span>
-                <span className="authKickerPill authKickerPill--ghost">SP + kalkan + iş birliği</span>
+                <span className="authKickerPill">Güvenli operasyon akışı</span>
+                <span className="authKickerPill authKickerPill--ghost">Rol bazlı destek</span>
               </div>
               <BrandMark
                 variant="login"

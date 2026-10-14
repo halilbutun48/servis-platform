@@ -41,6 +41,12 @@ export async function loadGuidedResumeDraftShifts({ token, ids }) {
   return itemsAll.filter((x) => uniqueIds.includes(Number(x.id)));
 }
 
+export async function loadGuidedDraftCandidates({ token }) {
+  if (!token) return [];
+  const response = await api("/api/shifts/guided-drafts", { token });
+  return Array.isArray(response?.items) ? response.items : [];
+}
+
 export async function loadGuidedCompanyHub({ token }) {
   return api("/api/company/hub", { token });
 }

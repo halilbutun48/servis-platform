@@ -1,5 +1,16 @@
 const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
 
+export function peopleSnapshot(value) {
+  return JSON.stringify(Array.isArray(value) ? value : []);
+}
+
+// A server hydration result is the persisted baseline, not a user edit.  The
+// caller may persist only when the current list differs from that baseline.
+export function shouldPersistPeopleSnapshot(current, persistedBaseline) {
+  if (persistedBaseline === null || persistedBaseline === undefined) return false;
+  return peopleSnapshot(current) !== peopleSnapshot(persistedBaseline);
+}
+
 export function writeGuidedResume(payload) {
   try {
     localStorage.setItem(GUIDED_RESUME_KEY, JSON.stringify({ ...payload, ts: Date.now() }));
@@ -320,6 +331,24 @@ export function withHubStop(stops, shift) {
   const dir = String(shift?.direction || "").toUpperCase();
   if (dir === "OUTBOUND") return [hub, ...list];
   return [...list, hub];
+}
+
+// Persisted shift stops are authoritative server state. Keep the virtual
+// collection location separate from those records so callers can present
+// both meanings without turning an unknown list into a false zero.
+export function mapPersistedStopsForDisplay(stops, shift) {
+  const rows = Array.isArray(stops) ? stops : [];
+  const realStops = rows
+    .filter((s) => typeof s?.lat === "number" && typeof s?.lng === "number")
+    .map((s, i) => ({
+      id: String(s.id ?? `api_${i}`),
+      title: String(s.title || s.name || `Durak ${i + 1}`),
+      lat: s.lat,
+      lng: s.lng,
+      count: s.assignmentCount ?? null,
+      memberIds: [],
+    }));
+  return withHubStop(realStops, shift);
 }
 
 export function buildStopSummary({ base = {}, stopsInput, peopleInput, computeGeoStatus: computeGeoStatusFn }) {

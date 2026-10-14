@@ -2,6 +2,29 @@ export function button(label, purpose, whenToUse, whatHappens, disabledReason = 
   return { label, purpose, whenToUse, whatHappens, disabledReason, riskNote };
 }
 
+// Stable control identity is declared by the screen catalog and mirrored by
+// the live DOM marker. It remains discoverable while the assistant drawer is
+// open and is never inferred from a translated label.
+export function canonicalButton(targetKey, label, purpose, whenToUse, whatHappens, disabledReason, riskNote = "") {
+  const key = String(targetKey || '').trim();
+  return {
+    ...button(label, purpose, whenToUse, whatHappens, disabledReason, riskNote),
+    targetKey: key,
+    semanticId: key ? `product:${key}` : '',
+  };
+}
+
+export function semanticBlock({ semanticId, blockKey, label, order = 0, controlSemanticIds = [], ...metadata } = {}) {
+  return {
+    semanticId: String(semanticId || blockKey || "").trim(),
+    blockKey: String(blockKey || semanticId || "").trim(),
+    label: String(label || "").trim(),
+    order: Number(order) || 0,
+    controlSemanticIds: Array.isArray(controlSemanticIds) ? controlSemanticIds.map((value) => String(value || "").trim()).filter(Boolean) : [],
+    ...metadata,
+  };
+}
+
 export function screen(id, path, label, cfg = {}) {
   return {
     id,
@@ -26,6 +49,8 @@ export function screen(id, path, label, cfg = {}) {
     dataRules: cfg.dataRules || [],
     fieldGuides: cfg.fieldGuides || [],
     badgeGuides: cfg.badgeGuides || [],
+    semanticElements: cfg.semanticElements || [],
+    semanticBlocks: cfg.semanticBlocks || [],
     rowReadHint: cfg.rowReadHint || '',
   };
 }

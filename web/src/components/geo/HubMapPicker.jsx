@@ -184,7 +184,13 @@ export default function HubMapPicker({
   return (
     <>
       <div className="toolbar geoLocationActions" style={{ marginTop: 12, flexWrap: "wrap" }}>
-        <button type="button" className="btn sm primary" onClick={openPicker} disabled={busy}>
+        <button
+          type="button"
+          className="btn sm primary"
+          data-copilot-target="room:hub:map-picker-open"
+          onClick={openPicker}
+          disabled={busy}
+        >
           {title}
         </button>
       </div>

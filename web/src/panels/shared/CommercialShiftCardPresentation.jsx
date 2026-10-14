@@ -129,11 +129,11 @@ export function ShiftLifecycle({ shift, restricted = false, compact = false }) {
   );
 }
 
-export function ShiftCardPrimaryAction({ label, onClick, disabled = false, note = null }) {
+export function ShiftCardPrimaryAction({ label, onClick, disabled = false, note = null, dataCopilotTarget = undefined }) {
   if (!label) return null;
   return (
     <section className="shiftCardPrimaryAction" data-testid="shift-card-primary-action">
-      <button type="button" className="btn primary shiftCardPrimaryButton" disabled={disabled} onClick={onClick}>
+      <button type="button" className="btn primary shiftCardPrimaryButton" disabled={disabled} onClick={onClick} data-copilot-target={dataCopilotTarget}>
         {label}
       </button>
       {note ? <div className="shiftCardActionNote">{note}</div> : null}

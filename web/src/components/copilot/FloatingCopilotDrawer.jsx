@@ -157,6 +157,23 @@ function buildPrompt({ rawText, screenContext }) {
   return `Bu ekranı kısaca özetle ve güvenli sonraki adımı söyle: ${screenContext.label} (${screenContext.path}).`;
 }
 
+function readLiveWorkflowState() {
+  if (typeof document === "undefined") return null;
+  const node = document.querySelector('[data-copilot-workflow-id]');
+  if (!node) return null;
+  const workflowId = String(node.getAttribute('data-copilot-workflow-id') || '').trim();
+  const activeStepOrdinal = Number(node.getAttribute('data-copilot-workflow-step') || 0) || null;
+  if (!workflowId || !activeStepOrdinal) return null;
+  return {
+    workflowId,
+    activeStepOrdinal,
+    completedThroughOrdinal: Number(node.getAttribute('data-copilot-workflow-completed-through') || 0) || null,
+    currentTargetKey: String(node.getAttribute('data-copilot-workflow-target-key') || '').trim(),
+    currentTargetLabel: String(node.getAttribute('data-copilot-workflow-target-label') || '').trim(),
+    source: 'LIVE_UI',
+  };
+}
+
 function selectionSummaryForDisplay(selection) {
   const label = String(selection?.label || '').trim();
   const summary = String(selection?.summary || '').trim();
@@ -358,6 +375,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
   const [mobileDrawerPlacement, setMobileDrawerPlacement] = useState("bottom");
   const [mobileDrawerMaxHeight, setMobileDrawerMaxHeight] = useState(null);
   const [mobileExpanded, setMobileExpanded] = useState(false);
+  const [mobileExpansionSource, setMobileExpansionSource] = useState("default");
   const [selection, setSelection] = useState(() => {
     const initialScreenContext = resolveCopilotScreenContext(currentPath, me);
     const initialSelection = readCopilotSelection();
@@ -435,7 +453,10 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
   }, []);
 
   useEffect(() => {
-    if (!open || viewportSize.width > 720) setMobileExpanded(false);
+    if (!open || viewportSize.width > 720) {
+      setMobileExpanded(false);
+      setMobileExpansionSource("default");
+    }
   }, [open, viewportSize.width]);
 
   useEffect(() => {
@@ -449,6 +470,16 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
     syncGuidedRecovery(getGuidedTarget());
     return subscribeGuidedTarget(syncGuidedRecovery);
   }, []);
+
+  useEffect(() => {
+    // Suggestions can temporarily request more room, but entering guided
+    // target mode must return to the compact working surface unless the user
+    // explicitly chose the expanded mode themselves.
+    if (viewportSize.width <= 720 && guidedTargetActive && mobileExpansionSource === "suggestions") {
+      setMobileExpanded(false);
+      setMobileExpansionSource("default");
+    }
+  }, [guidedTargetActive, mobileExpansionSource, viewportSize.width]);
 
   const resizeComposerInput = useCallback((node) => {
     if (!node) return;
@@ -470,6 +501,36 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
   useEffect(() => {
     resizeComposerInput(composerTextareaRef.current);
   }, [resizeComposerInput, text]);
+
+  // Opening or closing the suggestions disclosure changes the chat viewport
+  // height. Re-anchor the real conversation scroll after that layout change
+  // so the newest user/assistant exchange cannot remain hidden behind the
+  // disclosure or the fixed composer.
+  useEffect(() => {
+    if (!open || typeof window === "undefined") return undefined;
+    let secondFrame = null;
+    const anchorLatestExchange = () => {
+      const chat = scrollRef.current;
+      if (!chat) return;
+      chat.scrollTop = chat.scrollHeight;
+      if (!suggestionsOpen) return;
+      const chatRect = chat.getBoundingClientRect?.();
+      const newestUser = [...chat.querySelectorAll(".copilotMsg.user")].at(-1);
+      if (!chatRect || !newestUser) return;
+      const userRect = newestUser.getBoundingClientRect?.();
+      if (userRect && userRect.top < chatRect.top) {
+        chat.scrollTop = Math.max(0, chat.scrollTop - (chatRect.top - userRect.top));
+      }
+    };
+    const frame = window.requestAnimationFrame(() => {
+      anchorLatestExchange();
+      secondFrame = window.requestAnimationFrame(anchorLatestExchange);
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (secondFrame !== null) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [messages.length, open, suggestionsOpen]);
 
   useEffect(() => {
     const compact = viewportSize.width <= 720;
@@ -922,11 +983,16 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
     resetResponsePhase();
     setBusy(true);
     setErr("");
+    // A new semantic request owns the visible target/recovery presentation.
+    // Clear only the old recovery notice while the canonical response is
+    // resolving; the target itself is replaced atomically below.
+    setGuidedRecoveryMessage("");
     try {
       const latestSelection = readCopilotSelection();
       const liveSelection = selectionApplies(latestSelection, currentPath) ? latestSelection : selection;
       const requestSelection = liveSelection || selection || null;
       const uiSurface = captureCopilotUiSurface();
+      const liveWorkflowState = uiSurface.workflowState || readLiveWorkflowState();
       const recentMessages = messages.slice(-8).map((m) => ({ role: m?.role || '', text: String(m?.text || '').slice(0, 280) }));
       const payload = await api.post("/api/ai/copilot", {
         intent: "CHAT_HELP",
@@ -960,6 +1026,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
           uiHints: {
             visibleSuggestions: buildSuggestions(screenContext.path, requestSelection, screenContext, me),
             ...uiSurface,
+            workflowState: liveWorkflowState,
           },
         },
         format: "json",
@@ -981,7 +1048,20 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
         dialogueTopic: payload?.dialogueTopic || payload?.semanticPlan?.dialogueTopic || null,
         guidedTarget: payload?.guidedTarget || null,
       }]);
-      setGuidedTarget(payload?.guidedTarget || null);
+      const nextGuidedTarget = payload?.guidedTarget || null;
+      const semanticFamily = String(payload?.semanticPlan?.family || payload?.conversationRoute?.family || "").toUpperCase();
+      const continuationAction = String(payload?.semanticPlan?.continuationAction || "").toUpperCase();
+      setGuidedTarget(nextGuidedTarget);
+      // A non-targeted request owns the visual state. Only an explicit active
+      // workflow recovery may keep a non-FOUND recovery status; SCREEN_CONTEXT,
+      // navigation, data, and authorization responses must clear stale target
+      // notices instead of inheriting the prior highlight.
+      const keepsRecoveryContext = continuationAction === "RECOVER"
+        && ["CONTINUE_CURRENT_REASONING", "EXPLAIN_CURRENT_TARGET", "UI_GUIDANCE"].includes(semanticFamily);
+      if (!keepsRecoveryContext && (!nextGuidedTarget || nextGuidedTarget.status !== "FOUND")) {
+        setGuidedRecoveryMessage("");
+        setGuidedTarget(null);
+      }
       const replyText = String(payload?.reply || payload?.summary || "");
       if (viewportSize.width <= 720 && !payload?.guidedTarget && (replyText.length > 360 || (Array.isArray(payload?.responseSections) && payload.responseSections.length > 1))) {
         setMobileExpanded(true);
@@ -1185,6 +1265,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
     setPanelSide(launcherSide);
     setLauncherInteraction("idle");
     setMobileExpanded(false);
+    setMobileExpansionSource("default");
     setOpen(true);
   }
 
@@ -1469,7 +1550,11 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
           <button
             type="button"
             className="btn sm copilotToolBtn copilotMobileExpandBtn"
-            onClick={() => setMobileExpanded((previous) => !previous)}
+            onClick={() => setMobileExpanded((previous) => {
+              const next = !previous;
+              setMobileExpansionSource(next ? "user" : "default");
+              return next;
+            })}
             aria-expanded={mobileExpanded}
             title={mobileExpanded ? "Paneli küçült" : "Paneli büyüt"}
           >
@@ -1538,7 +1623,15 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
             onClick={() => {
               setSuggestionsOpen((previous) => {
                 const next = !previous;
-                if (next && viewportSize.width <= 720) setMobileExpanded(true);
+                if (viewportSize.width <= 720) {
+                  if (next && mobileExpansionSource !== "user") {
+                    setMobileExpanded(true);
+                    setMobileExpansionSource("suggestions");
+                  } else if (!next && mobileExpansionSource === "suggestions") {
+                    setMobileExpanded(false);
+                    setMobileExpansionSource("default");
+                  }
+                }
                 return next;
               });
             }}
@@ -1573,9 +1666,9 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
           ) : null}
           {m.role === "assistant" && !m.system ? <div className="copilotMsgActions">
             <button type="button" className="btn sm copilotToolBtn" onClick={() => speak(m.text, idx)}>{readingIndex === idx ? "Okuyor..." : "Sesli oku"}</button>
-            {m.followUpPrompt ? <button type="button" className="btn sm copilotToolBtn" onClick={() => ask("Devamını anlat")}>Devamını anlat</button> : null}
+            {m.followUpPrompt ? <button type="button" className="btn sm copilotToolBtn copilotMsgPrimaryAction" data-copilot-primary-action="true" onClick={() => ask("Devamını anlat")}>Devamını anlat</button> : null}
             {filterMessageActions(m.quickActions, suggestions, m.followUpPrompt, me).map((a, i) => (
-              <button key={`${idx}-${i}-${actionText(a)}`} type="button" className="btn sm copilotToolBtn" title={a?.reason || ""} onClick={() => triggerQuickAction(a)}>{actionText(a)}</button>
+              <button key={`${idx}-${i}-${actionText(a)}`} type="button" className={`btn sm copilotToolBtn${!m.followUpPrompt && i === 0 ? " copilotMsgPrimaryAction" : ""}`} data-copilot-primary-action={!m.followUpPrompt && i === 0 ? "true" : undefined} title={a?.reason || ""} onClick={() => triggerQuickAction(a)}>{actionText(a)}</button>
             ))}
           </div> : null}
         </div>)}
@@ -1587,7 +1680,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
         <textarea ref={composerTextareaRef} value={text} onChange={(e) => setText(e.target.value)} onInput={(e) => resizeComposerInput(e.currentTarget)} onFocus={() => setInputFocused(true)} onBlur={() => setInputFocused(false)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(e); } }} placeholder="Sorunu yaz. Örnek: burada neden devam edemiyorum, bu ekran ne işe yarar, seçili araç ne durumda, şimdi ne yapacağım" rows={2} />
         <div className="copilotComposerRow">
           <div className="copilotComposerButtons">
-            {(messages.length || err || String(text || "").trim()) ? <button type="button" className="btn sm copilotToolBtn" onClick={() => { setMessages([]); setErr(""); }}>Temizle</button> : null}
+            {(messages.length || err || String(text || "").trim()) ? <button type="button" className="btn sm copilotToolBtn" onClick={() => { setMessages([]); setErr(""); setGuidedRecoveryMessage(""); setGuidedTarget(null); }}>Temizle</button> : null}
             <button type="submit" className="btn sm primary copilotToolBtn" disabled={busy || !String(text || "").trim()}>Sor</button>
           </div>
         </div>

@@ -34,16 +34,43 @@ function hasAny(value, patterns) {
   return patterns.some((pattern) => pattern.test(value));
 }
 
+function isAuthorizedUiHelpPlan(plan) {
+  const family = String(plan?.family || plan?.intentFamily || "").toUpperCase();
+  const continuationBase = plan?.continuationBasePlan;
+  return family === "UI_GUIDANCE"
+    || family === "SCREEN_CONTEXT"
+    // The canonical planner deliberately promotes a live control question to
+    // EXPLAIN_CURRENT_TARGET before it reaches the authorization/read layer.
+    // That family is still presentation of an already-authorized UI target;
+    // treating it as a raw address lookup would let the broad privacy keyword
+    // guard replace the canonical semantic decision.
+    || family === "EXPLAIN_CURRENT_TARGET"
+    || Boolean(plan?.explicitUiGuidance || plan?.currentTargetExplanationIntent || plan?.screenContextIntent)
+    || (family === "CONTINUE_CURRENT_REASONING" && isAuthorizedUiHelpPlan(continuationBase));
+}
+
+function isExplicitRawPersonalDisclosure(value) {
+  return hasAny(value, [
+    /ham\s+(?:kisisel|adres|telefon)/,
+    /(?:kisinin|kisinin|personelin|ogrencinin|cocugun|velinin)\s+(?:acik\s+)?(?:adres|telefon|e\s*-?posta)/,
+    /(?:adres|telefon|e\s*-?posta)(?:ini|unu|unu)\s+(?:soyle|yaz|goster|ver|paylas)/,
+    /(?:ad\s+soyad|kisisel\s+(?:bilgi|detay|veri|alan))/,
+  ]);
+}
+
 export function resolveFieldPrivacyPolicy({ user, message, plan } = {}) {
   const input = normalize(`${message || ""} ${planText(plan)}`);
+  const messageInput = normalize(message || "");
+  const uiHelpPlan = isAuthorizedUiHelpPlan(plan);
+  const explicitRawPersonalDisclosure = isExplicitRawPersonalDisclosure(messageInput);
   const deniedFields = [];
 
-  if (hasAny(input, [
+  if (explicitRawPersonalDisclosure || (!uiHelpPlan && hasAny(input, [
     /ham\s+kisisel/, /raw\s+personal/, /ad\s+soyad/, /telefon(?:\s+numarasi)?/,
     /e\s*-?posta/, /adres/, /ham\s+adres/, /gizli\s+(?:konum|adres|lokasyon)/, /\btc(?:\s+kimlik)?\b/, /kimlik\s+numarasi/,
     /isimleri\s+(listele|goster|ver)/, /ogrenci(?:lerin)?\s+(ad|isim|detay)/,
     /personel(?:lerin)?\s+(ad|isim|detay)/, /kisisel\s+(bilgi|detay|alan|veri)/,
-  ])) deniedFields.push(FIELD_FAMILIES.PERSONAL);
+  ]))) deniedFields.push(FIELD_FAMILIES.PERSONAL);
 
   if (hasAny(input, [
     /koordinat/, /enlem/, /boylam/, /latitude/, /longitude/, /raw\s+coord/, /lat\s*\/\s*lng/,

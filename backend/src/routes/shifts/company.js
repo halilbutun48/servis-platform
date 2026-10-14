@@ -125,6 +125,7 @@ export function attachShiftCompanyRoutes(r, io) {
 
   r.post(
     "/guided-batch",
+    requireRole("COMPANY", "SUPER_ADMIN"),
     async (req, res) => {
       try {
         const rows = Array.isArray(req.body?.items) ? req.body.items : [];
@@ -211,6 +212,7 @@ export function attachShiftCompanyRoutes(r, io) {
   // COMPANY/SUPER_ADMIN: create shift
   r.post(
     "/",
+    requireRole("COMPANY", "SUPER_ADMIN"),
     async (req, res) => {
       try {
         const body = validateWithZod(createShiftSchema, req.body);

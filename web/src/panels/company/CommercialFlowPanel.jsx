@@ -240,8 +240,8 @@ export default function CompanyCommercialFlowPanel() {
 
   const effectiveSelectedId = useMemo(() => {
     const rawSelectedId = String(selectedId || "");
-    if (rawSelectedId && filteredFlowItems.some((item) => String(item.id) === rawSelectedId)) {
-      return rawSelectedId;
+    if (rawSelectedId) {
+      return filteredFlowItems.some((item) => String(item.id) === rawSelectedId) ? rawSelectedId : "";
     }
     return String(filteredFlowItems[0]?.id || "");
   }, [filteredFlowItems, selectedId]);
@@ -285,10 +285,20 @@ export default function CompanyCommercialFlowPanel() {
       listCount: finalItems.length,
     });
 
+      const selectedEntityType = selectedItem?.offerId
+        ? "offer"
+        : selectedItem?.agreementId
+          ? "agreement"
+          : selectedItem?.shiftId
+            ? "shift"
+            : "screen";
+      const selectedEntityId = Number(
+        selectedItem?.offerId || selectedItem?.agreementId || selectedItem?.shiftId || 2115
+      ) || 2115;
       setCopilotSelection({
         scopeKey: copilotScopeKey,
-        entityType: selectedItem?.shiftId ? 'shift' : 'screen',
-        entityId: Number(selectedItem?.shiftId || 2115) || 2115,
+        entityType: selectedEntityType,
+        entityId: selectedEntityId,
         label: `${selectedItem?.counterparty || 'Kayıt'} • ${selectedItem?.flowLabel || '-'}`,
       summary: [selectedItem?.statusLabel || null, selectedItem?.nextStep || null].filter(Boolean).join(' • '),
       fields: [

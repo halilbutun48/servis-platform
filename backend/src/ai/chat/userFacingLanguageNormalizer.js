@@ -1,4 +1,39 @@
 const USER_FACING_TOKEN_REPLACEMENTS = [
+  // Backend enums and workflow/state identifiers stay internal. They are
+  // rendered into Turkish before entering any user-visible response field.
+  [/\bNEEDS_REVIEW\b/giu, "İnceleme gerekli"],
+  [/\bREVIEW_NEEDED\b/giu, "İnceleme gerekli"],
+  [/\bNEEDS_RECHECK\b/giu, "Tekrar kontrol gerekli"],
+  [/\bMISSING_PROOF\b/giu, "Kanıt eksik"],
+  [/\bMISSING\b/giu, "Eksik"],
+  [/\bPARTIAL\b/giu, "Kısmi"],
+  [/\bNOT_READY\b/giu, "Henüz hazır değil"],
+  [/\bFAILED\b/giu, "Başarısız"],
+  [/\bINVALID_COORD\b/giu, "Geçersiz konum"],
+  [/\bADDRESS_ONLY\b/giu, "Yalnızca adres var"],
+  [/\bUNKNOWN\b/giu, "Bilinmiyor"],
+  [/\bNOT_FOUND\b/giu, "Bulunamadı"],
+  [/\bUNAUTHORIZED\b/giu, "Yetki yok"],
+  [/\bTARGET_DISAPPEARED\b/giu, "Hedef artık görünmüyor"],
+  [/\bWRONG_STATE\b/giu, "Geçersiz durum"],
+  [/\bPRE_WIZARD\b/giu, "Akış başlamadan önce"],
+  [/\bSAVED_DRAFT_CHOOSER\b/giu, "Kayıtlı taslak seçimi"],
+  [/\bNEW_PLAN_STEP_1\b/giu, "Yeni planın ilk adımı"],
+  [/\bCREATE_SHIFT\b/giu, "Vardiya oluşturma"],
+  [/\bPERSONNEL_STOPS\b/giu, "Personel ve durak"],
+  [/\bPREPARE_STOPS\b/giu, "Durakları hazırlama"],
+  [/\bADD_PERSONNEL\b/giu, "Personel ekleme"],
+  [/\bIMPORT_PERSONNEL\b/giu, "Personel içe aktarma"],
+  [/\bEXPLAIN_CURRENT_TARGET\b/giu, "Mevcut hedef açıklaması"],
+  [/\bCONTINUE_CURRENT_REASONING\b/giu, "Devam eden işlem açıklaması"],
+  [/\bUI_GUIDANCE\b/giu, "Arayüz rehberliği"],
+  [/\bCURRENT_SCREEN_HELP\b/giu, "Mevcut ekran yardımı"],
+  [/\bNO_DATA\b/giu, "Veri yok"],
+  [/\bINSUFFICIENT_EVIDENCE\b/giu, "Yeterli kanıt yok"],
+  [/\bAUTHORIZATION_NEGATIVE\b/giu, "Yetki sınırı"],
+  [/\bOFF_TOPIC_SAFE\b/giu, "Ürün dışı güvenli yanıt"],
+  [/\bLIVE_EXTERNAL_DATA\b/giu, "Canlı dış veri"],
+  [/\bUNCLEAR_OR_AMBIGUOUS\b/giu, "Belirsiz istek"],
   [/\bOPERATIONS\b/giu, "operasyon"],
   [/\bSHIFTS\b/giu, "vardiya"],
   [/\bOFFERS\b/giu, "teklif"],
@@ -35,12 +70,38 @@ const USER_FACING_TOKEN_REPLACEMENTS = [
   [/\bGPS\b/giu, "GPS/konum"],
 ];
 
+const STRUCTURAL_INTERNAL_TOKEN_RE = /\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g;
+const UNKNOWN_INTERNAL_TOKEN_VISIBLE_TEXT = "Bu durum için güvenli bir açıklama veremiyorum.";
+
 const USER_FACING_TEXT_KEYS = new Set([
   "reply", "summary", "contextSummary", "reasoning", "priority", "safeNextStep", "nextAction", "bestNextAction",
   "followUpPrompt", "roleBoundary", "title", "body", "label", "description", "reason", "next", "text", "meaning",
+  "questionLabel", "actionPlanLabel", "activeTopicLabel", "assistantReply", "boundaryText", "clarifyingQuestion", "safeAlternative",
+  "nextBestAction", "rootCauseReply", "riskScoringReply", "smartDiagnosticReply", "selectedRecordLabel", "selectedRecordSummary",
+  "selectedRecordStatus", "selectedFieldLines", "selectedBadgeLines", "selectedSignalLines", "suggestedChips", "rootCauseChips",
+  "riskScoringChips", "smartDiagnosticChips", "visibleReason",
 ]);
 
-function normalizeTurkishComposition(value) {
+const USER_FACING_OBJECT_KEYS = new Set([
+  "responseSections", "quickActions", "linkedGuides", "authorizedRecords", "retrievedFacts", "dataSources", "reasoningAssistant", "guidedTarget",
+  "uncertaintyMeta", "routePlan", "contextPriority", "taskState", "conversationState", "continuity", "continuityMeta", "qualityHints",
+]);
+
+// These fields are canonical identity/transport data.  They may be carried
+// alongside a visible label, but translating them would break target
+// equality, route scoping, or authorization checks.  Only their user-facing
+// sibling text is normalized.
+const INTERNAL_IDENTITY_KEYS = new Set([
+  "targetKey", "semanticId", "blockKey", "screenPath", "identitySource", "semanticType",
+  "authorizedContext", "anchor", "locator", "routeKey", "actionKind", "guideJobType", "jobType",
+  "path",
+  "activeGoal", "activeWorkflow", "activeStep", "currentExpectedStep", "currentSurface", "currentRole",
+  "effectiveRole", "mode", "provider", "providerSummary", "questionType", "assistantIntent", "intent", "intentLabel",
+  "lastReasoningAssistantRole", "lastReasoningAssistantMode", "lastReasoningAssistantFingerprint",
+  "safeOnly", "workflowIntent", "workflowId", "ordinal", "completedThroughOrdinal", "currentTargetKey",
+]);
+
+function normalizeTurkishComposition(value, renderState = null) {
   let text = String(value ?? "");
   for (const [pattern, replacement] of USER_FACING_TOKEN_REPLACEMENTS) text = text.replace(pattern, replacement);
 
@@ -74,6 +135,13 @@ function normalizeTurkishComposition(value) {
   text = text.replace(/tamamlandı\s*•\s*tamamlandı/giu, "tamamlandı");
   text = text.replace(/(?:konum\/)?GPS\/konum(?:\/konum)?/giu, "GPS/konum");
   text = text.replace(/(?<!\()\bETA\b/giu, "tahmini varış zamanı (ETA)");
+  // Known tokens receive precise copy above. Unknown structured tokens must
+  // fail closed; heuristic humanization can both leak implementation detail
+  // and invent a meaning that the product has not approved.
+  text = text.replace(STRUCTURAL_INTERNAL_TOKEN_RE, () => {
+    if (renderState && typeof renderState === 'object') renderState.status = 'RENDERING_REJECTED';
+    return UNKNOWN_INTERNAL_TOKEN_VISIBLE_TEXT;
+  });
   text = text.replace(/\s+([,.!?;:])/gu, "$1");
   // Visible bullet and paragraph boundaries are presentation semantics.  A
   // global whitespace collapse used to turn a valid two-item STYLE response
@@ -86,42 +154,47 @@ function normalizeTurkishComposition(value) {
     .join("\n");
 }
 
-function stripInternalMetaLead(value, family) {
-  const text = normalizeTurkishComposition(value);
+function stripInternalMetaLead(value, family, renderState = null) {
+  const text = normalizeTurkishComposition(value, renderState);
   if (!["NEXT_ACTION", "NEXT_STEP", "PRIORITY", "RISK_RANKING"].includes(String(family || "").toUpperCase())) return text;
   return text.replace(/^(?:\s*\d+\s+(?:operasyon|vardiya|teklif|sözleşme|personel|veli|araç|sürücü)\s+kayd[ıi][,.;:]?\s*)+(?=(?:sonraki|önce|önerim|risk|güvenli))/iu, "").trim();
 }
 
-function normalizeVisibleValue(value, family) {
+function normalizeVisibleValue(value, family, renderState = null) {
   if (value == null || typeof value !== "string") return value;
-  return stripInternalMetaLead(value, family);
+  return stripInternalMetaLead(value, family, renderState);
 }
 
-function normalizeVisibleObject(value, family, key = "") {
-  if (typeof value === "string") return USER_FACING_TEXT_KEYS.has(key) || key === "" ? normalizeVisibleValue(value, family) : value;
-  if (Array.isArray(value)) return value.map((item) => normalizeVisibleObject(item, family, key));
+function normalizeVisibleObject(value, family, key = "", visibleScope = false, renderState = null) {
+  if (typeof value === "string") return visibleScope || USER_FACING_TEXT_KEYS.has(key) || key === "" ? normalizeVisibleValue(value, family, renderState) : value;
+  if (Array.isArray(value)) return value.map((item) => normalizeVisibleObject(item, family, key, visibleScope, renderState));
   if (!value || typeof value !== "object") return value;
   const result = { ...value };
   for (const [childKey, childValue] of Object.entries(result)) {
-    if (typeof childValue === "string" && USER_FACING_TEXT_KEYS.has(childKey)) result[childKey] = normalizeVisibleValue(childValue, family);
-    else if (Array.isArray(childValue) && ["responseSections", "quickActions", "authorizedRecords", "retrievedFacts", "dataSources"].includes(childKey)) result[childKey] = childValue.map((item) => normalizeVisibleObject(item, family, ""));
-    else if (childValue && typeof childValue === "object" && childKey === "responseSections") result[childKey] = normalizeVisibleObject(childValue, family, childKey);
+    if (INTERNAL_IDENTITY_KEYS.has(childKey)) continue;
+    // Guided-target/task envelopes carry machine status values that the web
+    // client compares as canonical identity.  Keep those transport fields
+    // intact while still normalizing status text in visible records/cards.
+    if (childKey === "status" && ["guidedTarget", "taskState", "conversationState"].includes(key)) continue;
+    const childVisibleScope = visibleScope || USER_FACING_OBJECT_KEYS.has(childKey);
+    if (typeof childValue === "string" && (childVisibleScope || USER_FACING_TEXT_KEYS.has(childKey))) result[childKey] = normalizeVisibleValue(childValue, family, renderState);
+    else if (childValue && typeof childValue === "object" && (childVisibleScope || USER_FACING_OBJECT_KEYS.has(childKey))) result[childKey] = normalizeVisibleObject(childValue, family, childKey, childVisibleScope, renderState);
   }
   return result;
 }
 
 export function normalizeSeferAbiUserFacingPayload(payload) {
   if (!payload || typeof payload !== "object") return payload;
+  const renderState = { status: 'OK' };
   const family = payload?.semanticPlan?.family || payload?.semanticPlan?.intentFamily || payload?.assistantIntent || "";
   const normalized = { ...payload };
   for (const key of USER_FACING_TEXT_KEYS) {
-    if (typeof normalized[key] === "string") normalized[key] = normalizeVisibleValue(normalized[key], family);
+    if (typeof normalized[key] === "string") normalized[key] = normalizeVisibleValue(normalized[key], family, renderState);
   }
-  if (Array.isArray(normalized.responseSections)) normalized.responseSections = normalized.responseSections.map((section) => normalizeVisibleObject(section, family));
-  if (Array.isArray(normalized.quickActions)) normalized.quickActions = normalized.quickActions.map((action) => normalizeVisibleObject(action, family));
-  if (Array.isArray(normalized.authorizedRecords)) normalized.authorizedRecords = normalized.authorizedRecords.map((record) => normalizeVisibleObject(record, family));
-  if (Array.isArray(normalized.retrievedFacts)) normalized.retrievedFacts = normalized.retrievedFacts.map((fact) => normalizeVisibleValue(fact, family));
-  if (Array.isArray(normalized.dataSources)) normalized.dataSources = normalized.dataSources.map((source) => normalizeVisibleValue(source, family));
+  for (const key of USER_FACING_OBJECT_KEYS) {
+    if (normalized[key] != null) normalized[key] = normalizeVisibleObject(normalized[key], family, key, true, renderState);
+  }
+  Object.defineProperty(normalized, '__renderingStatus', { value: renderState.status, enumerable: false, configurable: true });
   return normalized;
 }
 

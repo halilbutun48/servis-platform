@@ -20,6 +20,7 @@ export function ShiftPeopleSummarySection({
   onOpenGuidedGeoPicker,
   geoReviewPath,
   draftStopsLength,
+  stopEvidenceSource,
   stopSummary,
   maxWalkMValue,
   whoPlural,
@@ -93,9 +94,16 @@ export function ShiftPeopleSummarySection({
         ) : null}
       </div>
 
-      <div className="muted" style={{ marginTop: 6 }}>
-        <b>Taslak durak:</b> {draftStopsLength}
-      </div>
+      {stopEvidenceSource === "LOADING" || stopEvidenceSource === "UNKNOWN" ? (
+        <div className="muted" style={{ marginTop: 6 }}>
+          <b>Durak durumu:</b> doğrulanıyor…
+        </div>
+      ) : (
+        <div className="muted" style={{ marginTop: 6 }}>
+          <b>{stopEvidenceSource === "PERSISTED_SHIFT" ? "Vardiya durakları (toplanma konumu hariç)" : stopEvidenceSource === "GENERATED" ? "Üretilen durak (toplanma konumu hariç)" : "Taslak durak (önizleme)"}:</b>{" "}
+          {stopSummary?.stopCountWithoutHub ?? stopSummary?.stopCount ?? draftStopsLength}
+        </div>
+      )}
 
       {stopSummary ? (
         <div className="card" style={{ marginTop: 10 }}>
@@ -147,8 +155,14 @@ export function ShiftPeopleHubSection({
   selectedShift,
 }) {
   return (
-        <div className="card" style={{ margin: 0 }}>
-      <h3 style={{ marginTop: 0 }}>Vardiya Toplanma / Dağıtım Konumu</h3>
+        <div
+          className="card"
+          style={{ margin: 0 }}
+          data-copilot-block-key="company-shifts:step3:address-block"
+          data-copilot-semantic-id="product:company-shifts:step3:address-block"
+          data-copilot-label="Vardiya Toplanma / Dağıtım Konumu"
+        >
+      <h3 style={{ marginTop: 0 }} data-copilot-label="Vardiya Toplanma / Dağıtım Konumu">Vardiya Toplanma / Dağıtım Konumu</h3>
       <div className="muted" style={{ marginTop: -6 }}>
         Gidiş yönünde toplanma konumu <b>son durak</b> olur. Dönüş yönünde toplanma konumu <b>1. durak</b> olur.
       </div>
@@ -168,6 +182,9 @@ export function ShiftPeopleHubSection({
             <input
               value={hubAddress}
               onChange={(e) => setHubAddress(e.target.value)}
+              data-copilot-target="company-shifts:step3:address-input"
+              data-copilot-semantic-id="product:company-shifts:step3:address-input"
+              data-copilot-label="Adres"
             placeholder="örn. Fabrika / Ofis / Toplanma konumu"
               disabled={busy}
               style={{ flex: 1 }}
@@ -397,6 +414,7 @@ export function ShiftPeopleOverviewSection({
   onOpenGuidedGeoPicker,
   geoReviewPath,
   draftStopsLength,
+  stopEvidenceSource,
   stopSummary,
   hubDirection,
   setHubDirection,
@@ -472,6 +490,7 @@ export function ShiftPeopleOverviewSection({
             onOpenGuidedGeoPicker={onOpenGuidedGeoPicker}
             geoReviewPath={geoReviewPath}
             draftStopsLength={draftStopsLength}
+            stopEvidenceSource={stopEvidenceSource}
             stopSummary={stopSummary}
             maxWalkMValue={maxWalkM}
             whoPlural={whoPlural}

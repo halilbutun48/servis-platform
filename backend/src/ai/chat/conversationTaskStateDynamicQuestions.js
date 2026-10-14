@@ -74,6 +74,7 @@ function buildSurfaceSnapshot({
     '',
   );
   const role = normalizeRoleKey(firstNonEmpty(userRole, user?.role, ''));
+  const companyKind = normalizeRoleKey(firstNonEmpty(user?.companyKind, user?.companyType, screenContext?.companyKind, ''));
   const selectedLabel = firstNonEmpty(
     screenContext?.selectedLabel,
     screenContext?.selectedSummary,
@@ -172,11 +173,17 @@ function buildSurfaceSnapshot({
     selectedEntityId,
     hasRuntimeContext: Boolean(context),
     hasSelection: Boolean(selectedLabel || selectedSummary),
+    // Planning vocabulary is shared by SCHOOL and ORGANIZATION surfaces.
+    // Company-specific guidance must therefore be proven by the authorized
+    // company route/context, never by a generic label or visible button.
     isCompanyPlanningSurface:
-      resolvedScreenPath.includes('/planning-center')
-      || looksLikeCompanyPlanningSurfaceText(planningSurfaceText)
-      || looksLikeCompanyPlanningSurfaceText(visibleSurfaceText)
-      || normalizeLooseText(screenLabel) === 'planlama merkezi',
+      /^\/company(?:\/|$)/u.test(resolvedScreenPath)
+      && (
+        looksLikeCompanyPlanningSurfaceText(planningSurfaceText)
+        || looksLikeCompanyPlanningSurfaceText(visibleSurfaceText)
+        || normalizeLooseText(screenLabel) === 'planlama merkezi'
+      )
+      && (!companyKind || ['company', 'hizmetalanfirma'].includes(companyKind)),
     isCompanyOperationsSurface:
       !isFeedbackSurface
       && (

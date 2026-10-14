@@ -449,7 +449,11 @@ export default function CopilotPanel() {
       }
       const latestSelection = readCopilotSelection();
       const liveSelection = String(latestSelection?.scopeKey || "") === String(selectedChatScreen?.path || "") ? latestSelection : null;
-      const requestSelection = liveSelection || chatSelection || null;
+      const scopedChatSelection = chatSelection
+        && String(chatSelection?.scopeKey || "") === String(selectedChatScreen?.path || "")
+        ? chatSelection
+        : null;
+      const requestSelection = liveSelection || scopedChatSelection || null;
       const uiSurface = captureCopilotUiSurface();
       const chatDiagnosticSignals = Array.isArray(requestSelection?.facts?.copilotSignals) ? requestSelection.facts.copilotSignals : [];
       const chatDiagnosticSummary = String(requestSelection?.facts?.copilotSummary || "");

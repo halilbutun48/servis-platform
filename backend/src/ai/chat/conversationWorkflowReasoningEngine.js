@@ -90,6 +90,24 @@ export const WORKFLOW_REASONING_SURFACE_PROFILES = Object.freeze({
     followUpText: 'Gerekirse Vardiyalar ekranına geç.',
     chipLabels: ['Planı aç', 'Sonraki kontrol', 'Onay noktası', 'Vardiyalara geç'],
   }),
+  SCHOOL_PLAN: Object.freeze({
+    key: 'SCHOOL_PLAN',
+    label: 'Okul Planlama',
+    purpose: 'okul servis planını, öğrenci kapsamını ve durak hazırlığını takip etme',
+    paths: ['/school', '/school/operations'],
+    approvalText: 'Plan veya paylaşım değişikliği öncesi okul yetkilisi onayı gerekir.',
+    followUpText: 'Gerekirse Vardiyalar veya Öğrenci Konum İncele ekranına geç.',
+    chipLabels: ['Planı aç', 'Öğrenci / durak', 'Onay noktası', 'Vardiyalara geç'],
+  }),
+  ORGANIZATION_PLAN: Object.freeze({
+    key: 'ORGANIZATION_PLAN',
+    label: 'Organizasyon Merkezi',
+    purpose: 'gezi veya organizasyon planını ve bağlı operasyon hazırlığını takip etme',
+    paths: ['/organization', '/organization/operations'],
+    approvalText: 'Plan veya teklif gönderimi öncesi kullanıcı onayı gerekir.',
+    followUpText: 'Gerekirse Vardiyalar veya Lokasyon İncele ekranına geç.',
+    chipLabels: ['Planı aç', 'Konum kontrolü', 'Onay noktası', 'Vardiyalara geç'],
+  }),
   COMPANY_AGREEMENTS: Object.freeze({
     key: 'COMPANY_AGREEMENTS',
     label: 'Sözleşmeler',
@@ -183,6 +201,8 @@ const WORKFLOW_REASONING_SURFACE_ORDER = Object.freeze([
   'PERSONEL_LIVE',
   'PARENT_LIVE',
   'SUPERADMIN',
+  'SCHOOL_PLAN',
+  'ORGANIZATION_PLAN',
   'COMPANY_PLAN',
 ]);
 

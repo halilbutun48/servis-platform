@@ -376,6 +376,10 @@ function summarizeComponent(component) {
 }
 
 function computeUnitCost(amountMinor, denominator, label, issues) {
+  if (amountMinor === null || amountMinor === undefined) {
+    addUnique(issues.warnings, `${label} için maliyet tabanı eksik`);
+    return null;
+  }
   if (!Number.isFinite(Number(denominator)) || Number(denominator) <= 0) {
     addUnique(issues.warnings, `${label} için payda eksik veya sıfır`);
     return null;
@@ -450,9 +454,12 @@ export function buildOperationalCostModel(input = {}) {
   const includedComponentTotalMinor = moneySum(
     ...components.filter((component) => component.includedInBaseline).map((component) => component.amountMinor),
   );
+  const includedComponentCount = components.filter((component) => component.includedInBaseline).length;
   const externalPreviewAdjustmentsMinor = components.find((component) => component.componentKey === "external_preview_adjustments")?.amountMinor || 0;
-  const baselineOperationalCostMinor = includedComponentTotalMinor;
-  const adjustedPreviewCostMinor = normalized.includeExternalPreviewAdjustments ? baselineOperationalCostMinor + externalPreviewAdjustmentsMinor : null;
+  const baselineOperationalCostMinor = includedComponentCount > 0 ? includedComponentTotalMinor : null;
+  const adjustedPreviewCostMinor = normalized.includeExternalPreviewAdjustments && baselineOperationalCostMinor != null
+    ? baselineOperationalCostMinor + externalPreviewAdjustmentsMinor
+    : null;
 
   const relevantComponents = components.filter((component) => component.status !== "excluded" && component.componentKey !== "external_preview_adjustments");
   const hasBlockedComponent = relevantComponents.some((component) => component.status === "blocked") || issues.blockers.length > 0;

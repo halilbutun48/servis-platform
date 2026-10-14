@@ -1,5 +1,27 @@
+import { detectCopilotGuidedTaskEngineProgressCommand } from './copilotGuidedTaskEngine.js';
+import { explainTermsFromText } from '../jobGuide/glossary.js';
+import { evaluateSemanticFallbackEligibility } from './semanticCandidateFallback.js';
+import { buildCanonicalSemanticContext, hasFreshCanonicalSemanticContext, resolveCurrentSelection } from './canonicalSemanticContext.js';
+import { extractTurkishSemanticFeatures } from './turkishSemanticFeatures.js';
+import {
+  composeSemanticEvidence,
+  hasStandaloneTeachRequest,
+  hasDomainCollectionGuidanceRequest,
+  hasOfferCollectionCountRequest,
+  hasFinanceSummaryRequest,
+} from './semanticEvidenceComposer.js';
+import { getSemanticAuthorityMode } from './semanticAuthorityMode.js';
+import { hasTurkishDirectionalNavigationPredicate } from './turkishNavigationEvidence.js';
+import {
+  applySemanticSpecificityEvidence,
+  applySemanticSpecificityResolution,
+  resolveSemanticSpecificity,
+} from './semanticSpecificityResolver.js';
+import { applyLocalSemanticProposal } from './localSemanticProposal.js';
+
 const TASK_TYPES = new Set([
   "SCREEN_CONTEXT",
+  "EXPLAIN_CURRENT_TARGET",
   "SELECTED_RECORD_CONTEXT",
   "RECORD_DETAILS",
   "CONTINUE_CURRENT_REASONING",
@@ -28,7 +50,7 @@ const TASK_TYPES = new Set([
 const ENTITY_CONCEPTS = [
   { type: "OFFER", domain: "OFFERS", terms: ["teklif", "offer", "rfq"] },
   { type: "SHIFT", domain: "SHIFTS", terms: ["vardiya", "sefer", "shift"] },
-  { type: "AGREEMENT", domain: "AGREEMENTS", terms: ["sozlesme", "anlasma", "agreement", "contract"] },
+  { type: "AGREEMENT", domain: "AGREEMENTS", terms: ["sozlesme", "anlasma", "agreement", "contract", "kontrat"] },
   { type: "VEHICLE", domain: "VEHICLES", terms: ["arac", "plaka", "vehicle"] },
   { type: "DRIVER", domain: "DRIVERS", terms: ["surucu", "sofor", "driver"] },
   { type: "PERSONNEL", domain: "PERSONNEL", terms: ["personel", "calisan"] },
@@ -38,8 +60,58 @@ const ENTITY_CONCEPTS = [
   { type: "ORGANIZATION_PLAN", domain: "ORGANIZATION_PLANS", terms: ["organizasyon plani", "servis plani", "gezi plani"] },
 ];
 
+// A role name used together with a concrete UI destination is a request for
+// that role's surface, not a field name from the currently active workflow.
+// Keep this as a semantic reference envelope; authorization is resolved later
+// against the authenticated role and canonical screen authority.
+const ROLE_UI_REFERENCES = Object.freeze([
+  { roleKey: "SUPER_ADMIN", terms: ["super admin", "superadmin", "super_admin", "sistem yoneticisi"] },
+  { roleKey: "ROOM", terms: ["room", "oda yoneticisi", "oda yonetimi"] },
+  { roleKey: "COMPANY", terms: ["company", "sirket", "firma", "hizmet alan firma"] },
+  { roleKey: "SCHOOL", terms: ["school", "okul"] },
+  { roleKey: "ORGANIZATION", terms: ["organization", "organizasyon", "kurum"] },
+  { roleKey: "DRIVER", terms: ["driver", "surucu", "sofor"] },
+  { roleKey: "PERSONEL", terms: ["personel", "calisan"] },
+  { roleKey: "PARENT", terms: ["parent", "veli", "ebeveyn"] },
+]);
+
+const ROLE_HELP_CONCRETE_ASPECTS = new Set([
+  "CAPABILITY", "RESPONSIBILITY", "OWNERSHIP", "DECISION_RESPONSIBILITY",
+  "PROCESS_RESPONSIBILITY", "ORIENTATION", "STARTING_GUIDANCE",
+]);
+
+export function inferRoleScopedUiTarget(text) {
+  const value = normalize(text);
+  // A party-qualified note request is a field read on the current product
+  // record. Do not let the party label (for example "Hizmet Alan Firma")
+  // promote the request to a cross-role screen target before the canonical
+  // OFFERS note-field path resolves it.
+  if (hasProductNoteLookupCue(value)) return null;
+  const surfaceReference = /\b(?:ekran|sayfa|panel|menu|kullanici|yonetim|yetki|rol|bolum|alan)\p{L}*\b/iu.test(value);
+  // A process predicate such as "yönetmek" can occur next to a surface noun
+  // while the user is asking about responsibility or limits. It is not a
+  // directional UI request. Keep role-scoped target promotion bounded to
+  // movement/discovery verbs and the existing structural navigation helper.
+  const navigationPredicate = hasTurkishDirectionalNavigationPredicate(value)
+    || /\b(?:ac|goster|bul|nerede|neresi|kontrol|incele)\p{L}*\b/iu.test(value);
+  const navigationCue = surfaceReference && navigationPredicate;
+  if (!navigationCue) return null;
+  const reference = ROLE_UI_REFERENCES.find(({ terms }) => terms.some((term) => {
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(?:^|[^\\p{L}])${escaped}(?:$|[^\\p{L}])`, "iu").test(value);
+  }));
+  if (!reference) return null;
+  const explicitlyMissing = /\b(?:hayali|gizli|olmayan|var olmayan|mevcut olmayan|uydurma|sahte)\b/iu.test(value);
+  return {
+    roleKey: reference.roleKey,
+    targetKind: "ROLE_SCOPED_UI",
+    explicitlyMissing,
+    source: "EXPLICIT_ROLE_UI_REFERENCE",
+  };
+}
+
 function normalize(value) {
-  return String(value || "")
+  const normalized = String(value || "")
     .toLocaleLowerCase("tr-TR")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -48,9 +120,731 @@ function normalize(value) {
     .replace(/ü/g, "u")
     .replace(/ş/g, "s")
     .replace(/ö/g, "o")
-    .replace(/ç/g, "c")
+    .replace(/ç/g, "c");
+  // Turkish chat input often fuses an action report and its next question
+  // ("bastımburası", "tamam bastımsonra") or an ordinal and its question
+  // ("1.adımdanapıcam").  Recover word boundaries structurally so the
+  // canonical semantic rules can compose the utterance; this is not a list
+  // of accepted phrases.
+  return normalized
+    .replace(/(bastim|tikladim|yaptim|actim)(?=(?:burasi|burada|buras|sonra|simdi|ne|nap|neden))/g, "$1 ")
+    .replace(/(tamam)(?=(?:bastim|tikladim|yaptim|actim))/g, "$1 ")
+    .replace(/(\d)\.?\s*adim(da|de|dan|den)?\s*(?=(?:nap|ne|nasil|neden|niye|neye))/g, "$1 adim$2 ")
+    .replace(/(ilk|birinci|ikinci|ucuncu|dorduncu|besinci|son)adim\s*(?=(?:da|de|dan|den|ne|nap|nasil))/g, "$1 adim ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+// Keep explicit numeric shift references typed even when Turkish places the
+// number before the noun (for example, "211 numaralı vardiya").  A bare
+// number remains intentionally unresolved; the record type must be present
+// in the utterance before authorization can resolve the record.
+export function explicitShiftReferenceFromText(value) {
+  const text = normalize(value);
+  const typedBeforeNumber = text.match(/\b(?:vardiya|sefer|shift)\s*#?\s*(\d+)(?:['’]?\p{L}+)?\b/iu);
+  if (typedBeforeNumber) return { type: "SHIFT", id: Number(typedBeforeNumber[1]), source: "EXPLICIT_QUERY" };
+  const numberBeforeTyped = text.match(/\b#?(\d+)\s+(?:numarali|numarasi|no)\s+(?:vardiya|sefer|shift)\p{L}*\b/iu);
+  if (numberBeforeTyped) return { type: "SHIFT", id: Number(numberBeforeTyped[1]), source: "EXPLICIT_QUERY" };
+  return null;
+}
+
+// A number with a Turkish case suffix (for example, "211'e" or "211'in")
+// is not a record type by itself. It may inherit the type of the current
+// authorized selection, but on a surface without a typed selection it must
+// remain unresolved instead of borrowing a stale offer/shift from history.
+function contextualNumericRecordReferenceFromText(value, ui = {}) {
+  const text = normalize(value);
+  const numericCase = text.match(/\b#?(\d+)(?:['’]?(?:ye|ya|e|a|nin|nın|nun|nün|in|ın|un|ün|den|dan|ten|tan|de|da))\b/iu);
+  if (!numericCase) return null;
+  if (explicitShiftReferenceFromText(text) || /\b(?:teklif|offer|rfq)\s*#?\s*\d+\b/iu.test(text)) return null;
+  const recordCue = hasValueLookupCue(text)
+    || hasRecordDetailsCue(text)
+    || /\b(?:teklif|karsi\s+teklif|kabul\s+edilen|kabul|nihai|son\s+fiyat|ticari|fiyat|tutar|bedel|para|miktar|durum|detay|ayrinti|anlat|acikla)\p{L}*/iu.test(text);
+  if (!recordCue) return null;
+  const selectedType = ui?.selectionSource === "SURFACE_CONTEXT"
+    ? typeForSelected(ui?.selectedType)
+    : "";
+  const typedSelection = new Set(["SHIFT", "OFFER", "AGREEMENT", "VEHICLE", "DRIVER", "PERSONNEL", "STUDENT", "PARENT"]);
+  if (!typedSelection.has(selectedType)) {
+    return {
+      ambiguity: "NUMERIC_REFERENT_TYPE_UNRESOLVED",
+      id: Number(numericCase[1]),
+    };
+  }
+  return {
+    reference: { type: selectedType, id: Number(numericCase[1]), source: "EXPLICIT_QUERY" },
+  };
+}
+
+function editDistance(left, right) {
+  const a = String(left || '');
+  const b = String(right || '');
+  const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+  for (let row = 1; row <= a.length; row += 1) {
+    const current = [row];
+    for (let column = 1; column <= b.length; column += 1) {
+      current[column] = Math.min(
+        current[column - 1] + 1,
+        previous[column] + 1,
+        previous[column - 1] + (a[row - 1] === b[column - 1] ? 0 : 1),
+      );
+    }
+    for (let column = 0; column <= b.length; column += 1) previous[column] = current[column];
+  }
+  return previous[b.length];
+}
+
+function hasApproximateProductSubject(value) {
+  const tokens = normalize(value).split(/\s+/u).map((token) => token.replace(/[^\p{L}\p{N}]/gu, ''));
+  return tokens.some((token) => ['program', 'uygulama', 'platform', 'sistem'].some((term) => (
+    token.startsWith(term)
+      || (token.length >= term.length - 2 && editDistance(token, term) <= 2)
+  )));
+}
+
+function hasExplicitProductLevelHelpCue(value) {
+  const text = normalize(value);
+  return /\b(?:seferpakt|program|uygulama|platform|sistem)\p{L}*\b/iu.test(text)
+    && /\b(?:kullan\p{L}*|ogret\p{L}*|öğret\p{L}*|anlat\p{L}*|acikla\p{L}*|açıkla\p{L}*|ne\s+ise\s+yar\p{L}*|neler\s+yapabil\p{L}*)\b/iu.test(text)
+    && !/\b(?:yetki|yapabil\p{L}*|sorumluluk|gorev|işlem|islem|hangi\s+is\p{L}*)\b/iu.test(text);
+}
+
+// Role help is a compositional semantic family, not a growing list of speech
+// act functions. These dimensions are evidence only; the canonical task/scope
+// pipeline remains the sole semantic authority. A role aspect and an
+// explanatory/orientational request mode must agree, and concrete entity or
+// UI actions veto role-help interpretation.
+const ROLE_HELP_ASPECTS = Object.freeze({
+  CAPABILITY: /\b(?:yetki|yapabil|yonet|yurut|islev|becer|manage|handle)\p{L}*\b/iu,
+  // Match the role-work concept, not every word beginning with `is`.
+  // `isleyis` / `isleyisini` is a screen-behaviour term and must not become
+  // role responsibility evidence merely because it shares the `is` stem.
+  RESPONSIBILITY: /\b(?:sorumluluk|gorev|faaliyet|calisma)\p{L}*\b|\b(?:is(?:ler(?:i|im|in|ini|imiz|iniz|leri)?|im|in|imiz|iniz|leri)?|gorev(?:ler|im|in|imiz|iniz|leri)?|faaliyet(?:ler|im|in|imiz|iniz|leri)?|calisma(?:lar|m|n|miz|niz|lari)?)\b/iu,
+  BOUNDARY: /\b(?:sinir|kapsam|limit|cerceve|dahil|ait|haric|disinda|uzerime)\p{L}*\b/iu,
+  // Keep stems that are semantically stable under Turkish inflection. In
+  // particular, `anla` would consume `anlat...` and `bil` would consume
+  // `bilgi...`; neither should turn a record/screen explanation into role
+  // help merely because it shares a lexical prefix.
+  ORIENTATION: /\b(?:rol|baslangic|basla|nereden|ilk|once|ogren|kavra|tani|yol|adim)\p{L}*\b/iu,
+});
+
+const ROLE_HELP_CONTEXTS = new Set([
+  "COMPANY", "ROOM", "SCHOOL", "ORGANIZATION", "DRIVER", "PERSONEL", "PARENT", "SUPER_ADMIN",
+]);
+
+function collectRoleHelpSemanticEvidence(value, { roleContext = "" } = {}) {
+  const text = normalize(value);
+  if (!text) return { isRoleHelp: false, aspects: [], evidence: [] };
+
+  const normalizedRoleContext = String(roleContext || "").trim().toUpperCase();
+  const roleContextAvailable = ROLE_HELP_CONTEXTS.has(normalizedRoleContext);
+  const explicitRoleReference = /\b(?:company|room|driver|personel|parent|school|organization|super\s*admin|superadmin|sistem\s+yoneticisi|yonetici|sirket|firma|tasimacilik|surucu|veli|okul|organizasyon|oda|rol|kullanici|hesa[pb]|taraf)\p{L}*\b/iu.test(text);
+  const aspects = Object.entries(ROLE_HELP_ASPECTS)
+    .filter(([, pattern]) => pattern.test(text))
+    .map(([aspect]) => aspect);
+  const hasRoleAspect = aspects.length > 0;
+  const explanationMode = /\b(?:ne|neler|nedir|nasil|hangi|nereden|nerede|once|ilk|anlat|acikla|ogren|anla|kavra|tani|bil|gerek|sorumlu|ait|dahil)\p{L}*\b/iu.test(text);
+  const concreteEntity = explicitObjectClassFromText(text);
+  // A role noun can also be a supported product object (for example
+  // `sürücü` or `personel`). It is a subject rather than a requested record
+  // when the utterance frames it with `olarak`, `rol`, `taraf`, `kullanıcı`, or
+  // `hesap`; only the latter should veto role-level help.
+  const roleEntityAsSubject = Boolean(
+    concreteEntity
+    && explicitRoleReference
+    && /\b(?:olarak|rol|taraf|kullanici|hesa[pb])\p{L}*\b/iu.test(text),
+  );
+  const concreteEntityTarget = Boolean(concreteEntity && !roleEntityAsSubject);
+  const concreteProductFieldLookup = hasProductNoteLookupCue(text);
+  const explicitSurfaceExplanation = hasExplicitCurrentScreenPurposeCue(text)
+    || hasNamedSurfaceExplanationCue(text);
+  // `nerede` is an explanatory boundary question in forms such as
+  // "yetkim nerede biter". Treat it as navigation only when an actual
+  // show/open/move predicate is present.
+  const concreteAction = /\b(?:goruntule|listele|incele|goster|ac(?!ikla)|git|gidelim|gec|ulas|ilerle)\p{L}*\b/iu.test(text);
+  const concreteUiTarget = /\b(?:bu|su|mevcut|buradaki|burada)\s+(?:ekran|sayfa|panel|menu|alan|bolum)\p{L}*\b/iu.test(text)
+    && (explicitSurfaceExplanation || concreteAction);
+  const situatedCurrentSurfaceHelp = /\b(?:burada|burda|bu\s+ekranda|bu\s+sayfada)\b.{0,48}\b(?:ne\s+yap\p{L}*|nereden\s+basla\p{L}*|sorun\p{L}*|problem\p{L}*|dikkat\p{L}*|bakmam\b|yard[iı]m\s+et|ad[iı]m\s+ad[iı]m)\b/iu.test(text);
+  const specificTask = /\b(?:yeni|olustur|baslat|planla|duzenle|ayarla|sil|gonder|dagit|icra)\p{L}*\b/iu.test(text);
+  const roleSubject = explicitRoleReference || (roleContextAvailable && hasRoleAspect);
+  const explicitCurrentSurfaceAnchor = /\b(?:ekran|sayfa|panel|menu|bolum)\p{L}*\b/iu.test(text);
+  const roleContextOnlySurfaceExplanation = roleContextAvailable
+    && !explicitRoleReference
+    && explicitCurrentSurfaceAnchor
+    && explanationMode
+    && explicitSurfaceExplanation;
+  const isRoleHelp = Boolean(
+    roleSubject
+    && hasRoleAspect
+    && explanationMode
+    && !roleContextOnlySurfaceExplanation
+    && !situatedCurrentSurfaceHelp
+    && !concreteEntityTarget
+    && !concreteProductFieldLookup
+    && !concreteUiTarget
+    && !concreteAction
+    && !specificTask
+    // Explicit canonical operations (for example risk analysis) own the
+    // utterance before broad role-orientation evidence can route it to the
+    // role-help composer.  Reuse the shared operation detector rather than
+    // creating a second phrase-level classifier.
+    && inferExplicitOperations(text).length === 0,
+  );
+
+  return {
+    isRoleHelp,
+    roleContext: normalizedRoleContext || null,
+    aspects,
+    requestMode: explanationMode ? "EXPLANATION_ORIENTATION" : null,
+    evidence: [
+      ...(roleSubject ? ["ROLE_SUBJECT"] : []),
+      ...(aspects.length ? aspects.map((aspect) => `ROLE_ASPECT_${aspect}`) : []),
+      ...(explanationMode ? ["ROLE_HELP_EXPLANATION_MODE"] : []),
+      ...(concreteEntityTarget ? [`CONCRETE_ENTITY_${concreteEntity}`] : []),
+      ...(concreteUiTarget ? ["CONCRETE_UI_TARGET"] : []),
+      ...(concreteAction ? ["CONCRETE_VIEW_OR_NAVIGATION_ACTION"] : []),
+      ...(specificTask ? ["CONCRETE_BUSINESS_TASK"] : []),
+    ],
+  };
+}
+
+// This is the canonical structural boundary for role-aware product help. It
+// accepts varied capability, responsibility, boundary, limitation, and
+// orientation constructions through one evidence composition, grounded by an
+// explicit role reference or the authenticated role context. Conversation
+// routing reuses this predicate; it does not establish a second authority.
+export function isExplicitRoleHelpIntent(value, { roleContext = "" } = {}) {
+  return collectRoleHelpSemanticEvidence(value, { roleContext }).isRoleHelp;
+}
+
+export function isGenericProductHelpIntent(value, { roleContext = "" } = {}) {
+  const text = normalize(value);
+  if (!text) return false;
+  if (hasProductNoteLookupCue(text)) return false;
+  const productUsageOrientation = /\b(?:seferpakt|program|uygulama|platform|sistem)\p{L}*\b/iu.test(text)
+    && /\b(?:kullan\p{L}*|ogret\p{L}*|öğret\p{L}*|anlat\p{L}*|acikla\p{L}*|açıkla\p{L}*)\b/iu.test(text)
+    && !/\b(?:yetki|yapabil\p{L}*|sorumluluk|gorev|işlem|islem|hangi\s+is\p{L}*)\b/iu.test(text);
+  if (isExplicitRoleHelpIntent(text, { roleContext }) && !productUsageOrientation) return false;
+  const genericProductSubject = /\bseferpakt\p{L}*\b|\b(?:bu\s+)?(?:program|uygulama|platform|sistem)\p{L}*\b/iu.test(text)
+    || hasApproximateProductSubject(text);
+  const namedProductSubject = /\b(?:vardiya|sefer|shift|teklif|servis|organizasyon|plan|personel|ogrenci|cocuk|veli|yonetim|operasyon)\p{L}*\b/iu.test(text);
+  // Product/role capability questions are a structural speech-act family.
+  // Keep them global even when the active UI has a selected record; the
+  // selected record must not turn "which work can I handle here?" into a
+  // scalar field lookup. Concrete entity and screen-purpose vetoes below
+  // still keep record and surface questions in their own canonical lanes.
+  const productCapabilityRequest = /\b(?:hangi|neler|ne)\b(?:\s+\p{L}+){0,7}\s+(?:yapabil|ustlen|ilgilen|yurut|yonet|gerceklestir|gorev|islem|sorumluluk|faaliyet|calisma)\p{L}*\b/iu.test(text);
+  const overviewRequest = /\b(?:bu\s+)?(?:program|uygulama|platform|sistem)\p{L}*\s+ne\b|\bne\s+(?:ise\s+yar\p{L}*|yapar|yapabil\p{L}*)\b|\bnedir\b|\bne\s+icin\s+kullan\p{L}*\b|\b(?:nasil\s+)?kullan\p{L}*\b|\b(?:nasil\s+)?ogret\p{L}*\b|\b(?:nereden\s+)?basla\p{L}*\b|\bamac\p{L}*\s+ne\b|\bgenel\s+olarak\b|\bneler\s+yap\p{L}*\b|\banlat\p{L}*\b/iu.test(text)
+    || productCapabilityRequest;
+  const educationRequest = /\b(?:bastan|basindan|ogret\p{L}*|anlat\p{L}*|acikla\p{L}*|kullanmay\p{L}*|hazirlayacag\p{L}*|hazirlamay\p{L}*|basla\p{L}*|goster\p{L}*)\b/iu.test(text)
+    && !/\b(?:bu|su)\s+(?:ekran|sayfa|panel)\p{L}*\b|\b(?:burada|burda|burasi)\b/iu.test(text)
+    && !/\b(?:durum|status|statu|risk|tarih|saat|konum|rota|durak|tutar|bedel|kayit|kayd)\p{L}*\b/iu.test(text);
+  const namedWorkflowGuidance = namedProductSubject
+    && /\b(?:goster\p{L}*|gotur\p{L}*|nerede\p{L}*|nerde\p{L}*|ekle\p{L}*|olustur\p{L}*|baslat\p{L}*|kur\p{L}*|ayar\p{L}*|ac(?!ikla)\p{L}*|git\p{L}*|gidelim|kontrol\s+edelim)\b/iu.test(text);
+  const bareOnboardingRequest = /^(?:nereden\s+baslayay\p{L}*|ilk\s+adim\s+ne(?:dir)?)\??$/iu.test(text);
+  const bareUsageRequest = /^(?:bana\s+)?(?:nasil|ne\s+sekilde)\s+(?:kullan|basla|ilerle)\p{L}*\??$/iu.test(text);
+  const firstTimeOnboarding = /\b(?:ilk\s+kez|ilk\s+defa|yeniyim|yeni\s+baslad(?:ı|i)m|daha\s+once\s+kullanmad(?:ı|i)m)\b.{0,80}\b(?:baslang\p{L}*|yol\s+haritas\p{L}*|adim\s+adim|goster\p{L}*|anlat\p{L}*|ogret\p{L}*|kullan\p{L}*|basla\p{L}*)\b/iu.test(text);
+  const onboardingFrame = /\b(?:baslang\p{L}*|yol\s+haritas\p{L}*|adim\s+adim)\b.{0,50}\b(?:goster\p{L}*|anlat\p{L}*|ogret\p{L}*|kullan\p{L}*|basla\p{L}*)\b/iu.test(text);
+  const assistantCapabilityRequest = /\b(?:sefer\s+abi|asistan)\b.{0,70}\b(?:hangi\s+konularda|neler(?:de)?\s+yapabil|ne(?:ler)?\s+yapabil|yardim\s+edebil|yol\s+goster|destek\s+olabil)\b/iu.test(text);
+  const genericHelpRequest = /\b(?:bana\s+)?yardim\s+et\b/iu.test(text)
+    || /\b(?:nerelere|nelere|neye)\s+bak(?:mam|mal[ıi]y[ıi]m|ay[ıi]m)?\s+(?:gerek|gerekiyor|laz[ıi]m)\b/iu.test(text);
+  // Abstract orientation is a product-help speech act even when the user
+  // does not name the product as "program" or "platform".  The frame is
+  // intentionally compositional: a broad product/role area, an interrogative
+  // orientation target, and a learning/understanding predicate.  It is
+  // excluded for concrete screen/entity requests below.
+  const abstractOrientationFrame = (/\b(?:hangi|neler|nereden)\b(?:\s+\p{L}+){0,7}\s+(?:ogren|anla|kavra|bil|tanim|basla)\p{L}*\b/iu.test(text)
+    || /\b(?:once|ilk)\b(?:\s+\p{L}+){0,5}\s+(?:hangi|neler|nereden)\b(?:\s+\p{L}+){0,7}\s+(?:ogren|anla|kavra|bil|tanim|basla)\p{L}*\b/iu.test(text))
+    && /\b(?:sirket|firma|hesap|rol|alan|bolum|gorev|islev|sistem|uygulama|platform|program)\p{L}*\b/iu.test(text);
+  // A locative surface noun alone is not a current-screen reference. A
+  // surface used as the grammatical subject/genitive of an explanation is an
+  // explicit surface-purpose request; retain that existing screen contract
+  // while keeping process/role guidance beside a surface GENERAL_INFORMATION.
+  const surfaceSubjectExplanation = /\b(?:ekran|sayfa|panel|menu|bolum)\p{L}*(?:in|nin|un|nun)\b.{0,64}\b(?:anlat|acikla|ogren|nasil\s+calis|ne\s+ise\s+yar)\p{L}*\b/iu.test(text)
+    || hasNamedSurfaceExplanationCue(text);
+  const explicitSurfaceExplanation = surfaceSubjectExplanation
+    || hasExplicitCurrentScreenPurposeCue(text)
+    || (hasScreenDeicticCue(text)
+      && /\b(?:anlat|acikla|ogren|nasil\s+calis|ne\s+ise\s+yar)\p{L}*\b/iu.test(text));
+  const explicitProductOperation = namedProductSubject
+    && (hasExplicitSurfaceViewVerb(text) || hasExplicitSurfaceNavigationVerb(text));
+  const concreteEntityExplanation = /\b(?:bu|su|secil(?:i|en)?|aktif|mevcut|baktigim)\s+(?:vardiya|sefer|teklif|sozlesme|anlasma|arac|plaka|surucu|sofor|personel|kayit|kart)\p{L}*\b(?:.{0,32})\b(?:detay|ayrinti|durum|neden|anlat|acikla)\p{L}*\b/iu.test(text)
+    || /\b(?:vardiyanin|seferin|teklifin|sozlesmenin|anlasmanin|aracin|surucunun|soforun|personelin|kaydin|kartin)\b(?:.{0,24})\b(?:detay|ayrinti|durum|neden|anlat|acikla)\p{L}*\b/iu.test(text);
+  return assistantCapabilityRequest || genericHelpRequest || (!namedWorkflowGuidance && ((genericProductSubject && overviewRequest) || (namedProductSubject && educationRequest) || abstractOrientationFrame || bareOnboardingRequest || bareUsageRequest || firstTimeOnboarding || onboardingFrame)
+    && !explicitSurfaceExplanation
+    && !concreteEntityExplanation
+    && !explicitProductOperation);
+}
+
+// Canonical product truth for the COMPANY guided new-plan flow.  The model
+// is carried by semantic plans and active task state; UI target resolution
+// still proves the concrete current control before any guidance is emitted.
+export const COMPANY_GUIDED_NEW_PLAN_WORKFLOW = Object.freeze({
+  id: "COMPANY_GUIDED_NEW_PLAN",
+  goal: "CREATE_SHIFT",
+  steps: Object.freeze([
+    Object.freeze({
+      ordinal: 1,
+      key: "COMPANY_LOCATION",
+      label: "Şirket konumu",
+      what: "Planın başlangıç şirket konumunu belirlemek.",
+      purpose: "Planın başlangıç konumunu belirlemek.",
+      why: "Rota, durak ve süre hesaplarının doğru başlangıç noktasına bağlanması gerekir.",
+      action: "Konumumu al ile mevcut konumu kullan veya adresi yazıp Adresten bul ile doğrula.",
+      controls: Object.freeze(["Konumumu al", "Adresten bul", "İleri"]),
+      preconditions: Object.freeze(["Yetkili COMPANY oturumu", "Konum veya adres bilgisi"]),
+      completion: "Şirket konumu doğrulanıp İleri ile sonraki adıma geçilir.",
+      nextStep: "Plan paketi (2. adım)",
+      safeAction: "Sefer Abi hedefi açıklar ve görünür kontrolü gösterebilir; kullanıcı yerine konum kaydetmez.",
+      businessWriteBoundary: "Konum kaydetme ve ilerleme kullanıcı kontrolündedir; Sefer Abi iş kaydı yazmaz.",
+      nextOrdinal: 2,
+    }),
+    Object.freeze({
+      ordinal: 2,
+      key: "PLAN_PACKAGE",
+      label: "Plan paketi",
+      what: "Vardiya planının paket, tarih, gün ve saat seçeneklerini belirlemek.",
+      purpose: "Planın gün, saat ve paket seçeneklerini belirlemek.",
+      why: "Taslak vardiya sayısı ve çalışma takvimi bu seçimlerden türetilir.",
+      action: "Plan paketini, başlangıç tarihini ve uygun gün seçeneklerini gözden geçir.",
+      controls: Object.freeze(["Plan paketi", "Tarih ve gün seçenekleri", "Taslak vardiya oluştur"]),
+      preconditions: Object.freeze(["Şirket konumu doğrulanmış olmalı", "Yetkili planlama ekranı"]),
+      completion: "Paket ve tarih bilgileri tamamlanınca taslak vardiyalar oluşturulur.",
+      nextStep: "Personel + Durak (3. adım)",
+      safeAction: "Sefer Abi seçenekleri ve hedefi gösterir; paket seçmez veya taslak oluşturmaz.",
+      businessWriteBoundary: "Taslak vardiya oluşturma ve teklif gönderme işlemlerini Sefer Abi yürütmez.",
+      nextOrdinal: 3,
+    }),
+    Object.freeze({
+      ordinal: 3,
+      key: "PERSONNEL_STOPS",
+      label: "Personel + Durak",
+      what: "Personel ve durak bilgilerini rota için eşleştirmek; kişi ekleme veya toplu içe aktarma bilgilerini doğrulamak.",
+      purpose: "Kişileri, durakları ve konum doğrulamasını tamamlamak.",
+      why: "Servis güzergâhı ve kişi erişimi ancak yetkili personel ile duraklar doğrulanınca anlamlı olur.",
+      action: "Önce Ad Soyad ve Adres alanlarını doldurup Adresten Bul ile adresi doğrula; sonra Ekle veya Excel/CSV içe aktarma ile kişileri ekle. Kişi ve adres verisi hazır olduğunda Durakları Hazırla kullan; gerekirse 1. Durak Üret, ardından 2. Vardiyadan Durakları Çek adımlarını ayrı ayrı çalıştır ve ancak sonra Önizle'ye geç.",
+      controls: Object.freeze(["Ad Soyad", "Adres", "Adresten Bul", "Ekle", "Excel/CSV içe aktarma", "Durakları Hazırla", "1. Durak Üret", "2. Vardiyadan Durakları Çek", "Önizle", "Adres Temizle ve İlerle"]),
+      preconditions: Object.freeze(["Taslak plan ve uygun günler hazır olmalı", "Yetkili personel/durak kapsamı", "Kişi adresleri veya koordinatları doğrulanabilir olmalı", "Durak hazırlama için kişi verisi hazır olmalı"]),
+      completion: "Önce kişi ve adres satırları doğrulanır; ardından Durakları Hazırla veya 1. Durak Üret → 2. Vardiyadan Durakları Çek tamamlanır. Bu kanıtlar görünmeden Önizle'ye geçildiği varsayılmaz.",
+      nextStep: "Durak hazırlama → 1. Durak Üret → 2. Vardiyadan Durakları Çek → Ön izleme + teklif (4. adım)",
+      proceduralOrder: Object.freeze(["Personel/adres hazırla", "Durakları Hazırla", "1. Durak Üret", "2. Vardiyadan Durakları Çek", "Önizle"]),
+      alternativePath: "Durakları Hazırla önerilen birleşik yoldur; desteklenen ayrı yol 1. Durak Üret → 2. Vardiyadan Durakları Çek sırasıdır.",
+      completionEvidence: Object.freeze(["Kişi satırı görünür", "Adres veya koordinat geçerli", "Durakları Hazırla tamamlandı veya 1. Durak Üret ve 2. Vardiyadan Durakları Çek tamamlandı", "Önizle görünür ve gerçek UI hazır" ]),
+      stateTransitions: Object.freeze(["PERSONNEL_READY", "STOPS_PREPARED", "STOPS_GENERATED", "SHIFT_STOPS_IMPORTED", "PREVIEW_READY"]),
+      safeAction: "Sefer Abi görünür personel ekleme, içe aktarma ve durak hedefini açıklar; seçimleri, dosya yüklemeyi veya adresleri kullanıcı yerine çalıştırmaz.",
+      businessWriteBoundary: "Personel, durak ve adres değişikliklerini Sefer Abi uygulamaz.",
+      capabilityGuides: Object.freeze([
+        Object.freeze({
+          intent: "ADD_PERSONNEL",
+          label: "Personel ekleme",
+          what: "Yeni bir personel satırını plana eklemek.",
+          action: "Ad Soyad ve Adres alanlarını doldur; konumu Adresten Bul ile doğruladıktan sonra Ekle düğmesini kullanıcı olarak çalıştır.",
+          controls: Object.freeze(["Ad Soyad", "Adres", "Adresten Bul", "Ekle"]),
+          precondition: "Yetkili kişi kapsamı ve kişi için ad ile adres veya koordinat bulunmalı.",
+          completion: "Kişi satırı listede görünür ve adres/koordinat doğrulaması geçerli olur.",
+          safeAction: "Sefer Abi yalnızca bu alanları ve Ekle hedefini gösterir; Ekle işlemini kullanıcı yerine çalıştırmaz.",
+          businessWriteBoundary: "Ekle düğmesi iş verisi yazabilir; kullanıcı onayı olmadan çalıştırılmaz.",
+        }),
+        Object.freeze({
+          intent: "ENTER_ADDRESS",
+          label: "Adres girme ve doğrulama",
+          what: "Personel satırının adresini girmek ve gerçek konumunu doğrulamak.",
+          action: "Adres alanını doldur; gerekiyorsa Adresten Bul ile konumu doğrula, sonra kişi ekleme akışına dön.",
+          controls: Object.freeze(["Adres", "Adresten Bul", "Ekle"]),
+          precondition: "Yetkili COMPANY Step-3 yüzeyi ve kişi satırı için adres bilgisi bulunmalı.",
+          completion: "Adres alanı ve doğrulanmış koordinat kişi satırında görünür; tek başına kullanıcı beyanı tamamlanma kanıtı değildir.",
+          safeAction: "Sefer Abi adresi okuyup kaydetmez; yalnızca görünür alanı ve doğrulama hedefini gösterir.",
+          businessWriteBoundary: "Adres ve kişi kaydı yazımı kullanıcı etkileşimidir; Sefer Abi çalıştırmaz.",
+        }),
+        Object.freeze({
+          intent: "IMPORT_PERSONNEL",
+          label: "Excel/CSV içe aktarma",
+          what: "Birden fazla personel satırını dosyadan plana almak.",
+          action: "Excel/CSV içe aktarma alanını aç; dosya ve içe aktarma modunu seç, sonra satır/adres doğrulamasını kontrol et.",
+          controls: Object.freeze(["Excel/CSV içe aktarma", "İçe aktarma modu", "Dosya seç"]),
+          precondition: "Yetkili kişi kapsamı ve kabul edilen bir CSV/XLSX dosyası bulunmalı.",
+          completion: "İçe aktarılan satırlar listede görünür ve geçersiz adres/koordinat kalmaz.",
+          safeAction: "Sefer Abi içe aktarma hedefini açıklar; dosya seçmez, yüklemez veya kayıt yazmaz.",
+          businessWriteBoundary: "Dosya içe aktarma toplu iş verisi yazabilir; kullanıcı onayı olmadan çalıştırılmaz.",
+        }),
+        Object.freeze({
+          intent: "PREPARE_STOPS",
+          label: "Durakları hazırlama",
+          what: "Doğrulanmış kişi ve adreslerden durak hazırlamak.",
+          action: "Önerilen birleşik yol olarak Durakları Hazırla'yı çalıştır; ayrı ilerleyeceksen 1. Durak Üret ve ardından 2. Vardiyadan Durakları Çek adımlarını izle.",
+          controls: Object.freeze(["Durakları Hazırla", "1. Durak Üret", "2. Vardiyadan Durakları Çek"]),
+          precondition: "Kişi satırlarında geçerli adres veya koordinat bulunmalı.",
+          completion: "Durak üretimi ve vardiyadan durakları çekme sonucu gerçek UI'da görünmeden hazır kabul edilmez.",
+          safeAction: "Sefer Abi yalnızca gerçek durak hazırlama hedefini gösterir; üretim veya veri yazımı çalıştırmaz.",
+          businessWriteBoundary: "Durak üretimi iş verisini değiştirebilir; kullanıcı onayı olmadan çalıştırılmaz.",
+        }),
+      ]),
+      nextOrdinal: 4,
+    }),
+    Object.freeze({
+      ordinal: 4,
+      key: "PREVIEW_AND_OFFER",
+      label: "Ön izleme + teklif",
+      what: "Taslak vardiyaları, rota hazırlığını ve teklif kapsamını gözden geçirmek.",
+      purpose: "Taslak vardiyaları, rota hazırlığını ve teklif kapsamını gözden geçirmek.",
+      why: "Tekliften önce kapsam, rota ve eksik kanıtlar insan tarafından doğrulanmalıdır.",
+      action: "Ön izlemeyi ve rota sırasını kontrol et; teklif kapsamını insan onayına bırak.",
+      controls: Object.freeze(["Ön izleme", "Rota sırasını iyileştir", "Teklif gönder"]),
+      preconditions: Object.freeze(["Personel ve durak bilgileri doğrulanmış olmalı", "Taslak vardiyalar hazır olmalı"]),
+      completion: "Ön izleme ve gerekli insan onayı tamamlanmadan teklif gönderilmez.",
+      nextStep: "İnsan onayı ve teklif değerlendirmesi",
+      safeAction: "Sefer Abi ön izleme ve teklif hedefini açıklayabilir; teklif göndermez veya onaylamaz.",
+      businessWriteBoundary: "Teklif gönderme ve onay işlemleri iş yazımıdır; Sefer Abi bunları çalıştırmaz.",
+      nextOrdinal: null,
+    }),
+  ]),
+});
+
+function workflowStepReferenceFromText(value) {
+  const text = normalize(value);
+  const numeric = text.match(/(?:^|\s)([1-4])\s*adim(?:da|de|dan|den)?\b/iu);
+  const named = [
+    ["ilk", 1], ["birinci", 1], ["ikinci", 2], ["ucuncu", 3], ["dorduncu", 4], ["son", 4],
+  ].find(([term]) => new RegExp(`(?:^|\\s)${term}\\s+adim(?:da|de|dan|den)?\\b`, "iu").test(text));
+  const ordinal = numeric ? Number(numeric[1]) : named?.[1] || null;
+  if (!ordinal) return null;
+  const step = COMPANY_GUIDED_NEW_PLAN_WORKFLOW.steps.find((item) => item.ordinal === ordinal);
+  return step ? { ordinal: step.ordinal, key: step.key, label: step.label } : null;
+}
+
+function activeWorkflowPlan(conversationState) {
+  const candidates = [
+    conversationState?.activeGuidedTask?.semanticPlan,
+    conversationState?.productContext?.semanticPlan,
+    conversationState?.lastSettledResult?.semanticPlan,
+    conversationState?.authorizedProductContext?.semanticPlan,
+  ];
+  return candidates.find((plan) => plan?.workflowIntent === "CREATE_SHIFT" || plan?.workflowModel?.goal === "CREATE_SHIFT") || null;
+}
+
+function hasRoomCapabilityBoundaryContinuation({ message, user, screenContext, conversationState } = {}) {
+  if (String(user?.role || "").toUpperCase() !== "ROOM") return false;
+  if (!/\/room\/shifts\b/iu.test(String(screenContext?.path || ""))) return false;
+  const text = normalize(message);
+  if (!hasStepByStepTeachingCue(text)) return false;
+  const plans = [
+    conversationState?.activeGuidedTask?.semanticPlan,
+    conversationState?.productContext?.semanticPlan,
+    conversationState?.lastSettledResult?.semanticPlan,
+    conversationState?.authorizedProductContext?.semanticPlan,
+    conversationState?.lastProductSemanticPlan,
+    conversationState?.lastSemanticPlan,
+  ];
+  const boundaryPlan = plans.find((plan) => (
+    String(plan?.roleCapabilityBoundary || "").toUpperCase() === "ROOM_CREATE_UNSUPPORTED"
+    && String(plan?.workflowIntent || "").toUpperCase() === "OPEN_SHIFT_SURFACE"
+  ));
+  if (!boundaryPlan) return false;
+  return hasStepByStepTeachingCue(text);
+}
+
+function liveWorkflowStepReference(ui) {
+  const workflowState = ui?.workflowState;
+  if (!workflowState || workflowState.workflowId !== COMPANY_GUIDED_NEW_PLAN_WORKFLOW.id) return null;
+  const ordinal = Number(workflowState.activeStepOrdinal || 0);
+  if (!Number.isInteger(ordinal) || ordinal < 1) return null;
+  const step = COMPANY_GUIDED_NEW_PLAN_WORKFLOW.steps.find((item) => item.ordinal === ordinal);
+  return step ? { ordinal: step.ordinal, key: step.key, label: step.label } : null;
+}
+
+// A saved-draft chooser is a foreground live surface, not a workflow step.
+// Require three independent current-state signals: the server-backed chooser
+// state, its canonical resume action, and the modal identity captured from
+// the authorized UI. This recognizes a live surface; it neither authorizes
+// an action nor substitutes a similarly labelled element.
+function liveGuidedDraftChooserState(ui) {
+  if (!ui || ui.workflowState?.workflowId === COMPANY_GUIDED_NEW_PLAN_WORKFLOW.id) return null;
+  const availability = ui.guidedDraftAvailability && typeof ui.guidedDraftAvailability === 'object'
+    ? ui.guidedDraftAvailability
+    : null;
+  const draftState = String(availability?.state || '').trim().toUpperCase();
+  const draftCount = Math.max(0, Number(availability?.count || 0) || 0);
+  if (ui.surfaceRole !== 'COMPANY' || draftState !== 'SAVED_DRAFT_CHOOSER' || draftCount < 1) return null;
+  const foregroundSurface = ui.foregroundSurface && typeof ui.foregroundSurface === 'object'
+    ? ui.foregroundSurface
+    : null;
+  const foregroundSurfaceKey = String(foregroundSurface?.key || '').trim();
+  const foregroundSurfaceKind = String(foregroundSurface?.kind || '').trim().toUpperCase();
+  const resumeTarget = (Array.isArray(ui.visibleTargets) ? ui.visibleTargets : []).find((item) => (
+    item?.identitySource === 'CANONICAL'
+      && !item?.disabled
+      && String(item?.targetKey || '').trim() === 'company:guided-draft-resume'
+  ));
+  if (foregroundSurfaceKey !== 'company:guided-draft-chooser' || foregroundSurfaceKind !== 'SAVED_DRAFT_CHOOSER' || !resumeTarget) return null;
+  return {
+    kind: 'SAVED_DRAFT_CHOOSER',
+    title: 'Kayıtlı taslaklar',
+    draftAvailability: {
+      state: draftState,
+      count: draftCount,
+      maxResumeStep: Number(availability?.maxResumeStep || 0) || null,
+      source: String(availability?.source || 'SERVER_GUIDED_DRAFTS').trim(),
+    },
+  };
+}
+
+// A canonical guided-plan entry control is live product evidence that the
+// wizard has not been opened yet.  The workflow catalog remains authoritative
+// for what comes next, but it cannot manufacture a current step in the
+// absence of the modal's LIVE_UI workflow marker.
+function guidedWorkflowEntryState(ui) {
+  if (!ui || ui.workflowState?.workflowId === COMPANY_GUIDED_NEW_PLAN_WORKFLOW.id) return null;
+  // The chooser has already become the foreground surface. It is neither the
+  // pre-wizard entry surface nor Step 1, even though it belongs to the same
+  // guided-flow lifecycle.
+  if (liveGuidedDraftChooserState(ui)) return null;
+  const target = (Array.isArray(ui.visibleTargets) ? ui.visibleTargets : []).find((item) => {
+    const key = String(item?.targetKey || '').trim();
+    return item?.identitySource === 'CANONICAL'
+      && !item?.disabled
+      && /:guided-plan-start$/iu.test(key);
+  });
+  // Planlama Merkezi keeps its normal guided-entry action inside the existing
+  // work-area disclosure. A closed disclosure does not make the workflow
+  // modal live, nor does it erase the canonical entry action from this
+  // authorized screen contract. Preserve the exact target key only; the
+  // guided-target resolver remains responsible for revealing and proving the
+  // live DOM element before a callout/highlight is rendered.
+  const contractedEntryTarget = !target
+    && ui.surfaceRole === 'COMPANY'
+    && /^\/company\/?$/iu.test(String(ui.path || ''))
+    && ui.guidedDraftAvailability
+    ? {
+      targetKey: 'company:guided-plan-start',
+      label: 'Rehberi Başlat',
+      semanticType: 'button',
+      identitySource: 'CANONICAL',
+      requiresLiveResolution: true,
+    }
+    : null;
+  const entryTarget = target || contractedEntryTarget;
+  if (!entryTarget) return null;
+  const nextStep = COMPANY_GUIDED_NEW_PLAN_WORKFLOW.steps[0];
+  const draftAvailability = ui.guidedDraftAvailability && typeof ui.guidedDraftAvailability === 'object'
+    ? ui.guidedDraftAvailability
+    : null;
+  const draftState = String(draftAvailability?.state || '').trim().toUpperCase();
+  const draftCount = Math.max(0, Number(draftAvailability?.count || 0) || 0);
+  const nextState = draftState === 'SAVED_DRAFT_CHOOSER' && draftCount > 0
+    ? 'SAVED_DRAFT_CHOOSER'
+    : draftState === 'NEW_PLAN_STEP_1' && draftCount === 0
+      ? 'NEW_PLAN_STEP_1'
+      : 'UNKNOWN_ENTRY_NEXT_STATE';
+  return {
+    state: 'PRE_WIZARD',
+    currentTarget: {
+      targetKind: 'CONTROL',
+      targetKey: String(entryTarget.targetKey || '').trim(),
+      label: String(entryTarget.label || '').trim(),
+      semanticType: String(entryTarget.semanticType || 'button').trim(),
+      requiresLiveResolution: entryTarget.requiresLiveResolution === true,
+    },
+    nextStep: nextStep ? { ordinal: nextStep.ordinal, key: nextStep.key, label: nextStep.label } : null,
+    nextState,
+    draftAvailability: draftAvailability
+      ? { state: draftState || 'UNKNOWN', count: draftCount, maxResumeStep: Number(draftAvailability.maxResumeStep || 0) || null, source: String(draftAvailability.source || 'SERVER_GUIDED_DRAFTS').trim() }
+      : null,
+  };
+}
+
+function hasLiveWorkflowGroundingCue(text) {
+  const value = String(text || "");
+  return /\b(?:burasi|burda|burada)\s+(?:ne|ne\s+yap|nap)\p{L}*/iu.test(value)
+    || /\bbu\s+adim(?:da|de)?\s+(?:ne|ne\s+yap|nap)\p{L}*/iu.test(value)
+    || hasCurrentWorkflowStepQuestion(value)
+    || /\b(?:şu\s+an|su\s+an)\s+neredeyim\b/iu.test(value)
+    || /\bsu\s+an\s+kacinci\s+adim(?:dayim|deyim|da|de)?\b/iu.test(value)
+    || /\b(?:nerede|nerde)\s+kaldik\b/iu.test(value)
+    || /\bsonra\s+ne\b/iu.test(value)
+    || /\b(?:devam\s+edelim|hadi\s+devam|devam\s+et)\b/iu.test(value)
+    || hasCurrentStepHowToCue(value)
+    // Failure/recovery language is grounded by a rendered workflow too.  It
+    // must not be downgraded to generic chat merely because the user did not
+    // repeat the control label.
+    || hasActiveGuidanceFailureCue(value)
+    // Structural block/surface references are live-workflow follow-ups when
+    // the guided UI is rendered.  Keep them in the canonical workflow path
+    // so a prior control target cannot make the request appear control-level.
+    || hasExplicitCurrentScreenPurposeCue(value)
+    || hasNextSemanticBlockCue(value)
+    || /\b(?:burayi|burayı|burası|burasi|bu\s+ekranı|bu\s+ekrani)\b.*\b(?:anlat|acikla|açıkla)\b/iu.test(normalize(value))
+    || /\b(?:anlat|acikla|açıkla)\b.*\b(?:burayi|burayı|burası|burasi|bu\s+ekranı|bu\s+ekrani)\b/iu.test(normalize(value))
+    || /\b(?:adim\s+adim|adım\s+adım)\b.*\b(?:anlat|acikla|açıkla)\b/iu.test(normalize(value))
+    || /\b(?:durak(?:lari|ları)?|stop)\b.*\b(?:hazirla|hazırla|hazirlam|hazırlam)\p{L}*\b/iu.test(normalize(value))
+    || isLiveWorkflowContinuationCue(value)
+    || hasWorkflowStartFollowUpCue(value)
+    || hasWorkflowCapabilityCue(value)
+    // A generic help request is still a live-workflow follow-up when the
+    // conversation carries an active guided task.  The helper is only used
+    // together with an active/live workflow guard, so this does not make
+    // context-free generic help inherit stale workflow state.
+    || isGenericProductHelpIntent(value);
+}
+
+// A live workflow step can be queried through several grammatical forms
+// ("bu adımın amacı", "şu anda bu adımda hangi işlem oluyor?", "sıradaki
+// adım ne?").  Resolve the relation between a current-step reference and a
+// question operator instead of enumerating complete utterances.
+function hasCurrentWorkflowStepQuestion(text) {
+  const value = normalize(text);
+  const stepReference = /\b(?:bu|su|mevcut|su\s+anki)\s+adim(?:in|un|da|de)?\b/iu.test(value);
+  const questionOperator = /\b(?:ne|nasil|hangi|sirada|siradaki|sonraki|amac|neden|oluyor|var|yap)\p{L}*\b/iu.test(value);
+  return stepReference && questionOperator;
+}
+
+function hasNextSemanticBlockCue(text) {
+  return /\b(?:sonraki|bir\s+sonraki)\s+(?:bolum|bölüm|blok|alan|kisim|kısım)\b/iu.test(normalize(text));
+}
+
+// A live workflow can distinguish a region/block explanation from a broader
+// screen-purpose question. Keep the distinction structural so the semantic
+// block resolver can emit the canonical BLOCK identity instead of inheriting a
+// previous CONTROL target.
+function hasLiveBlockExplanationCue(text, ui = null) {
+  const value = normalize(text);
+  const currentLabel = normalize(ui?.label || '');
+  const namesBroaderSurface = Boolean(currentLabel && currentLabel.length >= 3 && value.includes(currentLabel));
+  const deicticSurfaceQuestion = /\b(?:burasi|burada|burda|bu\s+(?:alan|bolum|kisim|adim|ekran)(?:da|de)?|su\s+an)\b.{0,48}\b(?:ne|napiyoruz|ne\s+var|nasil|neredeyim|ne\s+ise\s+yar|yapiliyor|yapiyoruz|ne\s+yap|nap)\p{L}*/iu.test(value);
+  return /\b(?:bu|su)\s+(?:bolum|alan|kisim|blok)\p{L}*\b.{0,48}\b(?:ne\s+ise\s+yar|anlat|acikla|ne\s+yap|nasil\s+yap)\p{L}*/iu.test(value)
+    || /\b(?:burayi|burasi|bu\s+bolumu|bu\s+alani|bu\s+blok)\b.{0,48}\b(?:adim\s+adim|anlat|acikla|nasil\s+yap)\p{L}*/iu.test(value)
+    || hasNextSemanticBlockCue(value)
+    || (deicticSurfaceQuestion && !namesBroaderSurface);
+}
+
+// These are semantic current-workflow follow-ups.  They deliberately describe
+// the relation between the user's deictic/how-to language and a live guided
+// workflow; they are not a finite list of accepted utterances.
+function hasCurrentStepHowToCue(text) {
+  const value = normalize(text);
+  return /\b(?:nasil|nasıl)\s+(?:yap|yapmam|yapicam|yapacagim|yapiyorum|yapiyoruz|yaparim|personel|calisan)\p{L}*/iu.test(value)
+    || /\b(?:ne\s+yapmam|ne\s+yapacagim|napmam|napicam|napacagim)\b.*\b(?:gerek|lazim|burda|burada|simdi|bu\s+adim)\b/iu.test(value)
+    || /\b(?:burdan|buradan|burda|burada|simdi|su\s+an)\b.*\b(?:ne|nap|nasil|sonra|devam)\b/iu.test(value)
+    || /\b(?:bundan\s+sonra)\b.*\b(?:ne|nap|nasil|yap)\b/iu.test(value)
+    || /\b(?:kacinci|kacinci)\s+adim(?:dayim|deyim|da|de)?\b/iu.test(value);
+}
+
+// Address questions are UI guidance only when the wording points at the
+// current form/control (where/how to enter it).  Keep raw-person disclosure
+// language out of this cue so the privacy boundary remains authoritative.
+function hasAddressUiHelpCue(text) {
+  const value = normalize(text);
+  const rawPersonReference = /\b(?:bu|o|onun|kisinin|personelin|ogrencinin|cocugun|velinin)\b.*\b(?:adres|adresten)\p{L}*\b/iu.test(value);
+  if (rawPersonReference) return false;
+  return (
+    /\b(?:adres|adresten)\p{L}*\b.*\b(?:nereye|nerede|nerden)\b/iu.test(value)
+    || /\b(?:nereye|nerede|nerden)\b.*\b(?:adres|adresten)\p{L}*\b/iu.test(value)
+    || /\b(?:adres|adresten)\p{L}*\b.*\b(?:alan|gire|gir|doldur|dogrula)\p{L}*\b/iu.test(value)
+    || /\b(?:nasil)\b.*\b(?:adres|adresten)\p{L}*\b/iu.test(value)
+  );
+}
+
+function workflowCapabilityIntentFromText(text, workflowStepReference = null) {
+  if (workflowStepReference?.key !== "PERSONNEL_STOPS") return null;
+  const value = normalize(text);
+  const personnel = /\b(?:personel|calisan|kisi|kisileri|kisiler)\p{L}*\b/iu.test(value);
+  const importCue = /\b(?:excel|exel|csv|toplu|dosya|tablo|ice\s+aktar|import|yukle|aktar)\p{L}*\b/iu.test(value);
+  const addCue = /\b(?:ekl(?:e|i)|eklerim|ekliyorum|ekleniyor|eklemek|add)\p{L}*\b/iu.test(value);
+  const addressCue = /\b(?:adres|adresten)\p{L}*\b/iu.test(value);
+  const addressUiHelp = hasAddressUiHelpCue(value);
+  // Stop creation is a Step-3 capability in its own right.  Keep the
+  // operation vocabulary structural so colloquial forms such as "durak
+  // üretme nerede" and "durağı nasıl çıkaracağız" stay in the workflow,
+  // while a bare stop count or cost question can still use its own domain.
+  const stopReference = /\b(?:durak|duraklari|durakları|durağı|duragi|stop)\p{L}*\b/iu.test(value);
+  const stopOperation = /\b(?:hazirla|hazırla|hazirlam|hazırlam|uret|üret|olustur|oluştur|cikar|çıkar|cek|çek|hazir)\p{L}*\b/iu.test(value)
+    || /\b(?:nerede|nerden|nasil|nasıl)\b/iu.test(value);
+  const stopPreparationCue = stopReference && stopOperation;
+  if (stopPreparationCue) return "PREPARE_STOPS";
+  if (addressCue && (addressUiHelp || addCue || /\bnasil\b.*\b(?:gerek|ekle|dogrula|doğrula)\b/iu.test(value))) return "ENTER_ADDRESS";
+  if (importCue && /\b(?:nerden|neresi|ekle|yukle|aktar|nasil|hangi|dosya|tablo)\b/iu.test(value)) return "IMPORT_PERSONNEL";
+  if (personnel && importCue) return "IMPORT_PERSONNEL";
+  if (personnel && (addCue || /\bnasil\b.*\bpersonel\b/iu.test(value))) return "ADD_PERSONNEL";
+  return null;
+}
+
+function hasWorkflowCapabilityCue(text) {
+  const value = normalize(text);
+  const importCue = /\b(?:excel|exel|csv|toplu|dosya|tablo|ice\s+aktar|import|yukle|aktar)\p{L}*\b/iu.test(value);
+  const addressUiHelp = hasAddressUiHelpCue(value);
+  const stopReference = /\b(?:durak|duraklari|durakları|durağı|duragi|stop)\p{L}*\b/iu.test(value);
+  const stopOperation = /\b(?:hazirla|hazırla|hazirlam|hazırlam|uret|üret|olustur|oluştur|cikar|çıkar|cek|çek|hazir)\p{L}*\b/iu.test(value)
+    || /\b(?:nerede|nerden|nasil|nasıl)\b/iu.test(value);
+  return (
+    /\b(?:personel|calisan|kisi|kisileri|kisiler)\p{L}*\b/iu.test(value)
+      && /\b(?:ekl(?:e|i)|eklerim|ekliyorum|ekleniyor|eklemek|excel|exel|csv|toplu|dosya|tablo|ice\s+aktar|import|yukle|aktar)\p{L}*\b/iu.test(value)
+  ) || (importCue && /\b(?:nerden|neresi|ekle|yukle|aktar|nasil|hangi)\b/iu.test(value))
+    || addressUiHelp
+    || (stopReference && stopOperation);
+}
+
+// Route-order verification is a Step-4 semantic next action when the live
+// workflow says ordering/verification is missing. This is structural
+// (route/order/verification plus an action cue), so generic cost questions
+// remain in cost reasoning and no individual utterance becomes a branch.
+function hasRouteOrderVerificationCue(text) {
+  const value = normalize(text);
+  const routeReference = /\b(?:rota|rotayi|rotayı|guzergah|güzergah|durak|osrm|route)\p{L}*\b/iu.test(value);
+  const orderOrVerification = /\b(?:sira|sıra|sirasi|sırası|sirala|sırala|siralam|sıralam|dogrula|doğrula|dogrulama|doğrulama|kontrol|eksik|hazir|hazır)\p{L}*\b/iu.test(value);
+  const actionCue = /\b(?:nerede|nerde|nasil|nasıl|hangi|sonraki|siradaki|sıradaki|ne|neye|bak|kontrol)\b/iu.test(value);
+  return routeReference && orderOrVerification && actionCue;
+}
+
+function routeOrderActionFromUi(ui) {
+  const targets = Array.isArray(ui?.visibleTargets) ? ui.visibleTargets : [];
+  return targets.find((target) => {
+    const label = normalize(target?.label || '');
+    return /\b(?:rota|rotalari|rotaları|route)\b.*\b(?:sira|sıra|sirala|sırala|olustur|oluştur)\b/iu.test(label)
+      || /\b(?:sira|sıra|sirala|sırala)\b.*\b(?:rota|rotalari|rotaları|route)\b/iu.test(label);
+  }) || null;
+}
+
+function hasWorkflowStartFollowUpCue(text) {
+  const value = normalize(text);
+  return /\b(?:rehber|rehberi|rehberli|baslattim|basladim|acildi|actim|buradayim)\b.*\b(?:simdi|sonra|ne|nap|devam|yapmam|yapacagim|var)\b/iu.test(value);
+}
+
+function isLiveWorkflowContinuationCue(text) {
+  const value = String(text || "");
+  const reportedAction = /\b(?:ekledim|ekledik|yaptim|yaptım|tamamladim|tamamladım|ice\s+aktardim|içe\s+aktardım|exel\s*\/\s*csv\s+ice\s+aktardim|excel\s*\/\s*csv\s+içe\s+aktardım)\b/iu.test(value);
+  const asksAfter = /\b(?:sonra|simdi|şimdi|devam|ne|nap|nasil|nasıl|olacak|yap)\b/iu.test(value);
+  const recoveryReference = hasActiveGuidanceFailureCue(value)
+    || /\b(?:dediğin|dedigin|soyledigin|söylediğin)\s+yer\s+yok\b/iu.test(value)
+    || /\btekrar\s+goster\p{L}*\b/iu.test(value);
+  const continuationPresentation = /\b(?:devamini|devamını)\s+(?:anlat|acikla|açıkla)\p{L}*\b/iu.test(value)
+    || /\bsonraki\s+(?:kisim|kismi|kısmı)\s+(?:anlat|acikla|açıkla)\p{L}*\b/iu.test(value)
+    || /\b(?:kaldigin|kaldığın|kaldiginiz|kaldığınız)\s+yerden\s+devam\b/iu.test(value);
+  return /\b(?:nerede|nerde)\s+kaldik\b/iu.test(value)
+    || /\bsonra\s+ne\b/iu.test(value)
+    || /\b(?:sirada|siradaki|sonraki)\b.*\b(?:ne|adim|islem)\p{L}*\b/iu.test(value)
+    || /\b(?:devam\s+edelim|hadi\s+devam|devam\s+et)\b/iu.test(value)
+    || (reportedAction && asksAfter)
+    || /\b(?:bundan\s+sonra)\b.*\b(?:ne|nap|yap)\p{L}*\b/iu.test(value)
+    || recoveryReference
+    || continuationPresentation;
+}
+
+// A rendered guided workflow is contextual UI evidence for the current turn.
+// It must outrank the context-free product-help shortcut, while server-side
+// screen/role authorization remains the authority for access.
+export function hasLiveWorkflowGroundingReference(value, screenContext = null, conversationState = null) {
+  const ui = currentUiContext(screenContext, null);
+  const cue = hasLiveWorkflowGroundingCue(normalize(value));
+  return Boolean(cue && (
+    liveWorkflowStepReference(ui)
+    || activeWorkflowPlan(conversationState)
+  ));
+}
+
+// A numbered step question is contextual when an authorized guided workflow
+// is already active. Keep that fact in the canonical semantic owner so the
+// generic onboarding classifier cannot replace the active task.
+export function hasActiveWorkflowStepReference(value, conversationState = null) {
+  return Boolean(workflowStepReferenceFromText(value) && activeWorkflowPlan(conversationState));
 }
 
 const OWNER_SCOPE_CONCEPTS = [
@@ -141,9 +935,21 @@ function typeForSelected(value) {
   return "";
 }
 
-function currentUiContext(screenContext, conversationState) {
+function currentUiContext(screenContext, conversationState, user = null) {
   const path = String(screenContext?.path || conversationState?.lastScreenPath || "").trim();
   const label = String(screenContext?.label || conversationState?.lastScreenLabel || "").trim();
+  const declaredRole = String(screenContext?.semanticResolutionContext?.authorizedRole || "").trim().toUpperCase();
+  const authenticatedRole = String(user?.role || "").trim().toUpperCase();
+  const companyKind = String(user?.companyKind || user?.companyType || "").trim().toUpperCase();
+  const surfaceRole = ["SCHOOL", "ORGANIZATION"].includes(declaredRole)
+    ? declaredRole
+    : authenticatedRole === "COMPANY" && ["SCHOOL", "ORGANIZATION"].includes(companyKind)
+      ? companyKind
+      : /\/school(?:\/|$)/iu.test(path)
+        ? "SCHOOL"
+        : /\/organization(?:\/|$)/iu.test(path)
+          ? "ORGANIZATION"
+          : authenticatedRole;
   // Visible controls are route-bound UI context only. They never grant a
   // capability or select data: server-side role/screen authorization remains
   // authoritative, and the guided-target resolver still requires a real
@@ -153,21 +959,183 @@ function currentUiContext(screenContext, conversationState) {
       .filter((item) => String(item?.label || "").trim())
       .length
     : 0;
-  const selectedId = Number(screenContext?.selectedEntityId || conversationState?.selectedEntityId || 0);
+  const visibleTargetLabels = [
+    label,
+    ...(Array.isArray(screenContext?.uiHints?.visibleButtons) ? screenContext.uiHints.visibleButtons : []),
+    ...(Array.isArray(screenContext?.uiHints?.allowedActions) ? screenContext.uiHints.allowedActions : []),
+    ...(Array.isArray(screenContext?.uiHints?.visibleMenus) ? screenContext.uiHints.visibleMenus : []),
+  ]
+    .map((item) => typeof item === "string" ? item : item?.label)
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+  const modalTitles = (Array.isArray(screenContext?.uiHints?.modalTitles) ? screenContext.uiHints.modalTitles : [])
+    .map((item) => typeof item === 'string' ? item : item?.label)
+    .map((item) => String(item || '').trim())
+    .filter(Boolean);
+  const currentSelection = resolveCurrentSelection({ screenContext, conversationState });
+  const selectedId = Number(currentSelection.entity?.id || 0);
   // The routing adapter deliberately never transports an entity id. It may
   // carry the already-authorized current-screen selection type, however,
   // which is enough to distinguish an unresolved parent-live target from a
   // selected service without making that selection an authorization input.
   const selectedType = typeForSelected(
-    screenContext?.selectedEntityType
-    || conversationState?.selectedEntityType
-    || screenContext?.semanticResolutionContext?.selectedEntityType,
+    currentSelection.entity?.type,
   );
   const selectedEntityPresent = Boolean(
-    screenContext?.semanticResolutionContext?.selectedEntityPresent === true
-    || (selectedId > 0 && selectedType),
+    selectedId > 0 && selectedType,
   );
-  return { path, label, selectedId: selectedId > 0 ? selectedId : null, selectedType, selectedEntityPresent, visibleControlCount };
+  const workflowState = screenContext?.uiHints?.workflowState && typeof screenContext.uiHints.workflowState === "object"
+    ? {
+      workflowId: String(screenContext.uiHints.workflowState.workflowId || "").trim(),
+      activeStepOrdinal: Number(screenContext.uiHints.workflowState.activeStepOrdinal || 0) || null,
+      completedThroughOrdinal: Number(screenContext.uiHints.workflowState.completedThroughOrdinal || 0) || 0,
+      currentTargetKey: String(screenContext.uiHints.workflowState.currentTargetKey || "").trim(),
+      currentTargetLabel: String(screenContext.uiHints.workflowState.currentTargetLabel || "").trim(),
+      source: String(screenContext.uiHints.workflowState.source || "LIVE_UI").trim(),
+    }
+    : null;
+  const currentTarget = screenContext?.uiHints?.currentTarget && typeof screenContext.uiHints.currentTarget === "object"
+    ? {
+      status: String(screenContext.uiHints.currentTarget.status || "").trim().toUpperCase(),
+      targetKind: String(screenContext.uiHints.currentTarget.targetKind || "CONTROL").trim().toUpperCase(),
+      targetKey: String(screenContext.uiHints.currentTarget.targetKey || "").trim(),
+      semanticId: String(screenContext.uiHints.currentTarget.semanticId || "").trim(),
+      blockKey: String(screenContext.uiHints.currentTarget.blockKey || "").trim(),
+      label: String(screenContext.uiHints.currentTarget.label || "").trim(),
+      semanticType: String(screenContext.uiHints.currentTarget.semanticType || "").trim(),
+      screenPath: String(screenContext.uiHints.currentTarget.screenPath || "").trim(),
+      role: String(screenContext.uiHints.currentTarget.role || "").trim().toUpperCase(),
+    }
+    : null;
+  const visibleTargets = (Array.isArray(screenContext?.uiHints?.visibleButtons) ? screenContext.uiHints.visibleButtons : [])
+    .filter((item) => item && String(item?.label || "").trim() && String(item?.targetKey || item?.semanticKey || item?.copilotTarget || "").trim())
+    .map((item) => ({
+      label: String(item.label || "").trim(),
+      targetKey: String(item.targetKey || item.semanticKey || item.copilotTarget || "").trim(),
+      semanticType: String(item.semanticType || "button").trim(),
+      identitySource: String(item.identitySource || "LEGACY_LABEL").trim().toUpperCase(),
+      disabled: Boolean(item.disabled),
+    }));
+  const rawDraftAvailability = screenContext?.uiHints?.guidedDraftAvailability && typeof screenContext.uiHints.guidedDraftAvailability === 'object'
+    ? screenContext.uiHints.guidedDraftAvailability
+    : null;
+  const guidedDraftAvailability = rawDraftAvailability
+    ? {
+      state: String(rawDraftAvailability.state || 'UNKNOWN').trim().toUpperCase(),
+      count: Math.max(0, Number(rawDraftAvailability.count || 0) || 0),
+      maxResumeStep: Number(rawDraftAvailability.maxResumeStep || 0) || null,
+      source: String(rawDraftAvailability.source || 'SERVER_GUIDED_DRAFTS').trim(),
+    }
+    : null;
+  const rawForegroundSurface = screenContext?.uiHints?.foregroundSurface && typeof screenContext.uiHints.foregroundSurface === 'object'
+    ? screenContext.uiHints.foregroundSurface
+    : null;
+  const foregroundSurface = rawForegroundSurface
+    ? {
+      key: String(rawForegroundSurface.key || '').trim(),
+      kind: String(rawForegroundSurface.kind || '').trim().toUpperCase(),
+      source: String(rawForegroundSurface.source || 'LIVE_UI').trim(),
+    }
+    : null;
+  return { path, label, surfaceRole, selectedId: selectedId > 0 ? selectedId : null, selectedType, selectionSource: currentSelection.source || null, selectedEntityPresent, visibleControlCount, visibleTargetLabels, visibleTargets, modalTitles, currentTarget, workflowState, guidedDraftAvailability, foregroundSurface };
+}
+
+function isExplicitOrganizationPlanReference(text) {
+  return hasAnyTerm(text, ["organizasyon plani", "gezi plani", "organization plan", "trip plan"]);
+}
+
+function hasOperationalEvidenceQuestion(text) {
+  return /\b(?:neye|nelere|neyi)\s+(?:bak|incele|kontrol|degerlendir|gozden\s+gecir)\p{L}*\b/iu.test(text)
+    || /\bhangi\s+\p{L}+(?:\s+\p{L}+){0,2}\s+(?:bak|incele|kontrol|degerlendir|gozden\s+gecir)\p{L}*\b/iu.test(text)
+    || hasEvidenceSufficiencyCue(text)
+    || hasAttentionAssessmentCue(text);
+}
+
+function isSchoolOperationalPlanningQuestion(text, ui) {
+  return ui?.surfaceRole === "SCHOOL"
+    && /\/school\/operations\b/iu.test(String(ui.path || ""))
+    && !isExplicitOrganizationPlanReference(text)
+    && hasOperationalEvidenceQuestion(text);
+}
+
+function currentTargetFailureReference(text, ui) {
+  if (!ui?.path || !hasActiveGuidanceFailureCue(text)) return null;
+  const current = ui.currentTarget;
+  if (current?.status === "FOUND" && current.targetKey && (!current.screenPath || current.screenPath === ui.path)) {
+    return current;
+  }
+  const value = normalize(text);
+  const stopWords = new Set(["buton", "alan", "ekran", "bölüm", "bolum"]);
+  const candidates = Array.isArray(ui.visibleTargets) ? ui.visibleTargets.filter((row) => row.identitySource === "CANONICAL" && !row.disabled) : [];
+  const matching = candidates.find((row) => {
+    const words = normalize(row.label).split(/\s+/u)
+      .map((word) => word.replace(/[^\p{L}\p{N}]+/gu, ""))
+      .filter((word) => word.length >= 4 && !stopWords.has(word));
+    return words.some((word) => value.split(/\s+/u).some((candidate) => candidate.startsWith(word) || word.startsWith(candidate)));
+  });
+  return matching || null;
+}
+
+const SCREEN_CAPABILITY_STOP_WORDS = new Set([
+  "ac", "aç", "goster", "göster", "kullan", "nereden", "nasil", "nasıl", "hangi", "buton", "ekran", "sayfa", "menu", "menü",
+  "olan", "olanı", "olanin", "olanın", "icin", "için", "bana", "bir", "bu", "su", "şu",
+]);
+
+// Explicit capability help is grounded by the currently authorized surface's
+// own visible vocabulary.  This is structural label/verb matching, not a
+// phrase list: the screen supplies the target words and the user supplies a
+// how-to/open operation.  Authorization and actual target existence remain
+// downstream responsibilities of the screen registry and guided resolver.
+function currentTargetMatchesSelectedRecord(candidate, ui) {
+  const targetKey = String(candidate?.targetKey || "").trim();
+  const recordMatch = targetKey.match(/:(shift|agreement|offer|vehicle|driver|personnel|student|parent):(\d+)(?::|$)/iu);
+  if (!recordMatch) return true;
+  const selectedId = Number(ui?.selectedId);
+  if (!Number.isInteger(selectedId) || selectedId <= 0) return false;
+  const selectedType = String(ui?.selectedType || "").trim().toUpperCase();
+  const targetType = String(recordMatch[1] || "").toUpperCase();
+  return selectedId === Number(recordMatch[2])
+    && (!selectedType || selectedType === targetType);
+}
+
+function currentScreenCapabilityTarget(text, ui) {
+  if (!ui?.path || !Array.isArray(ui.visibleTargetLabels) || !ui.visibleTargetLabels.length) return false;
+  const value = normalize(text);
+  const explicitControlVerb = /\b(?:nereden|nerede|nerde|nasil|ac(?!ik)\p{L}*|goster\p{L}*|kullan\p{L}*|bul\p{L}*|ulas\p{L}*|git\p{L}*|gec\p{L}*|gireyim)\b/iu.test(value);
+  const explicitControlQuestion = /\bhangi\s+(?:buton|sekme|tab|kart|alan|bolum|bölüm)\p{L}*\b/iu.test(value);
+  if (!explicitControlVerb && !explicitControlQuestion) return false;
+  const inputTerms = value.split(/\s+/u)
+    .map((term) => term.replace(/[^\p{L}\p{N}]+/gu, ""))
+    .filter((term) => term.length >= 4 && !SCREEN_CAPABILITY_STOP_WORDS.has(term));
+  const candidates = Array.isArray(ui.visibleTargets) && ui.visibleTargets.length
+    ? ui.visibleTargets
+    : ui.visibleTargetLabels.map((label) => ({ label }));
+  const mapEnlargementRequest = /\b(?:harita|zoom)\p{L}*\b/iu.test(value)
+    && /\b(?:buyut|yaklastir|genislet|zoom)\p{L}*\b/iu.test(value)
+    && /\b(?:adim\s+adim|nasil|goster|ac(?!ikla))\p{L}*\b/iu.test(value);
+  if (mapEnlargementRequest) {
+    const mapTarget = candidates.find((candidate) => {
+      if (!currentTargetMatchesSelectedRecord(candidate, ui)) return false;
+      const label = normalize(candidate?.label);
+      const semanticType = normalize(candidate?.semanticType);
+      return /\b(?:harita|zoom)\p{L}*\b/iu.test(label)
+        && (/(?:buyuk|buyut|yaklastir|genislet|zoom|isaretle|ac)\p{L}*/iu.test(label)
+          || /map[_-](?:modal[_-])?open|zoom[_-]in/iu.test(semanticType));
+    });
+    if (mapTarget) return mapTarget;
+  }
+  return candidates.find((candidate) => {
+    if (!currentTargetMatchesSelectedRecord(candidate, ui)) return false;
+    return normalize(candidate?.label)
+      .split(/\s+/u)
+      .map((term) => term.replace(/[^\p{L}\p{N}]+/gu, ""))
+      .filter((term) => term.length >= 4 && !SCREEN_CAPABILITY_STOP_WORDS.has(term))
+      .some((term) => inputTerms.some((inputTerm) => inputTerm.startsWith(term) || term.startsWith(inputTerm)));
+  }) || null;
+}
+
+function hasCurrentScreenCapabilityCue(text, ui) {
+  return Boolean(currentScreenCapabilityTarget(text, ui));
 }
 
 function hasCardinalityCue(text) {
@@ -177,15 +1145,45 @@ function hasCardinalityCue(text) {
   // particular, "firma teklifi kaç" is a scalar-field question on a selected
   // agreement, whereas "kaç teklif var" asks for an OFFER set cardinality.
   if (isGeneralArithmeticRequest(text)) return false;
-  const explicitEntityTarget = ENTITY_CONCEPTS.some((concept) => hasAnyTerm(text, concept.terms));
+  const hasInflectedTerm = (value, term) => {
+    const parts = normalize(term).split(/\s+/u).filter(Boolean);
+    if (!parts.length) return false;
+    const pattern = parts.map((part, index) => {
+      const escaped = part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return index === parts.length - 1 ? `${escaped}\\p{L}*` : escaped;
+    }).join("\\s+");
+    return new RegExp(`(?:^|[^\\p{L}\\p{N}])${pattern}(?=$|[^\\p{L}\\p{N}])`, "iu").test(text);
+  };
+  const hasPluralEntityTarget = ENTITY_CONCEPTS.some((concept) => concept.terms.some((term) => {
+    const parts = normalize(term).split(/\s+/u).filter(Boolean);
+    if (!parts.length) return false;
+    const last = parts.at(-1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const prefix = parts.slice(0, -1).map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("\\s+");
+    const pattern = prefix ? `${prefix}\\s+${last}(?:lar|ler)\\p{L}*` : `${last}(?:lar|ler)\\p{L}*`;
+    return new RegExp(`(?:^|[^\\p{L}\\p{N}])${pattern}(?=$|[^\\p{L}\\p{N}])`, "iu").test(text);
+  }));
+  const explicitEntityTarget = ENTITY_CONCEPTS.some((concept) => concept.terms.some((term) => hasAnyTerm(text, [term]) || hasInflectedTerm(text, term)));
   if (!explicitEntityTarget) return false;
   const typedCountVerb = /\b(?:say|listele|toplamla)\p{L}*\b/iu.test(text)
     && ENTITY_CONCEPTS.some((concept) => hasAnyTerm(text, concept.terms));
-  const explicitCountNoun = /(?:^|[^\p{L}])(?:say(?:i|ini|isini|isi|ilar|ilari)|aded(?:i|ini)|toplam)(?=$|[^\p{L}])/iu.test(text)
+  const explicitCountNoun = /(?:^|[^\p{L}])(?:say(?:i|ini|isini|isi|ilar|ilari)|aded(?:i|ini)|toplam(?:i|ini|in|un|ün|u)?)(?=$|[^\p{L}])/iu.test(text)
     || hasAnyTerm(text, ["kac tane", "kac adet", "toplam kac"]);
   const countPredicate = /\b(?:var|bulunuyor|gorunuyor|mevcut|kayitli|listelen|duruyor|bekliyor|kaldi|kalmis)\p{L}*\b/iu.test(text);
+  const collectionPredicate = /\b(?:neler|hangileri|liste|listele|listesi|ozet|ozeti|envanter|bekleyen|bekliyor|inceleme)\p{L}*\b/iu.test(text);
   const quantifiedSet = /(?:^|[^\p{L}])kac\s+(?:\p{L}+\s+){0,2}\p{L}+/iu.test(text) && countPredicate;
-  return explicitCountNoun || typedCountVerb || quantifiedSet;
+  // Collection language can be inflected or possessive (for example
+  // "anlaşmaların özeti"). Requiring a bare plural suffix here allowed the
+  // canonical transport shape to fall back to FIELD_LOOKUP even though the
+  // request clearly asks for an authorized collection summary.
+  const collectionSet = explicitEntityTarget && collectionPredicate;
+  const singlePendingExistence = /\b(?:var|bulunuyor|gorunuyor|bekliyor)\b/iu.test(text)
+    && /\b(?:bekleyen|bekliyor|inceleme)\p{L}*\b/iu.test(text)
+    && explicitEntityTarget;
+  return (explicitCountNoun && (hasPluralEntityTarget || !/\btoplam(?:i|ini|in|un|ün|u)\b/iu.test(text)))
+    || (typedCountVerb && explicitEntityTarget)
+    || quantifiedSet
+    || collectionSet
+    || singlePendingExistence;
 }
 
 // Turkish arithmetic is expressed with both symbols and ordinary language.
@@ -287,8 +1285,86 @@ function hasValueLookupCue(text) {
     || /(?:firma|sirket|hizmet\s+alan|alici|musteri)\p{L}*(?:\s+\p{L}+){0,2}\s+teklif\p{L}*.{0,18}\b(?:kac|ne|bedel|tutar|rakam|para)\b/iu.test(text);
 }
 
+// A note question is a read of an authorized product record, not a request to
+// draft a new note. Keep the boundary structural: a note/description field,
+// a product record or party anchor, and a read/explanation predicate must
+// occur together. This lets inflected Turkish forms share one field-lookup
+// contract without enumerating complete user sentences.
+export function hasProductNoteLookupCue(value) {
+  const text = normalize(value);
+  const noteField = /\b(?:not|aciklama)\p{L}*\b/iu.test(text);
+  const readPredicate = /\b(?:ne|nedir|nasil|goster|gosterir|anlat|acikla|oku|ozetle|yaz|soyle)\p{L}*\b/iu.test(text);
+  const recordOrParty = /\b(?:teklif|offer|rfq|hizmet\s+alan|alici|musteri|tasimacilik|tasimaci|tasiyici|nakliyeci|firma|sirket)\p{L}*(?:\s+\p{L}+){0,2}\b/iu.test(text);
+  return noteField && readPredicate && recordOrParty;
+}
+
+export function resolveProductNoteFields(value) {
+  const text = normalize(value);
+  if (!hasProductNoteLookupCue(text)) return [];
+  const asksServiceBuyerNote = /\b(?:hizmet\s+alan|alici|musteri)\p{L}*\b/iu.test(text);
+  const asksCarrierNote = /\b(?:tasimacilik|tasimaci|tasiyici|nakliyeci)\p{L}*\b/iu.test(text);
+  if (asksServiceBuyerNote || asksCarrierNote) {
+    return [
+      ...(asksServiceBuyerNote ? [{ key: "NOTE_COMPANY", domain: "OFFERS" }] : []),
+      ...(asksCarrierNote ? [{ key: "NOTE_ROOM", domain: "OFFERS" }] : []),
+    ];
+  }
+  return [{ key: "NOTE", domain: "OFFERS" }];
+}
+
+// A bounded numeric/property question can be a concrete field request even
+// when it does not name a scalar noun such as "tutar". Keep this as a
+// compositional evidence family: a product/record anchor, a bounded field
+// noun, and value-question grammar must all be present. This prevents the
+// generic cost-analysis cue from claiming referent-scoped limit questions
+// without turning one financial word into FIELD_LOOKUP.
+function hasBoundedFieldQuestionCue(text) {
+  const fieldNoun = /\b(?:limit|sinir|tavan|taban|oran|kota|kapasite)\p{L}*\b/iu.test(text);
+  const valueQuestion = /\b(?:ne|nedir|kac|kaç|ne\s+kadar|hangi)\b/iu.test(text);
+  const productAnchor = /\b(?:odeme|ödeme|maliyet|butce|bütçe|gelir|gider|fatura|tahsilat|finans|sozlesme|sözleşme|anlasma|anlaşma|teklif)\p{L}*\b/iu.test(text);
+  return fieldNoun && valueQuestion && productAnchor;
+}
+
 function hasRiskCue(text) {
   return /(?:risk|tehlike)\p{L}*/iu.test(text);
+}
+
+function hasCostAnalysisCue(text, conversationState = null) {
+  const value = normalize(text);
+  return hasQuoteFloorAnalysisCue(value, conversationState)
+    || /\b(?:maliyet|butce|gider|karlilik|gelir|finans|fatura|hakediş|hakedis|tahsilat|odeme|ödeme)\p{L}*\b.{0,24}\b(?:ne|nedir|neden|nasil|nasıl|art|azal|degis|değiş|hesap|etki|fark|karsilastir|karşılaştır|kayna\p{L}*|dayanak\p{L}*|acikla\p{L}*|anlat\p{L}*|geliyor\p{L}*)\b/iu.test(value)
+    || /\b(?:ne|nedir|neden|nasil|nasıl|hesap|etki|fark|kayna\p{L}*|dayanak\p{L}*|acikla\p{L}*|anlat\p{L}*|geliyor\p{L}*)\b.{0,24}\b(?:maliyet|butce|gider|karlilik|gelir|finans|fatura|hakediş|hakedis|tahsilat|odeme|ödeme)\p{L}*\b/iu.test(value);
+}
+
+// A quote-floor request is a computed financial preview, not a scalar field
+// on an arbitrary offer record. Keep the evidence compositional: a canonical
+// floor concept plus a question/calculation operator is required before the
+// risk/cost route can outrank generic commercial field lookup.
+function hasQuoteFloorContextualFollowUpCue(text, conversationState = null) {
+  const value = normalize(text);
+  const deicticCalculation = /^(?:bu|bunun|bu\s+(?:tutar|deger|sonuc))\b.*\b(?:nasil|hesap|detay|ayrinti|neden|acikla|anlat)\p{L}*\b/iu.test(value);
+  if (!deicticCalculation) return false;
+  const previousRequest = conversationState?.lastSettledResult?.semanticPlan?.canonicalRequest
+    || conversationState?.productContext?.semanticPlan?.canonicalRequest
+    || conversationState?.lastSemanticPlan?.canonicalRequest
+    || null;
+  const previousRequestHasQuoteFloor = previousRequest?.typedEvidence?.specificity?.quoteFloorAnalysisEvidence === true;
+  const recentQuoteFloor = (Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages : [])
+    .some((item) => /\b(?:teklif\s+taban\p{L}*|guvenli\s+taban\p{L}*|minimum\s+fiyat\p{L}*|quote\s+floor)\b/iu.test(normalize(item?.text)));
+  return previousRequestHasQuoteFloor || recentQuoteFloor;
+}
+
+function hasQuoteFloorAnalysisCue(text, conversationState = null) {
+  const value = normalize(text);
+  const floorConcept = /\b(?:teklif\s+taban\p{L}*|guvenli\s+taban\p{L}*|minimum\s+fiyat\p{L}*|quote\s+floor)\b/iu.test(value);
+  const calculationQuestion = /\b(?:ne|nedir|toplam|toplami|kisi\s+basi|hesap|hesapla|hesaplandi|deger|degeri|oneri|onerilen|detay|ayrinti|ac|goster|gosterir|karsilastir|karşılaştır|marj|kar)\p{L}*\b/iu.test(value);
+  return (floorConcept && calculationQuestion) || hasQuoteFloorContextualFollowUpCue(value, conversationState);
+}
+
+function hasKnownTermDefinitionCue(text) {
+  const value = normalize(text);
+  if (!/(?:ne\s+demek|ne\s+ise\s+yar\p{L}*|ne\s+icin|nedir)\??$/iu.test(value)) return false;
+  return explainTermsFromText(value, 1).length > 0;
 }
 
 // Assessment language can ask for the operationally important item without
@@ -305,10 +1381,38 @@ function hasAssessmentSummaryCue(text) {
   return criticalSubject || prioritizeObject || attentionAssessment;
 }
 
+// Operation-health metric questions are read-only questions about the
+// current ROOM projection contract.  They are intentionally structural:
+// metric/projection language must be paired with an explanatory, comparison,
+// issue-subset, or classification cue.  This keeps the canonical semantic
+// owner ahead of generic screen help without creating a second classifier.
+function operationHealthMetricMode(text, ui = {}) {
+  const roomSurface = String(ui?.surfaceRole || '').toUpperCase() === 'ROOM'
+    || (/\/room\/operation-health\b/iu.test(String(ui?.path || '')) && !/\/(?:school|organization)\//iu.test(String(ui?.path || '')));
+  if (!roomSurface || !/\/room\/operation-health\b/iu.test(String(ui?.path || ''))) return '';
+  const value = normalize(text);
+  const questionCue = /\b(?:ne|neden|hangi|hangileri|ayni|mi|goster|anlam|say|gör|gor|görünüyor|gorunuyor)\p{L}*\b/iu.test(value);
+  const metricCue = /\b(?:sayi|sayac|ozet|detay|gunluk|toplam|sifir|rakam|deger|degerleri|iki|uc)\p{L}*\b/iu.test(value);
+  const issueCue = /\b(?:sorun|problem|aksaklik|ariza|uyari|operasyon|gps|konum|canlilik|surucu|arac)\p{L}*\b/iu.test(value);
+  const projectionCue = /\b(?:ozet|detay|gunluk|rapor|sayi|sayac|toplam|sifir|iki|uc)\p{L}*\b/iu.test(value);
+  const gpsSubsetCue = /\b(?:gps|konum|canlilik|eski|guncels+degil|cevrims+disi|offline)\p{L}*\b/iu.test(value)
+    && /\b(?:sorun|surucu|arac|say|hang|ayni)\p{L}*\b/iu.test(value);
+  const agreementClassificationCue = /\b(?:sozlesme|anlasma|inceleme|bekleyen)\p{L}*\b/iu.test(value)
+    && /\b(?:operasyon|ariza|sorun|problem|say)\p{L}*\b/iu.test(value);
+  const metricDefinitionCue = /\b(?:sayac|sayi|ozet|detay|rakam|deger)\p{L}*\b/iu.test(value)
+    && questionCue;
+  if (projectionCue && questionCue && (metricCue || /\b(?:ayni|neden)\b/iu.test(value))) return 'PROJECTION_CONTRACT';
+  if (gpsSubsetCue && questionCue) return 'GPS_ISSUE_SUBSET';
+  if (agreementClassificationCue && questionCue) return 'OPERATIONAL_CLASSIFICATION';
+  if (metricDefinitionCue) return 'METRIC_DEFINITION';
+  if (issueCue && /\b(?:hang|hangi|neden|say)\p{L}*\b/iu.test(value)) return 'ISSUE_METRIC_SCOPE';
+  return '';
+}
+
 function hasIssueDiagnosticCue(text) {
   const disruption = /(?:sorun|problem|sikinti|aksak|aksayan|ters(?:\s+giden|\s+gidiyor)?|ariza)\p{L}*/iu.test(text);
   if (!disruption) return false;
-  const diagnosticOperation = /(?:hangi|hangisi|ne|nerede|var\s+mi|gor(?:uyor|uyor\s+musun)|olustur\p{L}*|cikar\p{L}*|asil|gercekten|ayir\p{L}*)/iu.test(text);
+  const diagnosticOperation = /\b(?:hangi\p{L}*|hangisi\p{L}*|ne\p{L}*|nerede\p{L}*|var\s+mi|gor(?:uyor|uyor\s+musun)|sirala\p{L}*|listele\p{L}*|olustur\p{L}*|cikar\p{L}*|asil|gercekten|ayir\p{L}*)\b/iu.test(text);
   if (!diagnosticOperation) return false;
   // A named record's status remains a field lookup unless the user is asking
   // the diagnostic question itself (for example, "hangi durum sorun?").
@@ -324,12 +1428,126 @@ function hasDateRangeCue(text) {
 }
 
 function hasScreenSurfaceCue(text) {
-  return /(?:ekran|sayfa|panel|menu|bolum|bura|burda|burasi|burdaki|buradaki|calisma\s+alani|modul|bulundugum\s+yer)\p{L}*/iu.test(text);
+  return /(?:ekran|sayfa|panel|menu|sekme|tab|bolum|bura|burda|burasi|burdaki|buradaki|calisma\s+alani|modul|bulundugum\s+yer)\p{L}*/iu.test(text);
 }
 
 function hasScreenDetailCue(text) {
   return hasScreenDeicticCue(text)
     && /\b(?:detayli\p{L}*\s+)?(?:acikla|anlat)\p{L}*\b/iu.test(text);
+}
+
+// Navigation is a behavior class, not a fixed phrase shape.  Surface names
+// remain the unique target evidence; these movement verbs only establish that
+// the user is asking to open or move to that known surface.
+function hasExplicitSurfaceNavigationVerb(text) {
+  const value = normalize(text);
+  return hasTurkishDirectionalNavigationPredicate(value)
+    || /\b(?:nerede|nerde|ac(?!ik)\p{L}*|goster\p{L}*|incele\p{L}*)\b/iu.test(value);
+}
+
+// An agreement's operation bridge is a selected-record surface, not the
+// generic Operations Center. Keep this as a composed semantic relation:
+// agreement + operational process + a safe view/navigation request.
+function hasAgreementOperationBridgeCue(text) {
+  const value = normalize(text);
+  const agreement = /\b(?:sozlesme|anlasma|agreement|contract|kontrat)\p{L}*\b/iu.test(value);
+  const process = /\b(?:operasyon|vardiya|sefer|kopru|baglant|ilisk|uretilen)\p{L}*\b/iu.test(value);
+  const view = hasExplicitSurfaceNavigationVerb(value)
+    || /\b(?:var\s+mi|nereden|hangi\s+ekran|ilgili\s+ekran)\b/iu.test(value);
+  return agreement && process && view;
+}
+
+// A short Turkish verb stem must not be allowed to consume a longer noun or
+// explanatory verb.  In particular, “görevini” is not “gör” and “açıkla” is
+// not “aç”.  Keep the matcher compositional so inflected real-user forms stay
+// supported without turning arbitrary prefixes into action truth.
+function hasExplicitSurfaceViewVerb(text) {
+  const value = normalize(text);
+  return /\b(?:goruntule|listele|incele)\p{L}*\b/iu.test(value)
+    // Keep the bare imperative bounded to the complete word. A generic
+    // `gor\p{L}*` prefix also matches the noun `görüş` in role-help and
+    // ownership questions, turning them into surface VIEW requests.
+    || /\b(?:gor)\b/iu.test(value)
+    || /\b(?:goruyor|goruyorum|goruyoruz|gorursun|gordum|gordun|gordu|gordugum|gorecek|gorecegim|gormek|gormeye|gorunuyor)\p{L}*\b/iu.test(value);
+}
+
+// An explicit request to explain the currently visible surface is a
+// current-screen question, even when an older guided task still exists in the
+// conversation state.  Keep this semantic class ahead of active-target
+// explanation so a route/surface change cannot make the old task describe the
+// wrong screen.  Target-specific wording (for example "bu adım ne?") remains
+// with the active guided task below.
+function hasExplicitCurrentScreenPurposeCue(text) {
+  const value = String(text || "");
+  // A deictic section-purpose question is current-surface help when no more
+  // specific live target evidence takes precedence. Screen/page/panel/section
+  // wording remains current-surface help; live block resolution still runs
+  // earlier for genuinely target-specific workflow questions.
+  const surface = /\b(?:bu|su)(?:\s+\p{L}+){0,5}\s+(?:ekran|sayfa|panel|bolum)\p{L}*\b/iu;
+  const explain = /\b(?:anlat|acikla|açıkla|ne\s+ise\s+yar\p{L}*|ne\s+icin|ne\s+yapabil\p{L}*|nasıl\s+calis\p{L}*|nasil\s+calis\p{L}*)\b/iu;
+  // A current-surface purpose request can express its operation inventory
+  // before or after the interrogative (for example, “hangi işlemleri
+  // gerçekleştirebilirim?” or “sunduğu görevler neler?”). Keep this
+  // structural so Turkish inflection and word order stay in one semantic
+  // class without adding a literal question rule.
+  const operationInventory = /(?:\b(?:hangi|ne|neler)\s+(?:\p{L}+\s+){0,4}(?:yap|sun|gerceklestir|kullan|yurut)\p{L}*\b|\b(?:yap|sun|gerceklestir|kullan|yurut)\p{L}*(?:\s+\p{L}+){0,4}\s+\b(?:ne|neler|hangi)\b)/iu;
+  const screenDeictic = hasScreenDeicticCue(value);
+  const deicticWorkArea = /\b(?:nasıl|nasil)\s+(?:çalış|calis)\p{L}*\s+(?:bu|şu|su)\b/iu.test(value)
+    || /\b(?:bu|şu|su)\s+(?:nasıl|nasil)\s+(?:çalış|calis)\p{L}*\b/iu.test(value);
+  return (surface.test(value) && (explain.test(value) || operationInventory.test(value)))
+    || (screenDeictic && operationInventory.test(value))
+    || deicticWorkArea;
+}
+
+function hasNamedSurfaceExplanationCue(text) {
+  const value = normalize(text);
+  return /\b(?:ekran|sayfa|panel|menu|bolum)(?:i|u|yi|yu|ini|unu|yini|yunu|in|nin|un|nun|inin|unun)\b.{0,64}\b(?:anlat|acikla|ogren|nasil\s+calis|ne\s+ise\s+yar)\p{L}*/iu.test(value);
+}
+
+function hasExplicitSurfaceSemanticOperation(text) {
+  const value = normalize(text);
+  return /\b(?:gec|git|gidelim|ulas|ilerle|goster|goruntule|listele|incele)\p{L}*\b/iu.test(value)
+    // `açtığı`/`açtım` can describe a relationship or prior state rather than
+    // an imperative navigation request; the canonical action classifier owns
+    // those forms.  Do not use the short `ac` stem as a role-help veto here.
+    || /\b(?:ac|acalim|aciniz|acmak|acmaya)\b/iu.test(value);
+}
+
+function allowsConcreteRoleHelpAspect(evidence, reference) {
+  const aspect = String(evidence?.roleAspect?.value || "").toUpperCase();
+  if (ROLE_HELP_CONCRETE_ASPECTS.has(aspect)) return true;
+  if (!['BOUNDARY', 'LIMITATION'].includes(aspect) || reference !== 'ABSENT') return false;
+  const relation = String(evidence?.relation?.value || '').toUpperCase();
+  const polarity = String(evidence?.polarity?.value || '').toUpperCase();
+  return relation === 'OWNERSHIP' || polarity === 'NEGATIVE';
+}
+
+// A user who names the visible control class is asking for control guidance,
+// not a purpose summary for the enclosing screen.  The canonical target
+// resolver still proves the exact live control; this only preserves the
+// semantic scope until that resolver runs.
+function hasExplicitButtonExplanationCue(text) {
+  const value = String(text || '');
+  return /\b(?:bu|şu|su)\s+buton\p{L}*\b.{0,24}\b(?:ne|neden|niye|acikla|açıkla|ise\s+yar|işe\s+yar)\b/iu.test(value)
+    || /\bbuton\p{L}*\b.{0,24}\b(?:ne\s+ise\s+yar|nerede|hangisi)\b/iu.test(value);
+}
+
+function hasDirectCurrentScreenExplanationCue(text) {
+  const value = String(text || "");
+  return /\b(?:bu|su)\s+(?:ekran|sayfa|panel|bolum|bölüm)\p{L}*\s+(?:anlat|acikla|açıkla)\p{L}*\b/iu.test(value);
+}
+
+function hasStepByStepTeachingCue(text) {
+  return /\b(?:adım\s+adım|adim\s+adim)\s+(?:anlat|açıkla|acikla|göster|goster)\p{L}*\b/iu.test(String(text || ""));
+}
+
+function hasTeachFromZeroCue(text) {
+  return /\b(?:buray(?:ı|i)|burada|burda|bu\s+ekran(?:ı|i)|bu\s+sayfa(?:yı|yi)|bunu)\b.{0,42}\b(?:hiç\s+bilmi(?:yorum|yoruz)|bilmiyor(?:um|uz)|tanımıyor(?:um|uz)|kullanmad(?:ım|im)|öğret(?:ir|in)?|ogret(?:ir|in)?|anlat(?:ır|ın)?|basindan\s+anlat|başından\s+anlat)\b/iu.test(text)
+    || /\b(?:baştan|başından|bastan|basindan)\s+anlat\b/iu.test(text)
+    // Step-by-step teaching is a workflow explanation when a live guided
+    // task exists.  Keep it as a morphology/structure family so colloquial
+    // variants remain governed by the same active-task precedence.
+    || hasStepByStepTeachingCue(text);
 }
 
 function hasScreenContextCue(text) {
@@ -351,6 +1569,21 @@ function hasScreenContextCue(text) {
   // When it is anchored to the current surface, it is still a situated
   // product-help request rather than general conversation or a record field.
   const situatedActionQuestion = /\b(?:burada|burda|bu\s+ekranda|bu\s+sayfada)\s+(?:ne\s+)?(?:yap|nap)\p{L}*\b/iu.test(text);
+  // Colloquial first-person forms such as "napmam gerek burda" and
+  // "burayı anlamadım" are still situated UI-help requests when no active
+  // guided task is available. Keep them in the screen-context family instead
+  // of letting the generic conversation fallback call them off-topic.
+  const situatedRecoveryQuestion = /\b(?:burada|burda|bu\s+ekranda|bu\s+sayfada)\s+(?:ne\s+)?(?:yapmam|napmam)\s+gerek\b/iu.test(text)
+    || /\bburay(?:ı|i)\s+anlamad(?:ı|i)m\b/iu.test(text);
+  // A first-time user can ask for instruction without naming the screen
+  // explicitly.  When the request is anchored to “burayı/burada”, the
+  // authorized current screen is the only safe teaching context.
+  const situatedLearningRequest = hasTeachFromZeroCue(text);
+  // “Nerede bu?” / “hangi yer?” is a real user discovery request.  With a
+  // current authorized surface it should remain contextual (or ask for a
+  // narrower target), never fall into generic off-topic chat.
+  const bareSurfaceDiscovery = /^(?:nerede\s+bu|neresi\s+bu|hangi\s+yer|goster|göster)\??$/iu.test(text);
+  const situatedWhyRequest = /\b(?:bunu|buray(?:ı|i)|burada|burda)\s+(?:neden|niye)\b/iu.test(text);
   return /(?:^|[^\p{L}])neredey(?:im|iz)?(?:$|[^\p{L}])/iu.test(text)
     // First-person location verbs still ask about the current UI surface;
     // they are not record-field lookups.  Keep the verb stem open so normal
@@ -362,7 +1595,8 @@ function hasScreenContextCue(text) {
       "su an neye bakiyorum", "burada ne acik", "burasi ne", "hangi sayfadayim",
     ])
     || (uiSurface && locationQuestion)
-    || ((situatedReference && orientationOperation) || selfLocatedProgress || workflowSelfLocation || situatedActionQuestion);
+    || ((situatedReference && orientationOperation) || selfLocatedProgress || workflowSelfLocation || situatedActionQuestion || situatedRecoveryQuestion || situatedLearningRequest || situatedWhyRequest)
+    || bareSurfaceDiscovery;
 }
 
 function hasCurrentScreenReferentCue(text) {
@@ -523,6 +1757,7 @@ function hasExplicitGeneralInformationIntent(text) {
     || /\b(?:teklif|vardiya|sefer|arac|surucu|sozlesme|kayit|kart)\s*#?\s*\d+\b/iu.test(text)
     || hasScreenDeicticCue(text)
     || hasExplicitRelationCue(text)
+    || hasProductNoteLookupCue(text)
     // Possessive ownership plus a retrieval verb is still a record/data
     // request.  Preserve the authorization path for requests such as a
     // user's or company's plan being fetched, without treating abstract
@@ -571,7 +1806,13 @@ function hasExplicitRelationCue(text) {
 }
 
 function hasSelectedRecordIdentityCue(text, ui = {}) {
-  if (!ui.selectedId || !ui.selectedType || hasExplicitRelationCue(text)) return false;
+  const screenSelectedReference = /\b(?:burada|burda|bu\s+ekranda|buradaki)\s+(?:hangi|hangisi)\s+(?:vardiya|sefer|shift|teklif|arac|plaka|surucu|sofor|sozlesme|kayit)\p{L}*\s+(?:secil|acik)\p{L}*/iu.test(text);
+  if (!ui.selectedId || !ui.selectedType || (hasExplicitRelationCue(text) && !screenSelectedReference)) return false;
+  // A deictic screen-purpose question identifies the current surface, not
+  // the selected record carried by the shell.  Keep this exclusion here as
+  // well as in inferTask so scope derivation cannot reintroduce stale record
+  // authority after the semantic task has been classified as SCREEN_CONTEXT.
+  if (hasScreenDeicticCue(text) && /(?:ne\s+ise\s+yar\p{L}*|ne\s+icin|nasil\s+calis\p{L}*|burada\s+ne\s+yap\p{L}*|burda\s+ne\s+yap\p{L}*)/iu.test(text)) return false;
   // An explicit field question about the selected record (status, date,
   // amount, time, etc.) is not an identity request merely because Turkish
   // also uses a deictic and the question word "ne".  Field semantics must
@@ -588,6 +1829,7 @@ function hasSelectedRecordIdentityCue(text, ui = {}) {
   // be a product noun, a generic item, or a deictic phrase; none of those
   // surface forms is individually required when the selection is singular.
   const selectedReference = hasSelectedRecordReference(text)
+    || screenSelectedReference
     || /\b(?:(?:bu|su|o)\p{L}*|secili|secilen|aktif|acik|baktig\p{L}*|elimdek\p{L}*|gordug\p{L}*)\b/iu.test(text)
     || /\b(?:sey|oge|nesne|satir|kart|kay\p{L}*)\p{L}*\b/iu.test(text);
   const identityOperation = /\b(?:hangi|hangisi|ne|numaras\p{L}*|kimlik\p{L}*|kod\p{L}*|referans\p{L}*|tanimla\p{L}*|ayirt\p{L}*|\bno\b|\bid\b)\b/iu.test(text);
@@ -723,7 +1965,7 @@ export function generalCreativeOutputShape(value) {
 function hasFactualProductDependency(text) {
   const selectedRecordReference = /\b(?:secili|aktif|mevcut|baktigim)\s+(?:teklif|vardiya|sefer|arac|surucu|sozlesme|kayit|kart)\p{L}*/iu.test(text);
   const possessiveRecordField = new RegExp(`\\b${PRODUCT_RECORD_POSSESSIVES}\\s+(?:\\p{L}+\\s+){0,3}${PRODUCT_FACTUAL_FIELDS}\\p{L}*(?:\\s+\\p{L}+){0,3}\\s+${PRODUCT_FACT_DEPENDENCY_VERBS}\\b`, "iu").test(text);
-  return selectedRecordReference || possessiveRecordField;
+  return selectedRecordReference || possessiveRecordField || hasProductNoteLookupCue(text);
 }
 
 // Product words can be requested as vocabulary for a new creative output.
@@ -799,10 +2041,11 @@ function hasDirectBlockedControlCue(text) {
 }
 
 function hasRecordDetailsCue(text) {
-  return hasAnyTerm(text, [
+  return /\b(?:detay|ayrinti)\p{L}*\b/iu.test(text)
+    || hasAnyTerm(text, [
     "icerik", "icerigi", "icerigini", "detay", "detayi", "detaylari", "ayrinti", "ayrintisi", "ayrintilari",
     "icinde ne var", "neler var", "ne iceriyor", "ne icerir", "detayini ac", "ayrintisini anlat",
-  ]);
+    ]);
 }
 
 function hasDirectFieldLookupCue(text) {
@@ -823,7 +2066,9 @@ function hasDirectFieldLookupCue(text) {
   return (statusOrDecisionField && !(decisionProcessLanguage && !explicitStatusField))
     || statusStateQuestion
     || hasTimeFieldCue(text)
-    || /\bstat(?:u|us)\p{L}*/iu.test(text) || hasDateRangeCue(text) || hasValueLookupCue(text);
+    || /\bstat(?:u|us)\p{L}*/iu.test(text) || hasDateRangeCue(text)
+    || hasBoundedFieldQuestionCue(text) || hasValueLookupCue(text)
+    || hasProductNoteLookupCue(text);
 }
 
 function hasCurrentAssignmentCue(text) {
@@ -894,25 +2139,204 @@ function hasStandaloneNextCue(text) {
   return /^(?:peki\s+)?(?:sonra|sonrasi|sonraki(?:\s+adim)?)(?:\s+ne)?[?.!,]*$/iu.test(String(text || '').trim());
 }
 
+function hasNaturalBackCue(text) {
+  const value = normalize(text).trim();
+  const previousReference = /\b(?:onceki|evvelki)\b/u.test(value);
+  const stepReference = /\b(?:adim|asama|aciklama|kisim|bolum|safha|nokta)\p{L}*\b/u.test(value);
+  const transitionCue = /\b(?:don|gel|git|gec)\p{L}*\b/u.test(value);
+  const revisitCue = /\b(?:yeniden|tekrar|bir\s+daha)\b/u.test(value)
+    && /\b(?:gor|goster|anlat|acikla)\p{L}*\b/u.test(value);
+  const relativeStepBack = /\b(?:bir\s+)?adim\p{L}*\s+(?:geri|geriye)\b/u.test(value);
+  return relativeStepBack
+    || (previousReference && stepReference && (transitionCue || revisitCue));
+}
+
+function hasCanonicalContinuationTask(conversationState = null) {
+  if (conversationState?.activeGuidedTask?.semanticPlan) return true;
+  if (conversationState?.lastSettledResult?.analyticStepState) return true;
+  const plans = [
+    conversationState?.lastSettledResult?.semanticPlan,
+    conversationState?.authorizedProductContext?.semanticPlan,
+    conversationState?.lastProductSemanticPlan,
+    conversationState?.lastSemanticPlan,
+  ];
+  return plans.some((plan) => Boolean(plan && (
+    plan.continuationIntent === true
+    || ['RISK_RANKING', 'COMPARISON', 'PRIORITY', 'CAUSE_WHY', 'CONTINUE_CURRENT_REASONING', 'UI_GUIDANCE', 'GENERIC_PRODUCT_HELP', 'ROLE_EXPLANATION_HELP'].includes(String(plan.family || '').toUpperCase())
+  )));
+}
+
 function continuationActionFor(text) {
   // This is a discourse operation over the already authorized task. It never
   // adds a domain, entity, permission, or business execution request.
-  if (/\b(?:bulamad|goremiyor|yanlis\s+ekran)\p{L}*/iu.test(text)) return "RECOVER";
-  if (/^geri\b|\bgeri\s+(?:don|gel)\p{L}*/iu.test(text)) return "BACK";
+  if (hasActiveGuidanceFailureCue(text) || /\b(?:bulamad|goremiyor|yanlis\s+ekran|dediğin\s+yer\s+yok|dedigin\s+yer\s+yok|söylediğin\s+yer\s+yok|soyledigin\s+yer\s+yok|tekrar\s+goster)\p{L}*/iu.test(text)) return "RECOVER";
+  if (/\b(?:yapam\p{L}*|olmuyor|beceremedim|burada\s+kaldım|burada\s+kaldim|yardım\s+et|yardim\s+et|burayı\s+anlamadım|burayi\s+anlamadim|napmam\s+gerek\s+burda|napmam\s+gerek\s+burada)\b/iu.test(text)) return "RECOVER";
+  if (/\b(?:niye|neden)\s+(?:ilerlemiyor|ilerlemiyo|olmuyor|olmadı|olmadı)\b/iu.test(text)) return "RECOVER";
+  if (/^geri\b|\bgeri\s+(?:don|gel)\p{L}*/iu.test(text) || hasNaturalBackCue(text)) return "BACK";
+  if (/\b(?:ekledim|ekledik|yaptim|yaptım|tamamladim|tamamladım|ice\s+aktardim|içe\s+aktardım)\b/iu.test(text)
+    && /\b(?:sonra|simdi|şimdi|devam|ne|nap|olacak|yap)\b/iu.test(text)) return "NEXT";
+  if (/\bsonraki\s+(?:kisim|kismi|kısmı)\s+(?:anlat|acikla|açıkla)\p{L}*\b/iu.test(text)) return "NEXT";
+  if (/\b(?:sonraki\s+adım(?:a)?\s+geç|sonraki\s+adima\s+gec|sonra\s+ne\s+yap(?:ayım|ayim|alım|alim)|şimdi\s+ne\s+yap(?:ayım|ayim|alım|alim)|simdi\s+ne\s+yap(?:ayim|alim)|tamam(?:\s+(?:tıkladım|tikladim|bastım|bastim|yaptım|yaptim))?\s+sonra)\b/iu.test(text)) return "NEXT";
   if (/\b(?:adim\s+adim|detayli|devamini|daha\s+fazla|biraz\s+daha)\s+(?:anlat|acikla)\p{L}*/iu.test(text)) return "EXPAND";
   if (hasStandaloneNextCue(text)) return "NEXT";
   return "CONTINUE";
 }
 
+// Restart is a typed task transition, not continuation. Keep the grammar
+// behavior-based so “baştan anlat” (re-explain) remains EXPLAIN while an
+// explicit start-over request is represented separately in the canonical
+// request without introducing a new action enum.
+function hasTaskRestartCue(text) {
+  const value = String(text || "");
+  return /\b(?:baştan|bastan)\s+(?:al|başla|basla|başlat|baslat|başlayalım|baslayalim|kur|oluştur|olustur)\p{L}*\b/iu.test(value)
+    || /\b(?:yeniden|sıfırdan|sifirdan)\s+(?:başla|basla|başlat|baslat|başlayalım|baslayalim|kur|oluştur|olustur)\p{L}*\b/iu.test(value)
+    || /\bgeri\s+(?:başa|basa|başlangıca|baslangica)\s+(?:dön|don|gel)\b/iu.test(value);
+}
+
+function hasActiveGuidedTask(conversationState = null) {
+  return Boolean(conversationState?.activeGuidedTask?.semanticPlan);
+}
+
+// Failure language is a semantic operation over the live guided task/target.
+// Keep the vocabulary stem-based so inflections and colloquial forms rejoin
+// the active product task without making any one utterance a production rule.
+function hasActiveGuidanceFailureCue(value) {
+  return /\b(?:yapam|olmuyor|acilam|açılam|acilm|açılm|calismiyor|çalışmıyor|basam|baslatam|başlatam|bulam|ilerleyem|devam\s+edem|takilam|takılam|gorem|görem)\p{L}*\b/iu.test(String(value || ""))
+    || /\b(?:dediğin|dedigin|söylediğin|soyledigin)\s+yer\s+yok\b/iu.test(String(value || ""))
+    || /\btekrar\s+(?:goster|göster)\p{L}*\b/iu.test(String(value || ""))
+    // Users also report a missing guided destination by naming its visible
+    // control class (“o menü yok”, “bu sekme yok”).  Keep this structural:
+    // the live authorized surface still has to prove the exact target below.
+    || /\b(?:(?:bu|o|dediğin|dedigin|söylediğin|soyledigin)\s+)?(?:menü|menu|sekme|tab|buton|alan|ekran|sayfa|panel|bölüm|bolum)\p{L}*\s+yok\b/iu.test(String(value || ""));
+}
+
+function hasCurrentGuidedTargetExplanationCue(text, conversationState = null) {
+  if (!hasActiveGuidedTask(conversationState) && conversationState?.guidedTarget?.status !== 'FOUND') return false;
+  const normalizedText = String(text || '').trim();
+  const activeStepLabel = String(conversationState?.activeGuidedTask?.semanticPlan?.workflowStepReference?.label || '').trim();
+  const normalizedStepLabel = activeStepLabel.toLocaleLowerCase('tr-TR').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i');
+  const stepPurposeCue = /\b(?:neden|niye)\s+(?:gerekli|önemli|onemli)\b/iu.test(normalizedText)
+    && (!normalizedStepLabel || normalizedText.toLocaleLowerCase('tr-TR').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i').includes(normalizedStepLabel));
+  const afterCompletedAction = normalizedText.replace(/^(?:(?:tamam\s+)?(?:bastim|tikladim|yaptim)\s+)/iu, '');
+  return /^(?:(?:buras[ıi]|burasi|bu|şu|su)\s+(?:ne|alan\s+ne|buton\s+ne(?:\s+ise\s+yar(?:ı|i)yor)?|ne\s+ise\s+yar(?:ı|i)yor|kısmı\s+anlat|kismi\s+anlat|açıkla|acikla)|bu\s+ekran\s+ne\s+(?:için|icin)(?:\s+var)?|bu\s+sayfa\s+ne\s+(?:için|icin)(?:\s+var)?|bu\s+panel\s+ne\s+(?:için|icin)(?:\s+var)?)\??$/iu.test(afterCompletedAction)
+    || /\b(?:burada|burda)\s+ne\s+yap(?:ıyorum|iyorum|acagim|acağım)\b/iu.test(text)
+    || /^ne\s+yap(?:acağım|acagim|ayım|ayim|yapacağım|yapacagim)\??$/iu.test(String(text || '').trim())
+    || /\b(?:neden)\s+(?:bunu|bunu\s+)?yap(?:ıyorum|iyorum|ıyoruz|iyoruz)\b/iu.test(text)
+    || /\b(?:bu\s+buton|bu\s+alan|bu\s+kısım|bu\s+kisim|buradaki\s+alan)\b.{0,24}\b(?:ne|açıkla|acikla|işe\s+yar|ise\s+yar)\b/iu.test(text)
+    || stepPurposeCue;
+}
+
+function hasActiveTaskResumeCue(text, conversationState = null) {
+  if (!hasActiveGuidedTask(conversationState)) return false;
+  return /\b(?:vardiya|sefer|shift)\p{L}*\b.{0,32}\b(?:oluşturacaktık|olusturacaktik|oluşturuyorduk|olusturuyorduk|ne\s+oldu)\b/iu.test(text)
+    || /\b(?:nerede|nerde)\s+kald(?:ık|ik)\b/iu.test(text)
+    || /\b(?:nerede|nerde)\s+kalm(?:ıştık|istiktik|istik)\b/iu.test(text)
+    || /\b(?:vardiya|sefer|shift)\s+(?:işine|isine|akışına|akisina)\s+dön(?:elim|elim)?\b/iu.test(text);
+}
+
+function hasActiveTaskInteractionCue(text) {
+  const value = String(text || '');
+  return /\b(?:bana\s+göster|bana\s+goster|beraber\s+yapalım|beraber\s+yapalim|birlikte\s+yapalım|birlikte\s+yapalim)\b/iu.test(value)
+    || hasSafeGuidanceInteractionCue(value)
+    || /\b(?:niye|neden)\s+(?:ilerlemiyor|ilerlemiyo|olmuyor|olmadı|olmadi)\b/iu.test(value)
+    || /\b(?:yaptım|yaptim|tamamladım|tamamladim|denedim|kontrol\s+ettim|işledim|isledim)\b/iu.test(value);
+}
+
+// Natural continuation requests often combine a discourse anchor (the place
+// already reached, the next part/step, or "from here") with a progress verb.
+// Treat that combination as one semantic class so inflected/colloquial forms
+// do not require a phrase-specific production branch.  The active task still
+// supplies only context; explicit domain operations are resolved earlier.
+function hasNaturalContinuationCue(text) {
+  const value = normalize(String(text || ''));
+  const progressVerb = /\b(?:devam|surdur|ilerle|kald)\p{L}*\b/iu.test(value);
+  const discourseAnchor = /\b(?:buradan|burdan|yerden|kaldigimiz|kaldigim|siradaki|sonraki|adim|kisim|akistan|akisa)\p{L}*\b/iu.test(value);
+  return progressVerb && discourseAnchor;
+}
+
+function hasSafeGuidanceInteractionCue(text) {
+  const value = String(text || '');
+  const actorCue = /\b(?:sen|bana|benim\s+yerime)\b/iu.test(value);
+  const targetCue = /\b(?:bu\s+(?:ekran|sayfa|panel|bölüm|bolum|alan|buton|sekme)|şunu|sunu|burayı|burayi|burada|orayı|orayi|ilgili)\b/iu.test(value);
+  const operationCue = /\b(?:göster|goster|aç|ac|bul|götür|gotur|başlat|baslat)\p{L}*\b/iu.test(value);
+  const safeObjectlessShow = actorCue && /\b(?:göster|goster|aç|ac)\b/iu.test(value);
+  return operationCue && (targetCue || safeObjectlessShow)
+    && !/\b(?:onayla|reddet|kabul\s+et|gönder|gonder|kaydet|sil|dağıt|dagit|ata|değiştir|degistir|başlatma|baslatma)\p{L}*\b/iu.test(value);
+}
+
 function hasContinuationCue(text, conversationState = null) {
-  const confirmsEntryToActiveGuidedTask = Boolean(conversationState?.activeGuidedTask?.semanticPlan)
+  const activeTask = hasActiveGuidedTask(conversationState);
+  const confirmsEntryToActiveGuidedTask = activeTask
     && /^\s*(?:girdim|girdik|ekrana\s+girdim|buradayim|buradayım)\b/iu.test(String(text || ''));
-  return confirmsEntryToActiveGuidedTask || (!hasWorkflowGuidanceCue(text) && hasAnyTerm(text, [
+  const guidanceContext = [
+    activeTask ? conversationState?.activeGuidedTask?.semanticPlan : null,
+    conversationState?.lastSettledResult?.semanticPlan,
+    conversationState?.authorizedProductContext?.semanticPlan,
+    conversationState?.lastProductSemanticPlan,
+  ].find((plan) => plan?.family === 'UI_GUIDANCE' || plan?.continuationBasePlan?.family === 'UI_GUIDANCE')
+    || (conversationState?.guidedTarget?.status === 'FOUND' ? { family: 'UI_GUIDANCE', workflowIntent: conversationState?.activeGuidedTask?.semanticPlan?.workflowIntent || 'ACTIVE_GUIDANCE_TARGET' } : null);
+  const activeTaskRecovery = Boolean(guidanceContext) && (
+    hasActiveGuidanceFailureCue(text)
+    || /\b(?:beceremedim|burada\s+kaldım|burada\s+kaldim|yardım\s+et|yardim\s+et|burayı\s+anlamadım|burayi\s+anlamadim|napmam\s+gerek\s+burda|napmam\s+gerek\s+burada)\b/iu.test(String(text || ''))
+  );
+  const activeTaskContinuation = Boolean(guidanceContext) && (
+    hasNaturalContinuationCue(text)
+    || /\b(?:devamı\s+yapalım|devami\s+yapalim|devam\s+edelim|hadi\s+devam|sonraki\s+adım(?:a)?\s+geç|sonraki\s+adima\s+gec|sonra\s+ne\s+yap(?:ayım|alim|ayim)|sonra\s+ne|tamam(?:\s+(?:tıkladım|tikladim|bastım|bastim|yaptım|yaptim))?(?:\s+sonra)?|şimdi\s+ne|simdi\s+ne)\b/iu.test(String(text || ''))
+  );
+  const activeTaskResume = hasActiveTaskResumeCue(text, conversationState);
+  const guidedProgress = activeTask ? detectCopilotGuidedTaskEngineProgressCommand(text, conversationState) : null;
+  const activeTaskInteraction = activeTask && hasActiveTaskInteractionCue(text);
+  const naturalBack = hasCanonicalContinuationTask(conversationState) && hasNaturalBackCue(text);
+  return confirmsEntryToActiveGuidedTask || activeTaskRecovery || activeTaskContinuation || activeTaskResume || activeTaskInteraction || naturalBack || Boolean(guidedProgress?.command && guidedProgress.command !== "RESTART") || (!hasWorkflowGuidanceCue(text) && hasAnyTerm(text, [
     "devam", "devamini anlat", "devamini acikla", "devam et", "daha fazla anlat", "daha fazla acikla",
     "biraz daha anlat", "biraz daha acikla", "surdur", "devam edelim", "adim adim anlat",
     "adim adim acikla", "bulamadim", "burada goremiyorum",
-    "yanlis ekrandayim", "geri",
+    "yanlis ekrandayim", "geri", "devami yapalım", "hadi devam", "sonraki adıma geç",
   ]) || (!hasWorkflowGuidanceCue(text) && hasStandaloneNextCue(text)));
+}
+
+function hasProductTeachingContext(conversationState = null) {
+  if (String(conversationState?.productTeachingState?.subject || '').toUpperCase() === 'PRODUCT_TEACHING') return true;
+  const plans = [
+    conversationState?.lastSettledResult?.semanticPlan,
+    conversationState?.productContext?.semanticPlan,
+    conversationState?.authorizedProductContext?.semanticPlan,
+    conversationState?.lastProductSemanticPlan,
+    conversationState?.lastSemanticPlan,
+  ];
+  return plans.some((plan) => ['GENERIC_PRODUCT_HELP', 'ROLE_EXPLANATION_HELP'].includes(String(plan?.family || '').toUpperCase()));
+}
+
+function hasProductTeachingContinuationCue(text, conversationState = null) {
+  return hasProductTeachingContext(conversationState) && hasContinuationCue(text, conversationState);
+}
+
+// A current authorized surface is also the grounding context for generic
+// product-knowledge questions about inputs, preconditions, validation and the
+// next step.  These questions often omit the field or control noun entirely
+// ("ne girmem lazım", "zorunlu mu", "nasıl düzeltecem").  Keep this as a
+// semantic class rather than adding one branch per literal utterance.  Explicit
+// record/data and reasoning operations are handled by their canonical rules
+// before this fallback is considered.
+function currentScreenKnowledgeKind(text, ui) {
+  if (!ui?.path) return "";
+  const situatedSurfaceFocus = /\b(?:burada|burda)\s+(?:ne\s+yap\p{L}*|nereden\s+basla\p{L}*)\b/iu.test(text);
+  const situatedSurfaceRisk = /\b(?:burada|burda)\s+(?:sorun|problem|aksakl\p{L}*)\s+var\s+m[ıi]\b/iu.test(text);
+  if (hasDirectFieldLookupCue(text) || hasAssessmentSummaryCue(text)) return "";
+  if (hasNextActionOperationCue(text)) return ui?.selectedId || ui?.selectedType ? "" : "NEXT_ACTION";
+  if (hasRiskCue(text) || situatedSurfaceRisk) {
+    return ui?.selectedId || ui?.selectedType ? "" : "SCREEN_RISK";
+  }
+  if (hasCardinalityCue(text)) return "";
+  if (situatedSurfaceFocus) return "SCREEN_FOCUS";
+  if (/(?:nerelere|nelere|neye)\s+bak(?:mam|mal[ıi]y[ıi]m|ay[ıi]m)?\s+(?:gerek|gerekiyor|laz[ıi]m)\b/iu.test(text)) return "SCREEN_FOCUS";
+  if (/\b(?:bana\s+)?yardim\s+et\b/iu.test(text)) return "SCREEN_FOCUS";
+  if (isGenericProductHelpIntent(text, { roleContext: ui?.surfaceRole })) return "SCREEN_FOCUS";
+  if (/(?:neden\s+(?:gerekli|onemli)|niye\s+(?:gerekli|onemli)|amac\p{L}*|ne\s+ise\s+yar\p{L}*)/iu.test(text)) return "SCREEN_PURPOSE";
+  if (/(?:ne\s+girm\p{L}*|ne\s+yaz\p{L}*|hangi\s+(?:alan|bilgi|veri)\p{L}*|zorunlu\p{L}*|gerekli\p{L}*|on\s+kosul\p{L}*|hazirlik\p{L}*\s+(?:ne|gerek))/iu.test(text)) return "HOW_TO_HELP";
+  if (/(?:yanlis\s+(?:yaparsam|girersem|doldurursam)|hata\p{L}*|olmuyor|olmazsa|nasil\s+duzelt\p{L}*|nasil\s+gider\p{L}*|takil\p{L}*|burada\s+kald\p{L}*)/iu.test(text)) return "HOW_TO_HELP";
+  if (/(?:sonra\s+ne(?:\s+olacak)?|bundan\s+sonra|bir\s+sonraki|sirada\s+ne|devaminda\s+ne|sonraki\s+adim)/iu.test(text)) return "NEXT_STEP";
+  return "";
 }
 
 function hasReturnToProductCue(text, conversationState = null) {
@@ -987,6 +2411,7 @@ function hasUncertaintyCheckCue(text) {
 
 function hasUniqueTypedDiscourseReferent(text, conversationState = null) {
   const candidates = [
+    ...(conversationState?.uniqueDiscourseReferent ? [conversationState.uniqueDiscourseReferent] : []),
     ...(Array.isArray(conversationState?.lastExplicitEntitySet) ? conversationState.lastExplicitEntitySet : []),
     ...(Array.isArray(conversationState?.entityContext?.conversationEntities) ? conversationState.entityContext.conversationEntities : []),
     ...(Array.isArray(conversationState?.activeComparisonSet) ? conversationState.activeComparisonSet : []),
@@ -1000,7 +2425,53 @@ function hasUniqueTypedDiscourseReferent(text, conversationState = null) {
         : type === "driver" ? /\b(?:surucu|sofor|driver)\p{L}*/iu
           : type === "agreement" ? /\b(?:sozlesme|anlasma|agreement)\p{L}*/iu
             : /\b(?:kayit|kart)\p{L}*/iu;
-  return typeCue.test(text);
+  return typeCue.test(text)
+    || /^(?:bu|bunun|su|sunun|onun|o|şunu|sunu|az\s+önceki|az\s+onceki)\b/iu.test(text);
+}
+
+const PREVIOUS_RECORD_TYPE_PATTERNS = Object.freeze([
+  { type: 'offer', pattern: /\b(?:onceki|evvelki)\s+teklif\p{L}*/iu },
+  { type: 'agreement', pattern: /\b(?:onceki|evvelki)\s+(?:sozlesme|anlasma|kontrat)\p{L}*/iu },
+  { type: 'shift', pattern: /\b(?:onceki|evvelki)\s+(?:vardiya|sefer|shift)\p{L}*/iu },
+  { type: 'vehicle', pattern: /\b(?:onceki|evvelki)\s+(?:arac|plaka|vehicle)\p{L}*/iu },
+  { type: 'driver', pattern: /\b(?:onceki|evvelki)\s+(?:surucu|sofor|driver)\p{L}*/iu },
+  { type: 'record', pattern: /\b(?:onceki|evvelki)\s+(?:kayit|kart|oge)\p{L}*/iu },
+]);
+
+function previousRecordType(message) {
+  const normalized = normalize(message);
+  return PREVIOUS_RECORD_TYPE_PATTERNS.find(({ pattern }) => pattern.test(normalized))?.type || null;
+}
+
+function previousRecordDomainCompatible(type, requestedDomains = []) {
+  if (!requestedDomains.length || type === 'record') return true;
+  const domains = {
+    offer: ['OFFERS', 'AGREEMENTS', 'SHIFTS', 'OPERATIONS'],
+    agreement: ['AGREEMENTS', 'OFFERS', 'SHIFTS', 'OPERATIONS'],
+    shift: ['SHIFTS', 'VEHICLES', 'DRIVERS', 'OPERATIONS'],
+    vehicle: ['VEHICLES', 'SHIFTS', 'OPERATIONS'],
+    driver: ['DRIVERS', 'SHIFTS', 'OPERATIONS'],
+  }[type] || [];
+  return domains.some((domain) => requestedDomains.includes(domain));
+}
+
+export function resolvePreviousRecordReference({ message, conversationState, selectedEntity = null, screenContext = null, requestedDomains = [] } = {}) {
+  const requestedType = previousRecordType(message);
+  if (!requestedType) return null;
+  const current = selectedEntity?.type
+    ? selectedEntity
+    : selectedEntity?.entityType
+      ? { type: selectedEntity.entityType, id: selectedEntity.entityId }
+      : screenContext?.selectedEntity || null;
+  const currentKey = current?.type && current?.id ? `${String(current.type).toLowerCase()}:${current.id}` : '';
+  const history = Array.isArray(conversationState?.recentEntityHistory) ? conversationState.recentEntityHistory : [];
+  const candidate = history.find((entity) => {
+    const type = String(entity?.type || '').toLowerCase();
+    const key = `${type}:${entity?.id || ''}`;
+    const typeMatches = requestedType === 'record' ? type === String(current?.type || '').toLowerCase() : type === requestedType;
+    return entity?.id && typeMatches && key !== currentKey && previousRecordDomainCompatible(type, requestedDomains);
+  });
+  return candidate ? { ...candidate, source: 'PREVIOUS_RECORD_CONTEXT' } : null;
 }
 
 function hasAmbiguousReferentCue(text, conversationState = null) {
@@ -1066,6 +2537,13 @@ function hasRelationLookupCue(text) {
   ]);
 }
 
+function hasPreparationOnlyCue(text) {
+  const value = normalize(text);
+  const preparationMarker = /\b(?:hazır|hazir|hazırlık|hazirlik|kontrol\s+(?:listesi|noktaları|sırası|sirasi|sırasını|sirasini|adımları|adimlari)|başlangıç\s+adımları|baslangic\s+adimlari)\p{L}*\b/iu.test(value);
+  const boundaryMarker = /\b(?:açmadan|acmadan|oluşturmadan|olusturmadan|yaratmadan|başlamadan|baslamadan|açılış|acilis|oluşturma|olusturma|önce|once|öncesi|oncesi)\p{L}*\b/iu.test(value);
+  return preparationMarker && boundaryMarker;
+}
+
 // Workflow guidance is a request to find the current product entry point,
 // not a lookup for an existing record.  Keep this semantic distinction at the
 // canonical request boundary so every downstream composer/authorizer receives
@@ -1075,9 +2553,13 @@ function hasWorkflowGuidanceCue(text) {
   // enter a real workflow lane.  It has no canonical screen identity to
   // resolve, so downstream guidance must remain target-less and truthful.
   if (/\b(?:hayali|olmayan|var\s+olmayan|mevcut\s+olmayan|uydurma|sahte)\b/iu.test(text)) return false;
+  // Past-tense resume language refers to an already active task and belongs
+  // to continuation/recovery, even when it contains the shift creation verb.
+  if (/\b(?:olusturacaktik|oluşturacaktık|olusturuyorduk|oluşturuyorduk|ne\s+oldu|nerede\s+kaldik|nerede\s+kaldık)\b/iu.test(text)) return false;
   const hasShiftSubject = /\b(?:vardiya|sefer|shift)\p{L}*\b/iu.test(text);
   if (!hasShiftSubject) return false;
-  const guidanceVerb = /\b(?:olustur|oluştur|ac|aç|ekle|goster|göster|gotur|götür|bulamad|bulamiyor|bulamıyo|nereden)\p{L}*\b/iu.test(text);
+  if (hasPreparationOnlyCue(text)) return false;
+  const guidanceVerb = /\b(?:olustur|oluştur|ac(?!ikla)|aç(?!ıkla)|ekle|goster|göster|got|göt|gotur|götür|bulamad|bulamiyor|bulamıyo|nereden)\p{L}*\b/iu.test(text);
   if (!guidanceVerb) return false;
   // Existing-record questions remain data lookups.  Creation/location verbs
   // without a concrete record/status keep the request in the UI workflow lane.
@@ -1093,7 +2575,7 @@ function hasShiftSurfaceNavigationCue(text) {
   if (/\b(?:hayali|olmayan|var\s+olmayan|mevcut\s+olmayan|uydurma|sahte)\b/iu.test(text)) return false;
   const hasShiftSubject = /\b(?:vardiya|sefer|shift)\p{L}*\b/iu.test(text);
   if (!hasShiftSubject) return false;
-  const creationCue = /\b(?:olustur|oluştur|ac|aç|ekle)\p{L}*\b/iu.test(text);
+  const creationCue = /\b(?:olustur|oluştur|ac(?!ikla)|aç(?!ıkla)|ekle)\p{L}*\b/iu.test(text);
   const creationScreenCue = /\b(?:olustur|oluştur|ekle|ekleme)\p{L}*\s+ekran\p{L}*\b/iu.test(text);
   const directScreenOpenCue = /\bekran\p{L}*\s+(?:ac|aç)\b/iu.test(text);
   // “Vardiya ekranını aç” names the existing surface.  “Vardiya oluşturma
@@ -1101,7 +2583,8 @@ function hasShiftSurfaceNavigationCue(text) {
   // CREATE_SHIFT lane.  This distinction is semantic, not a phrase-specific
   // route shortcut.
   if (creationCue && (!directScreenOpenCue || creationScreenCue)) return false;
-  return /\b(?:nerede|nerde|ekran\p{L}*|goster|göster|git|gidelim|kontrol\s+edelim)\b/iu.test(text);
+  return hasExplicitSurfaceNavigationVerb(text)
+    || /\b(?:kontrol\s+edelim)\b/iu.test(normalize(text));
 }
 
 // Opening the current offers surface is a safe UI guidance request.  Keep it
@@ -1111,12 +2594,42 @@ function hasShiftSurfaceNavigationCue(text) {
 function hasOfferSurfaceNavigationCue(text) {
   if (/\b(?:hayali|olmayan|var\s+olmayan|mevcut\s+olmayan|uydurma|sahte)\b/iu.test(text)) return false;
   if (!/\b(?:teklif|offer|rfq)\p{L}*\b/iu.test(text)) return false;
-  const navigationVerb = /\b(?:nerede|nerde|ekran\p{L}*|ac|aç|goster|göster|git|gidelim|bakalım|bakalim|kontrol\s+edelim|incele|inceleyelim)\b/iu.test(text);
+  // An explicit numeric offer is a record lookup. It must not be collapsed
+  // into the generic offers surface because the canonical authorization gate
+  // needs the exact record identity before retrieval.
+  if (/\b(?:teklif|offer|rfq)\s*#?\s*\d+\b/iu.test(text)) return false;
+  const navigationVerb = hasExplicitSurfaceNavigationVerb(text)
+    || /\b(?:bakalim|kontrol\s+edelim|inceleyelim)\b/iu.test(normalize(text));
   if (!navigationVerb) return false;
   // Questions about a concrete offer's fields, comparison, decision or
   // business action remain read-only commercial reasoning/action guidance.
   const fieldOrDecisionCue = /\b(?:durum|tarih|saat|tutar|bedel|fiyat|rakam|neden|risk|kalite|kabul|reddet|onay|karsi\s+teklif|karşı\s+teklif|degerlendir|değerlendir|mantikli|mantıklı|daha\s+iyi|sozlesme|sözleşme)\b/iu.test(text);
   return !fieldOrDecisionCue;
+}
+
+// Opening the agreements surface is a navigation request, not a question
+// about a particular agreement record. Keep the destination as a canonical
+// domain candidate so the authenticated role's screen catalog selects the
+// real role-owned agreements route downstream.
+function hasAgreementSurfaceNavigationCue(text) {
+  const value = normalize(text);
+  if (!/\b(?:sozlesme|anlasma|agreement|contract)\p{L}*\b/iu.test(value)) return false;
+  const navigationCue = hasExplicitSurfaceNavigationVerb(value);
+  if (!navigationCue) return false;
+  const recordActionCue = /\b(?:onay|iptal|uzat|durum|tarih|saat|tutar|bedel|bagli|etki|neden|kapsam)\p{L}*\b/iu.test(value);
+  return !recordActionCue;
+}
+
+// A collection-display request is more specific than opening the Agreements
+// surface. Keep this structural: collection quantifiers/list nouns plus a
+// visible-action verb, without a selected/named record or status filter.
+function hasAgreementCollectionViewCue(text) {
+  const value = normalize(text);
+  if (!/\b(?:sozlesme|anlasma|agreement|contract)\p{L}*\b/iu.test(value)) return false;
+  if (!hasExplicitSurfaceNavigationVerb(value)) return false;
+  if (/\b(?:bu|su|secil(?:i|en)?|aktif|mevcut|baktigim|sozlesmenin|anlasmanin|agreementin|contractin)\b/iu.test(value)) return false;
+  if (/\b(?:durum|statu|status|bekleyen|inceleme|onay|tarih|saat|tutar|bedel|bagli|etki|neden|kapsam)\p{L}*\b/iu.test(value)) return false;
+  return /\b(?:butun|tum|hepsi|tamami|tamamı|liste|listesi|listeyi|envanter|koleksiyon)\p{L}*\b/iu.test(value);
 }
 
 // A fabricated shift target is still a UI-guidance request.  Keep it in the
@@ -1143,13 +2656,14 @@ function hasUnresolvedUiTargetCue(text) {
 // it is not itself a request to identify that target.  Keep operation
 // detection separate so that explicit work such as risk, next action, field,
 // detail, or relation lookup cannot collapse into SELECTED_RECORD_CONTEXT.
-function inferExplicitOperations(text) {
+function inferExplicitOperations(text, conversationState = null) {
   const tasks = [];
   if (hasComparisonCue(text)) tasks.push("COMPARISON");
   if (hasFreshnessCheckCue(text)) tasks.push("FRESHNESS_CHECK");
   if (hasUncertaintyCheckCue(text)) tasks.push("UNCERTAINTY_CHECK");
   if (hasEvidenceSufficiencyCue(text)) tasks.push("EVIDENCE_SUFFICIENCY");
   if (hasIssueDiagnosticCue(text)) tasks.push("ISSUE");
+  if (hasQuoteFloorAnalysisCue(text, conversationState)) tasks.push("RISK");
   if (hasCardinalityCue(text) && !hasValueLookupCue(text)) tasks.push("COUNT");
   if (hasRelationLookupCue(text)) tasks.push("RELATION_LOOKUP");
   if (hasRecordDetailsCue(text)) tasks.push("RECORD_DETAILS");
@@ -1169,8 +2683,8 @@ function inferExplicitOperations(text) {
   return [...new Set(tasks)];
 }
 
-function explicitTaskShape(text, ui) {
-  const requestedTasks = inferExplicitOperations(text);
+function explicitTaskShape(text, ui, conversationState = null) {
+  const requestedTasks = inferExplicitOperations(text, conversationState);
   if (!requestedTasks.length) return null;
   const target = inferTarget(text, { forCount: requestedTasks.includes("COUNT") });
   const mayUseSelectedTarget = Boolean(ui.selectedId && ui.selectedType)
@@ -1212,14 +2726,196 @@ function countTargetIsExplicitlyExcluded(text, concept) {
 }
 
 function inferTarget(text, { forCount = false } = {}) {
-  const candidates = ENTITY_CONCEPTS.filter((concept) => hasAnyTerm(text, concept.terms));
+  const hasInflectedTerm = (term) => {
+    const parts = normalize(term).split(/\s+/u).filter(Boolean);
+    if (!parts.length) return false;
+    const pattern = parts.map((part, index) => {
+      const escaped = part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return index === parts.length - 1 ? `${escaped}\\p{L}*` : escaped;
+    }).join("\\s+");
+    return new RegExp(`(?:^|[^\\p{L}\\p{N}])${pattern}(?=$|[^\\p{L}\\p{N}])`, "iu").test(text);
+  };
+  const candidates = ENTITY_CONCEPTS.filter((concept) => concept.terms.some((term) => hasAnyTerm(text, [term]) || (forCount && hasInflectedTerm(term))));
   const applicable = forCount ? candidates.filter((concept) => !countTargetIsExplicitlyExcluded(text, concept)) : candidates;
   return applicable.length === 1 ? applicable[0] : null;
+}
+
+function directFieldLookupShape(text, ui) {
+  // A combined request such as “durumunu ve detaylarını açıkla” must stay in
+  // the record-details lane. The status word is evidence to include in the
+  // authorized record explanation, not permission to discard the details
+  // operation and downgrade the request to a scalar field lookup.
+  // Current-screen purpose questions are a separate canonical intent even
+  // when a selected record is present. Do not let the scalar field branch
+  // consume an operation-inventory question before screen-purpose precedence
+  // has a chance to classify it.
+  if (!hasDirectFieldLookupCue(text)
+    || hasExplicitCurrentScreenPurposeCue(text)
+    || hasCardinalityCue(text)
+    || hasRecordDetailsCue(text)) return null;
+  const target = inferTarget(text);
+  const selectedCommercialField = hasValueLookupCue(text) && ui.selectedType;
+  const selectedType = selectedCommercialField ? ui.selectedType : target?.type || ui.selectedType || null;
+  const selectedDomain = target?.domain
+    || (selectedType ? ENTITY_CONCEPTS.find((concept) => concept.type === selectedType)?.domain || null : null);
+  const requestedFields = resolveProductNoteFields(text);
+  return {
+    taskType: "FIELD_LOOKUP",
+    confidence: selectedType ? 0.94 : 0.82,
+    domain: selectedDomain,
+    targetEntityType: selectedType,
+    requestedFields,
+    requestedFieldsAuthoritative: requestedFields.length > 0,
+    explicitTaskIntent: true,
+  };
 }
 
 function inferTask({ text, rawText = text, ui, conversationState = null }) {
   if (isGeneralArithmeticRequest(text)) {
     return { taskType: null, confidence: 0.99, domain: null, targetEntityType: null, generalArithmetic: true };
+  }
+  const contextualNumericReference = contextualNumericRecordReferenceFromText(text, ui);
+  if (contextualNumericReference?.ambiguity) {
+    return {
+      taskType: "CLARIFY",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: null,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      ambiguity: contextualNumericReference.ambiguity,
+    };
+  }
+  const explicitShiftReference = explicitShiftReferenceFromText(text);
+  const explicitRecordReference = explicitShiftReference || contextualNumericReference?.reference || null;
+  const explicitCommercialRecordCue = /\b(?:teklif|karsi\s+teklif|kabul\s+edilen|kabul|nihai|son\s+fiyat|ticari|fiyat|tutar|bedel|para|miktar)\p{L}*/iu.test(text);
+  const liveGuidedTargetExplanation = hasCurrentGuidedTargetExplanationCue(text, conversationState);
+  if (explicitRecordReference && explicitCommercialRecordCue) {
+    const domainByType = { SHIFT: "SHIFTS", OFFER: "OFFERS", AGREEMENT: "AGREEMENTS", VEHICLE: "VEHICLES", DRIVER: "DRIVERS", PERSONNEL: "PERSONNEL", STUDENT: "PERSONNEL", PARENT: "PERSONNEL" };
+    return {
+      taskType: "FIELD_LOOKUP",
+      confidence: 0.97,
+      domain: domainByType[explicitRecordReference.type] || null,
+      targetEntityType: explicitRecordReference.type,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      explicitEntityReference: explicitRecordReference,
+    };
+  }
+  const healthMetricMode = operationHealthMetricMode(text, ui);
+  // A vehicle/GPS request that explicitly asks to show the current vehicle
+  // surface is a UI target request when that authorized surface is live. The
+  // operation-health metric contract remains the owner for factual/diagnostic
+  // questions; it must not consume a concrete visible vehicle target first.
+  const preMetricVehicleTarget = currentScreenCapabilityTarget(text, ui);
+  const preMetricVehicleObject = semanticObjectClass(null, text);
+  if (preMetricVehicleTarget && ["VEHICLE", "DRIVER"].includes(preMetricVehicleObject)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.96,
+      domain: preMetricVehicleObject === "DRIVER" ? "DRIVERS" : "VEHICLES",
+      targetEntityType: preMetricVehicleObject,
+      screenContextIntent: true,
+      explicitUiGuidance: true,
+      explicitTaskIntent: true,
+      scopeTarget: "CURRENT_SCREEN",
+      workflowIntent: "OPEN_SURFACE",
+      currentTargetReference: {
+        targetKind: "CONTROL",
+        targetKey: String(preMetricVehicleTarget.targetKey || "").trim(),
+        label: String(preMetricVehicleTarget.label || "").trim(),
+        semanticType: String(preMetricVehicleTarget.semanticType || "button").trim(),
+        screenPath: String(ui.path || "").trim(),
+      },
+    };
+  }
+  if (healthMetricMode) {
+    return {
+      taskType: "ISSUE",
+      confidence: 0.97,
+      domain: "OPERATIONS",
+      targetEntityType: null,
+      requestedTasks: ["ISSUE"],
+      requestedFields: [{ key: "OPERATION_HEALTH_METRIC", domain: "OPERATIONS" }],
+      requestedFieldsAuthoritative: true,
+      explicitTaskIntent: true,
+      operationHealthMetricIntent: true,
+      operationHealthMetricMode: healthMetricMode,
+    };
+  }
+  // Resolve an active-task previous-step request before referential and role
+  // help fallbacks. The structural cue is intentionally context-bound so a
+  // question about earlier data is not silently converted into BACK.
+  if (hasCanonicalContinuationTask(conversationState)
+    && hasNaturalBackCue(text)
+    && inferExplicitOperations(text, conversationState).length === 0) {
+    return {
+      taskType: "CONTINUE_CURRENT_REASONING",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: ui.selectedType || null,
+      continuationIntent: true,
+      continuationAction: "BACK",
+    };
+  }
+  // A bare numeric follow-up can refer to the single authorized record just
+  // settled by the assistant (for example, after saying “sözleşme: 184”).
+  // Bind only when the number exactly matches that server-owned discourse
+  // referent; otherwise leave the request unresolved for clarification.
+  const settledReferent = conversationState?.uniqueDiscourseReferent;
+  const numericRecordDetails = String(text || '').match(/^#?(\d+)\s+(?:acikla|açıkla|detay(?:landir|landır)?|anlat)\p{L}*\s*$/iu);
+  if (numericRecordDetails && settledReferent?.id && Number(numericRecordDetails[1]) === Number(settledReferent.id)) {
+    const domain = {
+      agreement: "AGREEMENTS",
+      offer: "OFFERS",
+      shift: "SHIFTS",
+      vehicle: "VEHICLES",
+      driver: "DRIVERS",
+      personnel: "PERSONNEL",
+      student: "PERSONNEL",
+      parent: "PERSONNEL",
+    }[String(settledReferent.type || "").toLowerCase()] || null;
+    return {
+      taskType: "RECORD_DETAILS",
+      confidence: 0.97,
+      domain,
+      targetEntityType: String(settledReferent.type || "").toUpperCase() || null,
+      recordDetailsIntent: true,
+      discourseReferentNumeric: true,
+    };
+  }
+  const referentialDetailCue = settledReferent?.id
+    && /^(?:bu|bunun|su|sunun|onun|o|şunu|sunu|az\s+önceki|az\s+onceki)\b/iu.test(String(text || ""))
+    && /\b(?:detay|detaylandir|detaylandır|anlat|acikla|açıkla)\p{L}*\b/iu.test(String(text || ""));
+  if (referentialDetailCue) {
+    const type = String(settledReferent.type || "").toLowerCase();
+    const domain = { agreement: "AGREEMENTS", offer: "OFFERS", shift: "SHIFTS", vehicle: "VEHICLES", driver: "DRIVERS", personnel: "PERSONNEL", student: "PERSONNEL", parent: "PERSONNEL" }[type] || null;
+    return {
+      taskType: "RECORD_DETAILS",
+      confidence: 0.95,
+      domain,
+      targetEntityType: type.toUpperCase() || null,
+      recordDetailsIntent: true,
+      discourseReferentFollowUp: true,
+    };
+  }
+  // A unique server-authorized discourse record remains the target of a
+  // property question even when the user uses only a deictic pronoun (for
+  // example "bunun saati ne").  The referent is conversation context, not
+  // authorization; the normal capability/tenant checks still run later.
+  const referentialFieldCue = settledReferent?.id
+    && /^(?:bu|bunun|su|sunun|onun|o|şunu|sunu|az\s+önceki|az\s+onceki)\b/iu.test(String(text || ""))
+    && /\b(?:saat|zaman|gun|gün|tarih|durum|status|statü|statu|konum|rota|durak|deger|değer|fiyat|tutar|miktar|oran)\p{L}*\b/iu.test(String(text || ""));
+  if (referentialFieldCue) {
+    const type = String(settledReferent.type || "").toLowerCase();
+    const domain = { agreement: "AGREEMENTS", offer: "OFFERS", shift: "SHIFTS", vehicle: "VEHICLES", driver: "DRIVERS", personnel: "PERSONNEL", student: "PERSONNEL", parent: "PERSONNEL" }[type] || null;
+    return {
+      taskType: "FIELD_LOOKUP",
+      confidence: 0.93,
+      domain,
+      targetEntityType: type.toUpperCase() || null,
+      discourseReferentFieldFollowUp: true,
+    };
   }
   const groundedWriting = productGroundedWritingShape(text, ui);
   if (groundedWriting) {
@@ -1250,7 +2946,128 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       ...generalCreativeOutputShape(rawText),
     };
   }
-  if (hasExplicitGeneralInformationIntent(text)) {
+  // A short teaching follow-up is grounded by the current authorized surface
+  // (and by the active workflow when one exists). It must not ask the user to
+  // name the area again merely because the follow-up omits the noun.
+  if (ui?.path && hasStandaloneTeachRequest(text) && hasExplicitProductLevelHelpCue(text)) {
+    return {
+      taskType: "OFF_TOPIC",
+      confidence: 0.96,
+      domain: null,
+      targetEntityType: null,
+      generalInformationIntent: true,
+      generalProductHelpIntent: true,
+      productTeachingIntent: true,
+      roleHelpIntent: false,
+      primaryTask: "GENERIC_PRODUCT_HELP",
+      explicitTaskIntent: true,
+      scopeTarget: "ROLE_GLOBAL",
+    };
+  }
+  // Collection/domain guidance is not a request for one arbitrary record.
+  // Keep the current authorized surface as the grounding object until a
+  // concrete collection target is resolved downstream.
+  if (hasDomainCollectionGuidanceRequest(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.95,
+      domain: "OPERATIONS",
+      targetEntityType: "SURFACE",
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      screenKnowledgeIntent: true,
+      screenKnowledgeKind: "HOW_TO_USE",
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      scopeTarget: "CURRENT_SCREEN",
+    };
+  }
+  // A relationship question may contain a surface cardinality cue such as
+  // "var mı".  The typed relationship must win over collection COUNT so an
+  // offer-to-agreement/counteroffer question is resolved as a traversal, not
+  // as a generic offer count.
+  if (hasOfferCollectionCountRequest(text) && !hasRelationLookupCue(text)) {
+    const target = ENTITY_CONCEPTS.find((concept) => concept.type === "OFFER");
+    return {
+      taskType: "COUNT",
+      confidence: 0.98,
+      domain: target.domain,
+      targetEntityType: target.type,
+      countTarget: { targetEntityType: target.type, domain: target.domain },
+      explicitCardinalityTarget: true,
+      explicitTaskIntent: true,
+    };
+  }
+  if (hasFinanceSummaryRequest(text)) {
+    return {
+      taskType: "RISK",
+      confidence: 0.92,
+      domain: "BUDGET",
+      targetEntityType: null,
+      requestedTasks: ["RISK"],
+      explicitTaskIntent: true,
+    };
+  }
+  // Once product teaching has started, short follow-ups operate on the
+  // server-owned teaching cursor. Resolve that discourse operation before the
+  // broad role-help fallback so “adım adım anlat”, BACK and RECOVER consume
+  // the existing context instead of opening a fresh ambiguous help request.
+  if (hasProductTeachingContinuationCue(text, conversationState)) {
+    return {
+      taskType: "CONTINUE_CURRENT_REASONING",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: null,
+      continuationIntent: true,
+      continuationAction: continuationActionFor(text),
+      explicitTaskIntent: false,
+    };
+  }
+  const roleScopedUiTarget = inferRoleScopedUiTarget(text);
+  // A role-scoped destination is more specific than generic product help or
+  // current-surface explanation. Resolve it before those broad fallbacks so
+  // a cross-role surface request remains an explicit target for the
+  // authorization/grounding stages. This records the requested target only;
+  // it does not grant access.
+  if (roleScopedUiTarget) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      explicitUiGuidance: true,
+      explicitTaskIntent: true,
+      scopeTarget: "CURRENT_SCREEN",
+      workflowIntent: roleScopedUiTarget.explicitlyMissing ? "UNRESOLVED_UI_TARGET" : "ROLE_SCOPED_UI_TARGET",
+      requestedRoleTarget: roleScopedUiTarget,
+    };
+  }
+  // A situated surface-purpose question must win before the role-capability
+  // fallback.  This keeps wording such as “bu konum ve harita ekranında ne
+  // yapabilirim?” grounded in the active Hub surface instead of role-global
+  // help, without granting access to any record.
+  if (ui?.path && hasExplicitCurrentScreenPurposeCue(text) && !liveGuidedTargetExplanation) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: "SURFACE",
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      screenKnowledgeIntent: true,
+      screenKnowledgeKind: "SCREEN_PURPOSE",
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      scopeTarget: "CURRENT_SCREEN",
+    };
+  }
+  // Product-purpose questions are broader than role-capability questions.
+  // Resolve the named product subject before role-aspect morphology can
+  // project a process-responsibility answer over the product overview.
+  if (hasExplicitProductLevelHelpCue(text)
+    && !(activeWorkflowPlan(conversationState) && workflowStepReferenceFromText(text))
+    && !(ui?.path && hasExplicitCurrentScreenPurposeCue(text))) {
     return {
       taskType: "OFF_TOPIC",
       confidence: 0.97,
@@ -1258,33 +3075,356 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       targetEntityType: null,
       explicitTaskIntent: true,
       generalInformationIntent: true,
+      generalProductHelpIntent: true,
+      productTeachingIntent: false,
+      roleHelpIntent: false,
+      primaryTask: "GENERIC_PRODUCT_HELP",
+      scopeTarget: "ROLE_GLOBAL",
     };
   }
-  const presentation = stylePresentation(text);
-  const creativeOutputRequest = /\b(?:saka|espri|hikaye|mesaj|metin|not)\p{L}*.{0,24}\b(?:yaz|olustur|hazirla|uret)\p{L}*/iu.test(text);
-  const hasLastSettledResult = Boolean(conversationState?.lastSettledResult?.semanticPlan || conversationState?.authorizedProductContext?.semanticPlan);
-  if (presentation && !creativeOutputRequest && (/\b(?:bunu|sunu|onu)\b/iu.test(text) || hasLastSettledResult)) {
+  // Concrete field evidence must outrank generic role-help and current-screen
+  // explanation. Keep this precedence structural: the shared field cue helper
+  // decides it for financial and non-financial fields alike.
+  // A live guided Step-3 capability question is a how-to request about the
+  // active workflow, even when its noun (for example "durak") is also a
+  // valid record field elsewhere. Resolve the live workflow evidence before
+  // allowing the broad field classifier to consume that noun.
+  const earlyLiveStepReference = liveWorkflowStepReference(ui);
+  const liveWorkflowCapability = Boolean(earlyLiveStepReference && hasWorkflowCapabilityCue(text));
+  // A computed quote-floor question names a financial preview, not a scalar
+  // property of an arbitrary OFFER. Let the canonical cost route own it
+  // before the generic commercial field projection consumes the same nouns.
+  const globalProductHelpIntent = isGenericProductHelpIntent(text, { roleContext: ui?.surfaceRole });
+  // A live route-order precondition is a canonical next action. Resolve it
+  // before concrete field evidence so a route-order recovery request cannot
+  // be consumed as a generic ROUTE field lookup. Carry only the existing live
+  // control identity; no label or UI state can grant authorization.
+  if (hasRouteOrderVerificationCue(text)) {
+    const liveRouteStep = liveWorkflowStepReference(ui);
+    const routeOrderAction = routeOrderActionFromUi(ui);
     return {
-      taskType: "STYLE",
+      taskType: "NEXT_ACTION",
+      confidence: 0.99,
+      domain: "OPERATIONS",
+      targetEntityType: "SHIFT",
+      requestedTasks: ["NEXT_ACTION"],
+      explicitTaskIntent: true,
+      routeOrderIntent: true,
+      routeOrderState: "MISSING_OR_UNVERIFIED",
+      routeOrderAction: routeOrderAction
+        ? { label: routeOrderAction.label, targetKey: routeOrderAction.targetKey, semanticType: routeOrderAction.semanticType }
+        : null,
+      workflowIntent: liveRouteStep ? "CREATE_SHIFT" : null,
+      workflowStepReference: liveRouteStep,
+      workflowActualUiState: ui.workflowState || null,
+      liveWorkflowGrounded: Boolean(liveRouteStep),
+    };
+  }
+  const preFieldCapabilityTarget = currentScreenCapabilityTarget(text, ui);
+  const preFieldCapabilityObject = semanticObjectClass(null, text);
+  const preFieldConcreteCapability = Boolean(preFieldCapabilityTarget)
+    && ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER"].includes(preFieldCapabilityObject);
+  const directFieldLookup = liveWorkflowCapability || hasQuoteFloorAnalysisCue(text, conversationState)
+    || globalProductHelpIntent
+    // A visible record control must not outrank an authorized product-field
+    // read merely because the Turkish request uses an imperative such as
+    // "göster". Note/description lookups remain record-bound field reads;
+    // their existing evidence and target bridge own the presentation.
+    || (preFieldConcreteCapability && !hasProductNoteLookupCue(text))
+    ? null
+    : directFieldLookupShape(text, ui);
+  if (directFieldLookup) return directFieldLookup;
+  // Role-capability questions are product help even when the utterance does
+  // not name a record or a concrete screen. Keep them in the canonical
+  // product-help lane so current-surface context cannot narrow them into
+  // record clarification.
+  if (isExplicitRoleHelpIntent(text, { roleContext: ui?.surfaceRole })
+    && !(activeWorkflowPlan(conversationState) && workflowStepReferenceFromText(text))
+    && !(activeWorkflowPlan(conversationState) && hasLiveWorkflowGroundingCue(text))
+    && !(liveWorkflowStepReference(ui) && hasLiveWorkflowGroundingCue(text))
+    && !(ui?.path && hasExplicitCurrentScreenPurposeCue(text))
+    // A visible, authorized control is a current UI target even when the
+    // sentence uses broad role-help morphology (for example, "nereden
+    // yaparım?"). Let the live surface target owner resolve it below.
+    && !(ui?.path && currentScreenCapabilityTarget(text, ui))
+    // A failure/recovery report is a continuation of the active authorized
+    // task, even when its wording also contains a broad help cue.  Let the
+    // live-target recovery rule below own that turn instead of converting it
+    // into role-global generic help.
+    && !hasActiveGuidanceFailureCue(text)) {
+    return {
+      taskType: "OFF_TOPIC",
       confidence: 0.97,
       domain: null,
       targetEntityType: null,
       explicitTaskIntent: true,
-      presentationOperator: presentation.operator,
-      presentationItemCount: presentation.itemCount,
-      styleTarget: "LAST_SETTLED_RESULT",
+      generalProductHelpIntent: true,
+      roleHelpIntent: true,
+      primaryTask: "ROLE_EXPLANATION_HELP",
+      scopeTarget: "ROLE_GLOBAL",
     };
   }
-  if (hasContinuationCue(text, conversationState)) {
+  // A clear product-level teaching/overview request is already a complete
+  // product intent. Represent it before current-surface and workflow cues so
+  // compatible UI context cannot narrow a global help request into a record
+  // or screen clarification.
+  if (globalProductHelpIntent
+    && !(activeWorkflowPlan(conversationState) && workflowStepReferenceFromText(text))
+    // A named product capability question is global help even when the
+    // screen-knowledge helper can ground the same words in the current UI.
+    // Keep explicit screen-purpose and concrete target cues authoritative;
+    // do not let the selected record manufacture a FIELD_LOOKUP target.
+    && !(ui?.path && (hasExplicitCurrentScreenPurposeCue(text) || currentScreenCapabilityTarget(text, ui)) && !hasExplicitProductLevelHelpCue(text))
+    && !(activeWorkflowPlan(conversationState) && hasLiveWorkflowGroundingCue(text))
+    && !(liveWorkflowStepReference(ui) && hasLiveWorkflowGroundingCue(text))
+    && !hasActiveGuidanceFailureCue(text)) {
+    return {
+      taskType: "OFF_TOPIC",
+      confidence: 0.97,
+      domain: null,
+      targetEntityType: null,
+      explicitTaskIntent: true,
+      generalInformationIntent: true,
+      generalProductHelpIntent: true,
+      primaryTask: "GENERIC_PRODUCT_HELP",
+      scopeTarget: "ROLE_GLOBAL",
+    };
+  }
+  // An ordinal question such as “ilk adım ne?” is a continuation of the
+  // active guided workflow when that workflow exists.  Resolve it before the
+  // broad “... ne?” information classifier so the active task remains the
+  // semantic authority.
+  const workflowStepReference = workflowStepReferenceFromText(text);
+  const activeWorkflow = activeWorkflowPlan(conversationState);
+  const workflowEntry = guidedWorkflowEntryState(ui);
+  const foregroundGuidedDraftChooser = liveGuidedDraftChooserState(ui);
+  const liveStepReference = liveWorkflowStepReference(ui);
+  // A live guided step owns capability/how-to questions for that step.  Some
+  // step nouns (notably "durak") are also valid record fields elsewhere, so
+  // defer the broad field classifier until the workflow capability contract
+  // has had a chance to resolve the active step.
+  // The foreground chooser is more specific than its containing route. It
+  // owns deictic/current-screen questions while it is actually live; explicit
+  // operations still flow through their own canonical candidates below.
+  if (foregroundGuidedDraftChooser
+    && !liveStepReference
+    && !inferExplicitOperations(text, conversationState).length
+    && (hasScreenDeicticCue(text) || hasScreenContextCue(text) || hasCurrentScreenReferentCue(text))) {
+    return {
+      taskType: 'SCREEN_CONTEXT',
+      confidence: 0.99,
+      domain: 'SHIFTS',
+      targetEntityType: 'SHIFT',
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      scopeTarget: 'CURRENT_SCREEN',
+      explicitTaskIntent: true,
+      guidedDraftChooserIntent: true,
+      guidedDraftChooser: foregroundGuidedDraftChooser,
+    };
+  }
+  // Concrete field evidence also outranks glossary/screen-context inference.
+  // A field question may contain a glossary word such as "limit" while still
+  // asking for a product record property, not for a definition of the term.
+  const earlyCurrentCapabilityTarget = currentScreenCapabilityTarget(text, ui);
+  const earlyCurrentCapabilityObject = semanticObjectClass(null, text);
+  const earlyConcreteCurrentCapability = Boolean(earlyCurrentCapabilityTarget)
+    && ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER"].includes(earlyCurrentCapabilityObject);
+  const earlyDirectFieldLookup = liveWorkflowCapability
+    || hasQuoteFloorAnalysisCue(text, conversationState)
+    || earlyConcreteCurrentCapability
+    ? null
+    : directFieldLookupShape(text, ui);
+  if (earlyDirectFieldLookup) return earlyDirectFieldLookup;
+  // Known glossary definitions are explicit product-knowledge requests. They
+  // outrank broader current-screen/domain classifiers while preserving the
+  // live surface as grounding context.
+  if (!hasQuoteFloorAnalysisCue(text, conversationState) && hasKnownTermDefinitionCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.98,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      screenKnowledgeIntent: true,
+      screenKnowledgeKind: "TERM_DEFINITION",
+      termDefinitionIntent: true,
+      explicitTaskIntent: true,
+    };
+  }
+  // Current route/screen truth outranks a stale guided target when the user
+  // explicitly asks for the visible surface itself.  The active task remains
+  // available for continuation and target-specific questions; it is simply
+  // not allowed to contaminate current-screen orientation.
+  // A fresh auth session may not have the server's in-memory guided task yet,
+  // while the browser still carries a verified current target or a canonical
+  // target control is visibly rendered on the authorized surface. Failure
+  // language must stay attached to that live target instead of falling into
+  // generic out-of-scope chat. The target itself is revalidated downstream.
+  // A generic failure report can legitimately omit the label after the
+  // current entry action has already been established. In pre-wizard state,
+  // inherit only the canonical entry target from the live authorized surface;
+  // this resolves a referent and never grants permission or substitutes a
+  // nearby disclosure/control.
+  const liveTargetFailure = currentTargetFailureReference(text, ui)
+    || (hasActiveGuidanceFailureCue(text) && workflowEntry?.currentTarget ? workflowEntry.currentTarget : null);
+  if (liveTargetFailure) {
+    const entryWorkflow = workflowEntry || null;
+    const activeCreateShift = activeWorkflow?.workflowIntent === 'CREATE_SHIFT'
+      || activeWorkflow?.workflowModel?.goal === 'CREATE_SHIFT';
+    const targetWorkflowIntent = activeCreateShift || entryWorkflow ? 'CREATE_SHIFT' : 'ACTIVE_GUIDANCE_TARGET';
+    return {
+      taskType: "EXPLAIN_CURRENT_TARGET",
+      confidence: 0.98,
+      domain: null,
+      targetEntityType: null,
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      currentTargetExplanationIntent: true,
+      currentTargetRecoveryIntent: true,
+      currentTargetReference: {
+        targetKind: liveTargetFailure.targetKind || "CONTROL",
+        targetKey: liveTargetFailure.targetKey || null,
+        semanticId: liveTargetFailure.semanticId || null,
+        blockKey: liveTargetFailure.blockKey || null,
+        label: liveTargetFailure.label || null,
+        semanticType: liveTargetFailure.semanticType || "button",
+        screenPath: liveTargetFailure.screenPath || ui.path || null,
+      },
+      workflowIntent: targetWorkflowIntent,
+      workflowModel: activeCreateShift ? activeWorkflow?.workflowModel : (entryWorkflow ? COMPANY_GUIDED_NEW_PLAN_WORKFLOW : null),
+      workflowEntryState: entryWorkflow?.state || activeWorkflow?.workflowEntryState || null,
+      workflowEntryTarget: entryWorkflow?.currentTarget || activeWorkflow?.workflowEntryTarget || null,
+      workflowNextStepReference: entryWorkflow?.nextStep || activeWorkflow?.workflowNextStepReference || null,
+      workflowNextState: entryWorkflow?.nextState || activeWorkflow?.workflowNextState || null,
+      workflowDraftAvailability: entryWorkflow?.draftAvailability || activeWorkflow?.workflowDraftAvailability || null,
+      workflowActualUiState: ui.workflowState,
+      continuationAction: "RECOVER",
+      liveTargetGrounded: true,
+    };
+  }
+  if (liveStepReference && hasLiveBlockExplanationCue(text, ui)) {
+    const workflowModel = activeWorkflow?.workflowModel || COMPANY_GUIDED_NEW_PLAN_WORKFLOW;
+    return {
+      taskType: "EXPLAIN_CURRENT_TARGET",
+      confidence: 0.99,
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      currentTargetExplanationIntent: true,
+      workflowStepIntent: true,
+      workflowIntent: "CREATE_SHIFT",
+      workflowModel,
+      workflowStepReference: liveStepReference,
+      workflowActualUiState: ui.workflowState,
+      liveWorkflowGrounded: true,
+      targetKind: "BLOCK",
+    };
+  }
+  // Without a live UI step snapshot, step-by-step wording expands the
+  // persisted workflow explanation. A real live step remains authoritative
+  // above, where the request is a current-target explanation.
+  if (activeWorkflow
+    && conversationState?.activeGuidedTask?.semanticPlan
+    && hasStepByStepTeachingCue(text)
+    && !liveStepReference) {
+    const workflowModel = activeWorkflow.workflowModel || COMPANY_GUIDED_NEW_PLAN_WORKFLOW;
+    const workflowStepReference = activeWorkflow.workflowStepReference || workflowModel.steps[0];
     return {
       taskType: "CONTINUE_CURRENT_REASONING",
       confidence: 0.99,
-      domain: null,
-      targetEntityType: ui.selectedType || null,
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
       continuationIntent: true,
-      continuationAction: continuationActionFor(text),
+      continuationAction: "EXPAND",
+      explicitTaskIntent: true,
+      workflowIntent: "CREATE_SHIFT",
+      workflowModel,
+      workflowStepReference,
+      workflowStepIntent: Boolean(workflowStepReference),
+      workflowActualUiState: ui.workflowState || null,
+      liveWorkflowGrounded: false,
     };
   }
+  // A live workflow marker supplies step grounding, but it must not swallow an
+  // explicit request about the current screen itself. Screen purpose is a
+  // higher-scope request than the previously highlighted control/step.
+  if (ui?.path && hasExplicitCurrentScreenPurposeCue(text) && !liveGuidedTargetExplanation) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      screenKnowledgeIntent: true,
+      screenKnowledgeKind: "SCREEN_PURPOSE",
+      scopeTarget: "CURRENT_SCREEN",
+      selectedRecordIntent: false,
+      explicitTaskIntent: true,
+    };
+  }
+  if (ui?.path && Number(ui.visibleControlCount || 0) > 0 && hasExplicitButtonExplanationCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      screenKnowledgeIntent: true,
+      screenKnowledgeKind: "BUTTON_HELP",
+      scopeTarget: "CURRENT_SCREEN",
+      selectedRecordIntent: false,
+      explicitTaskIntent: true,
+    };
+  }
+  // A rendered guided modal is the strongest current-step evidence for
+  // deictic follow-ups. It is contextual UI evidence only: authorization is
+  // still resolved from the server-side role/screen authority and the target
+  // resolver must prove a real current control before returning FOUND.
+  if (liveStepReference && hasLiveWorkflowGroundingCue(text)) {
+    const workflowModel = activeWorkflow?.workflowModel || COMPANY_GUIDED_NEW_PLAN_WORKFLOW;
+    const capabilityIntent = workflowCapabilityIntentFromText(text, liveStepReference);
+    if (isLiveWorkflowContinuationCue(text) && !hasNextSemanticBlockCue(text)) {
+      return {
+        taskType: "CONTINUE_CURRENT_REASONING",
+        confidence: 0.99,
+        domain: "SHIFTS",
+        targetEntityType: "SHIFT",
+        continuationIntent: true,
+        continuationAction: continuationActionFor(text),
+        explicitTaskIntent: true,
+        workflowIntent: "CREATE_SHIFT",
+        workflowModel,
+        workflowStepReference: liveStepReference,
+        workflowActualUiState: ui.workflowState,
+        capabilityIntent,
+        liveWorkflowGrounded: true,
+      };
+    }
+    return {
+      taskType: "EXPLAIN_CURRENT_TARGET",
+      confidence: 0.99,
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      currentTargetExplanationIntent: true,
+      workflowStepIntent: true,
+      workflowIntent: "CREATE_SHIFT",
+      workflowModel,
+      workflowStepReference: liveStepReference,
+      workflowActualUiState: ui.workflowState,
+      capabilityIntent,
+      liveWorkflowGrounded: true,
+    };
+  }
+  // Concrete surface navigation wins before the broader create-workflow cue;
+  // “vardiya ekranını göster” names the existing surface, while “vardiya
+  // oluşturma yerini bulamadım” names the creation workflow.
   if (hasUnresolvedShiftSurfaceNavigationCue(text)) {
     return {
       taskType: "SCREEN_CONTEXT",
@@ -1295,18 +3435,6 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       explicitTaskIntent: true,
       explicitUiGuidance: true,
       workflowIntent: "UNRESOLVED_SHIFT_SURFACE",
-    };
-  }
-  if (hasUnresolvedUiTargetCue(text)) {
-    return {
-      taskType: "SCREEN_CONTEXT",
-      confidence: 0.99,
-      domain: null,
-      targetEntityType: null,
-      screenContextIntent: true,
-      explicitTaskIntent: true,
-      explicitUiGuidance: true,
-      workflowIntent: "UNRESOLVED_UI_TARGET",
     };
   }
   if (hasShiftSurfaceNavigationCue(text)) {
@@ -1333,7 +3461,43 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       workflowIntent: "OPEN_OFFER_SURFACE",
     };
   }
+  if (hasAgreementSurfaceNavigationCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: "AGREEMENTS",
+      targetEntityType: "AGREEMENT",
+      screenContextIntent: true,
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      workflowIntent: "OPEN_AGREEMENTS_SURFACE",
+    };
+  }
+  // A concrete shift-creation request remains a workflow intent even when the
+  // current surface exposes a similarly named Vardiyalar control. Generic
+  // visible-control capability matching must not steal CREATE_SHIFT.
   if (hasWorkflowGuidanceCue(text)) {
+    if (workflowEntry) {
+      return {
+        taskType: "SCREEN_CONTEXT",
+        confidence: 0.99,
+        domain: "SHIFTS",
+        targetEntityType: "SHIFT",
+        screenContextIntent: true,
+        explicitUiGuidance: true,
+        explicitTaskIntent: true,
+        workflowIntent: "CREATE_SHIFT",
+        workflowModel: COMPANY_GUIDED_NEW_PLAN_WORKFLOW,
+        workflowEntryState: workflowEntry.state,
+        workflowEntryTarget: workflowEntry.currentTarget,
+        workflowNextStepReference: workflowEntry.nextStep,
+        workflowNextState: workflowEntry.nextState,
+        workflowDraftAvailability: workflowEntry.draftAvailability,
+        workflowStepReference: null,
+        workflowStepIntent: false,
+        workflowActualUiState: ui.workflowState,
+      };
+    }
     return {
       taskType: "SCREEN_CONTEXT",
       confidence: 0.98,
@@ -1343,6 +3507,247 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       explicitTaskIntent: true,
       explicitUiGuidance: true,
       workflowIntent: "CREATE_SHIFT",
+      workflowModel: COMPANY_GUIDED_NEW_PLAN_WORKFLOW,
+      workflowStepReference: { ordinal: 1, key: "COMPANY_LOCATION", label: "Şirket konumu" },
+    };
+  }
+  // A selected-record identity question can contain the selected entity's
+  // surface noun (for example, “burada hangi vardiya seçili?”). Do not let a
+  // matching visible control claim that request as generic UI guidance.
+  const selectedRecordIdentityRequest = hasSelectedRecordIdentityCue(text, ui)
+    && !hasPlanReviewCue(text);
+  const currentCapabilityTarget = selectedRecordIdentityRequest
+    ? null
+    : currentScreenCapabilityTarget(text, ui);
+  const currentCapabilityObject = semanticObjectClass(null, text);
+  const currentCapabilityIsConcrete = ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER"].includes(currentCapabilityObject);
+  if (currentCapabilityTarget) {
+    if (currentCapabilityIsConcrete) {
+      const currentCapabilityDomain = {
+        SHIFT: "SHIFTS",
+        AGREEMENT: "AGREEMENTS",
+        OFFER: "OFFERS",
+        ROUTE: "OPERATIONS",
+        PERSONNEL: "PERSONNEL",
+        VEHICLE: "VEHICLES",
+        DRIVER: "DRIVERS",
+      }[currentCapabilityObject] || null;
+      return {
+        taskType: hasExplicitSurfaceViewVerb(text) ? "SCREEN_CONTEXT" : "FIELD_LOOKUP",
+        confidence: 0.96,
+        domain: currentCapabilityDomain,
+        targetEntityType: currentCapabilityObject,
+        screenContextIntent: hasExplicitSurfaceViewVerb(text),
+        explicitUiGuidance: true,
+        explicitTaskIntent: true,
+        scopeTarget: "CURRENT_SCREEN",
+        workflowIntent: null,
+        currentTargetReference: {
+          targetKind: "CONTROL",
+          targetKey: String(currentCapabilityTarget.targetKey || "").trim(),
+          label: String(currentCapabilityTarget.label || "").trim(),
+          semanticType: String(currentCapabilityTarget.semanticType || "button").trim(),
+          screenPath: String(ui.path || "").trim(),
+        },
+      };
+    }
+    const explicitNavigation = hasExplicitSurfaceNavigationVerb(text);
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.96,
+      domain: null,
+      targetEntityType: "SURFACE",
+      screenContextIntent: true,
+      explicitUiGuidance: true,
+      explicitTaskIntent: true,
+      scopeTarget: "CURRENT_SCREEN",
+      workflowIntent: explicitNavigation ? "OPEN_SURFACE" : null,
+      currentTargetReference: {
+        targetKind: "CONTROL",
+        targetKey: String(currentCapabilityTarget.targetKey || "").trim(),
+        label: String(currentCapabilityTarget.label || "").trim(),
+        semanticType: String(currentCapabilityTarget.semanticType || "button").trim(),
+        screenPath: String(ui.path || "").trim(),
+      },
+    };
+  }
+  if (ui?.path && (
+    hasDirectCurrentScreenExplanationCue(text)
+    || (hasExplicitCurrentScreenPurposeCue(text) && !liveGuidedTargetExplanation)
+  )) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      scopeTarget: "CURRENT_SCREEN",
+      selectedRecordIntent: false,
+      explicitTaskIntent: true,
+    };
+  }
+  if (workflowStepReference && activeWorkflow) {
+    return {
+      taskType: "EXPLAIN_CURRENT_TARGET",
+      confidence: 0.99,
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      currentTargetExplanationIntent: true,
+      workflowStepIntent: true,
+      workflowModel: activeWorkflow.workflowModel || COMPANY_GUIDED_NEW_PLAN_WORKFLOW,
+      workflowStepReference,
+    };
+  }
+  // Once a guided workflow is active, a teach-from-zero request still refers
+  // to that workflow. Preserve its current step and let the workflow composer
+  // explain the real controls, prerequisites, and outcome instead of falling
+  // back to a generic screen overview.
+  if (activeWorkflow && hasTeachFromZeroCue(text)) {
+    const activeStep = activeWorkflow.workflowStepReference
+      || COMPANY_GUIDED_NEW_PLAN_WORKFLOW.steps[0];
+    return {
+      taskType: "EXPLAIN_CURRENT_TARGET",
+      confidence: 0.99,
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      currentTargetExplanationIntent: true,
+      workflowStepIntent: true,
+      workflowIntent: "CREATE_SHIFT",
+      workflowModel: activeWorkflow.workflowModel || COMPANY_GUIDED_NEW_PLAN_WORKFLOW,
+      workflowStepReference: activeStep,
+      continuationAction: "EXPAND",
+    };
+  }
+  // When a user asks to be taught from the beginning while a real product
+  // surface is open, keep the request grounded in that authorized screen.
+  // The general-information classifier must not turn “baştan anlat” or
+  // “bunu hiç kullanmadım” into generic out-of-scope chat.
+  if (hasExplicitGeneralInformationIntent(text) && !(ui?.path && hasTeachFromZeroCue(text))) {
+    return {
+      taskType: "OFF_TOPIC",
+      confidence: 0.97,
+      domain: null,
+      targetEntityType: null,
+      explicitTaskIntent: true,
+      generalInformationIntent: true,
+    };
+  }
+  const presentation = stylePresentation(text);
+  const creativeOutputRequest = /\b(?:saka|espri|hikaye|mesaj|metin|not)\p{L}*.{0,24}\b(?:yaz|olustur|hazirla|uret)\p{L}*/iu.test(text);
+  const hasLastSettledResult = Boolean(conversationState?.lastSettledResult?.semanticPlan || conversationState?.authorizedProductContext?.semanticPlan);
+  if (presentation && !creativeOutputRequest && (/\b(?:bunu|sunu|onu)\b/iu.test(text) || hasLastSettledResult)) {
+    return {
+      taskType: "STYLE",
+      confidence: 0.97,
+      domain: null,
+      targetEntityType: null,
+      explicitTaskIntent: true,
+      presentationOperator: presentation.operator,
+      presentationItemCount: presentation.itemCount,
+      styleTarget: "LAST_SETTLED_RESULT",
+    };
+  }
+  // A live guided-target explanation is more specific than a broad current
+  // screen-purpose reading.  Keep explicit named-screen questions broad, but
+  // let a grounded deictic follow-up explain the active workflow target.
+  if (ui?.path && hasExplicitCurrentScreenPurposeCue(text) && !liveGuidedTargetExplanation) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      screenKnowledgeIntent: true,
+      screenKnowledgeKind: "SCREEN_PURPOSE",
+      scopeTarget: "CURRENT_SCREEN",
+      selectedRecordIntent: false,
+      explicitTaskIntent: true,
+    };
+  }
+  if (liveGuidedTargetExplanation) {
+    return {
+      taskType: "EXPLAIN_CURRENT_TARGET",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: ui.selectedType || null,
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      currentTargetExplanationIntent: true,
+    };
+  }
+  if (hasTaskRestartCue(text) && (hasActiveGuidedTask(conversationState) || conversationState?.productContext?.semanticPlan)) {
+    const activeWorkflow = activeWorkflowPlan(conversationState);
+    return {
+      taskType: "RETURN_TO_PRODUCT",
+      confidence: 0.99,
+      domain: activeWorkflow?.workflowIntent === "CREATE_SHIFT" ? "SHIFTS" : null,
+      targetEntityType: activeWorkflow?.workflowIntent === "CREATE_SHIFT" ? "SHIFT" : ui.selectedType || null,
+      returnToProductIntent: true,
+      restartIntent: true,
+      continuationAction: "RESTART",
+      explicitTaskIntent: true,
+      workflowIntent: activeWorkflow?.workflowIntent || null,
+    };
+  }
+  // A discourse cue such as "adım adım" must not consume a turn that also
+  // contains an explicit canonical operation. Resolve the named analytic
+  // operation first; continuation is only a fallback for operation-less
+  // follow-ups.
+  if (hasContinuationCue(text, conversationState)
+    && inferExplicitOperations(text, conversationState).length === 0) {
+    return {
+      taskType: "CONTINUE_CURRENT_REASONING",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: ui.selectedType || null,
+      continuationIntent: true,
+      continuationAction: continuationActionFor(text),
+    };
+  }
+  const screenKnowledgeKind = currentScreenKnowledgeKind(text, ui);
+  if (screenKnowledgeKind && !hasCardinalityCue(text) && inferExplicitOperations(text, conversationState).length === 0) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.96,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      screenKnowledgeIntent: true,
+      screenKnowledgeKind,
+      scopeTarget: "CURRENT_SCREEN",
+      selectedRecordIntent: false,
+      explicitTaskIntent: true,
+    };
+  }
+  if (hasSafeGuidanceInteractionCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.97,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      explicitUiGuidance: true,
+      uiTargetDiscovery: true,
+      explicitTaskIntent: true,
+    };
+  }
+  if (hasUnresolvedUiTargetCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      workflowIntent: "UNRESOLVED_UI_TARGET",
     };
   }
   if (hasVisibleControlDiscoveryCue(text, ui)) {
@@ -1365,6 +3770,72 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
     && (hasRiskCue(text) || hasAttentionAssessmentCue(text) || hasNextActionOperationCue(text));
   if (hasReturnToProductCue(text, conversationState) && !selectedAssessmentReturnTarget) {
     return { taskType: "RETURN_TO_PRODUCT", confidence: 0.98, domain: null, targetEntityType: ui.selectedType || null, returnToProductIntent: true, explicitTaskIntent: true };
+  }
+  // An explicit purpose question names the current surface, not the record
+  // currently selected inside it.  Resolve this before the selected-record
+  // fallback so live/parent shells cannot turn “bu ekran ne işe yarıyor?”
+  // into a stale vehicle or student summary.
+  const explicitCurrentScreenPurpose = hasScreenDeicticCue(text)
+    && /(?:ne\s+ise\s+yar\p{L}*|ne\s+icin|nasil\s+calis\p{L}*|burada\s+ne\s+yap\p{L}*|burda\s+ne\s+yap\p{L}*)/iu.test(text);
+  if (explicitCurrentScreenPurpose && !hasCardinalityCue(text) && !inferExplicitOperations(text, conversationState).length) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      scopeTarget: "CURRENT_SCREEN",
+      selectedRecordIntent: false,
+      explicitTaskIntent: true,
+    };
+  }
+  // Check-in questions may use either the noun forms ("biniş/iniş") or the
+  // natural verb forms ("bindiğini/indiğini"). Resolve those explicit
+  // read-only facts before the generic "kaç kişi" cardinality branch below;
+  // otherwise a selected shift is reduced to PASSENGER_COUNT and the
+  // check-in evidence never reaches the planner/composer.
+  const selectedShiftCheckinFacts = String(ui?.selectedType || "").toUpperCase() === "SHIFT"
+    && hasCardinalityCue(text)
+    && (/\b(?:binis|bindi)\p{L}*\b/iu.test(text) || /\b(?:inis|indi)\p{L}*\b/iu.test(text));
+  if (selectedShiftCheckinFacts) {
+    const requestedFields = [];
+    if (/\bdurum\p{L}*\b/iu.test(text)) requestedFields.push({ key: "STATUS", domain: null });
+    if (/\b(?:binis|bindi)\p{L}*\b/iu.test(text)) requestedFields.push({ key: "BOARDING_COUNT", domain: "OPERATIONS" });
+    if (/\b(?:inis|indi)\p{L}*\b/iu.test(text)) requestedFields.push({ key: "ALIGHTING_COUNT", domain: "OPERATIONS" });
+    if (requestedFields.length) {
+      return {
+        taskType: "FIELD_LOOKUP",
+        confidence: 0.99,
+        domain: "SHIFTS",
+        targetEntityType: "SHIFT",
+        requestedFields,
+        requestedFieldsAuthoritative: true,
+        selectedRecordIntent: true,
+        explicitTaskIntent: true,
+      };
+    }
+  }
+  // A selected shift passenger question is a field lookup on that one
+  // authorized record, not a request to count shift records. Keep the
+  // cardinality family for planner compatibility while carrying the exact
+  // field dependency into the read-only evidence path.
+  const selectedShiftPassengerCount = hasCardinalityCue(text)
+    && String(ui?.selectedType || "").toUpperCase() === "SHIFT"
+    && /\b(?:yolcu|kişi|kisi|öğrenci|ogrenci|çocuk|cocuk|personel)\p{L}*\b/iu.test(text);
+  if (selectedShiftPassengerCount) {
+    return {
+      taskType: "COUNT",
+      confidence: 0.99,
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      countTarget: { targetEntityType: "SHIFT", domain: "SHIFTS" },
+      requestedFields: [{ key: "PASSENGER_COUNT", domain: "SHIFTS" }],
+      requestedFieldsAuthoritative: true,
+      explicitCardinalityTarget: true,
+      selectedRecordIntent: true,
+      explicitTaskIntent: true,
+    };
   }
   // Resolve a determined selected-record identity before generic pronoun
   // ambiguity.  The selection supplies the unique referent; this does not
@@ -1448,14 +3919,20 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   // A screen-deictic action or situation is a current-screen task even when
   // it also contains words such as "önce", "durum", or "hangi". Classify
   // it before generic priority/field grammar can turn it into global work.
-  if ((hasScreenContextCue(text) || (ui.path && hasCurrentScreenReferentCue(text))) && !hasCardinalityCue(text)) {
+  // A valid selected-record identity question may use screen-deictic wording
+  // (for example, “burada hangi vardiya seçili?”). The active record is the
+  // user's referent; do not let the surrounding screen-context classifier
+  // erase that identity request before the selected-record branch runs.
+  if ((hasScreenContextCue(text) || (ui.path && hasCurrentScreenReferentCue(text)))
+    && !hasCardinalityCue(text)
+    && !hasSelectedRecordIdentityCue(text, ui)) {
     return {
       taskType: "SCREEN_CONTEXT",
       confidence: 0.98,
       domain: null,
       targetEntityType: null,
       screenContextIntent: true,
-      screenDetailIntent: hasScreenDetailCue(text),
+      screenDetailIntent: hasScreenDetailCue(text) || hasTeachFromZeroCue(text),
       explicitTaskIntent: true,
     };
   }
@@ -1465,7 +3942,7 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   if (hasScreenDeicticSituationCue(text) && !hasCardinalityCue(text)) {
     return { taskType: "SITUATION", confidence: 0.95, domain: null, targetEntityType: null, screenContextIntent: true, explicitTaskIntent: true };
   }
-  const explicitTask = explicitTaskShape(text, ui);
+  const explicitTask = explicitTaskShape(text, ui, conversationState);
   const priorityComparison = hasPriorityOrderingCue(text) && hasComparisonContext(conversationState, text);
   if (hasUnspecifiedSelectionCue(text, ui)) {
     return {
@@ -1561,20 +4038,18 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       currentAssignmentIntent: true,
     };
   }
-  if (hasDirectFieldLookupCue(text) && !hasCardinalityCue(text)) {
-    const target = inferTarget(text);
-    const selectedCommercialField = hasValueLookupCue(text) && ui.selectedType;
-    const selectedType = selectedCommercialField ? ui.selectedType : target?.type || ui.selectedType || null;
-    const selectedDomain = target?.domain
-      || (selectedType ? ENTITY_CONCEPTS.find((concept) => concept.type === selectedType)?.domain || null : null);
-    return {
-      taskType: "FIELD_LOOKUP",
-      confidence: selectedType ? 0.94 : 0.82,
-      domain: selectedDomain,
-      targetEntityType: selectedType,
-    };
+  // Financial source/provenance questions can contain the generic "kaynak"
+  // relation cue. Resolve the domain-specific cost contract before generic
+  // relation traversal so a financial follow-up reaches the authorized cost
+  // evidence reader instead of the relation-missing fallback.
+  if (hasCostAnalysisCue(text, conversationState)) return { taskType: "RISK", confidence: 0.9, domain: "BUDGET", requestedTasks: ["RISK"], explicitTaskIntent: true };
+  if (!hasQuoteFloorAnalysisCue(text, conversationState) && hasDirectFieldLookupCue(text) && !hasCardinalityCue(text)) {
+    return directFieldLookupShape(text, ui);
   }
-  if (hasRelationLookupCue(text) && !hasCardinalityCue(text)) {
+  // Relation grammar is more specific than a bare cardinality predicate
+  // such as "var mı". Keep traversal questions in RELATION_LOOKUP even
+  // when the same sentence asks whether the relation exists.
+  if (hasRelationLookupCue(text)) {
     return {
       taskType: "RELATION_LOOKUP",
       confidence: 0.9,
@@ -1584,7 +4059,7 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
     };
   }
   if (hasCardinalityCue(text) && !hasValueLookupCue(text)) {
-    const target = inferTarget(text);
+    const target = inferTarget(text, { forCount: true });
     if (target) {
       return {
         taskType: "COUNT",
@@ -1598,22 +4073,126 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   }
   if (hasDateRangeCue(text)) return { taskType: "FIELD_LOOKUP", confidence: 0.86 };
   if (hasValueLookupCue(text)) return { taskType: "FIELD_LOOKUP", confidence: 0.82 };
+  // A generic how-to question about the live authorized surface is still a
+  // canonical screen request.  Preserve that semantic candidate in the V1
+  // envelope so post-canonical adapters do not downgrade it to clarification
+  // merely because no entity noun was supplied.
+  if (ui?.path && /\b(?:ekran|sayfa|panel|alan|bolum|bölüm|burada|burda|burasi|burası)\p{L}*\b.{0,40}\b(?:kullan|nasil|nasıl|anlat|acikla|açıkla|ne)\p{L}*/iu.test(text)) {
+    return { taskType: "SCREEN_CONTEXT", confidence: 0.9, domain: null, targetEntityType: null, screenContextIntent: true, explicitTaskIntent: true };
+  }
   return { taskType: null, confidence: 0, domain: null, targetEntityType: null };
 }
 
-export function inferCanonicalSemanticRequest({ message, screenContext, conversationState } = {}) {
+export function inferCanonicalSemanticRequest({ message, user, screenContext, conversationState, localSemanticProposal = null } = {}) {
   const text = normalize(message);
-  const ui = currentUiContext(screenContext, conversationState);
-  const inferred = inferTask({ text, rawText: message, ui, conversationState });
+  const ui = currentUiContext(screenContext, conversationState, user);
+  const inferredTask = inferTask({ text, rawText: message, ui, conversationState });
+  const inferredProposal = applyLocalSemanticProposal({
+    shape: inferredTask,
+    proposal: localSemanticProposal,
+    message,
+  });
+  const agreementOperationalClassificationCue = /\b(?:sozlesme|anlasma|agreement|contract|kontrat)\p{L}*\b/iu.test(text)
+    && /\b(?:operasyon|ariza|sorun|problem|aksaklik)\p{L}*\b/iu.test(text);
+  const agreementCollectionCue = hasCardinalityCue(text)
+    && !agreementOperationalClassificationCue
+    && /\b(?:sozlesme|anlasma|agreement|contract|kontrat)\p{L}*\b/iu.test(text);
+  const agreementCollectionSummaryIntent = agreementCollectionCue
+    && /\b(?:neler|hangi|hangileri|liste|listele|listesi|ozet|ozeti|envanter)\p{L}*\b/iu.test(text);
+  const agreementCollectionViewIntent = hasAgreementCollectionViewCue(text);
+  const agreementCollectionViewProposal = agreementCollectionViewIntent
+    ? {
+      ...inferredProposal,
+      taskType: "SCREEN_CONTEXT",
+      confidence: Math.max(Number(inferredProposal?.confidence || 0), 0.98),
+      domain: "AGREEMENTS",
+      targetEntityType: "AGREEMENT",
+      requestedTasks: ["SCREEN_CONTEXT"],
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      screenContextIntent: true,
+      workflowIntent: "OPEN_AGREEMENTS_SURFACE",
+      scopeTarget: "CURRENT_SCREEN",
+      agreementCollectionViewIntent: true,
+    }
+    : inferredProposal;
+  const inferred = agreementCollectionCue
+    ? {
+      ...agreementCollectionViewProposal,
+      taskType: "COUNT",
+      confidence: Math.max(Number(inferredProposal?.confidence || 0), 0.96),
+      domain: "AGREEMENTS",
+      targetEntityType: "AGREEMENT",
+      requestedTasks: ["COUNT"],
+      explicitTaskIntent: true,
+      explicitCardinalityTarget: true,
+      countTarget: { targetEntityType: "AGREEMENT", domain: "AGREEMENTS" },
+      collectionSummaryIntent: agreementCollectionSummaryIntent,
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: false,
+      workflowIntent: null,
+    }
+    : agreementCollectionViewProposal;
   const requestedOwnershipScope = inferRequestedOwnershipScope(text);
-  const targetCandidates = ENTITY_CONCEPTS.filter((concept) => hasAnyTerm(text, concept.terms));
+  const schoolOperationalPlanningQuestion = isSchoolOperationalPlanningQuestion(text, ui);
+  const targetCandidates = ENTITY_CONCEPTS.filter((concept) => {
+    if (!hasAnyTerm(text, concept.terms)) return false;
+    // "servis planı" is a generic operational-plan reference on the SCHOOL
+    // operations surface. Do not turn it into an ORGANIZATION_PLAN entity;
+    // explicit organization/gezi plan requests remain candidates and are
+    // authorized or denied deterministically downstream.
+    return !(schoolOperationalPlanningQuestion && concept.type === "ORGANIZATION_PLAN");
+  });
+  const roomShiftCreationRequest = ui?.surfaceRole === "ROOM"
+    && inferred?.workflowIntent === "CREATE_SHIFT";
+  const contextualInference = schoolOperationalPlanningQuestion
+    ? {
+      taskType: "EVIDENCE_SUFFICIENCY",
+      confidence: 0.94,
+      domain: "OPERATIONS",
+      targetEntityType: null,
+      requestedTasks: ["EVIDENCE_SUFFICIENCY"],
+      requestedFields: [],
+      requestedFieldsAuthoritative: true,
+      requiredOutputSlots: ["EVIDENCE", "SAFE_NEXT_STEP"],
+      screenContextIntent: true,
+      explicitTaskIntent: true,
+      schoolOperationalPlanIntent: true,
+    }
+    : roomShiftCreationRequest
+      ? {
+        taskType: "SCREEN_CONTEXT",
+        confidence: 0.99,
+        domain: "SHIFTS",
+        targetEntityType: "SHIFT",
+        screenContextIntent: true,
+        explicitUiGuidance: true,
+        explicitTaskIntent: true,
+        requestedTasks: ["SCREEN_CONTEXT"],
+        workflowIntent: "OPEN_SHIFT_SURFACE",
+        roleCapabilityBoundary: "ROOM_CREATE_UNSUPPORTED",
+        // This preserves the user's meaning before capability policy and
+        // authorization decide the available ROOM outcome. It is not a
+        // permission grant and must never select the COMPANY workflow.
+        semanticActionCandidateHint: {
+          actionClass: "CREATE",
+          objectClass: "SHIFT",
+          evidence: ["EXPLICIT_SHIFT_CREATION_GOAL"],
+        },
+      }
+    : inferred;
+  const effectiveInferred = contextualInference;
   const countTargetCandidates = targetCandidates.filter((concept) => !countTargetIsExplicitlyExcluded(text, concept));
-  const ambiguousTarget = hasCardinalityCue(text) && !hasValueLookupCue(text) && countTargetCandidates.length > 1;
-  const task = ambiguousTarget ? "CLARIFY" : inferred.taskType;
+  const ambiguousTarget = !schoolOperationalPlanningQuestion && hasCardinalityCue(text) && !hasValueLookupCue(text) && countTargetCandidates.length > 1;
+  const task = ambiguousTarget ? "CLARIFY" : effectiveInferred.taskType;
   const selectedScopeRequested = Boolean(ui.selectedId && ui.selectedType)
     && (hasSelectedRecordCue(text) || hasSelectedRecordReference(text) || hasSelectedRecordActionReference(text) || hasSelectedTypedPossessiveReference(text, ui) || hasSelectedRecordIdentityCue(text, ui) || inferred.productGroundedWritingIntent);
-  const inheritedSelectedAssessmentScope = hasInheritedSelectedAssessmentScope({ text, ui, inferred });
-  const scopeTarget = inferred.generalInformationIntent || inferred.generalCreativeIntent
+  const inheritedSelectedAssessmentScope = hasInheritedSelectedAssessmentScope({ text, ui, inferred: effectiveInferred });
+  const scopeTarget = (effectiveInferred.roleHelpIntent || effectiveInferred.generalProductHelpIntent)
+    ? "ROLE_GLOBAL"
+    : effectiveInferred.generalInformationIntent || effectiveInferred.generalCreativeIntent
     ? "NONE"
     : hasRoleGlobalScopeCue(text)
     ? "ROLE_GLOBAL"
@@ -1621,8 +4200,8 @@ export function inferCanonicalSemanticRequest({ message, screenContext, conversa
       ? "SELECTED_RECORD"
       : "CURRENT_SCREEN";
   const requiredOutputSlots = (() => {
-    const tasks = inferred.requestedTasks || [];
-    const slots = new Set(inferred.requiredOutputSlots || []);
+    const tasks = effectiveInferred.requestedTasks || [];
+    const slots = new Set(effectiveInferred.requiredOutputSlots || []);
     if (task === "COMPARISON" && tasks.includes("PRIORITY")) {
       slots.add("WINNER_OR_ORDER");
       slots.add("REASON");
@@ -1638,7 +4217,7 @@ export function inferCanonicalSemanticRequest({ message, screenContext, conversa
     return [...slots];
   })();
   return {
-    ...inferred,
+    ...effectiveInferred,
     taskType: task,
     ambiguity: ambiguousTarget ? "MULTIPLE_EXPLICIT_ENTITY_TARGETS" : (inferred.ambiguity || null),
     targetCandidates: targetCandidates.map((concept) => concept.type),
@@ -1647,7 +4226,7 @@ export function inferCanonicalSemanticRequest({ message, screenContext, conversa
     requestedOwnershipScope,
     scopeTarget,
     requiredOutputSlots,
-    explicitUserTarget: Boolean(inferred.targetEntityType || inferred.countTarget || inferred.requestedTasks?.length || task === "SCREEN_CONTEXT" || task === "SELECTED_RECORD_CONTEXT" || task === "RELATION_LOOKUP" || task === "RECORD_DETAILS" || task === "CONTINUE_CURRENT_REASONING" || task === "RETURN_TO_PRODUCT" || task === "FRESHNESS_CHECK" || task === "UNCERTAINTY_CHECK" || task === "EVIDENCE_SUFFICIENCY" || task === "COMPARISON" || (task === "FIELD_LOOKUP" && ui.selectedId)),
+    explicitUserTarget: Boolean(effectiveInferred.targetEntityType || effectiveInferred.countTarget || effectiveInferred.requestedTasks?.length || task === "SCREEN_CONTEXT" || task === "SELECTED_RECORD_CONTEXT" || task === "RELATION_LOOKUP" || task === "RECORD_DETAILS" || task === "CONTINUE_CURRENT_REASONING" || task === "RETURN_TO_PRODUCT" || task === "FRESHNESS_CHECK" || task === "UNCERTAINTY_CHECK" || task === "EVIDENCE_SUFFICIENCY" || task === "COMPARISON" || (task === "FIELD_LOOKUP" && ui.selectedId)),
   };
 }
 
@@ -1731,21 +4310,45 @@ export function buildCanonicalTypedRequest({ shape, family, domains = [], entiti
     outputAudience: shape?.outputAudience || null,
     generalCreativeIntent: Boolean(shape?.generalCreativeIntent),
     generalInformationIntent: Boolean(shape?.generalInformationIntent),
+    generalProductHelpIntent: Boolean(shape?.generalProductHelpIntent),
+    productTeachingIntent: Boolean(shape?.productTeachingIntent),
+    roleHelpIntent: Boolean(shape?.roleHelpIntent),
     requiredOutputTerms: [...new Set((Array.isArray(shape?.requiredOutputTerms) ? shape.requiredOutputTerms : []).map((term) => String(term || "").trim()).filter(Boolean))],
     forbiddenOutputTerms: [...new Set((Array.isArray(shape?.forbiddenOutputTerms) ? shape.forbiddenOutputTerms : []).map((term) => String(term || "").trim()).filter(Boolean))],
     requestedFormat: shape?.requestedFormat || null,
     sentenceCount: Number(shape?.sentenceCount || 0) || null,
     screenContextIntent: Boolean(shape?.screenContextIntent || validTaskType === "SCREEN_CONTEXT"),
     screenDetailIntent: Boolean(shape?.screenDetailIntent),
+    screenKnowledgeIntent: Boolean(shape?.screenKnowledgeIntent),
+    screenKnowledgeKind: shape?.screenKnowledgeKind || null,
+    termDefinitionIntent: Boolean(shape?.termDefinitionIntent),
+    operationHealthMetricIntent: Boolean(shape?.operationHealthMetricIntent),
+    operationHealthMetricMode: shape?.operationHealthMetricMode || null,
+    agreementOperationBridgeIntent: Boolean(shape?.agreementOperationBridgeIntent),
     selectedRecordIntent: Boolean(shape?.selectedRecordIntent || validTaskType === "SELECTED_RECORD_CONTEXT"),
     combinedContextIntent: Boolean(shape?.combinedContextIntent),
     recordDetailsIntent: Boolean(shape?.recordDetailsIntent || validTaskType === "RECORD_DETAILS"),
     continuationIntent: Boolean(shape?.continuationIntent || validTaskType === "CONTINUE_CURRENT_REASONING"),
     continuationAction: shape?.continuationAction || null,
+    workflowIntent: shape?.workflowIntent || null,
+    workflowModel: shape?.workflowModel || null,
+    workflowEntryState: shape?.workflowEntryState || null,
+    workflowEntryTarget: shape?.workflowEntryTarget || null,
+    workflowNextStepReference: shape?.workflowNextStepReference || null,
+    workflowNextState: shape?.workflowNextState || null,
+    workflowDraftAvailability: shape?.workflowDraftAvailability || null,
+    guidedDraftChooserIntent: Boolean(shape?.guidedDraftChooserIntent),
+    guidedDraftChooser: shape?.guidedDraftChooser || null,
+    workflowStepIntent: Boolean(shape?.workflowStepIntent),
+    workflowStepReference: shape?.workflowStepReference || null,
+    requestedRoleTarget: shape?.requestedRoleTarget || null,
     returnToProductIntent: Boolean(shape?.returnToProductIntent || validTaskType === "RETURN_TO_PRODUCT"),
     currentAssignmentIntent: Boolean(shape?.currentAssignmentIntent),
     explicitTaskIntent: Boolean(shape?.explicitTaskIntent),
     countTarget: shape?.countTarget || null,
+    collectionSummaryIntent: Boolean(shape?.collectionSummaryIntent),
+    collectionStatusDistributionIntent: Boolean(shape?.collectionStatusDistributionIntent),
+    agreementCollectionViewIntent: Boolean(shape?.agreementCollectionViewIntent),
     requestedOwnerScope: requestedOwnershipScope?.requestedOwnerScope || shape?.requestedOwnershipScope?.requestedOwnerScope || null,
     requestedTenantScope: requestedOwnershipScope?.requestedTenantScope || shape?.requestedOwnershipScope?.requestedTenantScope || null,
     requestedSubjectScope: requestedOwnershipScope?.requestedSubjectScope || shape?.requestedOwnershipScope?.requestedSubjectScope || null,
@@ -1772,5 +4375,2408 @@ export function validateCanonicalTypedRequest(request) {
   if (request?.productGroundedWritingIntent && !request?.requestedFields?.length) errors.push("GROUNDED_WRITING_FACT_REQUIRED");
   return { valid: errors.length === 0, errors };
 }
+
+// V1 and V2 remain transport-only compatibility shapes. New requests are V3:
+// semantic scope and semantic action are sibling results of this one
+// canonical interpreter, before capability policy and authorization.
+export const SEFER_ABI_CANONICAL_REQUEST_VERSION = "SEFER-ABI-CANONICAL-REQUEST-V3";
+export const SEFER_ABI_CANONICAL_REQUEST_V1_VERSION = "SEFER-ABI-CANONICAL-REQUEST-V1";
+export const SEFER_ABI_CANONICAL_REQUEST_V2_VERSION = "SEFER-ABI-CANONICAL-REQUEST-V2";
+
+const CANONICAL_SEMANTIC_SCOPE_CLASSES = new Set([
+  "PRODUCT_EXPLICIT",
+  "PRODUCT_CONTEXTUAL",
+  "PRODUCT_AMBIGUOUS",
+  "OFF_TOPIC_GENUINE",
+  "UNRESOLVED",
+]);
+
+const CANONICAL_SEMANTIC_ACTION_CLASSES = new Set([
+  "CREATE",
+  "NAVIGATE",
+  "VIEW",
+  "EXPLAIN",
+  "COMPARE",
+  "UPDATE",
+  "DELETE",
+  "SEND",
+  "CONTINUE",
+  "RESUME",
+  "NEXT",
+  "PREPARE",
+  "ANALYZE",
+  "NONE",
+]);
+
+const CANONICAL_SEMANTIC_ACTION_RESOLUTION_STATUSES = new Set([
+  "RESOLVED",
+  "AMBIGUOUS",
+  "UNRESOLVED",
+  "NOT_APPLICABLE",
+]);
+
+const CANONICAL_SEMANTIC_OBJECT_CLASSES = new Set([
+  "SHIFT",
+  "AGREEMENT",
+  "OFFER",
+  "ROUTE",
+  "PERSONNEL",
+  "VEHICLE",
+  "DRIVER",
+  "SURFACE",
+  "RECORD",
+]);
+
+const CANONICAL_OPERATION_BY_TASK = Object.freeze({
+  SCREEN_CONTEXT: "EXPLAIN_CURRENT_SURFACE",
+  EXPLAIN_CURRENT_TARGET: "EXPLAIN_CURRENT_TARGET",
+  SELECTED_RECORD_CONTEXT: "EXPLAIN_SELECTED_RECORD",
+  RECORD_DETAILS: "EXPLAIN_RECORD_DETAILS",
+  CONTINUE_CURRENT_REASONING: "CONTINUE_EXPLANATION",
+  FIELD_LOOKUP: "LOOK_UP_FIELD",
+  RELATION_LOOKUP: "LOOK_UP_RELATION",
+  COUNT: "COUNT_AUTHORIZED_RECORDS",
+  COMPARISON: "COMPARE_AUTHORIZED_RECORDS",
+  SITUATION: "ASSESS_CURRENT_SITUATION",
+  ISSUE: "DIAGNOSE_CURRENT_ISSUE",
+  CAUSE: "EXPLAIN_CURRENT_CAUSE",
+  RISK: "ASSESS_CURRENT_RISK",
+  PRIORITY: "RESOLVE_CURRENT_PRIORITY",
+  NEXT_ACTION: "RESOLVE_NEXT_SAFE_ACTION",
+  SHIFT_START_READINESS: "ASSESS_SHIFT_READINESS",
+  FRESHNESS_CHECK: "CHECK_CURRENT_FRESHNESS",
+  UNCERTAINTY_CHECK: "CHECK_CURRENT_UNCERTAINTY",
+  EVIDENCE_SUFFICIENCY: "CHECK_EVIDENCE_SUFFICIENCY",
+  RESOLUTION: "RECOVER_CURRENT_TASK",
+  RETURN_TO_PRODUCT: "RETURN_TO_PRODUCT",
+  OFF_TOPIC: "GENERAL_INFORMATION",
+  CLARIFY: "CLARIFY_SEMANTIC_REQUEST",
+});
+
+function hasGenuineOffTopicSignal(text, shape) {
+  if (shape?.taskType === "OFF_TOPIC" || shape?.generalCreativeIntent || shape?.generalInformationIntent || shape?.generalArithmetic) return true;
+  // This is a behavior-class boundary for ordinary non-product preference or
+  // small-talk requests. It relies on the absence of product evidence and a
+  // general preference/comparison speech act rather than enumerating topics.
+  const preferenceGrammar = /\b(?:mi|mı|mu|mü|hangisi|tercih|oner|öner|onerir|önerir|seviyor|sever|tavsiye)\p{L}*\b/iu.test(text);
+  return preferenceGrammar && text.split(/\s+/).filter(Boolean).length >= 2;
+}
+
+function hasStructuredRoleProcessExplanation(text) {
+  const value = normalize(text);
+  const roleAspect = /\b(?:sinir|kapsam|limit|cerceve|yetki|sorumluluk|gorev|sorumlu|dahil|haric|disinda)\p{L}*\b/iu.test(value);
+  const processPredicate = /\b(?:yonet|yurut|islet|sorumlu|gorev)\p{L}*\b/iu.test(value);
+  return roleAspect && processPredicate;
+}
+
+function hasProductSignal(text, shape) {
+  if (shape?.taskType === "OFF_TOPIC" && !shape?.roleHelpIntent && !shape?.generalProductHelpIntent) return false;
+  if (shape?.generalCreativeIntent || shape?.generalArithmetic) return false;
+  if (shape?.taskType && shape.taskType !== "CLARIFY" && shape.taskType !== "OFF_TOPIC") return true;
+  if (shape?.explicitUserTarget || shape?.explicitTaskIntent || shape?.explicitUiGuidance || shape?.workflowIntent) return true;
+  if (Array.isArray(shape?.targetCandidates) && shape.targetCandidates.length) return true;
+  if (shape?.uiContext?.currentTarget || shape?.uiContext?.workflowState) return true;
+  return /\b(?:vardiya|sefer|shift|teklif|servis|sozlesme|sözleşme|anlasma|agreement|contract|kontrat|arac|araç|surucu|sürücü|personel|durak|rota|operasyon|plan|ekran|panel|sistem|konum|adres|kayit|kayıt|durum|tarih|saat|maliyet|bedel|tutar|kanıt|kanit|veri|yetki|risk)\p{L}*\b/iu.test(text);
+}
+
+function semanticObjectClass(shape, text) {
+  const type = String(shape?.targetEntityType || shape?.targetCandidates?.[0] || "").trim().toUpperCase();
+  if (["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER"].includes(type)) return type;
+  if (String(shape?.workflowIntent || "").toUpperCase().includes("SHIFT")) return "SHIFT";
+  if (/\b(?:vardiya|sefer|shift)\p{L}*\b/iu.test(text)) return "SHIFT";
+  if (/\b(?:sozlesme|sözleşme|anlasma|agreement|contract|kontrat)\p{L}*\b/iu.test(text)) return "AGREEMENT";
+  if (/\b(?:teklif|offer|rfq)\p{L}*\b/iu.test(text)) return "OFFER";
+  if (/\b(?:rota|guzergah|güzergah|durak)\p{L}*\b/iu.test(text)) return "ROUTE";
+  if (/\b(?:arac|araç)\p{L}*\b/iu.test(text)) return "VEHICLE";
+  if (/\b(?:surucu|sürücü|sofor|şoför)\p{L}*\b/iu.test(text)) return "DRIVER";
+  if (/\b(?:personel|calisan|çalışan|ogrenci|öğrenci)\p{L}*\b/iu.test(text)) return "PERSONNEL";
+  if (shape?.screenContextIntent || shape?.taskType === "SCREEN_CONTEXT") return "SURFACE";
+  return "UNKNOWN";
+}
+
+function hasOperationalShiftEntityEvidence(text) {
+  const normalizedText = normalize(text);
+  const serviceTerm = /\bservis\p{L}*\b/iu;
+  const taskTerm = /\b(?:gorev|is)\p{L}*\b/iu;
+  return (serviceTerm.test(normalizedText) && taskTerm.test(normalizedText));
+}
+
+// An explicit product object in the current utterance outranks a stale object
+// inherited from an active task.  Keep this compositional: one uniquely named
+// object supplies evidence, while multiple named objects remain unresolved for
+// the existing ambiguity path.  A service-task construction is structural
+// operational evidence for a SHIFT; it is not a surface label or permission.
+function explicitObjectClassFromText(text) {
+  const objectClasses = [...new Set(ENTITY_CONCEPTS
+    .filter((concept) => ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL"].includes(concept.type))
+    .filter((concept) => concept.terms.some((term) => {
+      const normalizedTerm = normalize(term);
+      if (!normalizedTerm) return false;
+      if (normalizedTerm.includes(" ")) return text.includes(normalizedTerm);
+      const escaped = normalizedTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`\\b${escaped}\\p{L}*\\b`, "iu").test(text);
+    }))
+    .map((concept) => concept.type))];
+  if (objectClasses.length === 0 && hasOperationalShiftEntityEvidence(text)) return "SHIFT";
+  return objectClasses.length === 1 ? objectClasses[0] : null;
+}
+
+// Candidate formation is intentionally compositional.  The lexical helpers
+// below only emit bounded evidence; none of them is canonical meaning on its
+// own.  A typed action is formed only when an action predicate, a product
+// object, and an affirmative goal relation agree without a stronger
+// navigation/view/explanation/restart/negation signal.
+const COMPOSITIONAL_ACTION_PREDICATE_STEMS = Object.freeze({
+  CREATE: Object.freeze(["kur", "olustur", "baslat", "planla", "duzenle", "ayarla"]),
+  VIEW: Object.freeze(["goruntule", "listele", "incele"]),
+  NAVIGATE: Object.freeze(["ac", "git", "gec", "ilerle", "don"]),
+  EXPLAIN: Object.freeze(["anlat", "acikla"]),
+  COMPARE: Object.freeze(["karsilastir", "kiyasla"]),
+});
+
+function hasPredicateStem(text, stems) {
+  return stems.some((stem) => new RegExp(`\\b${stem}\\p{L}*\\b`, "iu").test(text));
+}
+
+function compositionalGoalRelation(text, actionStems, objectStems) {
+  const actionPattern = actionStems.join("|");
+  const objectPattern = objectStems.join("|");
+  const objectThenAction = new RegExp(
+    `\\b(?:${objectPattern})\\p{L}*(?:\\s+\\p{L}+){0,8}\\s+(?:${actionPattern})\\p{L}*\\b`,
+    "iu",
+  ).test(text);
+  const actionThenObject = new RegExp(
+    `\\b(?:${actionPattern})\\p{L}*(?:\\s+\\p{L}+){0,8}\\s+(?:${objectPattern})\\p{L}*\\b`,
+    "iu",
+  ).test(text);
+  const affirmativeGoal = /\b(?:istiyor(?:um|uz)?|ister(?:im|iz)?|gerekiyor|gerek|lazim|planliyor(?:um|uz)?|niyetim|amacim)\b/iu.test(text)
+    || /\b(?:kurmak|olusturmak|baslatmak|planlamak|duzenlemek|ayarlamak|kurmam|olusturmam|baslatmam|planlamam|duzenlemem|ayarlamam)\b/iu.test(text);
+  return {
+    predicateObjectRelation: (objectThenAction || actionThenObject) && affirmativeGoal,
+    affirmativeGoal,
+  };
+}
+
+function collectCompositionalSemanticEvidence({ text, objectClass } = {}) {
+  const normalizedText = normalize(text);
+  const objectEvidence = objectClass === "SHIFT"
+    && /\b(?:vardiya|sefer|shift)\p{L}*\b/iu.test(normalizedText);
+  if (!objectEvidence) {
+    return {
+      actionClass: null,
+      objectClass: objectClass === "UNKNOWN" ? null : objectClass,
+      evidence: [],
+      negated: false,
+      relation: false,
+      resolutionStatus: "UNRESOLVED",
+    };
+  }
+
+  const createPredicate = hasPredicateStem(normalizedText, COMPOSITIONAL_ACTION_PREDICATE_STEMS.CREATE);
+  const relation = compositionalGoalRelation(
+    normalizedText,
+    COMPOSITIONAL_ACTION_PREDICATE_STEMS.CREATE,
+    ["vardiya", "sefer", "shift"],
+  );
+  const negated = /\b(?:istem(?:iyor|iyorum|em|eyelim|eyiz)\p{L}*|yapmay\p{L}*|kurmay\p{L}*|olusturmay\p{L}*|baslatmay\p{L}*)\b/iu.test(normalizedText);
+  const competingAction = [
+    ["VIEW", hasPredicateStem(normalizedText, COMPOSITIONAL_ACTION_PREDICATE_STEMS.VIEW)],
+    ["NAVIGATE", hasPredicateStem(normalizedText, COMPOSITIONAL_ACTION_PREDICATE_STEMS.NAVIGATE)],
+    ["EXPLAIN", hasPredicateStem(normalizedText, COMPOSITIONAL_ACTION_PREDICATE_STEMS.EXPLAIN)],
+    ["COMPARE", hasPredicateStem(normalizedText, COMPOSITIONAL_ACTION_PREDICATE_STEMS.COMPARE)],
+  ].find(([, present]) => present);
+
+  if (negated && createPredicate) {
+    return {
+      actionClass: "NONE",
+      objectClass: "SHIFT",
+      evidence: ["COMPOSITIONAL_OBJECT_ENTITY", "COMPOSITIONAL_CREATE_PREDICATE", "COMPOSITIONAL_NEGATION_VETO"],
+      negated: true,
+      relation: relation.predicateObjectRelation,
+      resolutionStatus: "UNRESOLVED",
+    };
+  }
+  if (competingAction || !createPredicate || !relation.predicateObjectRelation) {
+    return {
+      actionClass: null,
+      objectClass: "SHIFT",
+      evidence: ["COMPOSITIONAL_OBJECT_ENTITY"],
+      negated: false,
+      relation: relation.predicateObjectRelation,
+      resolutionStatus: competingAction ? "AMBIGUOUS" : "UNRESOLVED",
+    };
+  }
+  return {
+    actionClass: "CREATE",
+    objectClass: "SHIFT",
+    evidence: [
+      "COMPOSITIONAL_ACTION_PREDICATE",
+      "COMPOSITIONAL_OBJECT_ENTITY",
+      "COMPOSITIONAL_PREDICATE_OBJECT_GOAL",
+      "COMPOSITIONAL_EXPLICIT_AFFIRMATIVE_GOAL",
+    ],
+    negated: false,
+    relation: true,
+    resolutionStatus: "RESOLVED",
+  };
+}
+
+// Internal contextual evidence is a bounded composition of reusable semantic
+// categories. It is deliberately separate from the lexical helpers above:
+// current surface/domain context can supply object meaning, while the
+// utterance still has to provide a non-mutating inspection predicate. Context
+// never supplies authorization or a protected record.
+function collectInternalContextualEvidence({ text, objectClass, semanticContext } = {}) {
+  if (!hasFreshCanonicalSemanticContext(semanticContext)) return null;
+  const normalizedText = normalize(text);
+  const contextEvidence = semanticContext.evidence || {};
+  // A uniquely named non-SHIFT product object in the utterance is a new
+  // semantic target. The current SHIFT surface/task may ground the response,
+  // but it cannot replace that explicit object with stale contextual meaning.
+  if (["AGREEMENT", "OFFER", "ROUTE", "PERSONNEL"].includes(objectClass)) return null;
+  const strongShiftLexeme = /\b(?:sefer|vardiya|shift)\p{L}*\b/iu.test(normalizedText);
+  const objectIsShift = objectClass === "SHIFT"
+    || semanticContext.currentDomain === "SHIFTS"
+    || (contextEvidence.object?.includes("PRODUCT_SHIFT_RECORD") && strongShiftLexeme);
+  const inspection = contextEvidence.action?.includes("NON_MUTATING_INSPECTION");
+  if (!objectIsShift || !inspection) return null;
+  // `bakmam gerek` is an affirmative necessity construction (“I need to
+  // look”), not the negative imperative `bakma` (“don't look”). Keep the
+  // negative imperative boundary explicit so suffixes do not turn a current
+  // surface guidance request into an unresolved/negated record inspection.
+  const negated = Boolean(contextEvidence.negation)
+    || /\b(?:istemiyor(?:um|uz)?|istemiyorum|istemem|degil|değil)\p{L}*\b/iu.test(normalizedText)
+    || /\b(?:bak|g[oö]r)ma(?:\s|[,.!?]|$)/iu.test(normalizedText)
+    || /\b(?:g[oö]r|bak|incele)\p{L}*\s+(?:istemiyor|istemem|istemiyorum)\b/iu.test(normalizedText);
+  const competing = [
+    ["CREATE", /\b(?:kur|olustur|oluştur|baslat|başlat|planla|duzenle|düzenle|ayarla)\p{L}*\b/iu.test(normalizedText)],
+    ["NAVIGATE", /\b(?:ac|aç|git|gec|geç|ilerle|don|dön)\p{L}*\b/iu.test(normalizedText)],
+    ["EXPLAIN", /\b(?:anlat|acikla|açıkla)\p{L}*\b/iu.test(normalizedText)],
+    ["COMPARE", /\b(?:karsilastir|karşılaştır|kiyasla|kıyasla)\p{L}*\b/iu.test(normalizedText)],
+  ].find(([, present]) => present);
+  if (negated) {
+    return {
+      actionClass: "NONE",
+      objectClass: "SHIFT",
+      evidence: ["INTERNAL_CONTEXT_SHIFT_DOMAIN", "INTERNAL_CONTEXT_INSPECTION", "INTERNAL_CONTEXT_NEGATION_VETO"],
+      relation: true,
+      negated: true,
+      resolutionStatus: "UNRESOLVED",
+    };
+  }
+  if (competing) return null;
+  return {
+    actionClass: "VIEW",
+    objectClass: "SHIFT",
+    evidence: [
+      "INTERNAL_CONTEXT_SHIFT_DOMAIN",
+      "INTERNAL_CONTEXT_OPERATIONAL_RECORD",
+      "INTERNAL_CONTEXT_INSPECTION",
+      ...(contextEvidence.temporal?.includes("CURRENT_TIME_WINDOW") ? ["INTERNAL_CONTEXT_CURRENT_TIME"] : []),
+      "INTERNAL_CONTEXT_PREDICATE_OBJECT_RELATION",
+    ],
+    relation: true,
+    negated: false,
+    resolutionStatus: "RESOLVED",
+  };
+}
+
+function semanticActionModifiers({ actionClass, explicitness, targetCandidate, modifiers = null } = {}) {
+  const supplied = modifiers && typeof modifiers === "object" && !Array.isArray(modifiers) ? modifiers : {};
+  return {
+    new: Boolean(supplied.new ?? actionClass === "CREATE"),
+    current: Boolean(supplied.current ?? ["VIEW", "EXPLAIN", "COMPARE", "CONTINUE", "RESUME", "PREPARE", "ANALYZE"].includes(actionClass)),
+    next: Boolean(supplied.next ?? actionClass === "NEXT"),
+    explicitTarget: Boolean(supplied.explicitTarget ?? (explicitness === "EXPLICIT" || targetCandidate?.targetKey || targetCandidate?.semanticId)),
+  };
+}
+
+function resolvedSemanticAction({ actionClass, objectClass, evidence, explicitness = "EXPLICIT", targetCandidate = null, modifiers = null, resolutionStatus = "RESOLVED" } = {}) {
+  const normalizedObjectClass = objectClass && !["UNKNOWN", "GENERAL"].includes(String(objectClass).toUpperCase())
+    ? objectClass
+    : null;
+  const normalizedTargetCandidate = targetCandidate || (normalizedObjectClass ? { objectClass: normalizedObjectClass } : null);
+  return {
+    actionClass,
+    objectClass: normalizedObjectClass,
+    targetCandidate: normalizedTargetCandidate,
+    modifiers: semanticActionModifiers({ actionClass, explicitness, targetCandidate: normalizedTargetCandidate, modifiers }),
+    explicitness,
+    evidence: [...new Set(evidence || [])],
+    resolutionStatus,
+  };
+}
+
+// This recognizes an action/object meaning from the utterance plus currently
+// authenticated context. It deliberately does not inspect an ALLOW result:
+// product policy and deterministic authorization run later.
+function inferCanonicalSemanticAction({ text, shape, conversationState, semanticContext = null, typedEvidence = null } = {}) {
+  const normalizedText = normalize(text);
+  const hinted = shape?.semanticActionCandidateHint;
+  const activeWorkflowIntent = String(
+    conversationState?.activeGuidedTask?.semanticPlan?.workflowIntent
+    || conversationState?.activeTask?.semanticPlan?.workflowIntent
+    || "",
+  ).toUpperCase();
+  const activeGuidedWorkflowRecovery = Boolean(
+    shape?.currentTargetRecoveryIntent
+    && activeWorkflowIntent === "CREATE_SHIFT"
+    && conversationState?.activeGuidedTask?.semanticPlan,
+  );
+  // A supported role noun can be the grammatical subject of a broad
+  // responsibility/orientation request (for example, “Personel tarafında
+  // bana düşen işleri nasıl öğrenirim?”). Typed evidence has already proved
+  // that this is ROLE + PRODUCT_AREA with no concrete object/reference. Do
+  // not promote the subject noun to a PERSONNEL record in that shape; an
+  // explicit personnel collection/record request remains concrete because it
+  // has a different typed request mode or target.
+  const typedRoleSubjectProductAreaHelp = typedEvidence?.subject?.value === "ROLE"
+    && String(typedEvidence?.requestMode?.value || "").toUpperCase() === "EXPLAIN"
+    && String(typedEvidence?.object?.value || "").toUpperCase() === "NONE"
+    && String(typedEvidence?.reference?.value || "ABSENT").toUpperCase() === "ABSENT"
+    && String(typedEvidence?.targetRequest?.value || "").toUpperCase() === "PRODUCT_AREA"
+    && String(typedEvidence?.roleAspect?.value || "NONE").toUpperCase() !== "NONE";
+  const explicitTextObjectClass = typedRoleSubjectProductAreaHelp
+    ? null
+    : explicitObjectClassFromText(normalizedText);
+  const objectClass = String(
+    explicitTextObjectClass
+      || hinted?.objectClass
+      || (typedRoleSubjectProductAreaHelp ? "UNKNOWN" : semanticObjectClass(shape, normalizedText)),
+  ).toUpperCase();
+  const contextualObjectClass = objectClass === "UNKNOWN" && activeWorkflowIntent.includes("SHIFT") ? "SHIFT" : objectClass;
+  const hintEvidence = Array.isArray(hinted?.evidence) ? hinted.evidence : [];
+  const previousSemanticPlan = conversationState?.lastSettledResult?.semanticPlan
+    || conversationState?.authorizedProductContext?.semanticPlan
+    || conversationState?.lastProductSemanticPlan
+    || null;
+  const helpContinuationBase = ["GENERIC_PRODUCT_HELP", "ROLE_EXPLANATION_HELP"].includes(String(previousSemanticPlan?.family || ""))
+    || String(previousSemanticPlan?.conversationRoute || "") === "GENERIC_PRODUCT_HELP";
+  const typedReference = String(typedEvidence?.reference?.value || "").toUpperCase();
+  const typedReferenceNeedsClarification = ["AMBIGUOUS", "UNRESOLVED", "REJECTED_STALE", "STALE"].includes(typedReference);
+  const typedObjectEvidence = String(typedEvidence?.object?.value || "").toUpperCase();
+  const typedReferenceRequiresConcreteTarget = typedReferenceNeedsClarification && typedObjectEvidence !== "SURFACE";
+
+  if (shape?.taskType === "ISSUE"
+    && shape?.operationHealthMetricIntent
+    && !shape?.ambiguity) {
+    return resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      objectClass: null,
+      evidence: ["CANONICAL_OPERATION_HEALTH_METRIC_TASK"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: true },
+    });
+  }
+
+  // Selected-record identity is already grounded by the authenticated UI
+  // selection. The typed reference classifier may not have a lexical record
+  // token for natural questions such as “şu an hangi vardiyadayım?”. Keep the
+  // semantic action resolved here; authorization still validates the selected
+  // typed record downstream.
+  if (shape?.taskType === "SELECTED_RECORD_CONTEXT"
+    && shape?.selectedRecordIntent
+    && !shape?.ambiguity) {
+    return resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      objectClass: "RECORD",
+      targetCandidate: { objectClass: "RECORD" },
+      evidence: ["CANONICAL_SELECTED_RECORD_CONTEXT"],
+      explicitness: shape?.explicitTaskIntent ? "EXPLICIT" : "CONTEXTUAL",
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: true },
+    });
+  }
+
+  // An operational issue inquiry is a current-screen diagnostic, not a
+  // request to resolve a record named by a deictic such as “şu anda”. Keep
+  // the read-only issue action resolved so reference handling cannot turn a
+  // truthful aggregate question into generic clarification.
+  if (shape?.taskType === "ISSUE" && !shape?.ambiguity) {
+    return resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      objectClass: null,
+      evidence: ["CANONICAL_ISSUE_DIAGNOSTIC_TASK"],
+      explicitness: shape?.explicitTaskIntent ? "EXPLICIT" : "CONTEXTUAL",
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: true },
+    });
+  }
+
+  const currentTargetGrounded = Boolean(shape?.currentTargetRecoveryIntent || shape?.currentTargetExplanationIntent);
+  if (typedReferenceRequiresConcreteTarget && !currentTargetGrounded) {
+    return resolvedSemanticAction({
+      actionClass: "NONE",
+      objectClass: null,
+      evidence: ["DEICTIC_REFERENCE_WITHOUT_VALID_REFERENT"],
+      explicitness: "UNRESOLVED",
+      resolutionStatus: "UNRESOLVED",
+      modifiers: { new: false, current: false, next: false, explicitTarget: false },
+    });
+  }
+
+  // Comparison is a first-class semantic action. It is resolved before live
+  // target continuation so an explicit comparison request cannot be replaced
+  // by the previously highlighted product control. Missing or multiple
+  // object candidates keep the COMPARE action while preserving truthful
+  // unresolved/ambiguous status; no UNKNOWN object is fabricated.
+  if (shape?.taskType === "COMPARISON" || shape?.requestedTasks?.includes?.("COMPARISON")) {
+    const activeComparisonSet = conversationState?.activeComparisonSet || conversationState?.activeReasoningEntitySet || [];
+    const targetCandidateCount = Array.isArray(shape?.targetCandidates) ? shape.targetCandidates.length : 0;
+    const activeComparisonCount = Array.isArray(activeComparisonSet) ? activeComparisonSet.filter(Boolean).length : 0;
+    const activeComparisonTypes = [...new Set((Array.isArray(activeComparisonSet) ? activeComparisonSet : [])
+      .map((item) => String(item?.type || item?.entityType || "").trim().toUpperCase())
+      .filter((type) => ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL"].includes(type)))];
+    const resolutionStatus = shape?.ambiguity || activeComparisonCount > 2 || targetCandidateCount > 1
+      ? "AMBIGUOUS"
+      : targetCandidateCount === 0 && activeComparisonCount < 2
+        ? "UNRESOLVED"
+        : "RESOLVED";
+    const comparisonObjectClass = targetCandidateCount > 1
+      ? null
+      : objectClass !== "UNKNOWN"
+        ? objectClass
+      : activeComparisonTypes.length === 1
+        ? activeComparisonTypes[0]
+        : null;
+    return resolvedSemanticAction({
+      actionClass: "COMPARE",
+      objectClass: comparisonObjectClass,
+      evidence: [...hintEvidence, "CANONICAL_COMPARISON_TASK"],
+      explicitness: shape?.explicitTaskIntent ? "EXPLICIT" : "CONTEXTUAL",
+      resolutionStatus,
+      modifiers: { current: true, explicitTarget: targetCandidateCount > 0 || activeComparisonCount > 0 },
+    });
+  }
+
+  // A live failure/reference targets the already rendered control. Its
+  // surrounding workflow may be CREATE_SHIFT, but that future operation must
+  // not overwrite recovery on the current target.
+  if (activeGuidedWorkflowRecovery) {
+    return resolvedSemanticAction({
+      actionClass: "CONTINUE",
+      objectClass: contextualObjectClass === "UNKNOWN" ? "SHIFT" : contextualObjectClass,
+      evidence: ["ACTIVE_WORKFLOW_RECOVERY"],
+      explicitness: "CONTEXTUAL",
+      resolutionStatus: "RESOLVED",
+    });
+  }
+  if (shape?.currentTargetRecoveryIntent || shape?.currentTargetExplanationIntent) {
+    return resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      objectClass: contextualObjectClass === "UNKNOWN" ? "SURFACE" : contextualObjectClass,
+      evidence: [shape?.currentTargetRecoveryIntent ? "LIVE_TARGET_RECOVERY" : "LIVE_TARGET_EXPLANATION"],
+      explicitness: "CONTEXTUAL",
+      targetCandidate: shape?.currentTargetReference?.targetKey ? { targetKey: shape.currentTargetReference.targetKey } : null,
+    });
+  }
+  if (shape?.restartIntent) {
+    return resolvedSemanticAction({
+      actionClass: "NONE",
+      objectClass: contextualObjectClass,
+      evidence: ["TASK_RESTART_REQUEST"],
+      explicitness: "CONTEXTUAL",
+      modifiers: { new: true, current: false, next: false, explicitTarget: false },
+    });
+  }
+  if (hasActiveTaskResumeCue(normalizedText, conversationState)) {
+    return resolvedSemanticAction({ actionClass: "RESUME", objectClass: contextualObjectClass === "UNKNOWN" ? "RECORD" : contextualObjectClass, evidence: ["ACTIVE_TASK_RESUME_CUE"], explicitness: "CONTEXTUAL" });
+  }
+  if (shape?.continuationIntent || shape?.taskType === "CONTINUE_CURRENT_REASONING") {
+    return resolvedSemanticAction({
+      actionClass: "CONTINUE",
+      objectClass: contextualObjectClass === "UNKNOWN"
+        ? (helpContinuationBase ? "SURFACE" : "RECORD")
+        : contextualObjectClass,
+      evidence: ["SETTLED_TASK_CONTINUATION", ...(helpContinuationBase ? ["GENERIC_HELP_CONTINUATION"] : [])],
+      explicitness: "CONTEXTUAL",
+    });
+  }
+  const typedRequestMode = String(typedEvidence?.requestMode?.value || "").toUpperCase();
+  const typedObjectClass = String(typedEvidence?.object?.value || "").toUpperCase();
+  // An affirmative compositional creation goal is more specific than a broad
+  // typed mode (including EXPLAIN/UPDATE) that can consume the same SHIFT noun.
+  // Preserve the product task before explanation/field projection consumes
+  // it. Authorization remains a later, independent decision.
+  const compositionalCreateEvidence = collectCompositionalSemanticEvidence({
+    text: normalizedText,
+    objectClass: contextualObjectClass,
+  });
+  if (compositionalCreateEvidence.negated
+    && !typedReferenceRequiresConcreteTarget
+    && typedEvidence?.quality?.authorizationEffect === "NONE") {
+    return resolvedSemanticAction({
+      actionClass: "NONE",
+      objectClass: "SHIFT",
+      evidence: [...compositionalCreateEvidence.evidence, "COMPOSITIONAL_NEGATION_PRECEDES_TYPED_ACTION"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "UNRESOLVED",
+    });
+  }
+  if (compositionalCreateEvidence.actionClass === "CREATE"
+    && compositionalCreateEvidence.objectClass === "SHIFT"
+    && !typedReferenceRequiresConcreteTarget
+    && typedEvidence?.quality?.authorizationEffect === "NONE") {
+    return resolvedSemanticAction({
+      actionClass: "CREATE",
+      objectClass: "SHIFT",
+      evidence: [
+        ...compositionalCreateEvidence.evidence,
+        "COMPOSITIONAL_CREATE_PRECEDES_TYPED_ACTION",
+      ],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+    });
+  }
+  // An explicit numeric offer reference is a record-view request even when
+  // the live UI envelope also carries a generic OPEN_SURFACE workflow. Keep
+  // the exact record identity in the canonical view lane so guided-target
+  // resolution can bind the authorized offer card instead of the enclosing
+  // offers surface. Authorization and retrieval remain downstream.
+  const explicitOfferRecordView = typedObjectClass === "OFFER"
+    && typedEvidence?.specificity?.quoteFloorAnalysisEvidence !== true
+    && /\b(?:teklif|offer|rfq)\s*#?\s*\d+\b/iu.test(normalizedText);
+  if (explicitOfferRecordView) {
+    return resolvedSemanticAction({
+      actionClass: "VIEW",
+      objectClass: "OFFER",
+      evidence: ["EXPLICIT_OFFER_RECORD_VIEW"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+      modifiers: { current: true, new: false, next: false, explicitTarget: true },
+    });
+  }
+  // The central specificity resolver identifies movement plus a concrete
+  // target before legacy COUNT/VIEW projection can consume the same noun.
+  if (typedEvidence?.specificity?.selectedTask === "NAVIGATION"
+    && !typedReferenceRequiresConcreteTarget
+    && typedEvidence?.quality?.authorizationEffect === "NONE") {
+    const navigationObject = ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER", "RECORD", "SURFACE"].includes(typedEvidence?.specificity?.navigationTargetClass)
+      ? typedEvidence.specificity.navigationTargetClass
+      : ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER", "RECORD", "SURFACE"].includes(typedObjectClass)
+        ? typedObjectClass
+      : (contextualObjectClass === "UNKNOWN" ? null : contextualObjectClass);
+    return resolvedSemanticAction({
+      actionClass: "NAVIGATE",
+      objectClass: navigationObject,
+      targetCandidate: navigationObject ? { objectClass: navigationObject } : null,
+      evidence: ["CENTRAL_SPECIFICITY_NAVIGATION", ...(navigationObject ? ["TYPED_OBJECT_EVIDENCE"] : [])],
+      explicitness: "EXPLICIT",
+      resolutionStatus: navigationObject ? "RESOLVED" : "UNRESOLVED",
+    });
+  }
+  if (typedEvidence?.specificity?.selectedTask === "SCREEN_CONTEXT"
+    && typedEvidence?.quality?.authorizationEffect === "NONE") {
+    return resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      objectClass: "SURFACE",
+      targetCandidate: { objectClass: "SURFACE" },
+      evidence: ["CENTRAL_SPECIFICITY_SCREEN_CONTEXT"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: true },
+    });
+  }
+  // Route-order recovery is a canonical next action. It must outrank the
+  // generic typed EXPLAIN/ROUTE projection below, otherwise the same live
+  // precondition is downgraded to a field lookup and loses its action safety
+  // contract.
+  if (shape?.routeOrderIntent || shape?.taskType === "NEXT_ACTION") {
+    return resolvedSemanticAction({
+      actionClass: "NEXT",
+      objectClass: "ROUTE",
+      evidence: ["LIVE_NEXT_STEP_REQUIREMENT"],
+      explicitness: shape?.liveWorkflowGrounded ? "CONTEXTUAL" : "EXPLICIT",
+    });
+  }
+  if (shape?.taskType === "COUNT") {
+    const countObject = ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "RECORD"].includes(contextualObjectClass)
+      ? contextualObjectClass
+      : null;
+    return resolvedSemanticAction({
+      actionClass: "VIEW",
+      objectClass: countObject,
+      targetCandidate: countObject ? { objectClass: countObject } : null,
+      evidence: ["CANONICAL_COUNT_TASK"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+    });
+  }
+  if (shape?.taskType === "RISK") {
+    return resolvedSemanticAction({
+      actionClass: "ANALYZE",
+      objectClass: null,
+      evidence: ["CANONICAL_RISK_TASK"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+    });
+  }
+  // A where/how question can be typed broadly as EXPLAIN while the canonical
+  // shape has already resolved the concrete COMPANY creation workflow. The
+  // workflow intent is the narrower semantic authority here; preserve
+  // NAVIGATE and other explicit modes below so surface navigation does not
+  // become creation guidance accidentally.
+  if (shape?.workflowIntent === "CREATE_SHIFT"
+    && typedRequestMode === "EXPLAIN"
+    && typedObjectClass === "SHIFT") {
+    return resolvedSemanticAction({
+      actionClass: "CREATE",
+      objectClass: "SHIFT",
+      evidence: ["CANONICAL_WORKFLOW_INTENT_CREATE_SHIFT", "TYPED_WORKFLOW_GUIDANCE_EXPLAIN"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+    });
+  }
+  if (typedRequestMode === "UPDATE"
+    && ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER"].includes(typedObjectClass)
+    && typedEvidence?.quality?.authorizationEffect === "NONE") {
+    return resolvedSemanticAction({
+      actionClass: "UPDATE",
+      objectClass: typedObjectClass,
+      evidence: ["TYPED_REQUEST_MODE_UPDATE", "TYPED_CONCRETE_OBJECT"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+    });
+  }
+  if (typedRequestMode === "EXPLAIN"
+    && !typedReferenceRequiresConcreteTarget
+    && ["RECORD", "ENTITY"].includes(String(typedEvidence?.targetRequest?.value || "").toUpperCase())
+    && typedEvidence?.object?.value !== "NONE"
+    && typedEvidence?.quality?.authorizationEffect === "NONE") {
+    const typedExplanationObject = CANONICAL_SEMANTIC_OBJECT_CLASSES.has(typedObjectClass)
+      ? typedObjectClass
+      : "RECORD";
+    return resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      objectClass: typedExplanationObject,
+      targetCandidate: { objectClass: typedExplanationObject },
+      evidence: ["TYPED_REQUEST_MODE_EXPLAIN", "TYPED_CONCRETE_OBJECT"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+    });
+  }
+  // Central specificity resolution owns concrete field questions before the
+  // contextual inspection fallback can project them as VIEW.  The field task
+  // remains an explanation/read operation; authorization and record
+  // grounding still run after this semantic decision.
+  if (shape?.taskType === "FIELD_LOOKUP"
+    && typedEvidence?.specificity?.selectedTask === "FIELD_LOOKUP"
+    && !typedReferenceRequiresConcreteTarget
+    && typedEvidence?.quality?.authorizationEffect === "NONE") {
+    const fieldObject = ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER", "RECORD"].includes(typedObjectClass)
+      ? typedObjectClass
+      : (contextualObjectClass === "UNKNOWN" ? null : contextualObjectClass);
+    return resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      objectClass: fieldObject,
+      targetCandidate: fieldObject ? { objectClass: fieldObject } : null,
+      evidence: ["CENTRAL_SPECIFICITY_FIELD_LOOKUP"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: fieldObject ? "RESOLVED" : "UNRESOLVED",
+    });
+  }
+  if (["CREATE", "VIEW", "NAVIGATE", "DELETE", "SEND", "COMPARE"].includes(typedRequestMode)
+    && !typedReferenceRequiresConcreteTarget
+    && !shape?.ambiguity
+    && typedEvidence?.quality?.authorizationEffect === "NONE") {
+    const candidateObject = ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER", "RECORD", "SURFACE"].includes(typedObjectClass)
+      ? typedObjectClass
+      : (contextualObjectClass === "UNKNOWN" ? null : contextualObjectClass);
+    const typedActionObject = CANONICAL_SEMANTIC_OBJECT_CLASSES.has(candidateObject) ? candidateObject : null;
+    return resolvedSemanticAction({
+      actionClass: typedRequestMode,
+      objectClass: typedActionObject,
+      targetCandidate: typedActionObject ? { objectClass: typedActionObject } : null,
+      evidence: [`TYPED_REQUEST_MODE_${typedRequestMode}`, ...(typedActionObject ? ["TYPED_OBJECT_EVIDENCE"] : [])],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+    });
+  }
+  if (shape?.generalProductHelpIntent) {
+    const explicitSurfaceEvidence = Boolean(
+      shape?.screenContextIntent
+      || shape?.screenKnowledgeIntent
+      || shape?.screenDetailIntent
+      || shape?.explicitUiGuidance
+      || String(typedEvidence?.targetRequest?.value || "").toUpperCase() === "SURFACE"
+      || String(typedEvidence?.object?.value || "").toUpperCase() === "SURFACE",
+    );
+    return resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      // Incidental current-surface context is not a semantic object. Keep a
+      // concrete role/process subject when it was textually resolved, and
+      // project SURFACE only when the request itself carries explicit surface
+      // evidence.
+      objectClass: hasStructuredRoleProcessExplanation(normalizedText)
+        && contextualObjectClass !== "UNKNOWN"
+        ? contextualObjectClass
+        : explicitSurfaceEvidence
+          ? "SURFACE"
+          : null,
+      evidence: ["GENERAL_PRODUCT_HELP_REQUEST"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+      modifiers: { current: true, new: false, next: false, explicitTarget: false },
+    });
+  }
+
+  const compositionalEvidence = collectCompositionalSemanticEvidence({ text: normalizedText, objectClass: contextualObjectClass });
+  if (compositionalEvidence.negated) {
+    return resolvedSemanticAction({
+      actionClass: "NONE",
+      objectClass: "SHIFT",
+      evidence: compositionalEvidence.evidence,
+      explicitness: "EXPLICIT",
+      resolutionStatus: "UNRESOLVED",
+      modifiers: { new: false, current: false, next: false, explicitTarget: false },
+    });
+  }
+  if (compositionalEvidence.actionClass === "CREATE" && compositionalEvidence.resolutionStatus === "RESOLVED") {
+    return resolvedSemanticAction({
+      actionClass: "CREATE",
+      objectClass: "SHIFT",
+      evidence: [...hintEvidence, ...compositionalEvidence.evidence],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+    });
+  }
+
+  const contextualEvidence = collectInternalContextualEvidence({
+    text: normalizedText,
+    objectClass: contextualObjectClass,
+    semanticContext,
+  });
+  if (contextualEvidence?.negated) {
+    return resolvedSemanticAction({
+      actionClass: "NONE",
+      objectClass: "SHIFT",
+      evidence: contextualEvidence.evidence,
+      explicitness: "EXPLICIT",
+      resolutionStatus: "UNRESOLVED",
+      modifiers: { new: false, current: false, next: false, explicitTarget: false },
+    });
+  }
+  if (contextualEvidence?.actionClass === "VIEW" && contextualEvidence.resolutionStatus === "RESOLVED") {
+    return resolvedSemanticAction({
+      actionClass: "VIEW",
+      objectClass: "SHIFT",
+      evidence: [...hintEvidence, ...contextualEvidence.evidence],
+      explicitness: explicitObjectClassFromText(normalizedText)
+        && hasExplicitSurfaceNavigationVerb(normalizedText)
+        ? "EXPLICIT"
+        : "CONTEXTUAL",
+      resolutionStatus: "RESOLVED",
+      modifiers: { current: true, new: false, next: false, explicitTarget: false },
+    });
+  }
+
+  if (hinted?.actionClass === "CREATE" && hinted?.objectClass === "SHIFT") {
+    return resolvedSemanticAction({ actionClass: "CREATE", objectClass: "SHIFT", evidence: [...hintEvidence, "EXPLICIT_SHIFT_CREATE_GOAL"] });
+  }
+
+  if (/^UNRESOLVED_[A-Z0-9_]+$/.test(String(shape?.workflowIntent || ""))) {
+    return resolvedSemanticAction({ actionClass: "NAVIGATE", objectClass, evidence: ["EXPLICIT_UNRESOLVED_UI_TARGET"] });
+  }
+
+  // A canonically identified existing surface takes precedence over a shared
+  // creation verb: “vardiya ekranını aç” navigates; it does not create.
+  if (/^OPEN_[A-Z0-9_]+$/.test(String(shape?.workflowIntent || ""))) {
+    return resolvedSemanticAction({ actionClass: "NAVIGATE", objectClass, evidence: ["CANONICAL_SURFACE_NAVIGATION"] });
+  }
+
+  const explicitShiftCreate = objectClass === "SHIFT"
+    && !hasPreparationOnlyCue(normalizedText)
+    && /\b(?:yeni|sifirdan|sıfırdan)?\s*(?:vardiya|sefer|shift)\p{L}*(?:\s+(?:plani|planı))?.{0,36}\b(?:olustur|oluştur|baslat|başlat|ac(?!ikla)|aç(?!ıkla))\p{L}*\b/iu.test(normalizedText);
+  if (shape?.workflowIntent === "CREATE_SHIFT" || explicitShiftCreate) {
+    return resolvedSemanticAction({ actionClass: "CREATE", objectClass: "SHIFT", evidence: [...hintEvidence, "EXPLICIT_SHIFT_CREATE_GOAL"] });
+  }
+
+  if (objectClass !== "UNKNOWN" && hasExplicitSurfaceViewVerb(normalizedText)) {
+    return resolvedSemanticAction({ actionClass: "VIEW", objectClass, evidence: ["EXPLICIT_SURFACE_VIEW"] });
+  }
+
+  if (shape?.workflowStepIntent && shape?.capabilityIntent) {
+    return resolvedSemanticAction({ actionClass: "PREPARE", objectClass: objectClass === "UNKNOWN" ? "ROUTE" : objectClass, evidence: ["LIVE_WORKFLOW_CAPABILITY"] , explicitness: "CONTEXTUAL" });
+  }
+  if (shape?.taskType && shape.taskType !== "CLARIFY" && shape.taskType !== "OFF_TOPIC") {
+    const liveContextExplanation = Boolean(shape?.liveWorkflowGrounded || shape?.currentTargetExplanationIntent || shape?.workflowStepIntent || shape?.continuationIntent);
+    return resolvedSemanticAction({ actionClass: "EXPLAIN", objectClass, evidence: ["CANONICAL_TASK_EXPLANATION"], explicitness: liveContextExplanation ? "CONTEXTUAL" : (shape?.explicitTaskIntent ? "EXPLICIT" : "CONTEXTUAL") });
+  }
+  if (shape?.taskType === "OFF_TOPIC" || shape?.generalInformationIntent || shape?.generalCreativeIntent) {
+    return resolvedSemanticAction({
+      actionClass: "NONE",
+      objectClass: null,
+      explicitness: "NONE",
+      evidence: ["GENERAL_NON_PRODUCT_REQUEST"],
+      resolutionStatus: "NOT_APPLICABLE",
+      modifiers: { new: false, current: false, next: false, explicitTarget: false },
+    });
+  }
+  return resolvedSemanticAction({
+    actionClass: "NONE",
+    objectClass: null,
+    explicitness: "UNRESOLVED",
+    evidence: ["NO_UNIQUE_ACTION_OBJECT_CANDIDATE"],
+    resolutionStatus: "UNRESOLVED",
+    modifiers: { new: false, current: false, next: false, explicitTarget: false },
+  });
+}
+
+function mapSemanticActionToCanonicalMeaning({ semanticAction, shape } = {}) {
+  const actionClass = semanticAction?.actionClass;
+  const objectClass = semanticAction?.objectClass;
+  const uiRole = String(shape?.uiContext?.surfaceRole || "").toUpperCase();
+  const nextShape = { ...shape };
+  if (actionClass === "NONE" && semanticAction?.evidence?.includes("COMPOSITIONAL_NEGATION_VETO")) {
+    return {
+      shape: {
+        ...nextShape,
+        taskType: "CLARIFY",
+        requestedTasks: [],
+        workflowIntent: null,
+        workflowModel: null,
+        workflowStepIntent: false,
+        explicitTaskIntent: false,
+        ambiguity: "NEGATED_PRODUCT_GOAL",
+      },
+      operation: "CLARIFY_SEMANTIC_REQUEST",
+      capability: "CLARIFY",
+    };
+  }
+  if (actionClass === "NEXT" && objectClass === "ROUTE") {
+    Object.assign(nextShape, {
+      taskType: "NEXT_ACTION",
+      requestedTasks: ["NEXT_ACTION"],
+      requestedFields: [],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      routeOrderIntent: true,
+      routeOrderState: "MISSING_OR_UNVERIFIED",
+    });
+    return {
+      shape: nextShape,
+      operation: "RESOLVE_NEXT_SAFE_ACTION",
+      capability: "NEXT_ACTION",
+    };
+  }
+  if (actionClass === "CREATE" && objectClass === "SHIFT") {
+    if (uiRole === "ROOM" || shape?.roleCapabilityBoundary === "ROOM_CREATE_UNSUPPORTED") {
+      Object.assign(nextShape, {
+        taskType: "SCREEN_CONTEXT",
+        domain: "SHIFTS",
+        targetEntityType: "SHIFT",
+        requestedTasks: ["SCREEN_CONTEXT"],
+        explicitTaskIntent: true,
+        explicitUiGuidance: true,
+        workflowIntent: "OPEN_SHIFT_SURFACE",
+        workflowModel: null,
+        roleCapabilityBoundary: "ROOM_CREATE_UNSUPPORTED",
+      });
+      return { shape: nextShape, operation: "OPEN_EXISTING_SHIFT_OPERATIONS", capability: "OPEN_SHIFT_SURFACE" };
+    }
+    // Action/object recognition deliberately runs before authorization. Once
+    // the product-policy mapping reaches the COMPANY workflow, however, the
+    // live UI still decides whether a step is current. This second use of the
+    // same canonical entry-state helper covers create wording that did not
+    // itself match a workflow-help grammar (for example, a start-goal).
+    const entryWorkflow = guidedWorkflowEntryState(shape?.uiContext);
+    Object.assign(nextShape, {
+      taskType: "SCREEN_CONTEXT",
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      requestedTasks: ["CREATE_SHIFT"],
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      workflowIntent: "CREATE_SHIFT",
+      workflowModel: uiRole === "COMPANY" ? COMPANY_GUIDED_NEW_PLAN_WORKFLOW : null,
+      workflowEntryState: entryWorkflow?.state || nextShape.workflowEntryState || null,
+      workflowEntryTarget: entryWorkflow?.currentTarget || nextShape.workflowEntryTarget || null,
+      workflowNextStepReference: entryWorkflow?.nextStep || nextShape.workflowNextStepReference || null,
+      workflowNextState: entryWorkflow?.nextState || nextShape.workflowNextState || null,
+      workflowDraftAvailability: entryWorkflow?.draftAvailability || nextShape.workflowDraftAvailability || null,
+      // A canonical pre-wizard entry state proves that no wizard step is
+      // current. Keep a catalog's first step as next-step knowledge only.
+      workflowStepReference: entryWorkflow ? null : nextShape.workflowStepReference || null,
+      workflowStepIntent: entryWorkflow ? false : Boolean(nextShape.workflowStepIntent),
+      workflowActualUiState: entryWorkflow ? shape?.uiContext?.workflowState || null : nextShape.workflowActualUiState || null,
+    });
+    return { shape: nextShape, operation: "CREATE_SHIFT", capability: "CREATE_SHIFT" };
+  }
+  if (actionClass === "NAVIGATE") {
+    return { shape: nextShape, operation: "NAVIGATE_AUTHORIZED_SURFACE", capability: String(nextShape.workflowIntent || `OPEN_${objectClass}_SURFACE`).toUpperCase() };
+  }
+  if (actionClass === "UPDATE") {
+    return {
+      shape: nextShape,
+      operation: objectClass === "SHIFT" ? "OPEN_EXISTING_SHIFT_OPERATIONS" : "UPDATE_AUTHORIZED_RECORD",
+      capability: objectClass === "SHIFT" ? "UPDATE_SHIFT" : `UPDATE_${objectClass || "RECORD"}`,
+    };
+  }
+  if (shape?.taskType === "COUNT") {
+    return { shape: nextShape, operation: "COUNT_AUTHORIZED_RECORDS", capability: "COUNT_AUTHORIZED_RECORDS" };
+  }
+  if (actionClass === "VIEW") {
+    if (objectClass === "OFFER" && semanticAction?.evidence?.includes("EXPLICIT_OFFER_RECORD_VIEW")) {
+      return {
+        shape: nextShape,
+        operation: "VIEW_AUTHORIZED_SURFACE",
+        capability: "VIEW_OFFER_SURFACE",
+      };
+    }
+    if (objectClass === "SHIFT" && !nextShape.domain) {
+      Object.assign(nextShape, {
+        taskType: "SCREEN_CONTEXT",
+        domain: "SHIFTS",
+        targetEntityType: "SHIFT",
+        requestedTasks: ["SCREEN_CONTEXT"],
+        explicitTaskIntent: true,
+        explicitUiGuidance: true,
+        workflowIntent: "OPEN_SHIFT_SURFACE",
+        screenContextIntent: true,
+      });
+    }
+    return { shape: nextShape, operation: "VIEW_AUTHORIZED_SURFACE", capability: objectClass === "SHIFT" ? "VIEW_SHIFTS" : String(nextShape.workflowIntent || `VIEW_${objectClass}_SURFACE`).toUpperCase() };
+  }
+  if (actionClass === "EXPLAIN"
+    && (shape?.currentTargetRecoveryIntent || shape?.currentTargetExplanationIntent)) {
+    return { shape: nextShape, operation: "EXPLAIN_CURRENT_TARGET", capability: "EXPLAIN_CURRENT_TARGET" };
+  }
+  if (actionClass === "EXPLAIN"
+    && shape?.generalProductHelpIntent
+    && !shape?.currentTargetRecoveryIntent
+    && !shape?.currentTargetExplanationIntent
+    && !shape?.workflowIntent) {
+    return { shape: nextShape, operation: "GENERAL_INFORMATION", capability: "GENERAL_INFORMATION" };
+  }
+  if (actionClass === "COMPARE") {
+    return { shape: nextShape, operation: "COMPARE_AUTHORIZED_RECORDS", capability: "COMPARE_AUTHORIZED_RECORDS" };
+  }
+  if (actionClass === "RESUME") {
+    return { shape: nextShape, operation: "CONTINUE_EXPLANATION", capability: "RESUME_SETTLED_TASK" };
+  }
+  if (actionClass === "CONTINUE") {
+    return { shape: nextShape, operation: "CONTINUE_EXPLANATION", capability: "CONTINUE_SETTLED_TASK" };
+  }
+  if (actionClass === "NONE" && nextShape?.restartIntent) {
+    return { shape: { ...nextShape, taskType: "RETURN_TO_PRODUCT", returnToProductIntent: true }, operation: "RETURN_TO_PRODUCT", capability: "RETURN_TO_PRODUCT" };
+  }
+  if (actionClass === "PREPARE" && nextShape?.capabilityIntent) {
+    return { shape: nextShape, operation: "EXPLAIN_CURRENT_TARGET", capability: String(nextShape.capabilityIntent).toUpperCase() };
+  }
+  return {
+    shape: nextShape,
+    operation: CANONICAL_OPERATION_BY_TASK[TASK_TYPES.has(nextShape?.taskType) ? nextShape.taskType : "CLARIFY"] || "CLARIFY_SEMANTIC_REQUEST",
+    capability: String(nextShape?.workflowStepIntent
+      ? nextShape?.workflowStepReference?.key || nextShape?.taskType || "CLARIFY"
+      : nextShape?.requestedTasks?.[0] || nextShape?.taskType || "CLARIFY").toUpperCase(),
+  };
+}
+
+function resolveSemanticScope({ text, shape, semanticAction } = {}) {
+  const normalizedText = normalize(text);
+  if (shape?.taskType === "CLARIFY" && shape?.ambiguity === "REFERENT_NOT_UNIQUELY_JUSTIFIED") {
+    return { class: "PRODUCT_AMBIGUOUS", evidence: "DEICTIC_REFERENCE_WITHOUT_VALID_REFERENT", explicit: false, confidence: 0.55 };
+  }
+  if (hasGenuineOffTopicSignal(normalizedText, shape) && !hasProductSignal(normalizedText, shape)) {
+    return { class: "OFF_TOPIC_GENUINE", evidence: "NON_PRODUCT_TOPIC_WITH_GENERAL_REQUEST", explicit: false, confidence: 0.94 };
+  }
+
+  const explicitSurfaceTransition = Boolean(shape?.explicitUiGuidance && /^OPEN_[A-Z0-9_]+$/.test(String(shape?.workflowIntent || "")));
+  const explicitAction = semanticAction?.resolutionStatus === "RESOLVED"
+    && ["CREATE", "NAVIGATE", "VIEW", "COMPARE"].includes(semanticAction?.actionClass);
+  // Context-derived action evidence may ground an utterance that already
+  // names a supported product object. Scope must follow that intrinsic
+  // product meaning; only genuinely context-dependent actions retain the
+  // contextual veto. Continuation/resume remain contextual by contract.
+  const intrinsicProductObject = Boolean(explicitObjectClassFromText(normalizedText));
+  const intrinsicResolvedAction = semanticAction?.resolutionStatus === "RESOLVED"
+    && ["CREATE", "NAVIGATE", "VIEW", "EXPLAIN", "COMPARE", "ANALYZE", "PREPARE"].includes(semanticAction?.actionClass)
+    && intrinsicProductObject;
+  const contextualAction = ["CONTINUE", "RESUME"].includes(semanticAction?.actionClass)
+    || (semanticAction?.explicitness === "CONTEXTUAL" && !intrinsicResolvedAction);
+  const explicit = !contextualAction && (explicitAction || Boolean(shape?.explicitUserTarget || shape?.explicitTaskIntent || shape?.explicitUiGuidance || shape?.requestedTasks?.length));
+  if (explicit && shape?.taskType !== "CLARIFY") {
+    return { class: "PRODUCT_EXPLICIT", evidence: explicitAction ? "EXPLICIT_ACTION_OBJECT_CANDIDATE" : "EXPLICIT_PRODUCT_OPERATION_OR_CAPABILITY", explicit: true, confidence: Number(shape?.confidence || 0.9) || 0.9 };
+  }
+
+  const contextual = Boolean(
+    shape?.liveWorkflowGrounded
+    || (shape?.workflowIntent && !explicitSurfaceTransition)
+    || shape?.continuationIntent
+    || shape?.currentTargetExplanationIntent
+    || shape?.currentTargetRecoveryIntent
+    || shape?.workflowStepIntent
+    || shape?.selectedRecordIntent
+    || shape?.discourseReferentFollowUp
+    || shape?.discourseReferentFieldFollowUp
+    || shape?.uiContext?.currentTarget
+    || shape?.uiContext?.workflowState
+    || shape?.uiContext?.selectedEntityPresent,
+  ) || (/^(?:bu|bunun|su|sunun|onun|o|şu|su)\b/iu.test(normalizedText) && hasProductSignal(normalizedText, shape));
+  if (semanticAction?.explicitness === "CONTEXTUAL"
+    && Array.isArray(semanticAction?.evidence)
+    && semanticAction.evidence.some((item) => String(item).startsWith("INTERNAL_CONTEXT_"))) {
+    return { class: "PRODUCT_CONTEXTUAL", evidence: "INTERNAL_CONTEXTUAL_SEMANTIC_EVIDENCE", explicit: false, confidence: 0.94 };
+  }
+  if (contextual) return { class: "PRODUCT_CONTEXTUAL", evidence: "LIVE_OR_SETTLED_PRODUCT_CONTEXT", explicit: false, confidence: Number(shape?.confidence || 0.85) || 0.85 };
+
+  if (shape?.ambiguity || shape?.taskType === "CLARIFY" || hasProductSignal(normalizedText, shape)) {
+    return { class: "PRODUCT_AMBIGUOUS", evidence: shape?.ambiguity ? "PRODUCT_CANDIDATE_WITH_UNRESOLVED_AMBIGUITY" : "PRODUCT_SIGNAL_WITHOUT_UNIQUE_OPERATION", explicit: false, confidence: Number(shape?.confidence || 0.55) || 0.55 };
+  }
+  return { class: "UNRESOLVED", evidence: "NO_VALID_PRODUCT_OR_GENUINE_OFF_TOPIC_EVIDENCE", explicit: false, confidence: 0.2 };
+}
+
+function candidateEntityRefsFromCanonicalShape(shape, selectedEntity, { operation = null, semanticAction = null, message = '', conversationState = null, screenContext = null } = {}) {
+  const refs = [];
+  // Role/global and generic-help turns may mention a product area while
+  // intentionally avoiding a business-record target.  Do not project the
+  // lexical candidate into the canonical reference envelope after the
+  // higher-level help composition has already settled that distinction.
+  if (shape?.roleHelpIntent === true || shape?.generalProductHelpIntent === true) return refs;
+  const targetEntityType = String(shape?.targetEntityType || "").trim().toUpperCase();
+  const workflowIntent = String(shape?.workflowIntent || "").trim().toUpperCase();
+  const ui = shape?.uiContext || {};
+  const normalizedText = String(shape?.normalizedText || shape?.currentRequest?.normalizedMeaning || "").trim();
+  const previousRecordReference = resolvePreviousRecordReference({
+    message: message || normalizedText,
+    conversationState,
+    selectedEntity,
+    screenContext,
+    requestedDomains: Array.isArray(shape?.requestedDomains) ? shape.requestedDomains : [],
+  });
+  if (shape?.ambiguity === "NUMERIC_REFERENT_TYPE_UNRESOLVED") return refs;
+  const explicitOfferMatch = normalizedText.match(/\b(?:teklif|offer|rfq)\s*#?\s*(\d+)\b/iu);
+  const explicitOfferReference = explicitOfferMatch
+    ? { type: "OFFER", id: Number(explicitOfferMatch[1]), source: "EXPLICIT_QUERY" }
+    : null;
+  const explicitRecordReference = shape?.explicitEntityReference || explicitShiftReferenceFromText(normalizedText);
+  const collectionScope = shape?.collectionSummaryIntent === true
+    || shape?.agreementCollectionViewIntent === true
+    || (shape?.taskType === "COUNT" && shape?.scopeTarget === "CURRENT_SCREEN");
+  const hasResolvedRecord = Boolean(
+    Number(selectedEntity?.id || selectedEntity?.entityId || 0) > 0
+      || Number(ui.selectedId || 0) > 0
+      || shape?.currentTargetReference?.targetKey
+      || shape?.targetResolutionState === "RESOLVED_RECORD",
+  );
+  const surfaceWorkflow = ["OPEN_SURFACE", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE", "OPEN_AGREEMENTS_SURFACE"].includes(workflowIntent);
+  const surfaceTarget = Boolean(
+    (targetEntityType === "SURFACE" && (
+      shape?.explicitUserTarget
+      || shape?.currentTargetReference?.targetKey
+      || surfaceWorkflow
+    ))
+      || (
+        surfaceWorkflow
+        && !explicitOfferReference
+        && !hasResolvedRecord
+        && ["NAVIGATE_AUTHORIZED_SURFACE", "VIEW_AUTHORIZED_SURFACE", "OPEN_EXISTING_SHIFT_OPERATIONS"].includes(String(operation || "").toUpperCase())
+        && ["NAVIGATE", "VIEW", "CREATE", "EXPLAIN"].includes(String(semanticAction?.actionClass || "").toUpperCase())
+      ),
+  );
+  const add = (value, source) => {
+    if (!value) return;
+    const type = String(value.type || value.entityType || value.targetEntityType || "").trim().toUpperCase();
+    if (!type) return;
+    const id = Number(value.id || value.entityId || 0) || null;
+    const ref = { type, id, source };
+    const key = `${type}:${id || "UNKNOWN"}:${source}`;
+    if (!refs.some((item) => `${item.type}:${item.id || "UNKNOWN"}:${item.source}` === key)) refs.push(ref);
+  };
+  if (previousRecordReference) add(previousRecordReference, "PREVIOUS_RECORD_CONTEXT");
+  if (explicitOfferReference) add(explicitOfferReference, "EXPLICIT_QUERY");
+  if (explicitRecordReference) add(explicitRecordReference, "EXPLICIT_QUERY");
+  if (!surfaceTarget && !explicitRecordReference && !collectionScope && !previousRecordReference) add(selectedEntity, "SELECTED_ENTITY_CANDIDATE");
+  if (!surfaceTarget) {
+    for (const type of Array.isArray(shape?.targetCandidates) ? shape.targetCandidates : []) {
+      if (explicitOfferReference && String(type || "").toUpperCase() === "OFFER") continue;
+      if (explicitRecordReference && ["SHIFT", "OFFER"].includes(String(type || "").toUpperCase())) continue;
+      add({ type }, "TEXT_ENTITY_CANDIDATE");
+    }
+  }
+  // An explicit record identity owns the turn.  The live selected card is
+  // still useful evidence for deictic requests, but must not be appended as a
+  // second candidate when the user explicitly named another offer.
+  if (!surfaceTarget && !explicitRecordReference && !collectionScope && !previousRecordReference && (ui.selectedType || ui.selectedId)) add({ type: ui.selectedType, id: ui.selectedId }, "LIVE_CONTEXT_CANDIDATE");
+  return refs;
+}
+
+function canonicalRequestedFields(shape) {
+  return [...new Set((Array.isArray(shape?.requestedFields) ? shape.requestedFields : [])
+    .map((field) => typeof field === "string" ? field : field?.key)
+    .map((field) => String(field || "").trim())
+    .filter(Boolean))];
+}
+
+function canonicalSafetyForShape(shape) {
+  const writeBoundary = "NO_BUSINESS_WRITE";
+  const actionPolicy = shape?.explicitUiGuidance || shape?.workflowIntent || shape?.workflowStepIntent
+    ? "SAFE_UI_ONLY"
+    : "READ_ONLY";
+  return { actionPolicy, writeBoundary };
+}
+
+function validateCanonicalConversationRequest(request) {
+  const errors = [];
+  if (request?.version !== SEFER_ABI_CANONICAL_REQUEST_VERSION) errors.push("INVALID_VERSION");
+  for (const field of ["operation", "domain", "capability"]) {
+    if (typeof request?.[field] !== "string" || !request[field].trim()) errors.push(`MISSING_${field.toUpperCase()}`);
+  }
+  if (!Array.isArray(request?.candidateEntityRefs)) errors.push("CANDIDATE_ENTITY_REFS_REQUIRED");
+  if (!Array.isArray(request?.requestedFields)) errors.push("REQUESTED_FIELDS_REQUIRED");
+  if (!request?.safety || !["READ_ONLY", "SAFE_UI_ONLY", "WRITE_REQUIRES_SEPARATE_AUTH"].includes(request.safety.actionPolicy)) errors.push("ACTION_POLICY_REQUIRED");
+  if (!request?.safety || !["NO_BUSINESS_WRITE", "SEPARATE_AUTH_REQUIRED"].includes(request.safety.writeBoundary)) errors.push("WRITE_BOUNDARY_REQUIRED");
+  if (!request?.ambiguity || typeof request.ambiguity.status !== "string") errors.push("AMBIGUITY_STATE_REQUIRED");
+  if (!request?.semanticScope || !CANONICAL_SEMANTIC_SCOPE_CLASSES.has(request.semanticScope.class)) errors.push("SEMANTIC_SCOPE_REQUIRED");
+  if (!request?.semanticScope || typeof request.semanticScope.evidence !== "string" || !request.semanticScope.evidence.trim()) errors.push("SEMANTIC_SCOPE_EVIDENCE_REQUIRED");
+  const action = request?.semanticAction;
+  if (!action || !CANONICAL_SEMANTIC_ACTION_CLASSES.has(action.actionClass)) errors.push("SEMANTIC_ACTION_REQUIRED");
+  if (!action || (action.objectClass !== null && !CANONICAL_SEMANTIC_OBJECT_CLASSES.has(action.objectClass))) errors.push("SEMANTIC_ACTION_OBJECT_REQUIRED");
+  if (!action || !CANONICAL_SEMANTIC_ACTION_RESOLUTION_STATUSES.has(action.resolutionStatus)) errors.push("SEMANTIC_ACTION_RESOLUTION_REQUIRED");
+  if (!action || !Array.isArray(action.evidence) || !action.evidence.length) errors.push("SEMANTIC_ACTION_EVIDENCE_REQUIRED");
+  const modifierKeys = ["new", "current", "next", "explicitTarget"];
+  if (!action || !action.modifiers || Array.isArray(action.modifiers) || modifierKeys.some((key) => typeof action.modifiers[key] !== "boolean")) errors.push("SEMANTIC_ACTION_MODIFIERS_REQUIRED");
+  if (action?.targetCandidate !== null && action?.targetCandidate !== undefined && typeof action.targetCandidate !== "object") errors.push("SEMANTIC_ACTION_TARGET_CANDIDATE_INVALID");
+  if (action?.targetCandidate?.objectClass && !CANONICAL_SEMANTIC_OBJECT_CLASSES.has(action.targetCandidate.objectClass)) errors.push("SEMANTIC_ACTION_TARGET_OBJECT_INVALID");
+  if (action?.actionClass === "CREATE" && action?.objectClass === "SHIFT") {
+    if (request?.operation !== "CREATE_SHIFT" && request?.operation !== "OPEN_EXISTING_SHIFT_OPERATIONS") errors.push("CREATE_SHIFT_OPERATION_REQUIRED");
+    if (request?.operation === "EXPLAIN_CURRENT_SURFACE") errors.push("CREATE_SHIFT_SURFACE_EXPLANATION_CONTRADICTION");
+  }
+  if (action?.actionClass === "NAVIGATE" && request?.operation === "CREATE_SHIFT") errors.push("NAVIGATE_CREATE_CONTRADICTION");
+  if (action?.actionClass === "COMPARE" && request?.operation !== "COMPARE_AUTHORIZED_RECORDS") errors.push("COMPARE_OPERATION_REQUIRED");
+  if (request?.operation === "COMPARE_AUTHORIZED_RECORDS" && action?.actionClass !== "COMPARE") errors.push("COMPARE_ACTION_REQUIRED");
+  if (request?.semanticScope?.class === "OFF_TOPIC_GENUINE") {
+    if (action?.actionClass !== "NONE" || request?.operation !== "GENERAL_INFORMATION") errors.push("OFF_TOPIC_PRODUCT_OPERATION_CONTRADICTION");
+  }
+  const executableOperation = request?.operation === "CREATE_SHIFT"
+    || /^(?:SEND|EXECUTE|DISPATCH|DELETE|WRITE|IMPORT)_/iu.test(String(request?.operation || ""));
+  if (["UNRESOLVED", "AMBIGUOUS"].includes(action?.resolutionStatus) && executableOperation) errors.push("UNRESOLVED_ACTION_EXECUTABLE_OPERATION_FORBIDDEN");
+  if (!request?.provenance || typeof request.provenance.interpreter !== "string") errors.push("PROVENANCE_REQUIRED");
+  const failureClass = errors.length === 0
+    ? null
+    : errors.some((error) => error.startsWith("COMPARE_") || error.startsWith("SEMANTIC_ACTION_"))
+      ? "ACTION_MAPPING_FAILURE"
+      : "SAFE_CLARIFICATION";
+  return { valid: errors.length === 0, errors, failureClass };
+}
+
+export function canonicalRequestSemanticFingerprint(request) {
+  return JSON.stringify({
+    version: request?.version || null,
+    operation: request?.operation || null,
+    domain: request?.domain || null,
+    capability: request?.capability || null,
+    candidateEntityRefs: request?.candidateEntityRefs || [],
+    requestedFields: request?.requestedFields || [],
+    semanticScope: request?.semanticScope || null,
+    semanticAction: request?.semanticAction || null,
+    safety: request?.safety || null,
+    currentRequest: request?.currentRequest || null,
+  });
+}
+
+export function assertCanonicalRequestUnchanged(originalRequest, candidateRequest) {
+  const original = canonicalRequestSemanticFingerprint(originalRequest);
+  const candidate = canonicalRequestSemanticFingerprint(candidateRequest);
+  if (original !== candidate) throw new Error("POST_CANONICAL_REQUEST_MUTATION");
+  return true;
+}
+
+const SHADOW_MISMATCH_CATEGORIES = Object.freeze([
+  "missing feature",
+  "composition mismatch",
+  "object veto",
+  "context mismatch",
+  "action mismatch",
+  "scope mismatch",
+  "authorization mismatch",
+  "response-only mismatch",
+]);
+
+function shadowMismatch(category, detected, details) {
+  return { category, detected: Boolean(detected), details: details || null };
+}
+
+function shadowVisibleBehaviorFingerprint({ request, validation, failureClass, fallbackEligibility } = {}) {
+  return JSON.stringify({
+    canonicalRequest: canonicalRequestSemanticFingerprint(request),
+    validation,
+    failureClass: failureClass || null,
+    fallbackEligibility: {
+      eligible: Boolean(fallbackEligibility?.eligible),
+      reason: fallbackEligibility?.reason || null,
+      invoked: Boolean(fallbackEligibility?.invoked),
+    },
+  });
+}
+
+function buildShadowSemanticEvidenceDiagnostic({
+  features,
+  context,
+  newEvidence,
+  request,
+  canonicalShape,
+  validation,
+  failureClass,
+  fallbackEligibility,
+} = {}) {
+  const composedAction = String(newEvidence?.requestMode?.value || "").toUpperCase() || null;
+  const oldAction = String(request?.semanticAction?.actionClass || "").toUpperCase() || null;
+  const actionEquivalent = {
+    EXPLAIN: "EXPLAIN",
+    VIEW: "VIEW",
+    NAVIGATE: "NAVIGATE",
+  }[composedAction] || null;
+  const oldRoleHelpCandidate = Boolean(canonicalShape?.roleHelpIntent || canonicalShape?.generalProductHelpIntent);
+  const newRoleHelpCandidate = Boolean(newEvidence?.quality?.roleHelpCandidate);
+  const contextUsed = Array.isArray(context?.contextUsed) ? context.contextUsed : [];
+  const contextSources = new Set(
+    (Array.isArray(newEvidence?.provenance) ? newEvidence.provenance : [])
+      .map((entry) => entry?.source)
+      .filter((source) => ["AUTH_CONTEXT", "SURFACE_CONTEXT", "ACTIVE_TASK", "REFERENCE_HISTORY"].includes(source)),
+  );
+  const contextMismatch = [...contextSources].some((source) => !contextUsed.some((entry) => entry?.source === source && entry?.used === true));
+  const authorizationMismatch = newEvidence?.quality?.authorizationEffect !== "NONE"
+    || (Array.isArray(newEvidence?.provenance) && newEvidence.provenance.some((entry) => entry?.authorizationEffect !== "NONE"));
+  const responseMismatch = Object.prototype.hasOwnProperty.call(newEvidence || {}, "response")
+    || Object.prototype.hasOwnProperty.call(newEvidence || {}, "responseFamily");
+  const objectVeto = Array.isArray(newEvidence?.contradictions)
+    && newEvidence.contradictions.some((entry) => entry?.value === "CONCRETE_OBJECT_OVERRIDES_BROAD_ROLE_ASPECT");
+  const oldScope = String(request?.semanticScope?.class || "").toUpperCase();
+  const newTarget = String(newEvidence?.targetRequest?.value || "").toUpperCase();
+  const scopeMismatch = Boolean(newTarget && newTarget !== "NONE")
+    && oldScope === "OFF_TOPIC_GENUINE";
+  const missingFeature = !features
+    || !Array.isArray(features.tokens)
+    || (features.featureQuality?.partial === true && features.tokens.length === 0);
+  const compositionMismatch = oldRoleHelpCandidate !== newRoleHelpCandidate;
+  const actionMismatch = Boolean(actionEquivalent && oldAction && actionEquivalent !== oldAction)
+    || Boolean(!actionEquivalent && ["CREATE", "COMPARE", "NONE"].includes(oldAction) && newEvidence?.requestMode?.value);
+
+  return {
+    mode: "SHADOW",
+    authoritativePath: "OLD_CANONICAL",
+    shadowSemanticAuthorityCount: 0,
+    visibleBehaviorChangeCount: 0,
+    canonicalRequestFingerprint: canonicalRequestSemanticFingerprint(request),
+    visibleBehaviorFingerprint: shadowVisibleBehaviorFingerprint({ request, validation, failureClass, fallbackEligibility }),
+    contextUsed,
+    mismatchCategories: SHADOW_MISMATCH_CATEGORIES.map((category) => {
+      switch (category) {
+        case "missing feature":
+          return shadowMismatch(category, missingFeature, missingFeature ? "feature extraction incomplete" : null);
+        case "composition mismatch":
+          return shadowMismatch(category, compositionMismatch, { oldRoleHelpCandidate, newRoleHelpCandidate });
+        case "object veto":
+          return shadowMismatch(category, objectVeto, objectVeto ? "concrete object vetoes broad role aspect" : null);
+        case "context mismatch":
+          return shadowMismatch(category, contextMismatch, contextMismatch ? "composer context provenance is not typed as used" : null);
+        case "action mismatch":
+          return shadowMismatch(category, actionMismatch, { oldAction, composedAction });
+        case "scope mismatch":
+          return shadowMismatch(category, scopeMismatch, { oldScope, newTarget });
+        case "authorization mismatch":
+          return shadowMismatch(category, authorizationMismatch, authorizationMismatch ? "evidence attempted an authorization effect" : null);
+        case "response-only mismatch":
+          return shadowMismatch(category, responseMismatch, responseMismatch ? "evidence attempted a response effect" : null);
+        default:
+          return shadowMismatch(category, false, null);
+      }
+    }),
+    newEvidence,
+  };
+}
+
+function resolveOldCanonicalConversationRequest({
+  message,
+  user,
+  selectedEntity = null,
+  conversationState = null,
+  screenContext = null,
+  semanticContext = null,
+  interpreterMode = "DETERMINISTIC",
+  authorityTrace = null,
+  localSemanticProposal = null,
+} = {}) {
+  if (authorityTrace) authorityTrace.events.push({ path: "OLD_CANONICAL", role: "AUTHORITY" });
+  const canonicalContext = semanticContext || buildCanonicalSemanticContext({ message, user, screenContext, conversationState });
+  const inferredShape = inferCanonicalSemanticRequest({ message, user, screenContext, conversationState, localSemanticProposal });
+  const inferredSemanticAction = inferCanonicalSemanticAction({ text: message, shape: inferredShape, conversationState, semanticContext: canonicalContext });
+  const preliminaryMapping = mapSemanticActionToCanonicalMeaning({ semanticAction: inferredSemanticAction, shape: inferredShape });
+  const preliminaryShape = preliminaryMapping.shape;
+  const preliminaryScope = resolveSemanticScope({ text: message, shape: preliminaryShape, semanticAction: inferredSemanticAction });
+  const semanticAction = preliminaryScope.class === "OFF_TOPIC_GENUINE"
+    ? resolvedSemanticAction({
+      actionClass: "NONE",
+      objectClass: null,
+      explicitness: "NONE",
+      evidence: ["GENUINE_OFF_TOPIC_SCOPE"],
+      resolutionStatus: "NOT_APPLICABLE",
+      modifiers: { new: false, current: false, next: false, explicitTarget: false },
+    })
+    : inferredSemanticAction;
+  const mapping = mapSemanticActionToCanonicalMeaning({ semanticAction, shape: inferredShape });
+  const shape = mapping.shape;
+  const semanticScope = preliminaryScope.class === "OFF_TOPIC_GENUINE"
+    ? preliminaryScope
+    : resolveSemanticScope({ text: message, shape, semanticAction });
+  const taskType = TASK_TYPES.has(shape?.taskType) ? shape.taskType : "CLARIFY";
+  const operation = semanticScope.class === "OFF_TOPIC_GENUINE"
+    ? "GENERAL_INFORMATION"
+    : mapping.operation;
+  const domain = semanticScope.class === "OFF_TOPIC_GENUINE"
+    ? "GENERAL"
+    : String(shape?.domain || shape?.requestedOwnershipScope?.requestedOwnerScope || shape?.targetCandidates?.[0] || "PRODUCT").trim().toUpperCase();
+  const capability = semanticScope.class === "OFF_TOPIC_GENUINE"
+    ? "GENERAL_INFORMATION"
+    : mapping.capability;
+  const candidateEntityRefs = candidateEntityRefsFromCanonicalShape(shape, selectedEntity, { operation, semanticAction, message, conversationState, screenContext });
+  const request = deepFreeze({
+    version: SEFER_ABI_CANONICAL_REQUEST_VERSION,
+    operation,
+    domain,
+    capability,
+    candidateEntityRefs,
+    requestedFields: canonicalRequestedFields(shape),
+    safety: canonicalSafetyForShape(shape),
+    semanticScope,
+    semanticAction,
+    currentRequest: {
+      explicitness: semanticScope.explicit ? "EXPLICIT" : semanticScope.class === "PRODUCT_CONTEXTUAL" ? "CONTEXTUAL" : "UNRESOLVED",
+      operation,
+      normalizedMeaning: String(shape?.normalizedText || normalize(message)).trim(),
+      rawTextHash: null,
+    },
+    activeTaskRef: conversationState?.activeGuidedTask?.taskId
+      || conversationState?.activeTask?.id
+      || conversationState?.activeGuidedTask?.semanticPlan?.workflowIntent
+      || null,
+    workflowRef: shape?.workflowIntent
+      ? { workflowIntent: shape.workflowIntent, workflowState: shape.workflowStepReference?.key || shape.workflowNextState || null }
+      : null,
+    continuation: {
+      mode: shape?.restartIntent ? "RESTART" : semanticAction.actionClass === "RESUME" ? "RESUME" : (shape?.continuationIntent || taskType === "CONTINUE_CURRENT_REASONING" ? "CONTINUE" : "NEW_REQUEST"),
+      baseRequestId: conversationState?.lastSettledResult?.requestId || null,
+      depth: Number(conversationState?.lastSettledResult?.continuationDepth || 0) || 0,
+    },
+    groundingRequirement: semanticScope.class === "OFF_TOPIC_GENUINE" ? "NONE" : "CURRENT_AUTHORIZED_RUNTIME",
+    ambiguity: {
+      status: semanticAction.resolutionStatus === "AMBIGUOUS" ? "AMBIGUOUS" : semanticScope.class === "PRODUCT_AMBIGUOUS" || semanticScope.class === "UNRESOLVED" || semanticAction.resolutionStatus === "UNRESOLVED" || shape?.ambiguity || (taskType === "CLARIFY" && semanticAction.resolutionStatus !== "RESOLVED") ? "UNRESOLVED" : "NONE",
+      candidates: Array.isArray(shape?.targetCandidates) ? [...shape.targetCandidates] : [],
+      reason: shape?.ambiguity || null,
+    },
+    provenance: {
+      interpreter: "EXISTING_CANONICAL_SEMANTIC_INFERENCE",
+      interpreterMode,
+      source: "canonicalSemanticRequest.inferCanonicalSemanticRequest",
+      createdAt: new Date().toISOString(),
+    },
+  });
+  const validation = validateCanonicalConversationRequest(request);
+  // Stage A exposes only the deterministic fallback eligibility seam. With no
+  // proposer injected, this metadata never changes the canonical result or
+  // invokes external work; the existing semantic authority remains final.
+  const fallbackEligibility = evaluateSemanticFallbackEligibility({
+    semanticScopeClass: semanticScope.class,
+    resolutionStatus: semanticAction.resolutionStatus,
+    confidence: semanticScope.confidence <= 0.65 ? "LOW" : "HIGH",
+    hasProductEvidence: semanticScope.class !== "OFF_TOPIC_GENUINE"
+      && (semanticScope.class === "PRODUCT_AMBIGUOUS" || domain !== "GENERAL" || semanticAction.objectClass !== null),
+  });
+  return deepFreeze({
+    requestId: `ccr-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    request,
+    canonicalShape: shape,
+    validation: {
+      status: validation.valid ? "VALID" : "SEMANTIC_UNRESOLVED",
+      errors: validation.errors,
+      failureClass: validation.failureClass,
+    },
+    // Every invalid envelope is a user-safe clarification outcome. The
+    // internal validation failure class remains available for diagnostics so
+    // ACTION_MAPPING_FAILURE cannot be confused with PRODUCT_AMBIGUITY.
+    failureClass: validation.valid ? null : "SAFE_CLARIFICATION",
+    fallbackEligibility: { ...fallbackEligibility, invoked: false },
+    user: { role: user?.role || null },
+    diagnostics: {},
+  });
+}
+
+function composeTypedSemanticEvidence({ message, user, conversationState, screenContext, semanticContext, authorityTrace = null, traceRole = "DIAGNOSTIC", localSemanticProposal = null }) {
+  if (authorityTrace) authorityTrace.events.push({ path: "NEW_TYPED_EVIDENCE", role: traceRole });
+  const context = semanticContext || buildCanonicalSemanticContext({ message, user, screenContext, conversationState });
+  const features = extractTurkishSemanticFeatures({ text: message });
+  const baseEvidence = composeSemanticEvidence({
+    features,
+    context,
+    conversationState: conversationState || {},
+    screenContext: screenContext || {},
+  });
+  const inferred = inferCanonicalSemanticRequest({ message, user, screenContext, conversationState, localSemanticProposal });
+  const specificity = resolveSemanticSpecificity({ message, evidence: baseEvidence, inferred, context, conversationState });
+  const evidence = applySemanticSpecificityEvidence(baseEvidence, specificity);
+  const resolvedInferred = {
+    ...inferred,
+    ...specificity.inferredOverrides,
+  };
+  return { context, features, evidence, inferred: resolvedInferred, specificity };
+}
+
+function createAuthorityTrace(mode, selectedAuthority) {
+  return {
+    mode,
+    selectedAuthority,
+    events: [],
+    fallbackAttempts: [],
+    downstreamRedecisions: [],
+  };
+}
+
+function authorityDiagnostics(trace) {
+  const events = Array.isArray(trace?.events) ? trace.events : [];
+  const authorityEvents = events.filter(({ role }) => role === "AUTHORITY");
+  const authoritativePaths = authorityEvents.map(({ path }) => path);
+  const oldAuthorityInvocationCount = events.filter(({ path }) => path === "OLD_CANONICAL").length;
+  const newAuthorityInvocationCount = events.filter(({ path }) => path === "NEW_TYPED_EVIDENCE").length;
+  const fallbackAttempts = Array.isArray(trace?.fallbackAttempts) ? trace.fallbackAttempts : [];
+  const downstreamRedecisions = Array.isArray(trace?.downstreamRedecisions) ? trace.downstreamRedecisions : [];
+  return {
+    mode: trace?.mode || null,
+    authoritativePath: authorityEvents.length === 1 ? authorityEvents[0].path : null,
+    oldAuthorityInvocationCount,
+    newAuthorityInvocationCount,
+    PER_REQUEST_SEMANTIC_AUTHORITY_COUNT: authorityEvents.length === 1
+      && authorityEvents[0].path === trace?.selectedAuthority ? authorityEvents.length : 0,
+    RUNTIME_SEMANTIC_FALLBACK_COUNT: fallbackAttempts.length,
+    SHADOW_SEMANTIC_AUTHORITY_COUNT: events.filter(({ role }) => role === "SHADOW_AUTHORITY").length,
+    DUAL_SEMANTIC_AUTHORITY_COUNT: new Set(authoritativePaths).size > 1 ? 1 : 0,
+    DOWNSTREAM_SEMANTIC_REDECISION_COUNT: downstreamRedecisions.length,
+    trace: {
+      mode: trace?.mode || null,
+      selectedAuthority: trace?.selectedAuthority || null,
+      events: events.map((event) => ({ ...event })),
+      fallbackAttempts: fallbackAttempts.map((event) => ({ ...event })),
+      downstreamRedecisions: downstreamRedecisions.map((event) => ({ ...event })),
+    },
+  };
+}
+
+function newAuthorityShape({ message, screenContext, evidence, failure = false, roleHelp = false } = {}) {
+  if (failure) {
+    return {
+      taskType: "CLARIFY",
+      confidence: 0,
+      domain: null,
+      targetEntityType: null,
+      explicitTaskIntent: false,
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      primaryTask: "SEMANTIC_UNRESOLVED",
+      scopeTarget: "NONE",
+      ambiguity: "INTERNAL_EVIDENCE_FAILURE",
+      targetCandidates: [],
+      normalizedText: normalize(message),
+      requestedOwnershipScope: null,
+      requiredOutputSlots: [],
+      explicitUserTarget: false,
+    };
+  }
+  return {
+    taskType: roleHelp ? "OFF_TOPIC" : "SCREEN_CONTEXT",
+    confidence: 0.9,
+    domain: null,
+    targetEntityType: null,
+    explicitTaskIntent: true,
+    generalProductHelpIntent: roleHelp,
+    roleHelpIntent: roleHelp,
+    primaryTask: roleHelp ? "ROLE_EXPLANATION_HELP" : "TYPED_SEMANTIC_REQUEST",
+    scopeTarget: roleHelp ? "ROLE_GLOBAL" : "CURRENT_SCREEN",
+    ambiguity: null,
+    targetCandidates: [],
+    normalizedText: normalize(message),
+    uiContext: {
+      path: screenContext?.path || "",
+      label: screenContext?.label || "",
+      surfaceRole: screenContext?.role || "",
+      selectedId: null,
+      selectedType: "",
+      selectedEntityPresent: false,
+      visibleControlCount: 0,
+      visibleTargetLabels: [],
+      visibleTargets: [],
+      modalTitles: [],
+      currentTarget: null,
+      workflowState: null,
+      guidedDraftAvailability: null,
+      foregroundSurface: null,
+    },
+    requestedOwnershipScope: null,
+    requiredOutputSlots: [],
+    explicitUserTarget: false,
+    typedEvidence: {
+      subject: evidence?.subject?.value || "NONE",
+      roleAspect: evidence?.roleAspect?.value || "NONE",
+      requestMode: evidence?.requestMode?.value || "NONE",
+      productHelp: evidence?.productHelp?.value || "NONE",
+    },
+  };
+}
+
+function buildTypedCanonicalShape({ message, user, screenContext, conversationState, evidence, context, inferred: providedInferred = null, specificity = null } = {}) {
+  const inferred = providedInferred || inferCanonicalSemanticRequest({ message, user, screenContext, conversationState });
+  const mode = String(evidence?.requestMode?.value || "UNRESOLVED").toUpperCase();
+  const explicitRecordReference = inferred?.explicitEntityReference || explicitShiftReferenceFromText(message);
+  const reference = explicitRecordReference
+    ? "EXPLICIT"
+    : String(evidence?.reference?.value || "ABSENT").toUpperCase();
+  const typedObjectValue = String(evidence?.object?.value || "NONE").toUpperCase();
+  const agreementOperationBridgeIntent = hasAgreementOperationBridgeCue(message)
+    && (typedObjectValue === "AGREEMENT" || inferred?.targetEntityType === "AGREEMENT");
+  const explicitSurfaceExplanation = hasExplicitCurrentScreenPurposeCue(normalize(message))
+    || hasNamedSurfaceExplanationCue(message);
+  const productHelpSignal = Boolean(
+    inferred?.generalProductHelpIntent
+      || (/(?:\bprogram\p{L}*\b|\bplatform\p{L}*\b|\bseferpakt\p{L}*\b)/iu.test(normalize(message))
+        && (isGenericProductHelpIntent(message, { roleContext: screenContext?.role })
+          || isExplicitRoleHelpIntent(message, { roleContext: screenContext?.role })))
+      || (isGenericProductHelpIntent(message, { roleContext: screenContext?.role })
+        && !isExplicitRoleHelpIntent(message, { roleContext: screenContext?.role })),
+  );
+  const productHelpComposition = Boolean(productHelpSignal && !explicitSurfaceExplanation);
+  const liveSurfaceTargetEvidence = Boolean(inferred?.currentTargetReference?.targetKey);
+  const explicitSurfaceEvidence = Boolean(
+    liveSurfaceTargetEvidence
+      || (typedObjectValue === "SURFACE"
+        && Boolean(
+          inferred?.screenContextIntent
+          || inferred?.screenKnowledgeIntent
+          || inferred?.explicitUiGuidance
+          || String(evidence?.targetRequest?.value || "").toUpperCase() === "SURFACE",
+        )),
+  )
+    && !productHelpComposition;
+  const externalDomain = Array.isArray(evidence?.domainEvidence)
+    && evidence.domainEvidence.some((entry) => entry?.kind === "EXTERNAL_DOMAIN" && String(entry?.value || "").trim() && entry?.value !== "NONE");
+  const continuationValid = String(context?.continuity?.continuation?.status || "").toUpperCase() === "VALID"
+    && String(context?.continuity?.precedence || "").toUpperCase() !== "EXPLICIT_INPUT";
+  const roleHelpCandidate = evidence?.quality?.roleHelpCandidate === true
+    && mode === "EXPLAIN"
+    && !hasIssueDiagnosticCue(normalize(message))
+    && !inferred?.operationHealthMetricIntent
+    // A concrete typed object is stronger than broad role-orientation
+    // evidence for operation-bearing requests.  A reference-less role
+    // orientation/capability question may still name a product area (for
+    // example, “servis işlerini nasıl öğrenebilirim?”) without asking for a
+    // business record.
+    && (!typedObjectValue || allowsConcreteRoleHelpAspect(evidence, reference))
+    && !externalDomain
+    && reference !== "AMBIGUOUS"
+    && !inferred?.generalCreativeIntent
+    && String(inferred?.screenKnowledgeKind || "").toUpperCase() !== "SCREEN_PURPOSE"
+    && !inferred?.screenKnowledgeIntent
+    && !inferred?.screenDetailIntent
+    && !inferred?.workflowIntent
+    // A live recovery/target explanation is already grounded in the current
+    // authorized workflow.  Do not let broad role-help evidence rewrite that
+    // typed target into role-global product help before action composition.
+    && !inferred?.continuationIntent
+    && !inferred?.currentTargetRecoveryIntent
+    && !inferred?.currentTargetExplanationIntent
+    && !inferred?.workflowIntent
+    && !hasProductNoteLookupCue(message)
+    && !explicitRecordReference
+    && (!explicitSurfaceEvidence || (
+      String(evidence?.targetRequest?.value || "").toUpperCase() === "PRODUCT_AREA"
+      && !explicitSurfaceExplanation
+      && !liveSurfaceTargetEvidence
+    ));
+  const concreteObjectVeto = evidence?.object?.value
+    && evidence.object.value !== "NONE"
+    && evidence?.targetRequest?.value !== "PRODUCT_AREA"
+    && !inferred?.termDefinitionIntent
+    && !inferred?.operationHealthMetricIntent
+    && !inferred?.screenKnowledgeIntent
+    && !productHelpComposition;
+  let shape = {
+    ...inferred,
+    agreementOperationBridgeIntent,
+    typedEvidence: {
+      subject: evidence?.subject?.value || "NONE",
+      roleAspect: evidence?.roleAspect?.value || "NONE",
+      requestMode: evidence?.requestMode?.value || "NONE",
+      productHelp: evidence?.productHelp?.value || "NONE",
+      object: evidence?.object?.value || "NONE",
+      reference,
+    },
+  };
+  if (roleHelpCandidate) {
+    shape = {
+      ...shape,
+      taskType: "OFF_TOPIC",
+      generalProductHelpIntent: true,
+      roleHelpIntent: true,
+      primaryTask: "ROLE_EXPLANATION_HELP",
+      explicitTaskIntent: true,
+      scopeTarget: "ROLE_GLOBAL",
+      ambiguity: null,
+    };
+  } else if (explicitSurfaceEvidence && mode === "EXPLAIN"
+    && (typedObjectValue === "SURFACE" || inferred?.targetEntityType === "SURFACE" || !liveSurfaceTargetEvidence)) {
+    shape = {
+      ...shape,
+      taskType: "SCREEN_CONTEXT",
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      screenKnowledgeIntent: true,
+      scopeTarget: "CURRENT_SCREEN",
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      ambiguity: null,
+    };
+  }
+  if (externalDomain && specificity?.positiveNonProductEvidence === true) {
+    shape = {
+      ...shape,
+      taskType: "OFF_TOPIC",
+      generalCreativeIntent: false,
+      generalInformationIntent: false,
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      explicitTaskIntent: false,
+      explicitUserTarget: false,
+      targetEntityType: null,
+      targetCandidates: [],
+      scopeTarget: "NONE",
+      ambiguity: null,
+    };
+  } else if (["AMBIGUOUS", "UNRESOLVED", "REJECTED_STALE", "STALE"].includes(reference)
+    && !hasIssueDiagnosticCue(normalize(message))
+    && inferred?.taskType !== "SELECTED_RECORD_CONTEXT"
+    && !inferred?.currentTargetRecoveryIntent
+    && !inferred?.currentTargetExplanationIntent
+    && String(evidence?.object?.value || "").toUpperCase() !== "SURFACE") {
+    shape = {
+      ...shape,
+      taskType: "CLARIFY",
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      explicitTaskIntent: false,
+      explicitUserTarget: false,
+      targetEntityType: null,
+      targetCandidates: [],
+      ambiguity: "REFERENT_NOT_UNIQUELY_JUSTIFIED",
+      scopeTarget: "NONE",
+    };
+  } else if (continuationValid && mode === "CONTINUE") {
+    shape = {
+      ...shape,
+      taskType: "CONTINUE_CURRENT_REASONING",
+      requestedTasks: ["CONTINUE_CURRENT_REASONING"],
+      continuationIntent: true,
+      explicitTaskIntent: false,
+      explicitUserTarget: false,
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      targetEntityType: null,
+      targetCandidates: [],
+      scopeTarget: "CURRENT_SCREEN",
+      ambiguity: null,
+    };
+  } else if (concreteObjectVeto
+    // COUNT and RISK are already authoritative typed task families. A
+    // concrete domain object is their target, not evidence that the request
+    // must be rewritten as a scalar field lookup.
+    // SELECTED_RECORD_CONTEXT is likewise an explicit identity question
+    // about the live selected record; it must reach the selected-record
+    // response owner rather than becoming an empty FIELD_LOOKUP.
+    && !["COUNT", "RISK", "RECORD_DETAILS", "RELATION_LOOKUP", "SELECTED_RECORD_CONTEXT"].includes(String(inferred?.taskType || "").toUpperCase())
+    && !explicitSurfaceEvidence
+    // A current-screen purpose request remains SCREEN_CONTEXT even when the
+    // live surface carries a selected record. The record grounds the answer;
+    // it does not turn an operation-inventory question into FIELD_LOOKUP.
+    && String(inferred?.screenKnowledgeKind || "").toUpperCase() !== "SCREEN_PURPOSE"
+    // A role-global capability question remains ROLE_HELP even when the
+    // active screen also carries a selected record. Selection is grounding,
+    // not evidence that the user asked for a record field.
+    && !inferred?.roleHelpIntent
+    && !inferred?.generalProductHelpIntent
+    && !inferred?.workflowIntent
+    && !inferred?.continuationIntent) {
+    shape = {
+      ...shape,
+      taskType: "FIELD_LOOKUP",
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      primaryTask: null,
+      continuationIntent: false,
+      continuationAction: null,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: "CURRENT_SCREEN",
+      ambiguity: null,
+    };
+  }
+  const resolvedShape = applySemanticSpecificityResolution(shape, specificity);
+  if (inferred?.operationHealthMetricIntent
+    && !hasExplicitSurfaceNavigationVerb(message)
+    && String(resolvedShape?.taskType || '').toUpperCase() !== 'ISSUE') {
+    return {
+      ...resolvedShape,
+      taskType: 'ISSUE',
+      requestedTasks: ['ISSUE'],
+      requestedFields: inferred.requestedFields || resolvedShape?.requestedFields || [],
+      requestedFieldsAuthoritative: true,
+      domain: resolvedShape?.domain || 'OPERATIONS',
+      operationHealthMetricIntent: true,
+      operationHealthMetricMode: inferred.operationHealthMetricMode || null,
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: 'CURRENT_SCREEN',
+      ambiguity: null,
+    };
+  }
+  // Diagnostic issue grammar is an explicit read-only product task. It must
+  // retain that task even when deictic reference handling or broad role-help
+  // composition has produced a provisional CLARIFY/OFF_TOPIC shape. The
+  // existing issue cue remains the sole structural authority; this only
+  // prevents a later generic fallback from discarding it.
+  const resolvedIssueDiagnostic = hasIssueDiagnosticCue(normalize(message))
+    && !hasExplicitSurfaceNavigationVerb(message);
+  if (resolvedIssueDiagnostic && ["CLARIFY", "OFF_TOPIC"].includes(String(resolvedShape?.taskType || "").toUpperCase())) {
+    return {
+      ...resolvedShape,
+      taskType: "ISSUE",
+      requestedTasks: ["ISSUE"],
+      domain: resolvedShape?.domain || "OPERATIONS",
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: "CURRENT_SCREEN",
+      ambiguity: null,
+    };
+  }
+  // Specificity overrides refine the task family but must not erase a
+  // canonical field dependency already established by the semantic request
+  // (for example PASSENGER_COUNT on the selected shift).
+  if (Array.isArray(inferred?.requestedFields)
+    && inferred.requestedFields.length
+    && (!Array.isArray(resolvedShape?.requestedFields) || !resolvedShape.requestedFields.length)) {
+    return {
+      ...resolvedShape,
+      requestedFields: inferred.requestedFields,
+      requestedFieldsAuthoritative: inferred.requestedFieldsAuthoritative === true,
+    };
+  }
+  return resolvedShape;
+}
+
+function buildNewCanonicalResult({
+  message,
+  user,
+  selectedEntity,
+  conversationState,
+  screenContext,
+  interpreterMode,
+  typed,
+  } = {}) {
+  const evidence = typed?.evidence || {};
+  const context = typed?.context || buildCanonicalSemanticContext({
+    message,
+    user,
+    conversationState,
+    screenContext,
+    semanticContext: null,
+  });
+  const mode = String(evidence?.requestMode?.value || "UNRESOLVED").toUpperCase();
+  const typedObjectClass = evidence?.object?.value && evidence.object.value !== "NONE" ? evidence.object.value : null;
+  const objectClass = typedObjectClass && CANONICAL_SEMANTIC_OBJECT_CLASSES.has(typedObjectClass)
+    ? typedObjectClass
+    : null;
+  const inferred = typed?.inferred || inferCanonicalSemanticRequest({ message, user, screenContext, conversationState });
+  const specificity = typed?.specificity || evidence?.specificity || null;
+  const explicitRecordReference = inferred?.explicitEntityReference || explicitShiftReferenceFromText(message);
+  const roomCapabilityBoundaryContinuation = hasRoomCapabilityBoundaryContinuation({
+    message,
+    user,
+    screenContext,
+    conversationState,
+  });
+  const roleHelpEvidenceCandidate = evidence?.quality?.roleHelpCandidate === true
+    && mode === "EXPLAIN"
+    && !hasIssueDiagnosticCue(normalize(message))
+    && !inferred?.operationHealthMetricIntent
+    && evidence.subject?.value === "ROLE"
+    // Concrete object evidence owns operation-bearing requests; bounded
+    // reference-less role-help aspects are allowed to name a product area.
+    && (!objectClass || allowsConcreteRoleHelpAspect(evidence, String(evidence?.reference?.value || "ABSENT").toUpperCase()))
+    && evidence.roleAspect?.value
+    && evidence.roleAspect.value !== "NONE"
+    && evidence.productHelp?.value
+    && evidence.productHelp.value !== "NONE"
+    && evidence.targetRequest?.value === "PRODUCT_AREA"
+    && !explicitRecordReference
+    && !hasProductNoteLookupCue(message)
+    && !roomCapabilityBoundaryContinuation;
+  const explicitSurfacePurpose = hasExplicitCurrentScreenPurposeCue(normalize(message))
+    || hasNamedSurfaceExplanationCue(message);
+  const liveSurfaceTargetEvidence = Boolean(inferred?.currentTargetReference?.targetKey);
+  const productHelpSignal = Boolean(
+    hasExplicitProductLevelHelpCue(message)
+      || (/(?:\bprogram\p{L}*\b|\bplatform\p{L}*\b|\bseferpakt\p{L}*\b)/iu.test(normalize(message))
+        && isGenericProductHelpIntent(message, { roleContext: screenContext?.role })
+        && !isExplicitRoleHelpIntent(message, { roleContext: screenContext?.role }))
+      || (isGenericProductHelpIntent(message, { roleContext: screenContext?.role })
+        && !isExplicitRoleHelpIntent(message, { roleContext: screenContext?.role })),
+  );
+  const productHelpComposition = Boolean(productHelpSignal && !explicitSurfacePurpose && !explicitRecordReference && !liveSurfaceTargetEvidence);
+  const explicitSurfaceSemanticOperation = hasExplicitSurfaceSemanticOperation(message);
+  const roleCapabilityHelpSupported = specificity?.roleCapabilityExplanationEvidence === true;
+  const roleHelpSupported = roleHelpEvidenceCandidate
+    // Situated help is owned by the current authorized surface. Do not let
+    // broad role-help evidence reclassify it as ROLE_GLOBAL merely because
+    // the utterance also contains a capability/orientation cue.
+    && !explicitSurfacePurpose
+    && !productHelpComposition
+    && (roleCapabilityHelpSupported || (
+      !inferred?.screenContextIntent
+      && !inferred?.screenKnowledgeIntent
+      && !inferred?.screenDetailIntent
+    ))
+    && !inferred?.workflowIntent
+    // A recovery/explanation request for a live guided target is already
+    // grounded in an authorized workflow. It must not be rewritten as
+    // role-global help merely because the wording also contains an
+    // orientation/help cue.
+    && !inferred?.continuationIntent
+    && !inferred?.currentTargetRecoveryIntent
+    && !inferred?.currentTargetExplanationIntent
+    && !roomCapabilityBoundaryContinuation;
+  const typedShape = buildTypedCanonicalShape({
+    message,
+    user,
+    screenContext,
+    conversationState,
+    evidence,
+    context,
+    inferred,
+    specificity,
+  });
+  // A finance-process question is a concrete, read-only product request even
+  // when Turkish capability grammar also emits a broad role/process aspect
+  // (for example, asking where invoice reconciliation is followed). Keep the
+  // typed financial object and process relation authoritative; otherwise the
+  // inherited role-help inference sends the request to generic product help
+  // before the authorized financial owner can report its real capability.
+  const financialProcessRequest = mode === "EXPLAIN"
+    && String(evidence?.object?.value || "").toUpperCase() === "FINANCIAL"
+    && String(evidence?.relation?.value || "").toUpperCase() === "PROCESS"
+    && String(evidence?.targetRequest?.value || "").toUpperCase() === "RECORD"
+    && String(evidence?.reference?.value || "ABSENT").toUpperCase() === "ABSENT";
+  const recentFinancialUserMessages = (Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages : [])
+    .filter((item) => item?.role === "user");
+  const latestFinancialUserText = normalize(recentFinancialUserMessages.at(-1)?.text);
+  const recentFinancialMetricSelection = latestFinancialUserText
+    ? [
+      /\btahmini\s+maliyet\p{L}*\b/iu,
+      /\boperasyonel\s+maliyet(?:\s+tahmini)?\p{L}*\b/iu,
+      /\bteklif\s+taban\p{L}*\b/iu,
+      /\btahmini\s+k(?:âr|ar)\p{L}*\b/iu,
+      /\bplanlanan\s+teklif\p{L}*\b/iu,
+    ].filter((pattern) => pattern.test(latestFinancialUserText)).length === 1
+    : false;
+  const activeFinancialMetricSelection = Boolean(conversationState?.costAnalysisState?.lastMetricIdentity)
+    || recentFinancialMetricSelection;
+  const financialSourceFollowUp = /\b(?:kayna\p{L}*|dayana\p{L}*|hesaplama\p{L}*|temel\p{L}*|provenans\p{L}*)\b/iu.test(normalize(message))
+    && /^(?:bu|bunun|bu\s+(?:tutar|deger|sonuc)\p{L}*)\b/iu.test(normalize(message));
+  const financialReferenceValue = String(evidence?.reference?.value || "").toUpperCase();
+  const financialObjectAmbiguity = String(evidence?.object?.value || "").toUpperCase() === "FINANCIAL"
+    && ["AMBIGUOUS", "UNRESOLVED"].includes(financialReferenceValue);
+  const selectedOfferFinancialAmbiguity = String(evidence?.object?.value || "").toUpperCase() === "OFFER"
+    && specificity?.financialMetricIdentityEvidence === true
+    && financialSourceFollowUp
+    && !activeFinancialMetricSelection
+    && financialReferenceValue === "ABSENT";
+  const financialDeicticClarification = mode === "EXPLAIN"
+    && ["RECORD", "PRODUCT_AREA"].includes(String(evidence?.targetRequest?.value || "").toUpperCase())
+    && (financialObjectAmbiguity || selectedOfferFinancialAmbiguity);
+  const financialProcessShape = financialProcessRequest
+    ? {
+      ...typedShape,
+      taskType: "FIELD_LOOKUP",
+      domain: "FINANCE",
+      targetEntityType: "RECORD",
+      requestedTasks: ["FIELD_LOOKUP"],
+      requestedFields: [],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: "CURRENT_SCREEN",
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: false,
+      primaryTask: "FINANCIAL_PROCESS_LOOKUP",
+      ambiguity: null,
+    }
+    : financialDeicticClarification
+      ? {
+        ...typedShape,
+        taskType: "CLARIFY",
+        domain: "FINANCE",
+        targetEntityType: "RECORD",
+        requestedTasks: [],
+        requestedFields: [],
+        explicitTaskIntent: false,
+        explicitUserTarget: false,
+        scopeTarget: "NONE",
+        generalProductHelpIntent: false,
+        roleHelpIntent: false,
+        screenContextIntent: false,
+        screenDetailIntent: false,
+        screenKnowledgeIntent: false,
+        explicitUiGuidance: false,
+        primaryTask: "FINANCIAL_REFERENCE_CLARIFICATION",
+        ambiguity: "REFERENT_NOT_UNIQUELY_JUSTIFIED",
+      }
+    : typedShape;
+  const roomBoundaryShape = roomCapabilityBoundaryContinuation
+    ? {
+      ...financialProcessShape,
+      taskType: "SCREEN_CONTEXT",
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      targetCandidates: [],
+      requestedTasks: ["SCREEN_CONTEXT"],
+      requestedFields: [],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      explicitUiGuidance: true,
+      screenContextIntent: true,
+      screenKnowledgeIntent: true,
+      screenDetailIntent: true,
+      workflowIntent: "OPEN_SHIFT_SURFACE",
+      roleCapabilityBoundary: "ROOM_CREATE_UNSUPPORTED",
+      continuationIntent: true,
+      continuationAction: continuationActionFor(message),
+      scopeTarget: "CURRENT_SCREEN",
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      primaryTask: "SCREEN_CONTEXT",
+      ambiguity: null,
+    }
+    : null;
+  const explicitSurfaceEvidence = Boolean(
+    liveSurfaceTargetEvidence
+      || (typedObjectClass === "SURFACE"
+        && Boolean(
+          typedShape?.screenContextIntent
+          || typedShape?.screenKnowledgeIntent
+          || typedShape?.explicitUiGuidance
+          || String(evidence?.targetRequest?.value || "").toUpperCase() === "SURFACE",
+        )),
+  )
+    && (!roleHelpEvidenceCandidate || explicitSurfacePurpose || liveSurfaceTargetEvidence)
+    && !productHelpComposition;
+  const supportedTypedRequest = roomCapabilityBoundaryContinuation
+    || roleHelpSupported
+    || Boolean(inferred?.currentTargetRecoveryIntent || inferred?.currentTargetExplanationIntent)
+    || Boolean(inferred?.continuationIntent || inferred?.taskType === "CONTINUE_CURRENT_REASONING")
+    || Boolean(inferred?.explicitUiGuidance || inferred?.screenContextIntent || inferred?.screenKnowledgeIntent)
+    // Collection cardinality is a complete typed read-only request even when
+    // the morphology does not emit a separate requestMode (for example an
+    // imperative Turkish summary request). Preserve the inferred collection
+    // scope instead of converting it into INTERNAL_EVIDENCE_FAILURE.
+    || Boolean(
+      inferred?.taskType === "COUNT"
+      && inferred?.explicitTaskIntent
+      && inferred?.explicitUserTarget
+      && inferred?.targetEntityType,
+    )
+    || Boolean(
+      inferred?.taskType === "RISK"
+      && inferred?.explicitTaskIntent
+      && String(inferred?.domain || "").toUpperCase() === "BUDGET",
+    )
+    || Boolean(inferred?.explicitTaskIntent && inferred?.explicitUserTarget && inferred?.targetEntityType === "SHIFT" && inferred?.taskType === "FIELD_LOOKUP")
+    || ["EXPLAIN", "VIEW", "NAVIGATE", "CREATE", "UPDATE", "DELETE", "SEND", "COMPARE", "OTHER_PRODUCT_REQUEST", "GENUINE_OOS", "CONTINUE", "RESUME"].includes(mode);
+  const failure = !supportedTypedRequest;
+  let shape = failure
+    ? newAuthorityShape({ message, screenContext, evidence, failure: true, roleHelp: false })
+    : (roomBoundaryShape || financialProcessShape);
+  let semanticAction = inferCanonicalSemanticAction({
+    text: message,
+    shape,
+    conversationState,
+    semanticContext: context,
+    typedEvidence: evidence,
+  });
+  const mapped = mapSemanticActionToCanonicalMeaning({ semanticAction, shape });
+  shape = mapped.shape || shape;
+  if (roomBoundaryShape) {
+    shape = {
+      ...shape,
+      ...roomBoundaryShape,
+    };
+  }
+  if (productHelpComposition && !financialProcessRequest && !financialDeicticClarification && !specificity?.blocksGenericFallback && !roomCapabilityBoundaryContinuation && !explicitRecordReference) {
+    shape = {
+      ...shape,
+      taskType: "OFF_TOPIC",
+      confidence: Math.max(Number(shape?.confidence || 0), 0.97),
+      domain: null,
+      targetEntityType: null,
+      targetCandidates: [],
+      generalInformationIntent: true,
+      generalProductHelpIntent: true,
+      productTeachingIntent: Boolean(shape?.productTeachingIntent || hasExplicitProductLevelHelpCue(message)),
+      roleHelpIntent: false,
+      primaryTask: "GENERIC_PRODUCT_HELP",
+      explicitTaskIntent: true,
+      scopeTarget: "ROLE_GLOBAL",
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: false,
+      currentTargetRecoveryIntent: false,
+      currentTargetExplanationIntent: false,
+      ambiguity: null,
+    };
+  }
+  if (roleHelpSupported && !specificity?.blocksGenericFallback && !explicitSurfaceEvidence && !explicitSurfacePurpose && !roomCapabilityBoundaryContinuation) {
+    shape = {
+      ...shape,
+      taskType: "OFF_TOPIC",
+      generalProductHelpIntent: true,
+      roleHelpIntent: true,
+      primaryTask: "ROLE_EXPLANATION_HELP",
+      explicitTaskIntent: true,
+      scopeTarget: "ROLE_GLOBAL",
+      ambiguity: null,
+    };
+  }
+  const externalDomain = Array.isArray(evidence.domainEvidence)
+    && evidence.domainEvidence.some((entry) => entry?.kind === "EXTERNAL_DOMAIN" && String(entry?.value || "").toUpperCase() !== "NONE");
+  const positiveNonProductEvidence = specificity?.positiveNonProductEvidence === true;
+  const genuineOos = !failure
+    && mode === "GENUINE_OOS"
+    && evidence?.quality?.genuineOosEvidence === true
+    && positiveNonProductEvidence;
+  const coherentRoleHelp = !failure
+    && !roomCapabilityBoundaryContinuation
+    && !specificity?.blocksGenericFallback
+    && (roleHelpSupported
+      || (
+        evidence?.quality?.roleHelpCandidate === true
+        && inferred?.screenContextIntent
+        && !inferred?.screenKnowledgeIntent
+        && !inferred?.screenDetailIntent
+        && !explicitSurfacePurpose
+        && !productHelpComposition
+      ))
+    && !explicitSurfaceEvidence
+    && !(externalDomain && positiveNonProductEvidence)
+    && !shape?.generalCreativeIntent
+    && !shape?.generalArithmetic
+    && !shape?.operationHealthMetricIntent
+    && !hasProductNoteLookupCue(message)
+    // The typed shape may discover a live recovery/target explanation even
+    // when the initial inference carried only broad orientation evidence.
+    // Preserve that concrete workflow meaning at the final composition seam.
+    && !shape?.currentTargetRecoveryIntent
+    && !shape?.currentTargetExplanationIntent
+    // A resolved operation-bearing CREATE action outranks broad role-help
+    // evidence. Without this guard, necessity wording such as “kurmam
+    // gerekiyor” can be rewritten as role-global EXPLAIN at the final seam.
+    && semanticAction?.actionClass !== "CREATE"
+    && !(shape?.workflowIntent && explicitSurfaceSemanticOperation);
+  if (coherentRoleHelp) {
+    // Incidental product nouns may leave a weak screen-context task on the
+    // typed shape even after central composition has established role help.
+    // Normalize the owned shape here so the planner consumes the same
+    // canonical meaning instead of reinterpreting it as UI guidance.
+    shape = {
+      ...shape,
+      taskType: "OFF_TOPIC",
+      requestedTasks: ["OFF_TOPIC"],
+      generalInformationIntent: false,
+      generalProductHelpIntent: true,
+      roleHelpIntent: true,
+      primaryTask: "ROLE_EXPLANATION_HELP",
+      explicitTaskIntent: true,
+      explicitUserTarget: false,
+      targetEntityType: null,
+      targetCandidates: [],
+      requestedFields: [],
+      scopeTarget: "ROLE_GLOBAL",
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: false,
+      workflowIntent: null,
+      currentTargetRecoveryIntent: false,
+      currentTargetExplanationIntent: false,
+      ambiguity: null,
+    };
+  }
+  const unresolvedNumericReferent = inferred?.ambiguity === "NUMERIC_REFERENT_TYPE_UNRESOLVED";
+  if (unresolvedNumericReferent) {
+    // Preserve the canonical ambiguity through the final typed-action mapping.
+    // A downstream lexical pass must not turn an unresolved number into an
+    // offer/shift lookup or inherit the previously selected record.
+    shape = {
+      ...shape,
+      taskType: "CLARIFY",
+      domain: null,
+      targetEntityType: null,
+      targetCandidates: [],
+      requestedTasks: [],
+      requestedFields: [],
+      requestedFieldsAuthoritative: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: false,
+      scopeTarget: "NONE",
+      generalInformationIntent: false,
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      screenContextIntent: false,
+      explicitUiGuidance: false,
+      ambiguity: "NUMERIC_REFERENT_TYPE_UNRESOLVED",
+    };
+    semanticAction = resolvedSemanticAction({
+      actionClass: "NONE",
+      objectClass: null,
+      explicitness: "NONE",
+      evidence: ["NUMERIC_REFERENT_TYPE_UNRESOLVED"],
+      resolutionStatus: "AMBIGUOUS",
+      modifiers: { new: false, current: false, next: false, explicitTarget: false },
+    });
+  }
+  const genericProductHelp = !failure
+    && Boolean(shape?.generalProductHelpIntent)
+    && !shape?.generalCreativeIntent
+    && !shape?.generalArithmetic
+    && !shape?.currentTargetRecoveryIntent
+    && !shape?.currentTargetExplanationIntent
+    && !shape?.workflowIntent;
+  if (genuineOos) {
+    semanticAction = resolvedSemanticAction({
+      actionClass: "NONE",
+      objectClass: null,
+      explicitness: "NONE",
+      evidence: ["TYPED_SEMANTIC_EXTERNAL_DOMAIN"],
+      resolutionStatus: "NOT_APPLICABLE",
+      modifiers: { new: false, current: false, next: false, explicitTarget: false },
+    });
+  } else if (coherentRoleHelp) {
+    const currentSurfaceAvailable = Boolean(context?.currentSurface?.path || context?.currentSurface?.label || screenContext?.path || screenContext?.label);
+    const roleHelpObjectClass = currentSurfaceAvailable ? "SURFACE" : null;
+    semanticAction = resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      objectClass: roleHelpObjectClass,
+      targetCandidate: roleHelpObjectClass ? { objectClass: roleHelpObjectClass } : null,
+      explicitness: "EXPLICIT",
+      evidence: ["TYPED_SEMANTIC_ROLE_HELP"],
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: false },
+    });
+  } else if (genericProductHelp) {
+    // General product help remains a global explanation task.  When a
+    // current surface exists, expose it only as the grounding object; the
+    // operation stays GENERAL_INFORMATION and must not become screen help.
+    const currentSurfaceAvailable = Boolean(context?.currentSurface?.path || context?.currentSurface?.label || screenContext?.path || screenContext?.label);
+    const productHelpObjectClass = currentSurfaceAvailable ? "SURFACE" : null;
+    semanticAction = resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      objectClass: productHelpObjectClass,
+      targetCandidate: productHelpObjectClass ? { objectClass: productHelpObjectClass } : null,
+      explicitness: "EXPLICIT",
+      evidence: ["TYPED_SEMANTIC_PRODUCT_HELP"],
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: false },
+    });
+  }
+  const semanticScope = failure
+    ? { class: "UNRESOLVED", evidence: "INTERNAL_EVIDENCE_FAILURE", explicit: false, confidence: 0 }
+    : genuineOos
+      ? { class: "OFF_TOPIC_GENUINE", evidence: "TYPED_SEMANTIC_EXTERNAL_DOMAIN", explicit: true, confidence: 0.9 }
+      : roomCapabilityBoundaryContinuation
+        ? { class: "PRODUCT_EXPLICIT", evidence: "ROOM_CAPABILITY_BOUNDARY_CONTINUATION", explicit: true, confidence: 0.95 }
+      : coherentRoleHelp
+        ? { class: "PRODUCT_EXPLICIT", evidence: "TYPED_SEMANTIC_ROLE_HELP", explicit: true, confidence: 0.9 }
+        : genericProductHelp
+          ? { class: "PRODUCT_EXPLICIT", evidence: "TYPED_SEMANTIC_PRODUCT_HELP", explicit: true, confidence: 0.9 }
+          : resolveSemanticScope({ text: message, shape, semanticAction });
+  const operation = failure
+    ? "GENERAL_INFORMATION"
+    : genuineOos
+      ? "GENERAL_INFORMATION"
+      : unresolvedNumericReferent
+        ? "CLARIFY_SEMANTIC_REQUEST"
+      : roomCapabilityBoundaryContinuation
+        ? "OPEN_EXISTING_SHIFT_OPERATIONS"
+      : coherentRoleHelp || genericProductHelp
+        ? "GENERAL_INFORMATION"
+        : mapped.operation;
+  const domain = failure || genuineOos || unresolvedNumericReferent ? "GENERAL" : String(shape?.domain || "PRODUCT").toUpperCase();
+  const capability = failure || genuineOos || coherentRoleHelp || genericProductHelp
+    ? "GENERAL_INFORMATION"
+    : unresolvedNumericReferent
+      ? "GENERAL_INFORMATION"
+    : roomCapabilityBoundaryContinuation
+      ? "OPEN_SHIFT_SURFACE"
+    : mapped.capability;
+  const request = deepFreeze({
+    version: SEFER_ABI_CANONICAL_REQUEST_VERSION,
+    operation,
+    domain,
+    capability,
+    candidateEntityRefs: candidateEntityRefsFromCanonicalShape(shape, selectedEntity, { operation, semanticAction, message, conversationState, screenContext }),
+    requestedFields: canonicalRequestedFields(shape),
+    safety: canonicalSafetyForShape(shape),
+    semanticScope,
+    semanticAction,
+    currentRequest: {
+      explicitness: failure || unresolvedNumericReferent ? "UNRESOLVED" : "EXPLICIT",
+      operation,
+      normalizedMeaning: String(shape.normalizedText || normalize(message)).trim(),
+      rawTextHash: null,
+    },
+    activeTaskRef: conversationState?.activeGuidedTask?.taskId
+      || conversationState?.activeTask?.id
+      || conversationState?.activeGuidedTask?.semanticPlan?.workflowIntent
+      || null,
+    workflowRef: shape?.workflowIntent
+      ? {
+        workflowIntent: shape.workflowIntent,
+        workflowState: shape.workflowActualUiState || shape.workflowEntryState || null,
+      }
+      : null,
+    continuation: {
+      mode: semanticAction.actionClass === "CONTINUE"
+        ? "CONTINUE"
+        : semanticAction.actionClass === "RESUME"
+          ? "RESUME"
+          : shape?.restartIntent
+            ? "RESTART"
+            : "NEW_REQUEST",
+      baseRequestId: conversationState?.lastSettledResult?.requestId || null,
+      depth: Number(conversationState?.lastSettledResult?.continuationDepth || 0) || 0,
+    },
+    groundingRequirement: failure || genuineOos ? "NONE" : "CURRENT_AUTHORIZED_RUNTIME",
+    ambiguity: {
+      status: failure || semanticAction.resolutionStatus === "UNRESOLVED" || shape?.ambiguity
+        ? "UNRESOLVED"
+        : semanticAction.resolutionStatus === "AMBIGUOUS"
+          ? "AMBIGUOUS"
+          : "NONE",
+      candidates: [],
+      reason: failure ? "INTERNAL_EVIDENCE_FAILURE" : shape?.ambiguity || null,
+    },
+    provenance: {
+      interpreter: "TYPED_SEMANTIC_EVIDENCE",
+      interpreterMode,
+      source: "semanticEvidenceComposer.composeSemanticEvidence",
+      createdAt: new Date().toISOString(),
+    },
+    typedEvidence: evidence || null,
+  });
+  const validation = validateCanonicalConversationRequest(request);
+  const fallbackEligibility = evaluateSemanticFallbackEligibility({
+    semanticScopeClass: semanticScope.class,
+    resolutionStatus: semanticAction.resolutionStatus,
+    confidence: failure || semanticAction.resolutionStatus === "UNRESOLVED" ? "LOW" : "HIGH",
+    hasProductEvidence: !failure && !genuineOos && semanticScope.class !== "OFF_TOPIC_GENUINE",
+  });
+  return deepFreeze({
+    requestId: `ccr-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    request,
+    canonicalShape: shape,
+    validation: {
+      status: failure ? "SEMANTIC_UNRESOLVED" : (validation.valid ? "VALID" : "SEMANTIC_UNRESOLVED"),
+      errors: validation.errors,
+      failureClass: failure ? "INTERNAL_EVIDENCE_FAILURE" : validation.failureClass,
+    },
+    failureClass: failure ? "INTERNAL_EVIDENCE_FAILURE" : (validation.valid ? null : "SAFE_CLARIFICATION"),
+    fallbackEligibility: { ...fallbackEligibility, invoked: false },
+    user: { role: user?.role || null },
+    diagnostics: {},
+  });
+}
+
+export function resolveCanonicalConversationRequest({
+  message,
+  user,
+  selectedEntity = null,
+  conversationState = null,
+  screenContext = null,
+  semanticContext = null,
+  interpreterMode = "DETERMINISTIC",
+  env = process.env,
+  localSemanticProposal = null,
+} = {}) {
+  const mode = getSemanticAuthorityMode({ env });
+  const selectedAuthority = mode === "NEW" ? "NEW_TYPED_EVIDENCE" : "OLD_CANONICAL";
+  const authorityTrace = createAuthorityTrace(mode, selectedAuthority);
+  if (mode === "NEW") {
+    const typed = composeTypedSemanticEvidence({ message, user, conversationState, screenContext, semanticContext, authorityTrace, traceRole: "AUTHORITY", localSemanticProposal });
+    const result = buildNewCanonicalResult({ message, user, selectedEntity, conversationState, screenContext, interpreterMode, typed });
+    return deepFreeze({
+      ...result,
+      diagnostics: {
+        semanticAuthority: authorityDiagnostics(authorityTrace),
+      },
+    });
+  }
+
+  const oldResult = resolveOldCanonicalConversationRequest({
+    message,
+    user,
+    selectedEntity,
+    conversationState,
+    screenContext,
+    semanticContext,
+    interpreterMode,
+    authorityTrace,
+    localSemanticProposal,
+  });
+  if (mode === "OLD") {
+    return deepFreeze({
+      ...oldResult,
+      diagnostics: {
+        semanticAuthority: authorityDiagnostics(authorityTrace),
+      },
+    });
+  }
+
+  const typed = composeTypedSemanticEvidence({ message, user, conversationState, screenContext, semanticContext, authorityTrace, traceRole: "DIAGNOSTIC", localSemanticProposal });
+  const shadowSemanticEvidence = buildShadowSemanticEvidenceDiagnostic({
+    features: typed.features,
+    context: typed.context,
+    newEvidence: typed.evidence,
+    request: oldResult.request,
+    canonicalShape: oldResult.canonicalShape,
+    validation: {
+      valid: oldResult.validation.status === "VALID",
+      errors: oldResult.validation.errors,
+      failureClass: oldResult.validation.failureClass,
+    },
+    failureClass: oldResult.failureClass,
+    fallbackEligibility: oldResult.fallbackEligibility,
+  });
+  return deepFreeze({
+    ...oldResult,
+    diagnostics: {
+      semanticAuthority: authorityDiagnostics(authorityTrace),
+      shadowSemanticEvidence,
+    },
+  });
+}
+
+export { validateCanonicalConversationRequest };
 
 export { TASK_TYPES, normalize, familyToTaskType };

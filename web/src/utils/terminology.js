@@ -317,7 +317,10 @@ export function humanizeUserFacingText(value, fallback = "-") {
     .replace(/\breadiness\b/gi, "hazırlık")
     .replace(/\bquote floor\b/gi, "teklif alt sınırı")
     .replace(/\bselected shift\b/gi, "seçili vardiya")
-    .replace(/\b(lat|lng|lon|latitude|longitude)\b/gi, "koordinat")
+    // Turkish letters are not all treated as word characters by JavaScript's
+    // ASCII \b boundary. Use Unicode letter guards so a canonical label such
+    // as "Rehberi Başlat" cannot turn its final "lat" into "koordinat".
+    .replace(/(?<![\p{L}])(?:lat|lng|lon|latitude|longitude)(?![\p{L}])/giu, "koordinat")
     .replace(/\bOSRM\b/gi, "rota hesaplama servisi")
     .replace(/\bOFFLINE\b/gi, "Çevrim dışı")
     .replace(/\bSTALE\b/gi, "Güncel veri gecikmiş")

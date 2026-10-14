@@ -327,10 +327,24 @@ export default function CommercialFlowPanel() {
       acceptedCount: summary?.cards?.acceptedOffers || 0,
       listCount: items.length,
     });
+    const selectedEntityType = selectedItem?.offerId
+      ? "offer"
+      : selectedItem?.agreementId
+        ? "agreement"
+        : selectedItem?.shiftId
+          ? "shift"
+          : "screen";
+    const selectedEntityId = Number(
+      selectedItem?.offerId
+        || selectedItem?.agreementId
+        || selectedItem?.shiftId
+        || selectedItem?.id
+        || 1115,
+    ) || 1115;
     setCopilotSelection({
       scopeKey: "/room/commercial-flow",
-      entityType: selectedItem?.shiftId ? "shift" : "commercial",
-      entityId: Number(selectedItem?.shiftId || selectedItem?.id || 1115) || 1115,
+      entityType: selectedEntityType,
+      entityId: selectedEntityId,
       label: selectedItem?.counterparty || `Kayıt ID ${selectedItem?.id || "-"}`,
       summary: [commercialFlowVisibleLabel(selectedItem?.flowLabel), commercialFlowVisibleLabel(selectedItem?.statusLabel || selectedItem?.status), commercialFlowVisibleLabel(selectedItem?.nextStep)].filter(Boolean).join(" • "),
       fields: [

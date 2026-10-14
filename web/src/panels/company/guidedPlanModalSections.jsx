@@ -22,6 +22,7 @@ export function GuidedHubStep({
   setHubLng,
   hubLoaded,
   saveHub,
+  guidedTargetKey,
 }) {
   return (
     <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
@@ -32,18 +33,18 @@ export function GuidedHubStep({
       </div>
 
       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-        <button type="button" onClick={useGeolocation} disabled={busy}>Konumumu al</button>
+        <button type="button" className="guidedPlanSecondaryAction" data-copilot-target={guidedTargetKey} onClick={useGeolocation} disabled={busy}>Konumumu al</button>
         <input
           value={addr}
           onChange={(e) => setAddr(e.target.value)}
           placeholder={organization ? "Toplanma konumu adresi (örn. Denizli Forum önü)" : "Adresten konum al (örn. Ankara Çankaya ...)"}
-          style={{ flex: 1, minWidth: 260 }}
+          style={{ flex: 1, minWidth: 0, maxWidth: "100%" }}
           disabled={busy}
         />
-        <button type="button" onClick={geocodeAddress} disabled={busy}>Adresten bul</button>
+        <button type="button" className="guidedPlanSecondaryAction" onClick={geocodeAddress} disabled={busy}>Adresten bul</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      <div className="guidedPlanHubCoordGrid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, minWidth: 0 }}>
         <div>
           <label className="muted">{organization ? "Toplanma konumu enlemi" : "Firma konumu enlemi"}</label>
           <input value={hubLat} onChange={(e) => setHubLat(e.target.value)} disabled={busy} />
@@ -57,7 +58,7 @@ export function GuidedHubStep({
       {!hubLoaded ? <div className="muted">{organization ? "Toplanma Konumu okunuyor..." : "Firma Konumu okunuyor..."}</div> : null}
 
       <div className="row" style={{ justifyContent: "flex-end" }}>
-        <button type="button" onClick={saveHub} disabled={busy}>
+        <button type="button" className="guidedPlanPrimaryAction" onClick={saveHub} disabled={busy}>
           {organization ? "Toplanma konumunu kaydet" : "İleri"}
         </button>
       </div>
@@ -109,12 +110,13 @@ export function GuidedPlanSetupStep({
   setOrgReturnType,
   setStep,
   createDraftShifts,
+  guidedTargetKey,
 }) {
   return (
     <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
       <div className="muted">{organization ? "2. adımda gezi akışını seçersin. Bu adım sadece taslak plan oluşturur; teklif henüz gönderilmez." : "2. adımda plan paketi seçilir. Bu adım sadece taslak oluşturur; teklif göndermez."}</div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div className="guidedPlanSetupGrid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, minWidth: 0 }}>
         <GuidedPlanPackCard
           organization={organization}
           busy={busy}
@@ -176,8 +178,8 @@ export function GuidedPlanSetupStep({
       ) : null}
 
       <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-        <button type="button" onClick={() => setStep(0)} disabled={busy}>Geri</button>
-        <button type="button" onClick={createDraftShifts} disabled={busy || eligibleDaysCount === 0 || Boolean(guidedLimitMessage)}>Taslak vardiya oluştur</button>
+        <button type="button" className="guidedPlanSecondaryAction" onClick={() => setStep(0)} disabled={busy}>Geri</button>
+        <button type="button" className="guidedPlanPrimaryAction" data-copilot-target={guidedTargetKey} onClick={createDraftShifts} disabled={busy || eligibleDaysCount === 0 || Boolean(guidedLimitMessage)}>Taslak vardiya oluştur</button>
       </div>
     </div>
   );
@@ -219,6 +221,7 @@ export function GuidedSolveOffersStep({
   onAfterCreated,
   onClose,
   resetAll,
+  guidedTargetKey,
 }) {
   return (
     <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
@@ -277,13 +280,14 @@ export function GuidedSolveOffersStep({
         organization={organization}
         orgDraftCompletion={orgDraftCompletion}
         offerOsrmGate={offerOsrmGate}
+        guidedTargetKey={guidedTargetKey}
       />
 
       <div className="row" style={{ justifyContent: sentOk ? "flex-end" : "space-between", gap: 10, flexWrap: "wrap" }}>
         {!sentOk ? (
-          <button type="button" onClick={() => setStep(2)} disabled={busy}>Geri</button>
+          <button type="button" className="guidedPlanSecondaryAction" onClick={() => setStep(2)} disabled={busy}>Geri</button>
         ) : null}
-        <button type="button" onClick={() => { onAfterCreated?.(); onClose?.(); resetAll(); }} disabled={busy || !sentOk}>
+        <button type="button" className="guidedPlanPrimaryAction" onClick={() => { onAfterCreated?.(); onClose?.(); resetAll(); }} disabled={busy || !sentOk}>
           Bitir
         </button>
       </div>

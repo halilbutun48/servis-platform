@@ -10,7 +10,7 @@ function hydrateShiftSelections({ list, vehicles, setAssignSel, setDriverSel, se
       const sid = Number(s.id);
       if (next[sid] !== undefined) continue;
 
-      next[sid] = s.companyOfferVehicleId ? String(s.companyOfferVehicleId) : "";
+      next[sid] = s.vehicleId ? String(s.vehicleId) : (s.companyOfferVehicleId ? String(s.companyOfferVehicleId) : "");
       changed = true;
     }
     return changed ? next : prev;

@@ -1,8 +1,11 @@
+import { createHash } from 'node:crypto';
+
 const stateByAuthScope = new Map();
 const lastIdentityBySession = new Map();
 const authScopeVersionBySession = new Map();
 const STATE_TTL_MS = 30 * 60 * 1000;
 const MAX_SCOPES = 128;
+const ANALYTIC_STEP_FAMILIES = new Set(['RISK_RANKING', 'COMPARISON', 'PRIORITY', 'CAUSE_WHY']);
 
 function text(value) {
   return String(value || "").trim();
@@ -11,6 +14,22 @@ function text(value) {
 function numberOrNull(value) {
   const number = Number(value);
   return Number.isInteger(number) && number > 0 ? number : null;
+}
+
+function factsFingerprint(values) {
+  return createHash('sha256')
+    .update(JSON.stringify(Array.isArray(values) ? values : []))
+    .digest('hex');
+}
+
+function analyticBaseFamily(plan) {
+  const family = String(plan?.family || '').trim();
+  const continuationFamily = String(plan?.continuationBasePlan?.family || '').trim();
+  return ANALYTIC_STEP_FAMILIES.has(family)
+    ? family
+    : ANALYTIC_STEP_FAMILIES.has(continuationFamily)
+      ? continuationFamily
+      : '';
 }
 
 function entityType(value) {
@@ -92,6 +111,39 @@ function safeScreenContext(screenContext, user) {
     ? screenContext.selectedEntitySet.map(normalizeEntity).filter(Boolean)
     : selected ? [selected] : [];
   const uniqueSelectedEntitySet = selectedEntitySet.filter((entity, index, list) => list.findIndex((item) => entityKey(item) === entityKey(entity)) === index).slice(0, 20);
+  const rawWorkflowState = screenContext?.uiHints?.workflowState && typeof screenContext.uiHints.workflowState === "object"
+    ? screenContext.uiHints.workflowState
+    : null;
+  const workflowState = rawWorkflowState
+    ? {
+      workflowId: text(rawWorkflowState.workflowId || rawWorkflowState.id),
+      activeStepOrdinal: numberOrNull(rawWorkflowState.activeStepOrdinal),
+      completedThroughOrdinal: numberOrNull(rawWorkflowState.completedThroughOrdinal),
+      currentTargetKey: text(rawWorkflowState.currentTargetKey),
+      currentTargetLabel: text(rawWorkflowState.currentTargetLabel),
+      source: text(rawWorkflowState.source || "LIVE_UI"),
+    }
+    : null;
+  // A browser can retain the currently highlighted canonical target while a
+  // fresh auth session has no server conversation state yet. Carry only the
+  // target identity envelope as a hint; the server-side guided resolver still
+  // proves the exact target against the authorized live surface.
+  const rawCurrentTarget = screenContext?.uiHints?.currentTarget && typeof screenContext.uiHints.currentTarget === "object"
+    ? screenContext.uiHints.currentTarget
+    : null;
+  const currentTarget = rawCurrentTarget
+    ? {
+      status: text(rawCurrentTarget.status),
+      targetKind: text(rawCurrentTarget.targetKind).toUpperCase() || "CONTROL",
+      targetKey: text(rawCurrentTarget.targetKey),
+      semanticId: text(rawCurrentTarget.semanticId),
+      blockKey: text(rawCurrentTarget.blockKey),
+      label: text(rawCurrentTarget.label),
+      semanticType: text(rawCurrentTarget.semanticType),
+      screenPath: text(rawCurrentTarget.screenPath),
+      role: text(rawCurrentTarget.role).toUpperCase(),
+    }
+    : null;
   return {
     id: numberOrNull(screenContext?.id),
     path: text(screenContext?.path),
@@ -126,17 +178,65 @@ function safeScreenContext(screenContext, user) {
           label: text(row?.label),
           targetKey: text(row?.targetKey || row?.semanticKey || row?.copilotTarget),
           semanticType: text(row?.semanticType) || "button",
+          identitySource: text(row?.identitySource) || "LEGACY_LABEL",
           disabled: Boolean(row?.disabled),
+        })).filter((row) => row.label) : [],
+        visibleMenus: Array.isArray(screenContext.uiHints.visibleMenus) ? screenContext.uiHints.visibleMenus.slice(0, 48).map((row) => ({
+          label: text(row?.label),
+          targetKey: text(row?.targetKey || row?.semanticKey || row?.copilotTarget),
+          semanticType: text(row?.semanticType) || "button",
+          identitySource: text(row?.identitySource) || "LEGACY_LABEL",
         })).filter((row) => row.label) : [],
         disabledButtons: Array.isArray(screenContext.uiHints.disabledButtons) ? screenContext.uiHints.disabledButtons.slice(0, 16).map((row) => ({
           label: text(row?.label),
           targetKey: text(row?.targetKey || row?.semanticKey || row?.copilotTarget),
           semanticType: text(row?.semanticType) || "button",
+          identitySource: text(row?.identitySource) || "LEGACY_LABEL",
           disabled: true,
         })).filter((row) => row.label) : [],
         tableHeaders: Array.isArray(screenContext.uiHints.tableHeaders) ? screenContext.uiHints.tableHeaders.slice(0, 16).map((row) => typeof row === "string" ? text(row) : { label: text(row?.label), semanticType: "field" }).filter((row) => typeof row === "string" ? Boolean(row) : Boolean(row.label)) : [],
         modalTitles: Array.isArray(screenContext.uiHints.modalTitles) ? screenContext.uiHints.modalTitles.slice(0, 8).map((row) => typeof row === "string" ? text(row) : { label: text(row?.label), semanticType: "modal" }).filter((row) => typeof row === "string" ? Boolean(row) : Boolean(row.label)) : [],
         pageTitles: Array.isArray(screenContext.uiHints.pageTitles) ? screenContext.uiHints.pageTitles.slice(0, 8).map((row) => typeof row === "string" ? text(row) : { label: text(row?.label), semanticType: "section" }).filter((row) => typeof row === "string" ? Boolean(row) : Boolean(row.label)) : [],
+        semanticElements: Array.isArray(screenContext.uiHints.semanticElements)
+          ? screenContext.uiHints.semanticElements.slice(0, 160).map((row) => ({
+            semanticType: text(row?.semanticType || row?.type) || "element",
+            label: text(row?.label),
+            targetKey: text(row?.targetKey || row?.semanticKey || row?.copilotTarget),
+            semanticId: text(row?.semanticId),
+            identitySource: text(row?.identitySource) || "LEGACY_LABEL",
+            required: Boolean(row?.required),
+            expanded: typeof row?.expanded === "boolean" ? row.expanded : null,
+            invalid: Boolean(row?.invalid),
+            source: text(row?.source || "LIVE_UI"),
+          })).filter((row) => row.label)
+          : [],
+        semanticBlocks: Array.isArray(screenContext.uiHints.semanticBlocks)
+          ? screenContext.uiHints.semanticBlocks.slice(0, 48).map((row) => ({
+            semanticId: text(row?.semanticId),
+            blockKey: text(row?.blockKey || row?.targetKey),
+            label: text(row?.label),
+            order: Number(row?.order || 0) || 0,
+            controlSemanticIds: Array.isArray(row?.controlSemanticIds) ? row.controlSemanticIds.map((value) => text(value)).filter(Boolean).slice(0, 32) : [],
+            source: text(row?.source || "LIVE_UI"),
+          })).filter((row) => row.label && (row.blockKey || row.semanticId))
+          : [],
+        workflowState,
+        currentTarget,
+        guidedDraftAvailability: screenContext.uiHints.guidedDraftAvailability && typeof screenContext.uiHints.guidedDraftAvailability === "object"
+          ? {
+            state: text(screenContext.uiHints.guidedDraftAvailability.state || "UNKNOWN").toUpperCase(),
+            count: Math.max(0, Number(screenContext.uiHints.guidedDraftAvailability.count || 0) || 0),
+            maxResumeStep: numberOrNull(screenContext.uiHints.guidedDraftAvailability.maxResumeStep),
+            source: text(screenContext.uiHints.guidedDraftAvailability.source || "SERVER_GUIDED_DRAFTS"),
+          }
+          : null,
+        foregroundSurface: screenContext.uiHints.foregroundSurface && typeof screenContext.uiHints.foregroundSurface === "object"
+          ? {
+            key: text(screenContext.uiHints.foregroundSurface.key),
+            kind: text(screenContext.uiHints.foregroundSurface.kind).toUpperCase(),
+            source: text(screenContext.uiHints.foregroundSurface.source || "LIVE_UI"),
+          }
+          : null,
       }
       : {},
   };
@@ -156,9 +256,13 @@ function emptyState(authState, screenContext) {
     // A route change clears the latter, while a later named discourse request
     // may still resolve one unique same-auth record.
     uniqueDiscourseReferent: null,
+    // Bounded same-auth record history supports explicit previous-record
+    // discourse without changing the live selection or authorization scope.
+    recentEntityHistory: [],
     lastProductTask: "",
     suspendedProductContext: null,
     lastSettledResult: null,
+    productTeachingState: null,
     activeGuidedTask: null,
     guidedTarget: null,
     authScopeVersion: authState.authScopeVersion,
@@ -216,9 +320,13 @@ export function getCanonicalConversationState({ user, screenContext, authSession
     selectedEntitySet: safeScreen.selectedEntitySet || [],
     lastExplicitEntitySet: Array.isArray(stored.lastExplicitEntitySet) ? stored.lastExplicitEntitySet.map(normalizeEntity).filter(Boolean) : [],
     uniqueDiscourseReferent: normalizeEntity(stored.uniqueDiscourseReferent),
+    recentEntityHistory: Array.isArray(stored.recentEntityHistory)
+      ? stored.recentEntityHistory.map(normalizeEntity).filter(Boolean).slice(0, 8)
+      : [],
     lastProductTask: text(stored.lastProductTask || stored.productContext?.semanticPlan?.family),
     suspendedProductContext: stored.suspendedProductContext || null,
     lastSettledResult: stored.lastSettledResult || null,
+    productTeachingState: stored.productTeachingState || null,
     activeGuidedTask: stored.activeGuidedTask || null,
     guidedTarget: stored.guidedTarget || null,
     authScopeVersion: authState.authScopeVersion,
@@ -243,34 +351,86 @@ export function commitCanonicalConversationState({ user, screenContext, message,
   const temporaryLeave = Boolean(plan?.suspendProductContext)
     || ["OFF_TOPIC_SAFE", "GENERAL_KNOWLEDGE", "LIVE_EXTERNAL_DATA"].includes(route);
   const returnToProduct = plan?.typedRequest?.taskType === "RETURN_TO_PRODUCT" || plan?.family === "RETURN_TO_PRODUCT";
-  const productPlan = plan?.dialogueTopic === "PRODUCT"
+  const roomCapabilityBoundaryGuidance = plan?.family === "UI_GUIDANCE"
+    && String(plan?.workflowIntent || "").toUpperCase() === "OPEN_SHIFT_SURFACE"
+    && String(plan?.roleCapabilityBoundary || "").toUpperCase() === "ROOM_CREATE_UNSUPPORTED"
+    && String(current.authState?.role || "").toUpperCase() === "ROOM";
+  const retainsHelpContext = ["GENERIC_PRODUCT_HELP", "ROLE_EXPLANATION_HELP"].includes(String(plan?.family || ""))
+    || route === "GENERIC_PRODUCT_HELP";
+  const productPlan = (plan?.dialogueTopic === "PRODUCT" || retainsHelpContext || roomCapabilityBoundaryGuidance)
     && !["AUTHORIZATION_NEGATIVE", "AUTHORIZATION_BOUNDARY"].includes(plan?.conversationRoute)
     && !["AUTHORIZATION_BOUNDARY", "FIELD_PRIVACY_BOUNDARY"].includes(plan?.family)
     && plan?.planStatus !== "UNAUTHORIZED"
     ? plan
     : null;
-  const presentationOperation = ["STYLE", "CONTINUE_CURRENT_REASONING"].includes(productPlan?.family);
+  const presentationOperation = ["STYLE", "CONTINUE_CURRENT_REASONING", "EXPLAIN_CURRENT_TARGET"].includes(productPlan?.family);
+  const nonSettlingTargetExplanation = productPlan?.family === "EXPLAIN_CURRENT_TARGET";
   const retainedProductPlan = productPlan?.family === "STYLE"
     ? productPlan.styleTargetPlan || current.productContext?.semanticPlan || null
     : productPlan?.family === "CONTINUE_CURRENT_REASONING"
       ? productPlan.continuationBasePlan || current.productContext?.semanticPlan || null
       : productPlan;
+  const productTeachingTurn = ["GENERIC_PRODUCT_HELP", "ROLE_EXPLANATION_HELP"].includes(String(productPlan?.family || ""))
+    || (productPlan?.family === "CONTINUE_CURRENT_REASONING"
+      && ["GENERIC_PRODUCT_HELP", "ROLE_EXPLANATION_HELP"].includes(String(productPlan?.continuationBasePlan?.family || "")));
+  const productTeachingState = productTeachingTurn
+    ? (payload?.teachingState || current.productTeachingState || null)
+    : ["SCREEN_CONTEXT", "UI_GUIDANCE", "EXPLAIN_CURRENT_TARGET"].includes(String(productPlan?.family || ""))
+      ? null
+      : current.productTeachingState || null;
   const guidedTaskPlan = productPlan?.family === "UI_GUIDANCE"
     ? productPlan
     : productPlan?.family === "CONTINUE_CURRENT_REASONING" && productPlan?.continuationBasePlan?.family === "UI_GUIDANCE"
       ? productPlan.continuationBasePlan
       : null;
-  const activeGuidedTask = guidedTaskPlan
+  const workflowProgressPlan = productPlan?.family === "CONTINUE_CURRENT_REASONING"
+    && productPlan?.continuationBasePlan?.workflowIntent === "CREATE_SHIFT"
     ? {
-      semanticPlan: guidedTaskPlan,
+      ...guidedTaskPlan,
+      workflowIntent: productPlan.continuationBasePlan.workflowIntent,
+      workflowModel: productPlan.workflowModel || productPlan.continuationBasePlan.workflowModel || guidedTaskPlan?.workflowModel || null,
+      workflowStepReference: productPlan.workflowStepReference || guidedTaskPlan?.workflowStepReference || null,
+      workflowStepOrdinal: productPlan.workflowStepOrdinal || guidedTaskPlan?.workflowStepOrdinal || null,
+      workflowProgression: productPlan.workflowProgression || null,
+    }
+    : productPlan?.family === "EXPLAIN_CURRENT_TARGET"
+      && productPlan?.workflowIntent === "CREATE_SHIFT"
+      ? {
+        ...(current.activeGuidedTask?.semanticPlan || guidedTaskPlan || productPlan),
+        workflowIntent: "CREATE_SHIFT",
+        workflowModel: productPlan.workflowModel || current.activeGuidedTask?.semanticPlan?.workflowModel || null,
+        // An ordinal mentioned while asking for an explanation is a
+        // presentation target. It is not evidence that the active guided
+        // task completed or moved. Keep the last verified task step as the
+        // coordination authority; only a continuation plan with live UI
+        // completion evidence may advance it.
+        workflowStepReference: current.activeGuidedTask?.semanticPlan?.workflowStepReference
+          || guidedTaskPlan?.workflowStepReference
+          || productPlan.workflowStepReference
+          || null,
+        workflowStepOrdinal: current.activeGuidedTask?.semanticPlan?.workflowStepOrdinal
+          || guidedTaskPlan?.workflowStepOrdinal
+          || productPlan.workflowStepOrdinal
+          || null,
+      }
+      : guidedTaskPlan;
+  const activeGuidedTask = workflowProgressPlan
+    ? {
+      semanticPlan: workflowProgressPlan,
       screenPath: text(screenContext?.path),
       continuationDepth: productPlan?.family === "CONTINUE_CURRENT_REASONING"
         ? Number(productPlan.continuationDepth || 1)
         : 0,
+      taskState: payload?.taskState && typeof payload.taskState === "object"
+        ? payload.taskState
+        : current.activeGuidedTask?.taskState || null,
     }
     : current.activeGuidedTask || null;
   const planEntities = Array.isArray(plan?.entities) ? plan.entities.map(normalizeEntity).filter(Boolean) : [];
   const entity = planEntities.length ? planEntities : plan?.entity ? [normalizeEntity(plan.entity)].filter(Boolean) : [];
+  const serverDiscourseEntities = Array.isArray(payload?.discourseEntities)
+    ? payload.discourseEntities.map(normalizeEntity).filter(Boolean)
+    : [];
   // A relationship lookup may resolve both its source and related target.
   // The source remains the last explicit discourse subject; otherwise a later
   // "konuştuğumuz kayıt" field lookup would become needlessly ambiguous.
@@ -281,12 +441,22 @@ export function commitCanonicalConversationState({ user, screenContext, message,
   const explicitSingleRecord = !presentationOperation
     && entity.length === 1
     && ["EXPLICIT_QUERY", "SCREEN_RECORD", "SELECTED_RECORD"].includes(String(entity[0]?.source || "").toUpperCase());
+  const historyEntity = explicitSingleRecord ? entity[0] : null;
+  const priorEntityHistory = Array.isArray(current.recentEntityHistory) ? current.recentEntityHistory : [];
+  const recentEntityHistory = historyEntity
+    ? [historyEntity, ...priorEntityHistory]
+      .filter((candidate) => candidate?.type && candidate?.id)
+      .filter((candidate, index, candidates) => candidates.findIndex((row) => `${row.type}:${row.id}` === `${candidate.type}:${candidate.id}`) === index)
+      .slice(0, 8)
+    : priorEntityHistory.slice(0, 8);
   // This is a discourse subject, not a synthetic current UI selection.  It
   // survives same-auth route changes and is reset naturally with the auth
   // scope state.  A multi-entity comparison is intentionally never promoted
   // to a singular discourse referent.
   const nextUniqueDiscourseReferent = presentationOperation
     ? current.uniqueDiscourseReferent || null
+    : serverDiscourseEntities.length === 1
+      ? serverDiscourseEntities[0]
     : explicitSingleRecord
       ? entity[0]
       : relationSubject || current.uniqueDiscourseReferent || null;
@@ -310,6 +480,66 @@ export function commitCanonicalConversationState({ user, screenContext, message,
       : reasoningFamilies.has(productPlan?.family) && current.activeComparisonSet?.length > 1
         ? current.activeComparisonSet
         : priorReasoningEntitySet;
+  const analyticFamily = analyticBaseFamily(productPlan);
+  const continuationAction = String(productPlan?.continuationAction || '').toUpperCase();
+  const incomingAnalyticState = productPlan?.analyticStepState && typeof productPlan.analyticStepState === 'object'
+    ? productPlan.analyticStepState
+    : null;
+  const currentAnalyticState = current.lastSettledResult?.analyticStepState && typeof current.lastSettledResult.analyticStepState === 'object'
+    ? current.lastSettledResult.analyticStepState
+    : null;
+  const currentFacts = Array.isArray(payload?.queryPlanExecution?.facts)
+    ? payload.queryPlanExecution.facts
+    : Array.isArray(payload?.retrievedFacts) ? payload.retrievedFacts : [];
+  let nextAnalyticStepState = null;
+  if (analyticFamily && payload?.reply) {
+    const isContinuation = productPlan?.family === 'CONTINUE_CURRENT_REASONING';
+    const steps = incomingAnalyticState && Array.isArray(incomingAnalyticState.steps)
+      ? incomingAnalyticState.steps.slice(0, 8)
+      : [];
+    if (isContinuation && !incomingAnalyticState) {
+      // A continuation without a same-scope analytic state cannot restore or
+      // advance a previous step. Preserve the fail-closed boundary instead
+      // of carrying a stale risk answer across a route/auth transition.
+      nextAnalyticStepState = null;
+    } else if (isContinuation) {
+      const targetOrdinal = Math.max(1, Number(incomingAnalyticState.targetOrdinal || incomingAnalyticState.cursor || 1) || 1);
+      const existingIndex = steps.findIndex((step) => Number(step?.ordinal || 0) === targetOrdinal);
+      const shouldRecordReply = !['BACK', 'RECOVER'].includes(continuationAction) && existingIndex < 0;
+      if (shouldRecordReply) {
+        steps.push({
+          ordinal: targetOrdinal,
+          reply: text(payload.reply),
+          factsFingerprint: factsFingerprint(currentFacts),
+        });
+      }
+      nextAnalyticStepState = {
+        family: analyticFamily,
+        screenPath: text(screenContext?.path),
+        authScopeVersion: current.authScopeVersion,
+        cursor: targetOrdinal,
+        targetOrdinal,
+        action: continuationAction || 'CONTINUE',
+        canRestorePrevious: Boolean(incomingAnalyticState.canRestorePrevious),
+        steps: steps.slice(0, 8),
+      };
+    } else {
+      nextAnalyticStepState = {
+        family: analyticFamily,
+        screenPath: text(screenContext?.path),
+        authScopeVersion: current.authScopeVersion,
+        cursor: 1,
+        targetOrdinal: 1,
+        action: 'START',
+        canRestorePrevious: false,
+        steps: [{
+          ordinal: 1,
+          reply: text(payload.reply),
+          factsFingerprint: factsFingerprint(currentFacts),
+        }],
+      };
+    }
+  }
   const recentMessages = [
     ...(current.recentMessages || []),
     ...(message ? [{ role: "user", text: text(message) }] : []),
@@ -327,7 +557,9 @@ export function commitCanonicalConversationState({ user, screenContext, message,
     productContext: retainedProductPlan
       ? { semanticPlan: retainedProductPlan, screenPath: text(screenContext?.path), suspended: false }
       : { ...(current.productContext || {}), suspended: temporaryLeave },
-    lastSettledResult: productPlan && payload?.reply
+    lastSettledResult: nonSettlingTargetExplanation
+      ? current.lastSettledResult || null
+      : productPlan && payload?.reply
       ? {
         authScopeVersion: current.authScopeVersion,
         reply: text(payload.reply),
@@ -346,8 +578,10 @@ export function commitCanonicalConversationState({ user, screenContext, message,
         presentationSource: presentationOperation
           ? current.lastSettledResult?.presentationSource || current.lastSettledResult || null
           : null,
+        analyticStepState: nextAnalyticStepState,
       }
       : current.lastSettledResult || null,
+    productTeachingState,
     activeGuidedTask,
     guidedTarget: payload?.guidedTarget
       ? payload.guidedTarget
@@ -366,6 +600,7 @@ export function commitCanonicalConversationState({ user, screenContext, message,
       ? current.lastExplicitEntitySet || []
       : relationSubject ? [relationSubject] : entity.length ? entity : current.lastExplicitEntitySet || [],
     uniqueDiscourseReferent: nextUniqueDiscourseReferent,
+    recentEntityHistory,
     lastProductTask: text(productPlan?.styleTargetFamily || productPlan?.family || current.lastProductTask),
     suspendedProductContext: temporaryLeave
       ? current.productContext || null
@@ -393,4 +628,68 @@ export function clearCanonicalConversationState(user, authSessionId = "") {
 
 export function canonicalStateKey(user, authSessionId = "") {
   return scopeKey(authStateForUser(user, authSessionId));
+}
+
+export const CANONICAL_CONVERSATION_TRANSITIONS = Object.freeze([
+  "SUSPEND_TASK",
+  "RESUME_TASK",
+  "INVALIDATE_STALE_CONTEXT",
+  "REVALIDATE_REFERENT",
+]);
+
+export function applyCanonicalConversationTransition({ state, transition, reason = "", requestId = null } = {}) {
+  const type = text(transition).toUpperCase();
+  if (!CANONICAL_CONVERSATION_TRANSITIONS.includes(type)) {
+    throw new Error(`UNKNOWN_CANONICAL_CONVERSATION_TRANSITION:${type}`);
+  }
+  const next = cloneState(state) || emptyState({ identity: "unbound", authScopeVersion: 0 }, safeScreenContext({}, {}));
+  const event = {
+    type,
+    reason: text(reason) || "UNSPECIFIED",
+    requestId: text(requestId) || null,
+    observedAt: new Date().toISOString(),
+  };
+  if (type === "SUSPEND_TASK") {
+    next.suspendedProductContext = next.productContext || null;
+    next.productContext = { ...(next.productContext || {}), suspended: true };
+    next.dialogueState = { ...(next.dialogueState || {}), suspendedProduct: true, phase: "PRODUCT_SUSPENDED" };
+  } else if (type === "RESUME_TASK") {
+    if (next.suspendedProductContext) next.productContext = { ...next.suspendedProductContext, suspended: false };
+    next.dialogueState = { ...(next.dialogueState || {}), suspendedProduct: false, phase: "PRODUCT_ACTIVE" };
+    next.revalidationRequired = true;
+  } else if (type === "INVALIDATE_STALE_CONTEXT") {
+    next.guidedTarget = null;
+    next.requestState = null;
+    next.revalidationRequired = true;
+  } else if (type === "REVALIDATE_REFERENT") {
+    next.entityContext = { ...(next.entityContext || {}), referentValidation: "REQUIRED" };
+    next.revalidationRequired = true;
+  }
+  next.transition = event;
+  next.lastTransition = event;
+  return next;
+}
+
+export function projectPersistableConversationState(state) {
+  const source = state && typeof state === "object" ? state : {};
+  return Object.freeze({
+    stateVersion: "SEFER-ABI-CONVERSATION-STATE-V1",
+    authScopeVersion: Number(source.authScopeVersion || 0) || 0,
+    activeTask: source.activeGuidedTask
+      ? { taskId: text(source.activeGuidedTask.taskId), workflowIntent: text(source.activeGuidedTask.semanticPlan?.workflowIntent) }
+      : null,
+    activeWorkflow: source.activeGuidedTask?.semanticPlan?.workflowIntent || null,
+    explicitEntitySet: Array.isArray(source.lastExplicitEntitySet)
+      ? source.lastExplicitEntitySet.map(normalizeEntity).filter(Boolean).slice(0, 16)
+      : [],
+    selectedRecord: normalizeEntity(source.entityContext?.selectedEntity),
+    settledRequestId: text(source.lastSettledResult?.requestId) || null,
+    currentRequestedOperation: text(source.requestState?.reasoningTask || source.lastProductTask) || null,
+    route: text(source.screenContext?.path) || null,
+    suspended: Boolean(source.dialogueState?.suspendedProduct || source.productContext?.suspended),
+    revalidationRequired: Boolean(source.revalidationRequired),
+    lastTransition: (source.transition || source.lastTransition)
+      ? { type: text((source.transition || source.lastTransition).type), reason: text((source.transition || source.lastTransition).reason), observedAt: (source.transition || source.lastTransition).observedAt }
+      : null,
+  });
 }

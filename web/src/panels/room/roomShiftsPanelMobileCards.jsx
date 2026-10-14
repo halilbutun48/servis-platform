@@ -24,6 +24,11 @@ function stopCardClick(e) {
   e.stopPropagation();
 }
 
+function roomShiftLeafTarget(shiftId, action) {
+  const id = Number(shiftId || 0);
+  return id > 0 ? `room-shifts:shift:${id}:${action}` : undefined;
+}
+
 function Field({ label, value, wide = false }) {
   return (
     <div className={`shiftCardField${wide ? " shiftCardField--wide" : ""}`}>
@@ -333,6 +338,7 @@ export function RoomPendingShiftCard({
           type="button"
           className="btn sm"
           disabled={busy}
+          data-copilot-target={selected ? roomShiftLeafTarget(shift.id, "route-preview") : undefined}
           onClick={(e) => {
             stopCardClick(e);
             openRoutePreview(shift);
@@ -430,7 +436,12 @@ export function RoomAllShiftCard({
       </div>
 
       <ShiftLifecycle shift={shift} compact />
-      <ShiftCardPrimaryAction label={primaryLabel} disabled={busy} onClick={handlePrimaryAction} />
+      <ShiftCardPrimaryAction
+        label={primaryLabel}
+        disabled={busy}
+        dataCopilotTarget={selected ? roomShiftLeafTarget(shift.id, canReassign ? "reassign" : "route-preview") : undefined}
+        onClick={handlePrimaryAction}
+      />
       <ShiftCardDetails>
         <ShiftCommercialSummary shift={shift} />
         <CardSection title="Teklif ayrıntıları">
@@ -484,6 +495,7 @@ export function RoomAllShiftCard({
             type="button"
             className="btn sm"
             disabled={busy}
+            data-copilot-target={selected ? roomShiftLeafTarget(shift.id, "route-preview") : undefined}
             onClick={(e) => {
               stopCardClick(e);
               openRoutePreview?.(shift);
@@ -496,6 +508,7 @@ export function RoomAllShiftCard({
           type="button"
           className="btn sm"
           disabled={busy}
+          data-copilot-target={selected ? roomShiftLeafTarget(shift.id, "operation-events") : undefined}
           onClick={(e) => {
             stopCardClick(e);
             openOpsEvents(shift.id);

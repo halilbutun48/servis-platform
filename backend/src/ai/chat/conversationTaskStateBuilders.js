@@ -1,4 +1,4 @@
-import { getScreenDefinitionForUser } from '../jobGuide/screenCatalog.js';
+import { buildRoleHelpSummary, getScreenDefinitionForUser } from '../jobGuide/screenCatalog.js';
 import { firstNonEmpty, uniqueStrings } from './replyShapes.js';
 import {
   companyPlanningCenterDetailReply,
@@ -54,6 +54,59 @@ export function buildProductOverviewHelpReply({ message, userRole, user, roleMod
   ]).join(' ').trim();
 }
 
+const PRODUCT_TEACHING_INTRO = 'SeferPakt, servis operasyonunu planlamak, takip etmek ve kanıtı okumak için kullanılan bir platformdur.';
+
+// Product teaching is a bounded, server-owned explanation state.  It is not a
+// second semantic router: the canonical planner decides that the turn is
+// product help, while this builder only renders the next contract-defined
+// section for the already-authorized role.
+export function buildProductTeachingReply({ message, userRole, user, sectionIndex = 0, direction = 'NEXT' } = {}) {
+  const roleKey = detectReferencedRole(message, userRole);
+  const playbook = getSeferAbiReasoningRolePlaybook(roleKey, user);
+  const normalizedRole = normalizeRoleKey(playbook.role);
+  const roleName = turkishRoleName(normalizedRole, playbook.role);
+  const roleSentence = firstNonEmpty(playbook.roleSentence, roleExplanationSentence(playbook.role));
+  const stepLimit = ['driver', 'personel', 'parent'].includes(normalizedRole) ? 2 : 3;
+  const starterSteps = Array.isArray(playbook.starterSteps) ? playbook.starterSteps.slice(0, stepLimit) : [];
+  const sections = [
+    { key: 'PRODUCT_PURPOSE', title: 'Programın amacı', body: PRODUCT_TEACHING_INTRO },
+    { key: 'ROLE_CAPABILITIES', title: `${roleName} rolü`, body: `${roleName} rolünde ${roleSentence}` },
+    ...starterSteps.map((step, index) => ({
+      key: `ROLE_STEP_${index + 1}`,
+      title: `Başlangıç ${index + 1}`,
+      body: String(step || '').trim(),
+    })),
+  ].filter((section) => section.body);
+  const current = Number.isFinite(Number(sectionIndex)) ? Number(sectionIndex) : 0;
+  const normalizedDirection = String(direction || 'NEXT').toUpperCase();
+  const target = normalizedDirection === 'BACK'
+    ? Math.max(0, current - 1)
+    : Math.max(0, current);
+  const completed = target >= sections.length;
+  const state = {
+    subject: 'PRODUCT_TEACHING',
+    sectionIndex: completed ? sections.length : target,
+    totalSections: sections.length,
+    sectionKey: completed ? 'COMPLETED' : sections[target].key,
+    role: normalizedRole,
+    completed,
+  };
+  if (completed) {
+    const reply = `${roleName} rolü için temel öğretim akışını tamamladık. İstersen belirli bir ekranı anlatayım veya yetkili bir iş akışını adım adım açıklayayım.`;
+    return { reply, summary: reply, teachingState: state };
+  }
+  const section = sections[target];
+  const nextHint = normalizedDirection === 'RECOVER'
+    ? 'Bulamadığın hedef için mevcut yetkili ekranın adını veya kayıt türünü yazalım; Sefer Abi kayıt okumadan doğru yolu gösterecek.'
+    : target < sections.length - 1
+    ? 'Devamını anlat dersen sonraki bölüme geçerim.'
+    : 'Bu temel akışın son bölümü; devamında tamamlandığını özetleyebilirim.';
+  const reply = normalizedDirection === 'RECOVER'
+    ? `Bulamadığın hedef için güvenli kurtarma: ${section.title}: ${section.body} ${nextHint}`.trim()
+    : `${section.title}: ${section.body} ${nextHint}`.trim();
+  return { reply, summary: reply, teachingState: state };
+}
+
 // Generic product help is deliberately public and context-free.  It does not
 // consult a role playbook, screen definition, selected record, or saved task
 // state; route-bound help continues through buildProductOverviewHelpReply.
@@ -84,9 +137,27 @@ export function buildRoleExplanationHelpReply({ message, userRole, user, roleMod
     ? `${roleName} rolünde ${roleSentence}`
     : 'Rol net değilse önce plan / teklif / sözleşme hattına, canlı takip / servis durumuna ya da kanıt / kalite / audit hattına bak.';
   const pathLead = knownRole ? starterFlow : 'Hangi roldesin?';
+  const authorizedRoleSummary = buildRoleHelpSummary(user || { role: userRole });
+  const authorizedSurfaces = (Array.isArray(authorizedRoleSummary?.screens) ? authorizedRoleSummary.screens : [])
+    .map((surface) => {
+      const definition = getScreenDefinitionForUser(user || { role: userRole }, surface, null) || surface;
+      const label = String(surface?.label || '').trim();
+      const purpose = String(surface?.purpose || definition?.menuPurpose || '').trim();
+      const firstStep = String(definition?.firstStep || '').trim();
+      return label && purpose ? { label, purpose, firstStep } : null;
+    })
+    .filter(Boolean)
+    .slice(0, 6);
+  const capabilityLead = authorizedSurfaces.length
+    ? `Yetkili kullanım alanların: ${authorizedSurfaces.map((surface) => `${surface.label}: ${surface.purpose}`).join(' ')}`
+    : '';
+  const firstAuthorizedStep = authorizedSurfaces.find((surface) => surface.firstStep)?.firstStep || '';
+  const capabilityNextStep = firstAuthorizedStep ? `İlk güvenli adım: ${firstAuthorizedStep}` : '';
   return uniqueStrings([
     roleLead,
     pathLead,
+    capabilityLead,
+    capabilityNextStep,
     screenLead,
   ]).join(' ').trim();
 }
@@ -151,9 +222,11 @@ export function buildHowToHelpReply({
     sourceScreenDefinition?.label,
     sourceScreenContext?.label,
   ].filter(Boolean).join(' • '));
-  const companyPlanningSurface = /planlama merkezi/.test(visibleHowToLabels)
-    || /vardiya/.test(visibleHowToLabels)
-    || isPlanningCenterPath(preferredDefinition?.path || preferredContext?.path || sourceScreenDefinition?.path || sourceScreenContext?.path || '');
+  const planningPath = preferredDefinition?.path || preferredContext?.path || sourceScreenDefinition?.path || sourceScreenContext?.path || '';
+  const companyPlanningSurface = /^\/company(?:\/|$)/u.test(String(planningPath || ''))
+    && (/planlama merkezi/.test(visibleHowToLabels)
+      || /vardiya/.test(visibleHowToLabels)
+      || isPlanningCenterPath(planningPath));
   if (!detailContinuation && /vardiya.*nasıl.*oluştur|vardiya.*oluşturulur|nasıl.*vardiya.*oluştur/i.test(normalizeText(message)) && /vardiyalar/.test(visibleHowToLabels) && !hasHowToReasoningLead) {
     return companyPlanningCenterDetailReply();
   }

@@ -1,12 +1,39 @@
 const EVENT_NAME = 'seferpakt:copilot-guided-target';
 let currentTarget = null;
 
+function normalizeGuidedTarget(target) {
+  if (!target || typeof target !== 'object') return null;
+  return {
+    ...target,
+    targetKind: String(target.targetKind || 'CONTROL').toUpperCase(),
+    targetKey: target.targetKey ? String(target.targetKey) : null,
+    semanticId: target.semanticId ? String(target.semanticId) : null,
+    blockKey: target.blockKey ? String(target.blockKey) : null,
+    identitySource: String(target.identitySource || 'LEGACY_LABEL'),
+    authorizedContext: target.authorizedContext && typeof target.authorizedContext === 'object' ? { ...target.authorizedContext } : null,
+    anchor: target.anchor && typeof target.anchor === 'object' ? { ...target.anchor } : null,
+    locator: target.locator && typeof target.locator === 'object' ? { ...target.locator } : null,
+    callout: target.callout && typeof target.callout === 'object' ? { ...target.callout } : null,
+  };
+}
+
 export function getGuidedTarget() {
   return currentTarget;
 }
 
+// A target captured before a guided surface transition may be restored only
+// while it still belongs to the live route.  Route changes invalidate the
+// pre-navigation target; the destination surface must resolve its own
+// canonical target instead of inheriting stale visual state.
+export function shouldRestoreGuidedTargetAfterRouteChange(target, currentPath) {
+  if (!target || target.status !== 'FOUND') return false;
+  const targetPath = String(target.screenPath || '').trim();
+  const routePath = String(currentPath || '').trim();
+  return !targetPath || !routePath || targetPath === routePath;
+}
+
 export function setGuidedTarget(target) {
-  currentTarget = target && typeof target === 'object' ? { ...target } : null;
+  currentTarget = normalizeGuidedTarget(target);
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: currentTarget }));
   }

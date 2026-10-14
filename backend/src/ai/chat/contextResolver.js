@@ -1,4 +1,4 @@
-import { getShiftContext, getVehicleContext } from '../tools.js';
+import { getAgreementContext, getDriverContext, getOfferContext, getShiftContext, getVehicleContext } from '../tools.js';
 import { getScreenDefinitionForUser } from '../jobGuide/screenCatalog.js';
 
 function describeEntity(context) {
@@ -26,7 +26,7 @@ function deriveRoleMode(user) {
 function pickSelectedEntity(screenContext, conversationState) {
   const selectedEntityType = String(screenContext?.selectedEntityType || conversationState?.selectedEntityType || '').trim();
   const selectedEntityId = Number(screenContext?.selectedEntityId || conversationState?.selectedEntityId || 0);
-  if (!['shift', 'vehicle'].includes(selectedEntityType) || !selectedEntityId) return null;
+  if (!['shift', 'vehicle', 'driver', 'offer', 'agreement'].includes(selectedEntityType) || !selectedEntityId) return null;
   return { entityType: selectedEntityType, entityId: selectedEntityId };
 }
 
@@ -45,6 +45,12 @@ export async function resolveChatContext({ entityType, entityId, user, screenCon
     context = await getShiftContext(user, resolvedEntityId);
   } else if (resolvedEntityType === 'vehicle') {
     context = await getVehicleContext(user, resolvedEntityId);
+  } else if (resolvedEntityType === 'driver') {
+    context = await getDriverContext(user, resolvedEntityId);
+  } else if (resolvedEntityType === 'offer') {
+    context = await getOfferContext(user, resolvedEntityId);
+  } else if (resolvedEntityType === 'agreement') {
+    context = await getAgreementContext(user, resolvedEntityId);
   } else if (entityType === 'screen') {
     context = getScreenDefinitionForUser(user, screenContext || {}, entityId);
     if (!context) {

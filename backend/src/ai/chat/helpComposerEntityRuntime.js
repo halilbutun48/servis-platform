@@ -24,10 +24,17 @@ export function createEntityRuntimeHelpers({
     return `Ana blokaj: ${blockers[0]} ${more.length ? `Diğer dikkatler: ${more.join(' • ')}` : ''} Şimdi yap: ${vehicleNextStep(context)}`.trim();
   }
 
-  function prefersSelectedEntity(questionType, sourceEntityType, context) {
+  function prefersSelectedEntity(questionType, sourceEntityType, context, semanticPlan = null) {
     if (sourceEntityType !== 'screen') return false;
-    if (!['shift', 'vehicle'].includes(String(context?.type || ''))) return false;
-    return ['STATUS_HELP', 'READINESS_CHECK', 'MISSING_DATA_HELP', 'SAFE_NEXT_STEP', 'WHY_BLOCKED'].includes(String(questionType || ''));
+    const contextType = String(context?.type || '');
+    if (!['shift', 'vehicle', 'driver', 'offer', 'agreement'].includes(contextType)) return false;
+    const family = String(semanticPlan?.family || '');
+    const recordLookupFamily = ['ENTITY_LOOKUP', 'RECORD_DETAILS', 'RELATION_LOOKUP', 'STATUS', 'TEMPORAL_STATUS', 'SERVICE_SUMMARY', 'COUNT'].includes(family);
+    const hasTypedEntity = Array.isArray(semanticPlan?.entities)
+      && semanticPlan.entities.some((entity) => String(entity?.type || '') === contextType && Number(entity?.id || 0) === Number(context?.id || 0));
+    if (recordLookupFamily && hasTypedEntity) return true;
+    return ['STATUS_HELP', 'READINESS_CHECK', 'MISSING_DATA_HELP', 'SAFE_NEXT_STEP', 'WHY_BLOCKED'].includes(String(questionType || ''))
+      && ['shift', 'vehicle'].includes(contextType);
   }
 
   function isShiftTrackingScreen(screenDefinition) {

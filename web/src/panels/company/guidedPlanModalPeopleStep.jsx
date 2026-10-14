@@ -24,6 +24,7 @@ export default function GuidedPeopleStopsStep({
   setStep,
   refreshDraftShifts,
   setErr,
+  guidedTargetKey,
 }) {
   const who = personLabel(me);
   const mirrorShiftIds = (draftShifts || []).map((s) => s.id);
@@ -105,7 +106,7 @@ export default function GuidedPeopleStopsStep({
 
       <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
         <button type="button" onClick={() => setStep(1)} disabled={busy}>Geri</button>
-        <button type="button" onClick={advanceFromPeopleStep} disabled={busy || (!organization && companyGeoGate.blocking)}>
+        <button type="button" data-copilot-target={guidedTargetKey} data-copilot-semantic-id={organization ? undefined : 'product:company-shifts:step3:address-next'} onClick={advanceFromPeopleStep} disabled={busy || (!organization && companyGeoGate.blocking)}>
           {organization ? "İleri" : "Adres Temizle ve İlerle"}
         </button>
       </div>

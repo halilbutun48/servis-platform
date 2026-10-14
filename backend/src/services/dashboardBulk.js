@@ -407,7 +407,9 @@ async function loadDashboardRequests(user, { take = 200 } = {}) {
     auditMap.set(key, current);
   }
 
-  return items.map((item) => buildBoardingChangeRequestView(item, auditMap.get(Number(item.id || 0)) || {}));
+  return {
+    items: items.map((item) => buildBoardingChangeRequestView(item, auditMap.get(Number(item.id || 0)) || {})),
+  };
 }
 
 function decorateNotificationRegion(notification = {}) {
@@ -794,8 +796,8 @@ async function buildRoomOperationHealthBundle(user, query = {}) {
 
   const [summary, drivers, issues, driverSignals, shiftSummary, vehicleSummary, driverSummary, requests] = await Promise.all([
     safeSection("summary", () => buildRoomObservabilitySummary(user), { cards: { activeDrivers: 0, riskyDevices: 0, staleOrOffline: 0, openIssues: 0 } }),
-    safeSection("drivers", () => buildRoomObservabilityDrivers(user), { items: [] }),
-    safeSection("issues", () => buildRoomObservabilityIssues(user), { items: [] }),
+    safeSection("drivers", async () => ({ items: await buildRoomObservabilityDrivers(user) }), { items: [] }),
+    safeSection("issues", async () => ({ items: await buildRoomObservabilityIssues(user) }), { items: [] }),
     safeSection("driverSignals", () => loadRoomDriverSignals(user, query), { items: [] }),
     safeSection("shiftSummary", () => getShiftSummary(reportQuery, user), { total: 0, byStatus: {}, byDirection: {}, byPattern: {}, rows: [] }),
     safeSection("vehicleSummary", () => getVehicleSummary(reportQuery, user), { total: 0, rows: [] }),
@@ -840,7 +842,7 @@ async function buildRoomCommercialFlowBundle(user, query = {}) {
 
   const [summary, items] = await Promise.all([
     safeSection("summary", () => buildRoomCommercialSummary(user), { cards: { openOffers: 0, counteredOffers: 0, acceptedOffers: 0, requestedAgreements: 0, activeAgreements: 0, approvedOrActiveShifts: 0 } }),
-    safeSection("items", () => buildRoomCommercialItems(user), { items: [] }),
+    safeSection("items", async () => ({ items: await buildRoomCommercialItems(user) }), { items: [] }),
   ]);
 
   return {

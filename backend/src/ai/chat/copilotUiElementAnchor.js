@@ -34,15 +34,22 @@ function targetKeyFor(path, row) {
   return explicit || `${slug(path)}:${slug(row?.semanticType || 'target')}:${slug(row?.label)}`;
 }
 
+function hasExplicitTargetIdentity(row) {
+  return Boolean(text(row?.targetKey || row?.semanticKey || row?.copilotTarget || row?.semanticId || row?.blockKey));
+}
+
 function uiSurfaceFor(screenContext = {}) {
   const hints = screenContext?.uiHints && typeof screenContext.uiHints === 'object' ? screenContext.uiHints : {};
   return {
     visibleButtons: Array.isArray(hints.visibleButtons) ? hints.visibleButtons.slice(0, 48) : [],
+    visibleMenus: Array.isArray(hints.visibleMenus) ? hints.visibleMenus.slice(0, 48) : [],
     disabledButtons: Array.isArray(hints.disabledButtons) ? hints.disabledButtons.slice(0, 16) : [],
     activeTabs: Array.isArray(hints.activeTabs) ? hints.activeTabs.slice(0, 16) : [],
     tableHeaders: Array.isArray(hints.tableHeaders) ? hints.tableHeaders.slice(0, 16) : [],
     modalTitles: Array.isArray(hints.modalTitles) ? hints.modalTitles.slice(0, 8) : [],
     pageTitles: Array.isArray(hints.pageTitles) ? hints.pageTitles.slice(0, 8) : [],
+    semanticElements: Array.isArray(hints.semanticElements) ? hints.semanticElements.slice(0, 96) : [],
+    semanticBlocks: Array.isArray(hints.semanticBlocks) ? hints.semanticBlocks.slice(0, 48) : [],
   };
 }
 
@@ -50,12 +57,39 @@ function rows(screenContext = {}) {
   const ui = uiSurfaceFor(screenContext);
   return [
     ...ui.visibleButtons.map((row) => ({ ...row, semanticType: text(row?.semanticType) || 'button' })),
+    ...ui.visibleMenus.map((row) => ({ ...row, semanticType: text(row?.semanticType) || 'button' })),
+    // Disabled controls remain part of the authorized current surface so a
+    // live workflow target can be explained/highlighted truthfully. They are
+    // never treated as executable actions; modalTargets still filters them
+    // out when selecting a control for safe progression.
+    ...ui.disabledButtons.map((row) => ({ ...row, semanticType: text(row?.semanticType) || 'button' })),
     ...ui.activeTabs.map((row) => ({ ...row, semanticType: text(row?.semanticType) || 'tab' })),
     ...ui.tableHeaders.map((row) => ({ label: typeof row === 'string' ? row : row?.label, ...row, semanticType: text(row?.semanticType) || 'field' })),
     ...ui.modalTitles.map((row) => ({ label: typeof row === 'string' ? row : row?.label, ...row, semanticType: text(row?.semanticType) || 'modal' })),
     ...ui.pageTitles.map((row) => ({ label: typeof row === 'string' ? row : row?.label, ...row, semanticType: text(row?.semanticType) || 'section' })),
-  ].map((row) => ({ ...row, label: text(row?.label), targetKey: targetKeyFor(screenContext?.path, row) }))
+    ...ui.semanticElements.map((row) => ({ ...row, semanticType: text(row?.semanticType) || 'section' })),
+  ].map((row) => ({
+    ...row,
+    label: text(row?.label),
+    targetKey: targetKeyFor(screenContext?.path, row),
+    identitySource: row?.identitySource || (hasExplicitTargetIdentity(row) ? 'CANONICAL' : 'LEGACY_LABEL'),
+  }))
     .filter((row) => row.label && row.label.length <= 120);
+}
+
+function blockRows(screenContext = {}) {
+  const ui = uiSurfaceFor(screenContext);
+  return ui.semanticBlocks
+    .map((row) => ({
+      ...row,
+      label: text(row?.label),
+      semanticType: 'block',
+      targetKind: 'BLOCK',
+      targetKey: text(row?.blockKey || row?.semanticId),
+      blockKey: text(row?.blockKey),
+      semanticId: text(row?.semanticId),
+    }))
+    .filter((row) => row.label && row.targetKey);
 }
 
 function screenAuthorized({ user, screenContext }) {
@@ -72,7 +106,12 @@ function scoreRow(row, query) {
   if (label === needle) return 100;
   if (label.includes(needle) || needle.includes(label)) return 80;
   const words = needle.split(/\s+/).filter((word) => word.length > 2);
-  const matched = words.filter((word) => label.includes(word)).length;
+  const labelWords = label.split(/\s+/).filter((word) => word.length > 2);
+  // Turkish inflection is part of the semantic label match: "haritayı"
+  // refers to the visible "Harita aç" control just as "rotayı" refers to
+  // "Rota aç". Compare normalized word stems in both directions instead of
+  // maintaining phrase-specific aliases.
+  const matched = words.filter((word) => labelWords.some((labelWord) => labelWord.startsWith(word) || word.startsWith(labelWord))).length;
   return matched ? 40 + matched * 8 : 0;
 }
 
@@ -89,8 +128,8 @@ function workflowIntentForPlan(semanticPlan, conversationState = null) {
 
 function canonicalGuidancePlan(semanticPlan) {
   const family = text(semanticPlan?.family);
-  return ["UI_GUIDANCE", "CONTINUE_CURRENT_REASONING"].includes(family)
-    || (family === "SCREEN_CONTEXT" && semanticPlan?.typedRequest?.screenContextIntent === true);
+  return ["UI_GUIDANCE", "CONTINUE_CURRENT_REASONING", "EXPLAIN_CURRENT_TARGET"].includes(family)
+    || (family === "SCREEN_CONTEXT" && (semanticPlan?.screenContextIntent === true || semanticPlan?.typedRequest?.screenContextIntent === true));
 }
 
 function explicitTargetPhrase({ message, prior, currentPath = '', workflowRequest = false, continuation = false }) {
@@ -125,6 +164,64 @@ function isContinuationMessage(message) {
   return /^(?:devam(?: et)?|girdim|yaptım|yaptim|bulamadım|bulamadim|geri|burada göremiyorum|burada goremiyorum)$/iu.test(text(message));
 }
 
+function isQuoteFloorDetailRequest({ semanticPlan, message } = {}) {
+  const quoteFloorEvidence = semanticPlan?.canonicalRequest?.typedEvidence?.specificity?.quoteFloorAnalysisEvidence === true;
+  if (!quoteFloorEvidence) return false;
+  const value = normalized(message);
+  return /\b(?:ayrinti|detay|ac|goster|incele|gorme|goruntule)\p{L}*\b/iu.test(value);
+}
+
+function isOperationHealthProblemsShowRequest({ currentPath, semanticPlan } = {}) {
+  if (!/(?:^|\/)operation-health$/.test(String(currentPath || '').trim())) return false;
+  const operation = String(semanticPlan?.canonicalRequest?.operation || '').trim();
+  if (!['VIEW_AUTHORIZED_SURFACE', 'NAVIGATE_AUTHORIZED_SURFACE'].includes(operation)) return false;
+  const taskType = String(
+    semanticPlan?.typedRequest?.taskType
+      || semanticPlan?.canonicalRequest?.typedEvidence?.taskType
+      || '',
+  ).trim().toUpperCase();
+  return taskType === 'ISSUE'
+    || String(semanticPlan?.family || '').trim().toUpperCase() === 'ISSUE_DIAGNOSTIC'
+    || semanticPlan?.canonicalRequest?.typedEvidence?.specificity?.issueSurfaceViewEvidence === true;
+}
+
+function explicitOfferRecordId(semanticPlan) {
+  const ref = (Array.isArray(semanticPlan?.canonicalRequest?.candidateEntityRefs)
+    ? semanticPlan.canonicalRequest.candidateEntityRefs
+    : [])
+    .find((candidate) => String(candidate?.type || '').toUpperCase() === 'OFFER' && Number(candidate?.id) > 0);
+  return Number(ref?.id) > 0 ? Math.trunc(Number(ref.id)) : 0;
+}
+
+function capabilityTargetForRows(available, capabilityIntent, message = '') {
+  const rowsForCapability = Array.isArray(available) ? available.filter((row) => !row.disabled) : [];
+  if (capabilityIntent === 'IMPORT_PERSONNEL') {
+    return rowsForCapability.find((row) => /excel\s*\/\s*csv|ice\s*aktarma|içe\s*aktarma|import|toplu.*(?:personel|calisan)|dosya.*(?:sec|seç)/iu.test(row.label)) || null;
+  }
+  if (capabilityIntent === 'ADD_PERSONNEL') {
+    return rowsForCapability.find((row) => /^ekle$/iu.test(row.label))
+      || rowsForCapability.find((row) => /personel.*ekle|calisan.*ekle|ekle.*personel|ekle.*calisan/iu.test(row.label))
+      || null;
+  }
+  if (capabilityIntent === 'ENTER_ADDRESS') {
+    const query = normalized(message);
+    if (/\btemizle\b.*(?:ilerle|ılerle)/iu.test(query)) {
+      return rowsForCapability.find((row) => /\badres\b.*\btemizle\b.*(?:ilerle|ılerle)/iu.test(normalized(row.label)))
+        || rowsForCapability.find((row) => /\btemizle\b.*(?:ilerle|ılerle)/iu.test(normalized(row.label)))
+        || null;
+    }
+    return rowsForCapability.find((row) => /^adres$/iu.test(row.label))
+      || rowsForCapability.find((row) => /adresten\s+bul|adres.*dogrula|adres.*doğrula/iu.test(row.label))
+      || null;
+  }
+  if (capabilityIntent === 'PREPARE_STOPS') {
+    return rowsForCapability.find((row) => /durakları\s+hazırla|duraklari\s+hazirla/iu.test(row.label))
+      || rowsForCapability.find((row) => /durak\s+(?:üret|uret)|vardiyadan\s+durakları\s+çek|vardiyadan\s+duraklari\s+cek/iu.test(row.label))
+      || null;
+  }
+  return null;
+}
+
 export function isCopilotGuidanceMessage(message) {
   return GUIDANCE_RE.test(text(message)) || isWorkflowGuidanceMessage(message);
 }
@@ -147,9 +244,15 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
     && ["CREATE_SHIFT", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE"].includes(workflowIntentForPlan(null, conversationState));
   const workflowRequest = canonicalWorkflow || compatibilityWorkflow || (!hasCanonicalDecision && isWorkflowGuidanceMessage(message));
   const continuation = text(semanticPlan?.family) === 'CONTINUE_CURRENT_REASONING'
+    || text(semanticPlan?.family) === 'EXPLAIN_CURRENT_TARGET'
     || (!hasCanonicalDecision && isContinuationMessage(message));
+  const quoteFloorDetailRequest = isQuoteFloorDetailRequest({ semanticPlan, message });
+  const operationHealthProblemsShowRequest = isOperationHealthProblemsShowRequest({ currentPath, semanticPlan });
+  const requestedOfferId = explicitOfferRecordId(semanticPlan);
   const guidanceRequest = canonicalGuidancePlan(semanticPlan)
     || (!hasCanonicalDecision && isCopilotGuidanceMessage(message));
+  const agreementCollectionViewRequest = semanticPlan?.agreementCollectionViewIntent === true
+    || semanticPlan?.typedRequest?.agreementCollectionViewIntent === true;
   // A target saved for a previous route must not linger.  A *new canonical*
   // guidance decision is different: it describes the current turn and must
   // be resolved against this current screen, even when an earlier workflow
@@ -181,28 +284,338 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
   if (prior?.targetKey && text(prior.screenPath) && text(prior.screenPath) !== currentPath && !workflowRequest && !freshCanonicalGuidance) {
     return { status: GUIDED_TARGET_STATUSES.STALE, targetKey: null, screenPath: currentPath || null, previousTargetKey: text(prior.targetKey), reason: 'Ekran değişti; önceki hedef artık geçerli değil.' };
   }
-  if (!guidanceRequest && !prior?.targetKey) return null;
+  const agreementOperationBridgeIntent = semanticPlan?.agreementOperationBridgeIntent === true
+    || semanticPlan?.typedRequest?.agreementOperationBridgeIntent === true;
+  const selectedAgreementId = Number(
+    semanticPlan?.entity?.id
+      || screenContext?.selectedEntityId
+      || screenContext?.selectedEntity?.id
+      || 0,
+  ) || 0;
+  if (!guidanceRequest && !agreementOperationBridgeIntent && !prior?.targetKey && !quoteFloorDetailRequest && !requestedOfferId && !operationHealthProblemsShowRequest && !agreementCollectionViewRequest) return null;
   const available = rows(screenContext);
+  const availableBlocks = blockRows(screenContext);
+  const modalOpen = uiSurfaceFor(screenContext).modalTitles.length > 0;
+  if (agreementCollectionViewRequest) {
+    const onAgreementSurface = currentPath === '/room/agreements';
+    const targetKey = onAgreementSurface ? 'room:agreements:list' : 'room:agreements';
+    const chosenCollection = available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === targetKey);
+    if (!chosenCollection) {
+      return {
+        status: GUIDED_TARGET_STATUSES.NOT_FOUND,
+        targetKey: null,
+        screenPath: currentPath || null,
+        expectedTargetKey: targetKey,
+        reason: onAgreementSurface
+          ? 'Yetkili sözleşme listesi hedefi mevcut yüzeyde doğrulanamadı; menü hedefiyle ikame edilmedi.'
+          : 'Yetkili Sözleşmeler yüzeyi mevcut rolde doğrulanamadı.',
+      };
+    }
+    const semanticId = text(chosenCollection.semanticId) || 'product:room:agreements:list';
+    return {
+      status: GUIDED_TARGET_STATUSES.FOUND,
+      targetKind: 'CONTROL',
+      targetKey,
+      identitySource: 'CANONICAL',
+      legacyLabelFallbackUsed: false,
+      semanticId,
+      label: chosenCollection.label,
+      semanticType: chosenCollection.semanticType || 'section',
+      screenPath: currentPath || null,
+      role: text(user?.role).toUpperCase(),
+      authorizedContext: { role: text(user?.role).toUpperCase(), screenPath: currentPath || null, screenId: Number(screenContext?.id || 0) || null },
+      safeAction: onAgreementSurface ? 'HIGHLIGHT' : 'NAVIGATE',
+      anchor: { targetKind: 'CONTROL', targetKey, semanticId },
+      locator: { targetKind: 'CONTROL', targetKey, semanticId, label: chosenCollection.label, semanticType: chosenCollection.semanticType || 'section' },
+      callout: { targetKind: 'CONTROL', targetKey, semanticId, label: chosenCollection.label, identitySource: 'CANONICAL' },
+      criticalActionExecution: false,
+      reason: onAgreementSurface
+        ? 'Yetkili sözleşme koleksiyonu salt-okunur görünürlük için gösterildi; seçili kayıt kapsamı kullanılmadı.'
+        : 'Yetkili Sözleşmeler yüzeyine güvenli gezinme hedefi gösterildi; iş yazımı yapılmadı.',
+    };
+  }
+  if (agreementOperationBridgeIntent) {
+    if (currentPath !== '/room/agreements') {
+      return {
+        status: GUIDED_TARGET_STATUSES.WRONG_SCREEN,
+        targetKey: null,
+        screenPath: currentPath || null,
+        expectedScreenPath: '/room/agreements',
+        reason: 'Sözleşme operasyon köprüsü yalnızca yetkili Sözleşmeler yüzeyinde gösterilebilir.',
+      };
+    }
+    if (!selectedAgreementId) {
+      return {
+        status: GUIDED_TARGET_STATUSES.NOT_FOUND,
+        targetKey: null,
+        screenPath: currentPath || null,
+        reason: 'Operasyon köprüsünü göstermek için seçili ve yetkili bir sözleşme gerekli.',
+      };
+    }
+    const targetKey = `room:agreements:agreement:${selectedAgreementId}:operation-bridge`;
+    const chosenBridge = available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === targetKey);
+    if (!chosenBridge) {
+      return {
+        status: GUIDED_TARGET_STATUSES.NOT_FOUND,
+        targetKey: null,
+        screenPath: currentPath || null,
+        expectedTargetKey: targetKey,
+        reason: 'Seçili sözleşmenin operasyon köprüsü mevcut yetkili yüzeyde doğrulanamadı.',
+      };
+    }
+    const semanticId = text(chosenBridge.semanticId) || `product:room:agreement:${selectedAgreementId}:operation-bridge`;
+    return {
+      status: GUIDED_TARGET_STATUSES.FOUND,
+      targetKind: 'CONTROL',
+      targetKey,
+      identitySource: 'CANONICAL',
+      legacyLabelFallbackUsed: false,
+      semanticId,
+      label: chosenBridge.label,
+      semanticType: chosenBridge.semanticType || 'button',
+      screenPath: currentPath || null,
+      role: text(user?.role).toUpperCase(),
+      authorizedContext: {
+        role: text(user?.role).toUpperCase(),
+        screenPath: currentPath || null,
+        screenId: Number(screenContext?.id || 0) || null,
+        agreementId: selectedAgreementId,
+      },
+      safeAction: 'HIGHLIGHT',
+      anchor: { targetKind: 'CONTROL', targetKey, semanticId, recordType: 'AGREEMENT', recordId: selectedAgreementId },
+      locator: { targetKind: 'CONTROL', targetKey, semanticId, label: chosenBridge.label, semanticType: chosenBridge.semanticType || 'button' },
+      callout: { targetKind: 'CONTROL', targetKey, semanticId, label: chosenBridge.label, identitySource: 'CANONICAL' },
+      criticalActionExecution: false,
+      reason: `Yalnızca seçili ve yetkili Sözleşme #${selectedAgreementId} operasyon köprüsü salt-okunur görünürlük için gösterildi.`,
+    };
+  }
+  const liveWorkflowState = screenContext?.uiHints?.workflowState && typeof screenContext.uiHints.workflowState === 'object'
+    ? screenContext.uiHints.workflowState
+    : null;
+  const capabilityIntent = text(semanticPlan?.capabilityIntent);
+  const requestedTargetKind = text(semanticPlan?.targetKind).toUpperCase();
+  const requestedBlockKey = text(semanticPlan?.blockKey || semanticPlan?.semanticId);
+  if (requestedOfferId) {
+    const targetKey = `room:offers:offer:${requestedOfferId}`;
+    const chosenOffer = available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === targetKey);
+    if (!chosenOffer) {
+      return {
+        status: GUIDED_TARGET_STATUSES.NOT_FOUND,
+        targetKey: null,
+        screenPath: currentPath || null,
+        expectedTargetKey: targetKey,
+        reason: `Teklif #${requestedOfferId} mevcut ve yetkili hedef olarak bu yüzeyde doğrulanamadı.`,
+      };
+    }
+    const restoresPreviousOffer = String(semanticPlan?.canonicalRequest?.operation || '').trim() === 'NAVIGATE_AUTHORIZED_SURFACE'
+      && (Array.isArray(semanticPlan?.canonicalRequest?.candidateEntityRefs)
+        ? semanticPlan.canonicalRequest.candidateEntityRefs
+        : [])
+        .some((candidate) => String(candidate?.type || '').toUpperCase() === 'OFFER'
+          && Number(candidate?.id) === requestedOfferId
+          && String(candidate?.source || '').toUpperCase() === 'PREVIOUS_RECORD_CONTEXT');
+    return {
+      status: GUIDED_TARGET_STATUSES.FOUND,
+      targetKind: 'CONTROL',
+      targetKey,
+      identitySource: 'CANONICAL',
+      legacyLabelFallbackUsed: false,
+      semanticId: text(chosenOffer.semanticId) || `product:room:offer:${requestedOfferId}`,
+      label: chosenOffer.label,
+      semanticType: chosenOffer.semanticType || 'disclosure',
+      screenPath: currentPath || null,
+      role: text(user?.role).toUpperCase(),
+      authorizedContext: { role: text(user?.role).toUpperCase(), screenPath: currentPath || null, screenId: Number(screenContext?.id || 0) || null, offerId: requestedOfferId },
+      safeAction: restoresPreviousOffer ? 'NAVIGATE' : 'HIGHLIGHT',
+      anchor: { targetKind: 'CONTROL', targetKey, semanticId: text(chosenOffer.semanticId) || null, recordType: 'OFFER', recordId: requestedOfferId },
+      locator: { targetKind: 'CONTROL', targetKey, semanticId: text(chosenOffer.semanticId) || null, label: chosenOffer.label, semanticType: chosenOffer.semanticType || 'disclosure' },
+      callout: { targetKind: 'CONTROL', targetKey, semanticId: text(chosenOffer.semanticId) || null, label: chosenOffer.label, identitySource: 'CANONICAL' },
+      criticalActionExecution: false,
+      reason: `Yalnızca yetkili Teklif #${requestedOfferId} kaydının mevcut ayrıntı hedefi gösterildi; iş yazımı yapılmadı.`,
+    };
+  }
+  if (quoteFloorDetailRequest) {
+    const targetKey = 'room:financial-operations:quote-floor-details';
+    const chosenDetail = available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === targetKey);
+    if (!chosenDetail) {
+      return {
+        status: GUIDED_TARGET_STATUSES.NOT_FOUND,
+        targetKey: null,
+        screenPath: currentPath || null,
+        expectedTargetKey: targetKey,
+        reason: 'Teklif tabanı ayrıntı disclosure hedefi mevcut yetkili yüzeyde doğrulanamadı.',
+      };
+    }
+    return {
+      status: GUIDED_TARGET_STATUSES.FOUND,
+      targetKind: 'CONTROL',
+      targetKey,
+      identitySource: 'CANONICAL',
+      legacyLabelFallbackUsed: false,
+      semanticId: text(chosenDetail.semanticId) || 'product:room:financial-operations:quote-floor-details',
+      label: chosenDetail.label,
+      semanticType: chosenDetail.semanticType || 'disclosure',
+      screenPath: currentPath || null,
+      role: text(user?.role).toUpperCase(),
+      authorizedContext: { role: text(user?.role).toUpperCase(), screenPath: currentPath || null, screenId: Number(screenContext?.id || 0) || null },
+      safeAction: 'HIGHLIGHT',
+      anchor: { targetKind: 'CONTROL', targetKey, semanticId: text(chosenDetail.semanticId) || null },
+      locator: { targetKind: 'CONTROL', targetKey, semanticId: text(chosenDetail.semanticId) || null, label: chosenDetail.label, semanticType: chosenDetail.semanticType || 'disclosure' },
+      callout: { targetKind: 'CONTROL', targetKey, semanticId: text(chosenDetail.semanticId) || null, label: chosenDetail.label, identitySource: 'CANONICAL' },
+      criticalActionExecution: false,
+      reason: 'Mevcut finans ayrıntı disclosure hedefi yalnızca salt-okunur görünürlük için gösterildi.',
+    };
+  }
+  if (requestedTargetKind === 'BLOCK' || requestedBlockKey) {
+    const chosenBlock = availableBlocks.find((row) =>
+      (requestedBlockKey && (row.blockKey === requestedBlockKey || row.semanticId === requestedBlockKey))
+      || (!requestedBlockKey && row.label === text(semanticPlan?.targetLabel)),
+    );
+    if (!chosenBlock) {
+      return {
+        status: GUIDED_TARGET_STATUSES.NOT_FOUND,
+        targetKey: null,
+        screenPath: currentPath || null,
+        expectedBlockKey: requestedBlockKey || null,
+        reason: 'Bu semantic blok mevcut ve yetkili arayüzde doğrulanamadı.',
+      };
+    }
+    const blockTarget = {
+      status: GUIDED_TARGET_STATUSES.FOUND,
+      targetKind: 'BLOCK',
+      identitySource: 'CANONICAL',
+      legacyLabelFallbackUsed: false,
+      targetKey: chosenBlock.targetKey,
+      blockKey: chosenBlock.blockKey || chosenBlock.targetKey,
+      semanticId: chosenBlock.semanticId || null,
+      label: chosenBlock.label,
+      semanticType: 'block',
+      screenPath: currentPath || null,
+      role: text(user?.role).toUpperCase(),
+      authorizedContext: { role: text(user?.role).toUpperCase(), screenPath: currentPath || null, screenId: Number(screenContext?.id || 0) || null },
+      safeAction: 'HIGHLIGHT',
+      anchor: { targetKind: 'BLOCK', targetKey: chosenBlock.targetKey, blockKey: chosenBlock.blockKey || chosenBlock.targetKey, semanticId: chosenBlock.semanticId || null },
+      locator: { targetKind: 'BLOCK', blockKey: chosenBlock.blockKey || chosenBlock.targetKey, semanticId: chosenBlock.semanticId || null },
+      callout: { targetKind: 'BLOCK', targetKey: chosenBlock.targetKey, blockKey: chosenBlock.blockKey || chosenBlock.targetKey, label: chosenBlock.label, identitySource: 'CANONICAL' },
+      criticalActionExecution: false,
+      reason: 'Yalnızca mevcut ve yetkili semantic blok gösterilir; iş yazımı yapılmaz.',
+    };
+    return blockTarget;
+  }
+  const capabilityTarget = capabilityIntent
+    ? capabilityTargetForRows(available, capabilityIntent, message)
+    : null;
+  if (capabilityIntent && !capabilityTarget) {
+    return {
+      status: GUIDED_TARGET_STATUSES.NOT_FOUND,
+      targetKey: null,
+      screenPath: currentPath || null,
+      expectedCapability: capabilityIntent,
+      reason: 'Bu yetenek için mevcut ve yetkili bir kontrol doğrulanamadı.',
+    };
+  }
   const query = explicitTargetPhrase({ message, prior, currentPath, workflowRequest, continuation });
+  // A planner reference is prior conversational context, not a request for
+  // that exact DOM node. Only an explicit current-turn target key is strict.
+  // A target carried by the current UI envelope is authoritative for this
+  // turn. A target reconstructed from the previous conversation/task state
+  // remains context and must still be allowed to resolve through the normal
+  // workflow path (including legacy compatibility fixtures).
+  const currentTurnTargetReference = semanticPlan?.currentTargetReference
+    || semanticPlan?.canonicalRequestEnvelope?.canonicalShape?.currentTargetReference
+    || semanticPlan?.canonicalRequest?.currentTargetReference
+    || null;
+  const strictCurrentTurnTargetKey = text(currentTurnTargetReference?.targetKey);
+  if (strictCurrentTurnTargetKey) {
+    const exactRequested = available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === strictCurrentTurnTargetKey);
+    if (!exactRequested) {
+      return {
+        status: GUIDED_TARGET_STATUSES.NOT_FOUND,
+        targetKey: null,
+        screenPath: currentPath || null,
+        expectedTargetKey: strictCurrentTurnTargetKey,
+        reason: 'Kanonik hedef kimliği mevcut yüzeyde doğrulanamadı.',
+      };
+    }
+  }
   const scored = available
     .map((row) => ({ row, score: scoreRow(row, query) }))
     .sort((a, b) => b.score - a.score);
+  const modalTargets = modalOpen
+    ? available.filter((row) => !row.disabled && /^(?:ileri|devam|konumumu al|konumu al|adresten bul|plan paketi|tarih ve saat|personel|durak)/iu.test(row.label))
+    : [];
+  const continuationDepth = Math.max(0, Number(semanticPlan?.continuationDepth || 0));
+  const modalTarget = modalTargets.length
+    ? modalTargets[Math.min(continuation ? continuationDepth : 0, modalTargets.length - 1)]
+    : null;
+  const liveWorkflowTarget = workflowRequest
+    && workflowIntentForPlan(semanticPlan, text(semanticPlan?.family) === 'CONTINUE_CURRENT_REASONING' ? conversationState : null) === 'CREATE_SHIFT'
+    && liveWorkflowState?.currentTargetLabel
+    ? available.find((row) => normalized(row.label) === normalized(liveWorkflowState.currentTargetLabel))
+      || available.find((row) => normalized(row.label).includes(normalized(liveWorkflowState.currentTargetLabel)))
+    : null;
+  if (workflowRequest
+    && workflowIntentForPlan(semanticPlan, text(semanticPlan?.family) === 'CONTINUE_CURRENT_REASONING' ? conversationState : null) === 'CREATE_SHIFT'
+    && liveWorkflowState?.currentTargetLabel
+    && !liveWorkflowTarget) {
+    return {
+      status: GUIDED_TARGET_STATUSES.NOT_FOUND,
+      targetKey: null,
+      screenPath: currentPath || null,
+      expectedTargetLabel: text(liveWorkflowState.currentTargetLabel),
+      reason: 'Canlı workflow hedefi mevcut yüzeyde doğrulanamadı; başka bir kontrol hedeflenmedi.',
+    };
+  }
+  const canonicalSurfaceNavigation = semanticPlan?.typedRequest?.targetEntityType === 'SURFACE'
+    && semanticPlan?.typedRequest?.taskType === 'SCREEN_CONTEXT'
+    && semanticPlan?.explicitUiGuidance === true;
+  const openSurfaceTarget = (workflowIntent === 'OPEN_SURFACE' || canonicalSurfaceNavigation)
+    ? available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === 'room:home')
+      || available.find((row) => normalized(row.label) === 'menü' || normalized(row.label) === 'menu')
+    : null;
   const workflowTarget = workflowRequest
-    ? (continuation
-      ? available.find((row) => /rehberi başlat|rehberi baslat/i.test(row.label))
+    ? capabilityTarget
+      || liveWorkflowTarget
+      || openSurfaceTarget
+      || (continuation
+      ? modalTarget
+        || available.find((row) => /rehberi başlat|rehberi baslat/i.test(row.label))
         || available.find((row) => /ayrıntılı çalışma alanını göster|ayrintili calisma alanini goster/i.test(row.label))
         || available.find((row) => /detayları göster|detaylari goster/i.test(row.label))
         || available.find((row) => /planlama merkezi/i.test(row.label))
-      : available.find((row) => /teklifler|ticari akışım|ticari akis/i.test(row.label))
-        || available.find((row) => /ayrıntılı çalışma alanını göster|ayrintili calisma alanini goster/i.test(row.label))
+      : modalTarget
+        || (workflowIntent === 'OPEN_SHIFT_SURFACE'
+          ? available.find((row) => /^(?:vardiyalar|vardiya listesi)$/iu.test(normalized(row.label)))
+          : null)
+        || (workflowIntent === 'OPEN_OFFER_SURFACE'
+          ? available.find((row) => /teklifler|ticari akışım|ticari akis/iu.test(row.label))
+          : null)
         || available.find((row) => /rehberi başlat|rehberi baslat/i.test(row.label))
+        || available.find((row) => /ayrıntılı çalışma alanını göster|ayrintili calisma alanini goster/i.test(row.label))
         || available.find((row) => /planlama merkezi/i.test(row.label)))
     : null;
-  const chosen = workflowRequest
-    ? workflowTarget
-    : (scored[0]?.score > 0
-    ? scored[0].row
-    : (continuation && prior?.targetKey ? available.find((row) => row.targetKey === prior.targetKey) : null));
+  const exactCanonicalTarget = strictCurrentTurnTargetKey
+    ? available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === strictCurrentTurnTargetKey)
+    : null;
+  const operationHealthProblemsTarget = operationHealthProblemsShowRequest
+    ? available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === 'room-operation-health:tab:problems')
+    : null;
+  if (operationHealthProblemsShowRequest && !operationHealthProblemsTarget) {
+    return {
+      status: GUIDED_TARGET_STATUSES.NOT_FOUND,
+      targetKey: null,
+      screenPath: currentPath || null,
+      expectedTargetKey: 'room-operation-health:tab:problems',
+      reason: 'Operasyon sorunları bölümü mevcut yetkili yüzeyde doğrulanamadı; başka bir alan hedeflenmedi.',
+    };
+  }
+  const chosen = operationHealthProblemsTarget
+    || exactCanonicalTarget
+    || (workflowRequest
+      ? workflowTarget
+      : (scored[0]?.score > 0
+        ? scored[0].row
+        : (continuation && prior?.targetKey ? available.find((row) => row.targetKey === prior.targetKey) : null)));
   if (!chosen) {
     return { status: GUIDED_TARGET_STATUSES.NOT_FOUND, targetKey: null, screenPath: currentPath || null, reason: 'Bu ekranda doğrulanabilir bir hedef bulamadım.' };
   }
@@ -211,13 +624,23 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
   }
   return {
     status: GUIDED_TARGET_STATUSES.FOUND,
+    targetKind: 'CONTROL',
     targetKey: chosen.targetKey,
+    identitySource: chosen.identitySource || 'LEGACY_LABEL',
+    legacyLabelFallbackUsed: chosen.identitySource !== 'CANONICAL',
+    semanticId: text(chosen.semanticId) || null,
     label: chosen.label,
     semanticType: chosen.semanticType || 'button',
     screenPath: currentPath || null,
     role: text(user?.role).toUpperCase(),
-    safeAction: 'HIGHLIGHT',
-    locator: { targetKey: chosen.targetKey, label: chosen.label, semanticType: chosen.semanticType || 'button' },
+    authorizedContext: { role: text(user?.role).toUpperCase(), screenPath: currentPath || null, screenId: Number(screenContext?.id || 0) || null },
+    safeAction: operationHealthProblemsShowRequest
+      && String(semanticPlan?.canonicalRequest?.operation || '').trim() === 'NAVIGATE_AUTHORIZED_SURFACE'
+      ? 'NAVIGATE'
+      : 'HIGHLIGHT',
+    anchor: { targetKind: 'CONTROL', targetKey: chosen.targetKey, semanticId: text(chosen.semanticId) || null },
+    locator: { targetKind: 'CONTROL', targetKey: chosen.targetKey, semanticId: text(chosen.semanticId) || null, label: chosen.label, semanticType: chosen.semanticType || 'button' },
+    callout: { targetKind: 'CONTROL', targetKey: chosen.targetKey, semanticId: text(chosen.semanticId) || null, label: chosen.label, identitySource: chosen.identitySource || 'LEGACY_LABEL' },
     criticalActionExecution: false,
     reason: 'Yalnızca mevcut ve yetkili arayüz hedefi gösterilir; iş yazımı yapılmaz.',
   };
@@ -227,10 +650,17 @@ export function guidedTargetForConversationState(target) {
   if (!target || typeof target !== 'object') return null;
   return {
     status: text(target.status),
+    targetKind: text(target.targetKind).toUpperCase() || 'CONTROL',
     targetKey: text(target.targetKey) || null,
+    semanticId: text(target.semanticId) || null,
+    blockKey: text(target.blockKey) || null,
     label: text(target.label) || null,
     screenPath: text(target.screenPath) || null,
     semanticType: text(target.semanticType) || null,
     role: text(target.role).toUpperCase() || null,
+    authorizedContext: target.authorizedContext && typeof target.authorizedContext === 'object' ? { ...target.authorizedContext } : null,
+    anchor: target.anchor && typeof target.anchor === 'object' ? { ...target.anchor } : null,
+    locator: target.locator && typeof target.locator === 'object' ? { ...target.locator } : null,
+    callout: target.callout && typeof target.callout === 'object' ? { ...target.callout } : null,
   };
 }

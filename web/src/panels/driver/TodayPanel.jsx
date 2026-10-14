@@ -341,7 +341,7 @@ useEffect(() => {
 
   return (
     <div>
-      <div className="card">
+        <div className="card" data-copilot-block-key="driver-today:assignment-block" data-copilot-semantic-id="product:driver-today:assignment-block" data-copilot-label="Bugünkü Görev ve Atama">
         <FlowSummaryStrip
           title="Bugün"
           description="Tek hedef: aktif görevi gör → başlat → rota ekranında ulaşıldı ile ilerle."

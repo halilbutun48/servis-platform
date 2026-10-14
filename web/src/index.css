@@ -3100,7 +3100,10 @@ button, input, select, textarea, .btn, .secondary {
 }
 @media (max-width: 420px) {
   .copilotDrawer:has(.copilotContextSuggestionsToggle[aria-expanded="true"]) {
-    height: min(55vh, 480px) !important;
+    /* Opening suggestions is an explicit expanded state. Keep the same
+       bounded height as the mobile expansion control so the disclosure does
+       not steal the chat viewport or clip the newest exchange. */
+    height: min(75vh, 640px) !important;
   }
 
   .copilotContextSuggestions .copilotChip {
@@ -4476,7 +4479,7 @@ textarea:focus-visible,
   .copilotDrawer {
     /* Keep the primary page target above the drawer after semantic guidance
        scrolls it into the viewport. Desktop sizing remains unchanged. */
-    height: min(36vh, 320px) !important;
+    height: min(35vh, 300px) !important;
     min-height: 0;
     max-height: calc(100dvh - 112px);
     box-sizing: border-box;
@@ -5221,7 +5224,7 @@ textarea:focus-visible,
   }
 
   .copilotDrawer .copilotComposer textarea {
-    min-height: 84px;
+    min-height: 96px;
     height: 84px;
     line-height: 1.45;
   }
@@ -5243,6 +5246,21 @@ textarea:focus-visible,
 }
 
 @media (max-width: 720px) {
+  .guidedPlanModalContent,
+  .guidedPlanModalContent > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .guidedPlanHubCoordGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .guidedPlanSetupGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-width: 0;
+  }
+
   .copilotDrawer {
     overflow: visible;
     min-width: 0;
@@ -5257,6 +5275,7 @@ textarea:focus-visible,
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 8px;
+    padding: 6px 8px;
     cursor: default;
     touch-action: auto;
     user-select: auto;
@@ -5264,11 +5283,22 @@ textarea:focus-visible,
 
   .copilotDrawerIdentity {
     width: auto;
+    gap: 6px;
   }
+
+  .copilotDrawerIdentity > .seferAbiAvatar {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .copilotDrawerTitle { font-size: 14px; }
+  .copilotDrawerContext { display: none; }
+  .copilotDrawerState { margin-top: 1px; font-size: 10px; }
 
   .copilotDrawerCompactContext {
     gap: 4px;
-    font-size: 10px;
+    font-size: 9.5px;
+    line-height: 1.15;
   }
 
   .copilotDrawerMoreMenu {
@@ -5306,38 +5336,34 @@ textarea:focus-visible,
 
 /* #18 mobile compact/expanded drawer contract. */
 @media (max-width: 720px) {
-  /* Keep enough scroll-bottom room for the fixed composer so the latest
-     assistant message remains readable above it. */
+  /* Keep the answer region and composer in one bounded flex column.  The
+     composer is part of the compact working mode, so it must reserve its own
+     space instead of covering the answer with an oversized spacer. */
   .copilotDrawer .copilotChatSurface {
     box-sizing: border-box;
-    flex: 1 1 0%;
-    height: 0;
-    min-height: 0;
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 96px;
     padding-bottom: 10px;
   }
 
   .copilotDrawer .copilotChatSurface::after {
     content: "";
-    display: block;
-    height: 132px;
-    flex: 0 0 132px;
+    display: none;
   }
 
   .copilotDrawer .copilotComposer {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 5;
+    position: static;
+    flex: 0 0 auto;
     box-sizing: border-box;
-    max-height: 132px;
-    overflow: hidden;
+    max-height: none;
+    overflow: visible;
   }
 
   .copilotDrawer.copilotDrawer--guided-target {
     /* Target guidance gets a smaller native mobile surface so the real
        highlighted control remains usable even near the end of a page. */
-    height: min(36vh, 320px) !important;
+    height: min(35vh, 300px) !important;
     max-height: calc(100dvh - 112px);
     overflow: hidden;
   }
@@ -5357,35 +5383,143 @@ textarea:focus-visible,
     padding: 6px 10px;
   }
 
-  /* Keep compact guidance on the same anchored composer model while the
-     reserved scroll space above keeps the latest guidance readable. */
+  /* Guided targets use the same compact flex model so the current answer and
+     composer remain usable while the real target stays visible. */
   .copilotDrawer.copilotDrawer--guided-target .copilotChatSurface {
+    /* The compact guided drawer has a fixed viewport-bounded height.  Its
+       header and composer are intrinsic, so the answer region must be
+       allowed to shrink below the ordinary compact minimum instead of
+       pushing the composer outside the drawer. */
     min-height: 0;
     padding-bottom: 10px;
   }
 
   .copilotDrawer.copilotDrawer--guided-target .copilotComposer {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 5;
+    position: static;
+    flex: 0 0 auto;
     box-sizing: border-box;
-    max-height: 132px;
-    overflow: hidden;
+    max-height: none;
+    overflow: visible;
   }
 
   .copilotDrawer.copilotDrawer--mobile-expanded {
-    height: min(62vh, 560px) !important;
+    height: min(72vh, 620px) !important;
     max-height: calc(100dvh - 88px);
   }
 
   .copilotDrawer .copilotComposer textarea {
-    min-height: 48px;
-    height: 48px;
+    min-height: 36px;
+    height: 36px;
     max-height: 120px;
     overflow-y: hidden;
     resize: none;
+  }
+
+  .copilotDrawer .copilotComposer {
+    padding: 2px 8px calc(2px + env(safe-area-inset-bottom));
+  }
+
+  .copilotDrawer .copilotComposerRow { margin-top: 2px; }
+  .copilotDrawer .copilotComposerRow .copilotToolBtn { min-height: 27px; padding: 4px 8px; }
+
+  .copilotDrawer .copilotContextSuggestionsToggle {
+    min-height: 32px;
+    padding: 4px 10px;
+  }
+
+  /* Mobile leaf controls keep the compact layout, but retain the platform's
+     44px minimum touch target.  The visual text remains compact inside the
+     target instead of shrinking the hit area below the shared mobile contract. */
+  button,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea,
+  .btn,
+  .btn.sm,
+  .secondary {
+    min-height: 44px;
+  }
+
+  .panelSegmentTab {
+    min-height: 44px;
+    height: 44px;
+  }
+
+  .copilotDrawer .copilotDrawerHeaderActions > .copilotToolBtn,
+  .copilotDrawer .copilotDrawerMore > summary,
+  .copilotDrawer .copilotContextSuggestionsToggle,
+  .copilotDrawer .copilotMobileExpandBtn,
+  .copilotDrawer .copilotComposer textarea,
+  .copilotDrawer .copilotComposerRow .copilotToolBtn {
+    min-height: 44px;
+    height: 44px;
+  }
+
+  .copilotDrawer .copilotDrawerHeaderActions .copilotToolBtn--close,
+  .copilotDrawer .copilotDrawerMore > summary {
+    width: 44px;
+    min-width: 44px;
+  }
+
+  .shellTopMenu,
+  .shellTopLogout {
+    min-height: 44px;
+    height: 44px;
+  }
+
+  .navDockMobileClose {
+    min-height: 44px;
+    height: 44px;
+  }
+
+  /* Compact mode keeps the latest answer and its primary continuation action
+     visible.  Full history/detail remains available in expanded mode and
+     through the existing "Devamını anlat" action. */
+  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child {
+    padding: 4px 6px;
+    margin-bottom: 2px;
+  }
+
+  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child .copilotMsgHead {
+    margin-bottom: 2px;
+    font-size: 9px;
+  }
+
+  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child .copilotMsgText {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    font-size: 11.5px;
+    line-height: 1.2;
+  }
+
+  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child .copilotMsgActions {
+    flex-wrap: nowrap;
+    gap: 3px;
+    max-height: 26px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child .copilotMsgActions > button:first-child {
+    display: none;
+  }
+
+  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child .copilotMsgActions .copilotToolBtn {
+    flex: 0 0 auto;
+    min-height: 24px;
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  /* The primary safe action is part of compact working mode, not an
+     optional overflow item. Keep it visible whenever the current response
+     supplied one; secondary actions may remain horizontally scrollable. */
+  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child .copilotMsgPrimaryAction {
+    display: inline-flex !important;
+    visibility: visible;
+    opacity: 1;
   }
 
   .copilotDrawerHeaderActions {
@@ -5402,4 +5536,106 @@ textarea:focus-visible,
   .copilotMobileExpandBtn {
     display: none !important;
   }
+}
+
+/* M18 guided modal/drawer geometry: when Sefer Abi is open, reserve a real
+   side rail for the conversation instead of letting the fixed drawer cover
+   modal controls.  The modal remains the primary interaction surface. */
+@media (min-width: 721px) {
+  body:has(.copilotDrawer) .guidedPlanModalContent {
+    width: min(calc(100vw - 500px), 1680px) !important;
+    max-width: min(calc(100vw - 500px), 1680px) !important;
+    margin-left: 6px !important;
+    margin-right: auto !important;
+  }
+}
+
+@media (max-width: 720px) {
+  body:has(.copilotDrawer) .guidedPlanModalContent {
+    height: min(54dvh, 460px) !important;
+    max-height: min(54dvh, 460px) !important;
+    margin-top: 8px !important;
+    margin-bottom: calc(min(35vh, 300px) + 20px) !important;
+  }
+}
+
+/* M18 COMPANY guided-mode hierarchy: the guided workspace owns the upper
+   interaction lane and the assistant remains a compact companion below it.
+   This prevents the default drawer from sharing the modal's last controls or
+   hiding the current step on narrow screens. Explicit mobile expansion keeps
+   its existing user-controlled behavior. */
+@media (max-width: 720px) {
+  body:has(.guidedPlanModalContent--primary) .guidedPlanModalContent {
+    height: min(56dvh, 470px) !important;
+    max-height: min(56dvh, 470px) !important;
+    margin-bottom: calc(min(35vh, 300px) + 52px) !important;
+  }
+
+  body:has(.guidedPlanModalContent--primary) .copilotDrawer:not(.copilotDrawer--mobile-expanded) {
+    height: min(35vh, 300px) !important;
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 88px);
+  }
+
+  body:has(.guidedPlanModalContent--primary) .guidedPlanModalHeader {
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(126, 164, 232, .22);
+  }
+
+  body:has(.guidedPlanModalContent--primary) .guidedPlanModalStepTitle {
+    color: #f3cc74;
+    font-weight: 800;
+  }
+}
+
+/* M18 guided modal surface boundary: keep the active workflow visibly above
+   the dashboard while preserving its internal hierarchy.  The backdrop is
+   deliberately stronger than the generic modal so background cards cannot
+   bleed through the guided controls or compete with the next action. */
+.guidedPlanModalBackdrop {
+  background: rgba(2, 6, 23, .72) !important;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.guidedPlanModalSurface {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(180deg, rgba(18, 26, 42, .995), rgba(11, 18, 32, .995)) !important;
+  border: 1px solid rgba(126, 164, 232, .62) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 26px 72px rgba(2, 6, 23, .58), 0 0 0 1px rgba(255, 255, 255, .035) !important;
+}
+
+.guidedPlanModalSurface .guidedPlanModalHeader {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 720px) {
+  .guidedPlanModalBackdrop {
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+
+  .guidedPlanModalSurface {
+    border-radius: 16px !important;
+    box-shadow: 0 18px 48px rgba(2, 6, 23, .62), 0 0 0 1px rgba(255, 255, 255, .04) !important;
+  }
+}
+
+/* Keep one obvious next step in the guided workspace.  Location helpers and
+   back/close controls stay available but visually secondary. */
+.guidedPlanModalContent--primary button.guidedPlanPrimaryAction {
+  background: #2457c5;
+  border-color: #6f9cff;
+  color: #fff;
+  font-weight: 850;
+  box-shadow: 0 5px 16px rgba(36, 87, 197, .28);
+}
+
+.guidedPlanModalContent--primary button.guidedPlanSecondaryAction {
+  background: rgba(255, 255, 255, .04);
+  border-color: rgba(126, 164, 232, .42);
+  color: #d9e5ff;
+  font-weight: 650;
 }

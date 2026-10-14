@@ -247,11 +247,15 @@ export default function OperationHealthPanel() {
   ], filterQ)), [issues, filterQ]);
   const copilotDriver = useMemo(() => filteredDrivers.find((item) => Number(item?.driverId || item?.id || 0) === Number(selectedDriverId || 0)) || filteredDrivers[0] || null, [filteredDrivers, selectedDriverId]);
   const copilotIssue = useMemo(() => filteredIssues.find((item, idx) => `${idx}:${item?.title || ''}` === String(selectedIssueKey || '')) || filteredIssues[0] || null, [filteredIssues, selectedIssueKey]);
-  const facts = useMemo(() => buildOperationHealthCopilotFacts({
-    summary,
-    copilotDriver,
-    copilotIssue,
-  }), [summary, copilotDriver, copilotIssue]);
+  const facts = useMemo(() => ({
+    ...buildOperationHealthCopilotFacts({
+      summary,
+      copilotDriver,
+      copilotIssue,
+      roomOperations,
+    }),
+    activeTab,
+  }), [summary, copilotDriver, copilotIssue, roomOperations, activeTab]);
 
   useEffect(() => {
     setCopilotSelection({
@@ -292,16 +296,22 @@ export default function OperationHealthPanel() {
       key: "proof",
       label: "Şartlı Küme · Kanıt / Rehber",
       badge: summary?.cards?.openIssues ?? 0,
+      copilotTarget: "room-operation-health:tab:proof",
+      copilotSemanticId: "product:room-operation-health:tab:proof",
     },
     {
       key: "summary",
       label: "Taşımacılık Firması Operasyon Özeti",
       badge: summary?.cards?.activeDrivers ?? "-",
+      copilotTarget: "room-operation-health:tab:summary",
+      copilotSemanticId: "product:room-operation-health:tab:summary",
     },
     {
       key: "problems",
       label: "Sürücü & Sorunlar",
       badge: `${filteredDrivers.length + filteredIssues.length}`,
+      copilotTarget: "room-operation-health:tab:problems",
+      copilotSemanticId: "product:room-operation-health:tab:problems",
     },
   ], [summary, filteredDrivers.length, filteredIssues.length]);
 

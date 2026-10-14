@@ -11,6 +11,7 @@ import { clearUiDataCache } from "../../utils/uiDataCache";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import PanelChrome from "../../components/PanelChrome";
 import OfferQualityRankingCard from "../shared/OfferQualityRankingCard";
+import { loadGuidedDraftCandidates } from "./guidedPlanModalActions";
 
 const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
 const GEOREVIEW_OPEN_MODE_KEY = "psv1:georeview:openMode:v1";
@@ -376,6 +377,11 @@ export default function WorkflowPanel() {
   const [guidedOpen, setGuidedOpen] = useState(false);
   const [guidedResumeStep, setGuidedResumeStep] = useState(null);
   const [guidedResumeNonce, setGuidedResumeNonce] = useState(0);
+  const [guidedDraftAvailability, setGuidedDraftAvailability] = useState({
+    status: "UNKNOWN",
+    count: 0,
+    maxResumeStep: null,
+  });
 
   const loadRooms = useCallback(async (signal) => {
     if (!token) return;
@@ -452,6 +458,38 @@ export default function WorkflowPanel() {
       clearTimeout(timer);
     };
   }, [token, guidedOpen, loadRooms]);
+
+  // The entry explanation must know whether activation will first show the
+  // server-backed chooser. This is a read-only, tenant-scoped discovery hint;
+  // the modal revalidates the candidates before any resume or discard action.
+  useEffect(() => {
+    if (!token || school) {
+      setGuidedDraftAvailability({ status: "UNKNOWN", count: 0, maxResumeStep: null });
+      return undefined;
+    }
+    let alive = true;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const candidates = await loadGuidedDraftCandidates({ token, signal: controller.signal });
+        if (!alive) return;
+        const list = Array.isArray(candidates) ? candidates : [];
+        setGuidedDraftAvailability({
+          status: "AVAILABLE",
+          count: list.length,
+          maxResumeStep: list.length ? Math.max(...list.map((item) => Number(item?.resumeStep || 0))) : null,
+        });
+      } catch {
+        if (!alive) return;
+        setGuidedDraftAvailability({ status: "UNKNOWN", count: 0, maxResumeStep: null });
+      }
+    }, 180);
+    return () => {
+      alive = false;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [token, school]);
 
   useEffect(() => {
     if (!offersModal.open) return;
@@ -686,7 +724,15 @@ export default function WorkflowPanel() {
 
 
       <div className="card" style={{ marginTop: 12 }}>
-        <div style={{ fontWeight: 900 }}>Yeni Plan Oluştur (Yönlendirmeli Akış)</div>
+        <div
+          style={{ fontWeight: 900 }}
+          data-copilot-guided-draft-state={guidedDraftAvailability.status === "AVAILABLE"
+            ? (guidedDraftAvailability.count > 0 ? "SAVED_DRAFT_CHOOSER" : "NEW_PLAN_STEP_1")
+            : "UNKNOWN"}
+          data-copilot-guided-draft-count={String(guidedDraftAvailability.count)}
+          data-copilot-guided-draft-max-resume-step={guidedDraftAvailability.maxResumeStep == null ? "" : String(guidedDraftAvailability.maxResumeStep)}
+          data-copilot-guided-draft-source="SERVER_GUIDED_DRAFTS"
+        >Yeni Plan Oluştur (Yönlendirmeli Akış)</div>
         <div className="muted" style={{ marginTop: 4 }}>
           {organization ? (
             <>
@@ -700,7 +746,15 @@ export default function WorkflowPanel() {
         </div>
 
         <div style={{ marginTop: 10 }}>
-          <button type="button" className="btn primary" onClick={() => setGuidedOpen(true)} disabled={!roomsSupported}>
+          <button
+            type="button"
+            className="btn primary"
+            data-copilot-target={organization ? "organization:guided-plan-start" : "company:guided-plan-start"}
+            data-copilot-semantic-id={organization ? "product:organization:guided-plan-start" : "product:company:guided-plan-start"}
+            data-copilot-label="Rehberi Başlat"
+            onClick={() => setGuidedOpen(true)}
+            disabled={!roomsSupported}
+          >
             Rehberi Başlat
           </button>
         </div>

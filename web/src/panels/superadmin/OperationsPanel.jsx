@@ -307,7 +307,7 @@ export default function SuperAdminOperationsPanel() {
   }
 
   return (
-    <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
+    <div style={{ display: "grid", gap: 12, minWidth: 0 }} data-copilot-block-key="superadmin-operations:audit-block" data-copilot-semantic-id="product:superadmin-operations:audit-block" data-copilot-label="Denetim ve Kanıt Özeti">
       <PanelChrome
         title="Denetim Paneli"
         subtitle="Ek doğrulama gerektiren güvenlik, KVKK ve denetim sinyallerini önce özetler. Bu yüzey işlem başlatmaz; yazma ve dışa aktarma yolları ek doğrulama ile korunur."

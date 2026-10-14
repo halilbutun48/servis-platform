@@ -1,8 +1,10 @@
-import { evaluateGeneralArithmeticRequest, generalCreativeOutputShape, inferCanonicalSemanticRequest, inferRequestedOwnershipScope, isGeneralArithmeticRequest, isGeneralCreativeOutputVocabularyRequest } from "./canonicalSemanticRequest.js";
+import { evaluateGeneralArithmeticRequest, generalCreativeOutputShape, hasLiveWorkflowGroundingReference, inferCanonicalSemanticRequest, inferRequestedOwnershipScope, isExplicitRoleHelpIntent, isGenericProductHelpIntent, isGeneralArithmeticRequest, isGeneralCreativeOutputVocabularyRequest } from "./canonicalSemanticRequest.js";
+
+export { isExplicitRoleHelpIntent, isGenericProductHelpIntent };
 
 const PRODUCT_WORDS = [
   "vardiya", "sefer", "shift", "araç", "arac", "plaka", "sürücü", "surucu", "şoför", "sofor",
-  "gps", "konum", "rota", "durak", "eta", "operasyon", "servis", "teklif", "sözleşme", "sozlesme",
+  "gps", "konum", "rota", "durak", "eta", "operasyon", "servis", "teklif", "sözleşme", "sozlesme", "kontrat",
   "anlaşma", "anlasma", "plan", "personel", "öğrenci", "ogrenci", "çocuk", "cocuk", "veli", "talep",
   "maliyet", "bütçe", "butce", "finans", "bildirim", "tenant", "kayıt", "kayit", "ekran", "panel",
   "sistem sağlığı", "sistem sagligi", "platform riski", "yetki", "ticari",
@@ -52,34 +54,6 @@ function normalize(value) {
     .replace(/ç/g, "c")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-// This is the single semantic rule for public, role-neutral product help.
-// It deliberately depends only on the words in the current message: a prior
-// route, selected record, role playbook, or saved product plan must never turn
-// a generic overview into contextual product work.
-export function isGenericProductHelpIntent(value) {
-  const text = normalize(value);
-  if (!text) return false;
-  if (isExplicitRoleHelpIntent(text)) return false;
-  const productSubject = /\bseferpakt\b|\b(?:bu\s+)?(?:program|uygulama|platform|sistem)\p{L}*\b/iu.test(text);
-  const overviewRequest = /\b(?:bu\s+)?(?:program|uygulama|platform|sistem)\p{L}*\s+ne\b|\bne\s+(?:ise\s+yar\p{L}*|yapar|yapabil\p{L}*)\b|\bnedir\b|\bne\s+icin\s+kullan\p{L}*\b|\b(?:nasil\s+)?kullan\p{L}*\b|\b(?:nasil\s+)?ogret\p{L}*\b|\b(?:nereden\s+)?basla\p{L}*\b|\bamac\p{L}*\s+ne\b|\bgenel\s+olarak\b|\bneler\s+yap\p{L}*\b|\banlat\p{L}*\b/iu.test(text);
-  return productSubject && overviewRequest;
-}
-
-// This is the shared semantic boundary between public, role-neutral product
-// help and an explicit request to explain a role.  It deliberately requires
-// both a role reference and a capability/explanation request; a role mention
-// next to a risk, current-screen, or immediate-task request is handled by its
-// respective canonical semantic family instead.
-export function isExplicitRoleHelpIntent(value) {
-  const text = normalize(value);
-  if (!text) return false;
-  const namedRole = /\b(?:company|room|driver|personel|parent|school|organization|super\s*admin|superadmin|hizmet\s+alan\s+firma|tasimacilik\s+firmasi|surucu|veli|okul|organizasyon)\b/iu.test(text);
-  const roleReference = namedRole || /\b(?:bu\s+rol(?:de|un|ün)?|rol(?:ü|u)nde|rol(?:ü|u)n)\b/iu.test(text);
-  const explanationRequest = /\b(?:ne(?:ler)?\s+yapar|ne(?:ler)?\s+yapabilirim|hangi\s+islemler\s+var|rol(?:ü|u)n\s+islev|islevlerini\s+anlat|(?:bu\s+rolde|(?:company|room|driver|personel|parent|school|organization|super\s*admin|superadmin|hizmet\s+alan\s+firma|tasimacilik\s+firmasi|surucu|veli|okul|organizasyon)\s+olarak)\s+ne\s+yapmam\s+gerekiyor)\b/iu.test(text);
-  const moreSpecificTask = /\b(?:risk|siral|listele|sıradaki|simdi|şimdi|bu\s+ekranda|hangi\s+kayit|hangi\s+kayit|neden|niye)\b/iu.test(text);
-  return roleReference && explanationRequest && !moreSpecificTask;
 }
 
 function hasAny(text, values) {
@@ -144,7 +118,7 @@ function hasOfferContext(conversationState, screenContext) {
 }
 
 function hasProductEntity(text) {
-  return /(?:vardiya|sefer|shift|teklif|sözleşme|sozlesme|anlaşma|anlasma|plan)\s*#?\s*\d+/iu.test(text)
+  return /(?:vardiya|sefer|shift|teklif|sözleşme|sozlesme|anlaşma|anlasma|kontrat|plan)\s*#?\s*\d+/iu.test(text)
     || /\b\d{2}\s*[A-ZÇĞİÖŞÜ]{1,3}\s*\d{2,4}\b/iu.test(text);
 }
 
@@ -211,7 +185,7 @@ function hasExplicitTopicAbandonmentSignal(text) {
     "bırak", "birak", "boşver", "bosver", "geç", "gec", "unut", "kapat", "rafa kaldır", "rafa kaldir", "sonra konuşuruz", "sonra konusuruz",
   ]);
   const productTarget = hasAny(text, [
-    "teklif", "vardiya", "sefer", "rota", "araç", "arac", "gps", "durak", "sözleşme", "sozlesme", "kayıt", "kayit", "ekran", "panel", "kart", "ürün", "urun", "firma", "müşteri", "musteri", "rakam", "para", "ticari",
+    "teklif", "vardiya", "sefer", "rota", "araç", "arac", "gps", "durak", "sözleşme", "sozlesme", "kontrat", "kayıt", "kayit", "ekran", "panel", "kart", "ürün", "urun", "firma", "müşteri", "musteri", "rakam", "para", "ticari",
     "bunu", "bunu sonra", "onu", "bunları", "bunlari", "bu konuyu", "bu ekranı", "bu ekrani", "bu kaydı", "bu kaydi",
   ]);
   const explicitPivot = hasAny(text, ["şimdi başka bir şey", "simdi baska bir sey", "başka bir şey soracağım", "baska bir sey soracagim"]);
@@ -487,11 +461,109 @@ function hasProductContext(conversationState, screenContext) {
   return Boolean(screenContext?.path || (selectedId > 0 && selectedType) || previousPlan?.requestedDomains?.length || previousPlan?.entities?.length);
 }
 
-export function resolveConversationRoute({ message, user: _user, conversationState = null, screenContext = null, canonicalShape: providedCanonicalShape = null } = {}) {
+function resolveCanonicalConversationRoute({ canonicalRequest, canonicalShape, hasContext, hasRetainedContext } = {}) {
+  const request = canonicalRequest?.request || (canonicalRequest?.version ? canonicalRequest : null);
+  // V2 stays transport-compatible but cannot establish a V3 semantic action.
+  // It therefore fails into the existing safe clarification route instead of
+  // triggering a raw-text re-interpretation in a downstream adapter.
+  if (!request || !["SEFER-ABI-CANONICAL-REQUEST-V2", "SEFER-ABI-CANONICAL-REQUEST-V3"].includes(request.version)) return null;
+  if (request.version === "SEFER-ABI-CANONICAL-REQUEST-V2") {
+    return { route: "UNCLEAR_OR_AMBIGUOUS", dialogueTopic: "UNCLEAR", reason: "V2_TRANSPORT_REQUIRES_V3_SEMANTIC_ACTION", hasContext };
+  }
+  if (request.semanticScope?.class === "OFF_TOPIC_GENUINE") {
+    return {
+      route: "OFF_TOPIC_SAFE",
+      dialogueTopic: "OFF_TOPIC",
+      reason: "CANONICAL_GENUINE_OFF_TOPIC_SCOPE",
+      hasContext,
+      productContextHint: hasContext ? "SUSPEND_AND_PRESERVE" : "NONE",
+      topicTransition: hasContext ? "TEMPORARY_LEAVE_PRODUCT" : null,
+      suspendProductContext: Boolean(hasContext),
+      retrieveProductData: false,
+    };
+  }
+  if (["PRODUCT_AMBIGUOUS", "UNRESOLVED"].includes(request.semanticScope?.class)) {
+    return { route: "UNCLEAR_OR_AMBIGUOUS", dialogueTopic: "UNCLEAR", reason: "CANONICAL_SCOPE_REQUIRES_CLARIFICATION", hasContext };
+  }
+  if (canonicalRequest?.validation?.status === "SEMANTIC_UNRESOLVED" || request.ambiguity?.status === "UNRESOLVED") {
+    return { route: "UNCLEAR_OR_AMBIGUOUS", dialogueTopic: "UNCLEAR", reason: "CANONICAL_REQUEST_UNRESOLVED", hasContext };
+  }
+  const canonicalGeneralProductHelp = request.operation === "GENERAL_INFORMATION"
+    && request.semanticAction?.actionClass === "EXPLAIN"
+    && request.semanticAction?.objectClass === "SURFACE";
+  const canonicalSituatedSurfaceHelp = canonicalGeneralProductHelp
+    && Boolean(canonicalShape?.screenContextIntent || canonicalShape?.screenKnowledgeIntent)
+    && !canonicalShape?.generalProductHelpIntent;
+  const explicitProductNavigation = Boolean(
+    canonicalShape?.explicitUiGuidance
+      || canonicalShape?.workflowIntent
+      || ["NAVIGATE", "VIEW", "CREATE", "UPDATE", "DELETE", "SEND", "COMPARE"].includes(String(request.semanticAction?.actionClass || "").toUpperCase()),
+  );
+  if (canonicalSituatedSurfaceHelp) {
+    return {
+      route: "RETURN_TO_PRODUCT_TASK",
+      dialogueTopic: "PRODUCT",
+      reason: "CANONICAL_SITUATED_SURFACE_HELP",
+      hasContext,
+      primaryTask: "SCREEN_CONTEXT",
+      productContextHint: "ACTIVE_PRODUCT_CONTEXT",
+      retrieveProductData: false,
+    };
+  }
+  if ((canonicalShape?.generalProductHelpIntent && !explicitProductNavigation) || canonicalGeneralProductHelp) {
+    return {
+      route: "GENERIC_PRODUCT_HELP",
+      dialogueTopic: "GENERIC_PRODUCT_HELP",
+      reason: "CANONICAL_GENERIC_PRODUCT_HELP",
+      hasContext,
+      primaryTask: "GENERIC_PRODUCT_HELP",
+      productContextHint: "PRESERVE_SUSPENDED_SAME_AUTH",
+      topicTransition: "TEMPORARY_LEAVE_PRODUCT",
+      suspendProductContext: true,
+      retrieveProductData: false,
+    };
+  }
+  if (request.operation === "GENERAL_INFORMATION") {
+    return { route: "GENERAL_KNOWLEDGE", dialogueTopic: "GENERAL_KNOWLEDGE", reason: "CANONICAL_GENERAL_INFORMATION", hasContext, productContextHint: hasContext ? "SUSPEND_AND_PRESERVE" : "NONE", retrieveProductData: false };
+  }
+  if (canonicalShape?.taskType === "OFF_TOPIC" && !explicitProductNavigation) {
+    return {
+      route: canonicalShape.generalCreativeIntent ? "OFF_TOPIC_SAFE" : "GENERAL_KNOWLEDGE",
+      dialogueTopic: canonicalShape.generalCreativeIntent ? "OFF_TOPIC" : "GENERAL_KNOWLEDGE",
+      reason: "CANONICAL_OFF_TOPIC_REQUEST",
+      hasContext,
+      productContextHint: hasContext ? "SUSPEND_AND_PRESERVE" : "NONE",
+      topicTransition: hasContext ? "TEMPORARY_LEAVE_PRODUCT" : null,
+      suspendProductContext: Boolean(hasContext),
+      retrieveProductData: false,
+    };
+  }
+  if (canonicalShape?.liveWorkflowGrounded || canonicalShape?.workflowIntent || request.workflowRef) {
+    return { route: "RETURN_TO_PRODUCT_TASK", dialogueTopic: "PRODUCT", reason: "CANONICAL_LIVE_WORKFLOW", hasContext, primaryTask: "CREATE_SHIFT", productContextHint: "ACTIVE_PRODUCT_CONTEXT", retrieveProductData: false };
+  }
+  if (canonicalShape?.taskType === "CLARIFY") {
+    return { route: "UNCLEAR_OR_AMBIGUOUS", dialogueTopic: "UNCLEAR", reason: "CANONICAL_AMBIGUITY", hasContext };
+  }
+  if (canonicalShape?.explicitUserTarget || request.candidateEntityRefs?.length || hasContext || hasRetainedContext) {
+    return { route: hasContext ? "RETURN_TO_PRODUCT_TASK" : "PRODUCT_TASK", dialogueTopic: "PRODUCT", reason: "CANONICAL_TYPED_REQUEST", hasContext, productContextHint: "ACTIVE_PRODUCT_CONTEXT", retrieveProductData: request.groundingRequirement !== "NONE" };
+  }
+  return { route: "UNCLEAR_OR_AMBIGUOUS", dialogueTopic: "UNCLEAR", reason: "CANONICAL_CONTEXT_REQUIRED", hasContext };
+}
+
+export function resolveConversationRoute({ message, user: _user, conversationState = null, screenContext = null, canonicalShape: providedCanonicalShape = null, canonicalRequest = null } = {}) {
   const text = normalize(message);
   const hasContext = hasProductContext(conversationState, screenContext);
   const hasRetainedContext = hasRetainedProductContext(conversationState, screenContext);
-  const canonicalShape = providedCanonicalShape || inferCanonicalSemanticRequest({ message, screenContext, conversationState });
+  const canonicalRequestValue = canonicalRequest?.request?.version
+    ? canonicalRequest.request
+    : canonicalRequest?.version
+      ? canonicalRequest
+      : null;
+  const hasCanonicalV3Request = canonicalRequestValue?.version === "SEFER-ABI-CANONICAL-REQUEST-V3";
+  const canonicalShape = providedCanonicalShape
+    || (hasCanonicalV3Request ? null : inferCanonicalSemanticRequest({ message, screenContext, conversationState }));
+  const canonicalRoute = resolveCanonicalConversationRoute({ canonicalRequest, canonicalShape, hasContext, hasRetainedContext });
+  if (canonicalRoute) return canonicalRoute;
   const commercialFieldAlias = hasCommercialFieldAliasSignal(text);
   const genericCommercialValueLookup = hasGenericCommercialValueLookupSignal(text);
   const offerContext = hasOfferContext(conversationState, screenContext);
@@ -511,7 +583,9 @@ export function resolveConversationRoute({ message, user: _user, conversationSta
   if (hasCrossTenantBoundarySignal(text)) {
     return { route: "AUTHORIZATION_NEGATIVE", dialogueTopic: "PRODUCT_AUTHORIZATION", reason: "CROSS_TENANT_SCOPE_LANGUAGE", hasContext };
   }
-  if (isGenericProductHelpIntent(message)) {
+  if (isGenericProductHelpIntent(message)
+    && !canonicalShape.liveWorkflowGrounded
+    && !hasLiveWorkflowGroundingReference(message, screenContext, conversationState)) {
     return {
       route: "GENERIC_PRODUCT_HELP",
       dialogueTopic: "GENERIC_PRODUCT_HELP",
@@ -521,6 +595,20 @@ export function resolveConversationRoute({ message, user: _user, conversationSta
       productContextHint: "PRESERVE_SUSPENDED_SAME_AUTH",
       topicTransition: "TEMPORARY_LEAVE_PRODUCT",
       suspendProductContext: true,
+      retrieveProductData: false,
+    };
+  }
+  // A live guided workflow state is current UI evidence. Keep deictic and
+  // current-step follow-ups on the authorized product route before the
+  // broad live-data classifier (which also recognizes “şu an kaç”).
+  if (canonicalShape.liveWorkflowGrounded) {
+    return {
+      route: "RETURN_TO_PRODUCT_TASK",
+      dialogueTopic: "PRODUCT",
+      reason: "LIVE_WORKFLOW_GROUNDING",
+      hasContext,
+      primaryTask: "CREATE_SHIFT",
+      productContextHint: "ACTIVE_PRODUCT_CONTEXT",
       retrieveProductData: false,
     };
   }
@@ -602,10 +690,10 @@ export function resolveConversationRoute({ message, user: _user, conversationSta
   // Short contextual requests are still product tasks when the live UI can
   // supply the referent. Keep this before the generic no-signal fallback so a
   // bare screen or selected-record question cannot be mistaken for small talk.
-  if (hasContext && ["SCREEN_CONTEXT", "SELECTED_RECORD_CONTEXT", "RECORD_DETAILS", "CONTINUE_CURRENT_REASONING"].includes(canonicalShape.taskType)) {
+  if (hasContext && ["SCREEN_CONTEXT", "SELECTED_RECORD_CONTEXT", "RECORD_DETAILS", "CONTINUE_CURRENT_REASONING", "EXPLAIN_CURRENT_TARGET"].includes(canonicalShape.taskType)) {
     return { route: "RETURN_TO_PRODUCT_TASK", dialogueTopic: "PRODUCT", reason: `CANONICAL_${canonicalShape.taskType}`, hasContext };
   }
-  if (["COUNT", "FIELD_LOOKUP", "RELATION_LOOKUP", "RECORD_DETAILS", "CONTINUE_CURRENT_REASONING", "RETURN_TO_PRODUCT", "COMPARISON", "SITUATION", "STATUS", "RISK", "PRIORITY", "NEXT_ACTION", "CAUSE", "RESOLUTION", "SHIFT_START_READINESS", "FRESHNESS_CHECK", "UNCERTAINTY_CHECK", "EVIDENCE_SUFFICIENCY", "STYLE"].includes(canonicalShape.taskType) && (canonicalShape.explicitUserTarget || hasContext || hasRetainedContext)) {
+  if (["COUNT", "FIELD_LOOKUP", "RELATION_LOOKUP", "RECORD_DETAILS", "CONTINUE_CURRENT_REASONING", "RETURN_TO_PRODUCT", "COMPARISON", "SITUATION", "STATUS", "ISSUE", "RISK", "PRIORITY", "NEXT_ACTION", "CAUSE", "RESOLUTION", "SHIFT_START_READINESS", "FRESHNESS_CHECK", "UNCERTAINTY_CHECK", "EVIDENCE_SUFFICIENCY", "STYLE"].includes(canonicalShape.taskType) && (canonicalShape.explicitUserTarget || hasContext || hasRetainedContext)) {
     return { route: hasContext ? "RETURN_TO_PRODUCT_TASK" : "PRODUCT_TASK", dialogueTopic: "PRODUCT", reason: "CANONICAL_TYPED_REQUEST", hasContext };
   }
   if (hasCurrentAssignmentSignal(text)) {
@@ -654,6 +742,22 @@ export function buildConversationRoutingResponse({ route, message, semanticPlan 
     return "Bu oturumda canlı hava, kur, kripto veya trafik kaynağı bağlı değil; güncel sayısal değer veremem. Bu soruyu ürün kayıtlarına çevirmiyor ve GPS, vardiya ya da maliyet özetiyle yanıtlamıyorum.";
   }
   if (route === "UNCLEAR_OR_AMBIGUOUS") {
+    const canonicalRequest = semanticPlan?.canonicalRequest || semanticPlan?.request || null;
+    const typedEvidence = canonicalRequest?.typedEvidence || semanticPlan?.typedEvidence || null;
+    const financialReferenceAmbiguity = String(canonicalRequest?.domain || "").toUpperCase() === "FINANCE"
+      && (
+        String(typedEvidence?.object?.value || typedEvidence?.object || "").toUpperCase() === "FINANCIAL"
+        || String(canonicalRequest?.primaryTask || "").toUpperCase() === "FINANCIAL_REFERENCE_CLARIFICATION"
+        || String(canonicalRequest?.capability || "").toUpperCase() === "CLARIFY"
+      )
+      && (
+        String(typedEvidence?.reference?.value || typedEvidence?.reference || "").toUpperCase() === "AMBIGUOUS"
+        || String(typedEvidence?.reference?.value || typedEvidence?.reference || "").toUpperCase() === "ABSENT"
+      )
+      && String(canonicalRequest?.ambiguity?.status || "").toUpperCase() === "UNRESOLVED";
+    if (financialReferenceAmbiguity) {
+      return "Finans ekranında birden fazla tutar var: planlanan teklif, tahmini maliyet, önerilen minimum teklif/teklif tabanı ve tahmini kâr/zarar. Hangisinin kaynağını açıklayayım?";
+    }
     return "Hangi kayıt veya konuyu kastettiğini biraz netleştirir misin? Kayıt türünü, görünen adını ya da numarasını yazabilirsin.";
   }
   const arithmeticResult = evaluateGeneralArithmeticRequest(message);

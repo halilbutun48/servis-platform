@@ -142,15 +142,19 @@ function isShortNaturalScreenPrompt(message) {
   // can erase the record before semantic planning (for example, “Sözleşme
   // #184 için şimdi ne yapmalıyım?” becoming “Şimdi ne yapayım?”).
   if (hasExplicitProductEntityReference(text)) return false;
-  return matchesStandalonePhrase(text, SHORT_SCREEN_PURPOSE_PHRASES)
-    || matchesStandalonePhrase(text, SHORT_FIRST_CONTROL_PHRASES)
-    || matchesStandalonePhrase(text, SHORT_NEXT_STEP_PHRASES)
-    || matchesStandalonePhrase(text, NEXT_BEST_ACTION_PHRASES);
+  return matchesExactPhrase(text, SHORT_SCREEN_PURPOSE_PHRASES)
+    || matchesExactPhrase(text, SHORT_FIRST_CONTROL_PHRASES)
+    || matchesExactPhrase(text, SHORT_NEXT_STEP_PHRASES)
+    || matchesExactPhrase(text, NEXT_BEST_ACTION_PHRASES);
 }
 
 function hasExplicitProductEntityReference(text) {
   return /(?:vardiya|sefer|teklif|rfq|sözleşme|sozlesme|anlaşma|anlasma|araç|arac|sürücü|surucu|plan|kayıt|kayit)\s*#?\s*\d+/iu.test(text)
     || /(?:bu|seçili|secili|ilgili|aynı|ayni)\s+(?:vardiya|sefer|teklif|sözleşme|sozlesme|anlaşma|anlasma|araç|arac|sürücü|surucu|kayıt|kayit)/iu.test(text);
+}
+
+function hasNamedSurfacePurposeReference(text) {
+  return /(?:^|[^\p{L}])(?!(?:bu|şu|su|burası|burasi|burada)\s+)(?:\p{L}+(?:\s+|\/\s*)){1,5}(?:ekran|sayfa|panel)\p{L}*\s+ne\s+(?:işe|ise)\s+yar\p{L}*/iu.test(text);
 }
 
 function isAgreementScreenContext(input) {
@@ -201,21 +205,49 @@ function matchesStandalonePhrase(text, phrases) {
   });
 }
 
+function matchesExactPhrase(text, phrases) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  return (Array.isArray(phrases) ? phrases : []).some((phrase) => normalizeLooseText(phrase) === value);
+}
+
+function hasContinuationNextStepQuestion(text) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  const continuationCue = /\b(?:sonra|bundan\s+sonra|devamında|devaminda|ardından|ardindan|sırada|sirada|sıradaki|siradaki)\b/iu;
+  const nextStepQuestion = /\b(?:ne|hangi|nasıl|nasil)\b.*\b(?:yap\p{L}*|adım\p{L}*|adim\p{L}*|işlem\p{L}*|islem\p{L}*|olacak\p{L}*)\b/iu;
+  return continuationCue.test(value) && nextStepQuestion.test(value);
+}
+
 export function normalizeCopilotShortPrompt(message) {
   const raw = String(message || "").trim();
   if (!raw) return raw;
   const text = raw.toLocaleLowerCase("tr-TR");
   if (hasExplicitProductEntityReference(text)) return raw;
-  if (matchesStandalonePhrase(text, SHORT_SCREEN_PURPOSE_PHRASES)) return "Bu ekran ne için?";
-  if (matchesStandalonePhrase(text, SHORT_FIRST_CONTROL_PHRASES)) return "İlk neye bakayım?";
-  if (matchesStandalonePhrase(text, NEXT_BEST_ACTION_PHRASES)) return raw;
-  if (matchesStandalonePhrase(text, SHORT_NEXT_STEP_PHRASES)) return "Şimdi ne yapayım?";
+  if (hasNamedSurfacePurposeReference(text)) return raw;
+  // Preserve a combined continuation/next-step request so canonical
+  // continuation composition can see both relations. Rewriting it to the
+  // generic short prompt loses the continuation cue.
+  if (hasContinuationNextStepQuestion(text)) return raw;
+  if (matchesExactPhrase(text, SHORT_SCREEN_PURPOSE_PHRASES)) return "Bu ekran ne için?";
+  if (matchesExactPhrase(text, SHORT_FIRST_CONTROL_PHRASES)) return "İlk neye bakayım?";
+  if (matchesExactPhrase(text, NEXT_BEST_ACTION_PHRASES)) return raw;
+  if (matchesExactPhrase(text, SHORT_NEXT_STEP_PHRASES)) return "Şimdi ne yapayım?";
   return raw;
 }
 
 export function normalizeCopilotRequestInput(input) {
   const normalized = input && typeof input === "object" && !Array.isArray(input) ? { ...input } : {};
-  normalized.message = normalizeCopilotShortPrompt(normalized.message);
+  const liveWorkflowState = normalized.screenContext?.uiHints?.workflowState;
+  const preserveLiveWorkflowDeictic = Boolean(
+    liveWorkflowState?.workflowId
+      && Number.isInteger(Number(liveWorkflowState?.activeStepOrdinal))
+      && Number(liveWorkflowState.activeStepOrdinal) > 0
+      && matchesStandalonePhrase(normalized.message, SHORT_SCREEN_PURPOSE_PHRASES),
+  );
+  normalized.message = preserveLiveWorkflowDeictic
+    ? String(normalized.message || '').trim()
+    : normalizeCopilotShortPrompt(normalized.message);
   const shortNaturalPrompt = isShortNaturalScreenPrompt(normalized.message);
   const contractToShiftPrompt = isContractToShiftQuestion(normalized.message) && isAgreementScreenContext(normalized);
 

@@ -51,6 +51,7 @@ import {
   buildSeferAbiReasoningAssistant,
   getSeferAbiReasoningRolePlaybook,
 } from './seferAbiReasoningAssistant.js';
+import { normalizeSeferAbiUserFacingPayload } from './userFacingLanguageNormalizer.js';
 import { composeCopilotReasoningAnswer } from './copilotReasoningAnswerComposer.js';
 import {
   buildContractProductionSignalState,
@@ -766,7 +767,7 @@ function hasDynamicSavingsSignal(text) {
 
 function shouldUseWorkflowGuide({ questionType, activeTopic }) {
   const type = String(questionType || '');
-  if (type === 'SCREEN_PURPOSE') return false;
+  if (type === 'SCREEN_PURPOSE' || type === 'TERM_HELP') return false;
   if (isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(type) || isCopilotEBlockRuntimeAnswerTopic(activeTopic) || isCopilotEBlockRuntimeAnswerTopic(type)) return true;
   return ['ROLE_HELP', 'NEXT_SCREEN', 'NEXT_STEP', 'ROOT_CAUSE', 'WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW', 'SAFE_NEXT_STEP', 'DETAIL_FLOW', 'ROW_HELP', 'MISSING_DATA_HELP', 'STATUS_HELP', 'GO_TO'].includes(type);
 }
@@ -2237,7 +2238,7 @@ function composeScreenPurposeWithCarry({ guide, screenDefinition, screenContext,
     );
     if (safeUnknownScreenReply) return toReply(safeUnknownScreenReply);
     if (firstNonEmpty(screenDefinition?.path, sourceScreenDefinition?.path, screenContext?.path, sourceScreenContext?.path, '') === '/school/operations') {
-      return toReply('Bu ekran, Vardiyalar üzerinden şirket tarafındaki operasyon özetini, bekleyen işleri ve sonraki adımları görmek için kullanılır. İlk bakılacak yer: doğru vardiyayı veya takip sekmesini seç. Sonra: Yeni iş kuracaksan Planlama Merkezi\'ne dön; mevcut işin takibini burada sürdür.');
+      return toReply('Bu ekran, okul servis operasyon özetini, bekleyen işleri ve öğrenci/rota durumunu görmek için kullanılır. İlk bakılacak yer: doğru vardiyayı veya takip sekmesini seç. Sonra: yeni planı Planlama Merkezi\'nde kur; mevcut okul servis işinin takibini burada sürdür.');
     }
     if (firstNonEmpty(screenDefinition?.path, sourceScreenDefinition?.path, screenContext?.path, sourceScreenContext?.path, '') === '/superadmin/natural-copilot') {
       return toReply('Bu ekran, canlı sağlık, GPS güveni ve son olayları birlikte okumak için kullanılır. İlk bakılacak yer: canlı sağlık sinyalini ve GPS güvenini kontrol et. Sonra: açık riskleri ve son olayları incele.');
@@ -3367,7 +3368,15 @@ function vehicleNextStep(context) {
   return "Önce sürücü bağını ve konum kaynağını kontrol et. Sonra canlı konum ekranına dön.";
 }
 
-function composeReply({ questionType, replyMode, guide, message, rawMessage = message, context, entityType, screenDefinition, roleMode, screenContext, conversationState, sourceScreenDefinition, sourceScreenContext, preferEntityContext = false, user = null, userRole = '', screenPath = '', contextPriority = null, guidedTaskMeta = null }) {
+function composeReply({ questionType, replyMode, guide, message, rawMessage = message, context, entityType, screenDefinition, roleMode, screenContext, conversationState, sourceScreenDefinition, sourceScreenContext, preferEntityContext = false, user = null, userRole = '', screenPath = '', contextPriority = null, guidedTaskMeta = null, canonicalRequest = null, requestedFields = [] }) {
+  const requestedFieldKeys = new Set((Array.isArray(requestedFields) ? requestedFields : []).map((field) => String(field?.key || field || '')));
+  if (entityType === 'shift' && (requestedFieldKeys.has('BOARDING_COUNT') || requestedFieldKeys.has('ALIGHTING_COUNT')) && context?.checkinCounts) {
+    const boardingCount = Number(context.checkinCounts.BOARD);
+    const alightingCount = Number(context.checkinCounts.ALIGHT);
+    const boardingText = Number.isFinite(boardingCount) ? `${boardingCount}` : 'veri yok';
+    const alightingText = Number.isFinite(alightingCount) ? `${alightingCount}` : 'veri yok';
+    return toReply(`Seçili Vardiya #${context.id} için biniş sayısı ${boardingText}, iniş sayısı ${alightingText}. Bu bilgi yetkili salt-okunur check-in kayıtlarından geliyor.`);
+  }
   const effectiveContextPriority = contextPriority?.guidedTaskMeta?.familyId
     ? contextPriority
     : (guidedTaskMeta?.familyId ? { ...(contextPriority || {}), guidedTaskMeta } : contextPriority);
@@ -3382,6 +3391,7 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
       userRole,
       conversationState,
       originalMessage: rawMessage,
+      canonicalRequest,
     })?.guidedTaskMeta || null
     : null;
   const resolvedGuidedTaskMeta = effectiveGuidedTaskMeta?.familyId ? effectiveGuidedTaskMeta : recoveredGuidedTaskMeta;
@@ -3499,6 +3509,7 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
     userRole,
     conversationState,
     originalMessage: rawMessage,
+    canonicalRequest,
   });
   const directFakeSuccessMeta = directFakeSuccessIntent?.guidedTaskMeta || null;
   if (directFakeSuccessMeta?.questionType === 'FAKE_SUCCESS_REQUEST_BLOCKED') {
@@ -3529,6 +3540,7 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
       userRole,
       conversationState,
       originalMessage: rawMessage,
+      canonicalRequest,
     })?.guidedTaskMeta || null;
     const fallbackGuidedTaskReply = fallbackGuidedTaskMeta?.familyId
       ? composeCopilotGuidedTaskEngineReply({
@@ -3623,7 +3635,9 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
   }
   const opsQualityPaymentReply = composeOpsQualityPaymentGuideReply({ questionType, message, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext });
   if (opsQualityPaymentReply) return toReply(opsQualityPaymentReply);
-  if (questionType === 'PRODUCT_OVERVIEW_HELP' && isGenericProductHelpIntent(rawMessage || message)) {
+  if (questionType === 'PRODUCT_OVERVIEW_HELP' && (canonicalRequest
+    ? true
+    : isGenericProductHelpIntent(rawMessage || message))) {
     return toReply(buildStaticGenericProductHelpReply());
   }
   if (questionType === 'PRODUCT_OVERVIEW_HELP') {
@@ -4781,13 +4795,31 @@ function composeGeneralProductGuideReply({
 // Used by the service's generic informational lane.  This boundary accepts
 // only the message so the caller cannot accidentally pass route, role, entity,
 // tenant, selection, or saved conversation context into the composition step.
-export function buildGenericProductHelpResponse({ message } = {}) {
-  if (!isGenericProductHelpIntent(message)) return '';
+export function buildGenericProductHelpResponse({ message, semanticPlan = null } = {}) {
+  if (!semanticPlan && !isGenericProductHelpIntent(message)) return '';
   return toReply(buildStaticGenericProductHelpReply());
 }
 
 
-export function buildChatHelpResponse({ entityType, entityId, user, message, context, entityLabel, scope, conversationState, screenContext, screenDefinition, sourceEntityType, sourceEntityId, resolvedEntityType, resolvedEntityId }) {
+function buildCurrentTargetExplanationReply({ semanticPlan, conversationState, screenContext } = {}) {
+  const target = conversationState?.guidedTarget?.status === 'FOUND'
+    ? conversationState.guidedTarget
+    : semanticPlan?.guidedTargetReference;
+  const targetLabel = String(target?.label || '').trim();
+  const screenLabel = String(screenContext?.label || 'bu ekran').trim();
+  if (!targetLabel) {
+    return `Şu an ${screenLabel} üzerindesin. Ekrandaki geçerli hedefi doğrulayamadığım için ilerleme yapmadan önce hangi alanı açıklamamı istediğini belirtir misin?`;
+  }
+  if (semanticPlan?.currentTargetRecoveryIntent) {
+    return `Şu an ${screenLabel} üzerindesin. “${targetLabel}” hedefinde ilerleyemediğini anladım. Bu hedefi yeniden kontrol ederek birlikte devam edelim; hedef doğrulanmadan görevi tamamlandı saymıyorum.`;
+  }
+  // Keep the canonical visible label intact whenever it is named.  Natural
+  // grammar belongs around the quoted product label; it must not mutate the
+  // label into a made-up noun or verb form.
+  return `Şu an ${screenLabel} üzerindesin. Vurgulanan “${targetLabel}” bu akıştaki mevcut hedef. Buradan “${targetLabel}” hedefini kontrol edebilir veya alanın ne yaptığını öğrenebilirsin; bu açıklama görevin adımını ilerletmez.`;
+}
+
+export function buildChatHelpResponse({ entityType, entityId, user, message, context, entityLabel, scope, conversationState, semanticPlan, screenContext, screenDefinition, sourceEntityType, sourceEntityId, resolvedEntityType, resolvedEntityId }) {
   const roleMode = String(scope?.roleMode || 'OPERATIONS');
   const userRole = String(user?.role || scope?.role || '').trim();
   const normalizedUserRole = normalizeRoleKey(userRole);
@@ -4795,7 +4827,9 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const requestEntityType = String(sourceEntityType || entityType || 'screen');
   const requestEntityId = Number(sourceEntityId || entityId || 0);
   const rawMessage = extractUserQuestion(message);
-  if (isGenericProductHelpIntent(rawMessage)) {
+  const canonicalRequestInput = semanticPlan?.canonicalRequestEnvelope || semanticPlan?.canonicalRequest || null;
+  const hasCanonicalRequest = Boolean(canonicalRequestInput?.request?.version || canonicalRequestInput?.version);
+  if (!hasCanonicalRequest && isGenericProductHelpIntent(rawMessage)) {
     const reply = buildStaticGenericProductHelpReply();
     return {
       reply,
@@ -4821,7 +4855,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   // Role explanation is a public, role-scoped question.  Resolve it before
   // any screen-definition remapping so a matching screen name cannot replace
   // the already-adjudicated role answer with screen-specific guidance.
-  if (isExplicitRoleHelpIntent(rawMessage)) {
+  if (semanticPlan?.family === 'ROLE_EXPLANATION_HELP' || (!hasCanonicalRequest && isExplicitRoleHelpIntent(rawMessage))) {
     const reply = buildRoleExplanationHelpReply({
       message: rawMessage,
       userRole,
@@ -4851,6 +4885,25 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       retrievedFacts: [],
     };
   }
+  if (semanticPlan?.family === 'EXPLAIN_CURRENT_TARGET') {
+    const reply = buildCurrentTargetExplanationReply({ semanticPlan, conversationState, screenContext });
+    return {
+      reply,
+      summary: reply,
+      questionType: 'EXPLAIN_CURRENT_TARGET',
+      activeTopic: 'EXPLAIN_CURRENT_TARGET',
+      assistantIntent: 'EXPLAIN_CURRENT_TARGET',
+      guidedTargetReference: semanticPlan.guidedTargetReference || null,
+      suggestedChips: ['Sonraki adımı göster', 'Devam et', 'Geri dön'],
+      quickActions: [],
+      intentConfidence: Number(semanticPlan.confidence || 0.99),
+      intentSignals: ['EXPLAIN_CURRENT_TARGET', 'ACTIVE_GUIDED_TARGET'],
+      qualityHints: { actionable: true, hasSupportAction: true },
+      responseSections: [{ title: 'Geçerli hedef', body: reply }],
+      dataSources: ['yetkili mevcut ekran', 'aktif yönlendirme hedefi'],
+      retrievedFacts: [],
+    };
+  }
   const expandedMessage = expandFollowUpMessage(rawMessage, conversationState, screenContext);
   const effectiveMessage = extractPrimaryConcern(expandedMessage);
   // An explicit Konum İncele follow-up owns its semantic turn. Do not replace
@@ -4865,15 +4918,30 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const preserveCompanyPlanningDetailFlowScreen = requestEntityType === 'screen'
     && requestedScreenPath === '/company'
     && /^(?:vardiyayı|vardiyayi)\s+takip\s+et$/i.test(rawMessageNormalized);
+  // A canonical SCREEN_CONTEXT plan has already been authorized against the
+  // current route. The legacy referenced-screen scorer is presentation-only
+  // compatibility and must not remap a generic current-screen explanation to
+  // an unrelated surface using stale token overlap or prior context.
+  const canonicalCurrentScreenHelp = requestEntityType === 'screen'
+    && ['SCREEN_CONTEXT', 'UI_GUIDANCE'].includes(String(semanticPlan?.family || ''))
+    && (
+      semanticPlan?.scopeTarget === 'CURRENT_SCREEN'
+      || semanticPlan?.typedRequest?.scopeTarget === 'CURRENT_SCREEN'
+      || semanticPlan?.typedRequest?.screenContextIntent === true
+    );
   const selectedEntityScreenDefinition = requestEntityType === 'screen'
-    ? resolveReferencedScreenDefinition(user, screenContext, screenDefinition, firstNonEmpty(rawMessage, effectiveMessage))
+    ? (canonicalCurrentScreenHelp
+      ? screenDefinition
+      : resolveReferencedScreenDefinition(user, screenContext, screenDefinition, firstNonEmpty(rawMessage, effectiveMessage)))
     : screenDefinition;
   const effectiveScreenDefinition = requestEntityType === 'screen'
     ? ((preserveRequestedOfferScreen || preserveCompanyPlanningDetailFlowScreen)
       ? screenDefinition
       : selectedEntityScreenDefinition)
     : screenDefinition;
-  const effectiveScreenContext = requestEntityType === 'screen' ? remapScreenContext(screenContext, effectiveScreenDefinition, screenDefinition) : screenContext;
+  const effectiveScreenContext = requestEntityType === 'screen'
+    ? (canonicalCurrentScreenHelp ? screenContext : remapScreenContext(screenContext, effectiveScreenDefinition, screenDefinition))
+    : screenContext;
   const screenPath = effectiveScreenDefinition?.path || effectiveScreenContext?.path || '';
   const continuity = buildContinuityMeta({ message: rawMessage, conversationState, screenContext: effectiveScreenContext, requestEntityType, requestEntityId, screenPath });
   const continuityMeta = continuity;
@@ -4910,6 +4978,30 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     sourceScreenMenuPurpose: firstNonEmpty(screenContext?.menuPurpose, screenDefinition?.menuPurpose, ''),
     effectiveScreenMenuPurpose: firstNonEmpty(effectiveScreenContext?.menuPurpose, effectiveScreenDefinition?.menuPurpose, ''),
     selectedEntityType: firstNonEmpty(effectiveScreenContext?.selectedEntityType, screenContext?.selectedEntityType, ''),
+    // Typed live-surface evidence remains a post-auth UI projection. It lets
+    // the canonical planner distinguish a proven visible control from an
+    // unbound screen/catalog description without granting capability or auth.
+    visibleControlCount: Array.isArray((effectiveScreenContext?.uiHints || screenContext?.uiHints)?.visibleButtons)
+      ? (effectiveScreenContext?.uiHints || screenContext?.uiHints).visibleButtons.filter((item) => String(item?.label || '').trim()).length
+      : 0,
+    visibleTargets: Array.isArray((effectiveScreenContext?.uiHints || screenContext?.uiHints)?.visibleButtons)
+      ? (effectiveScreenContext?.uiHints || screenContext?.uiHints).visibleButtons.map((item) => ({
+        label: String(item?.label || '').trim(),
+        targetKey: String(item?.targetKey || item?.semanticKey || item?.copilotTarget || '').trim(),
+        semanticType: String(item?.semanticType || 'button').trim(),
+        identitySource: String(item?.identitySource || 'LEGACY_LABEL').trim().toUpperCase(),
+        disabled: Boolean(item?.disabled),
+      })).filter((item) => item.label && item.targetKey)
+      : [],
+    currentTarget: (effectiveScreenContext?.uiHints || screenContext?.uiHints)?.currentTarget && typeof (effectiveScreenContext?.uiHints || screenContext?.uiHints).currentTarget === 'object'
+      ? { ...(effectiveScreenContext?.uiHints || screenContext?.uiHints).currentTarget }
+      : null,
+    workflowState: (effectiveScreenContext?.uiHints || screenContext?.uiHints)?.workflowState && typeof (effectiveScreenContext?.uiHints || screenContext?.uiHints).workflowState === 'object'
+      ? { ...(effectiveScreenContext?.uiHints || screenContext?.uiHints).workflowState }
+      : null,
+    guidedDraftAvailability: (effectiveScreenContext?.uiHints || screenContext?.uiHints)?.guidedDraftAvailability && typeof (effectiveScreenContext?.uiHints || screenContext?.uiHints).guidedDraftAvailability === 'object'
+      ? { ...(effectiveScreenContext?.uiHints || screenContext?.uiHints).guidedDraftAvailability }
+      : null,
     planningSurfaceText: firstNonEmpty(companyPlanningCenterSurfaceTextValue, companyPlanningSurfaceText),
   };
   const intentMeta = detectQuestionIntent(intentMessage, {
@@ -4920,6 +5012,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     userRole,
     conversationState,
     originalMessage: rawMessage,
+    canonicalRequest: canonicalRequestInput,
     semanticResolutionContext,
   });
   let guidedTaskMeta = intentMeta.guidedTaskMeta || null;
@@ -5045,7 +5138,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       }),
     };
   }
-  const preferEntityContext = prefersSelectedEntity(questionType, requestEntityType, context);
+  const preferEntityContext = prefersSelectedEntity(questionType, requestEntityType, context, semanticPlan);
   const answerEntityType = preferEntityContext ? String(resolvedEntityType || context?.type || entityType || requestEntityType) : requestEntityType;
   const answerEntityId = preferEntityContext ? Number(resolvedEntityId || context?.id || entityId || requestEntityId || 0) : requestEntityId;
   const guideJobType = selectGuideJobType({ entityType: answerEntityType, questionType, message: effectiveMessage, screenPath, guidedTaskMeta });
@@ -5138,6 +5231,8 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     screenPath,
     contextPriority,
     guidedTaskMeta,
+    canonicalRequest: canonicalRequestInput,
+    requestedFields: semanticPlan?.requestedFields,
   });
   const shiftBlockedFallbackReply = questionType === 'SHIFT_BLOCKED'
     ? (() => {
@@ -5226,6 +5321,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   // The reasoning presentation layer may enrich it, but must not replace it
   // with a current-screen fallback that loses the requested role semantics.
   const preserveRawRoleExplanationReply = String(questionType || '') === 'ROLE_EXPLANATION_HELP';
+  const preserveRawTermReply = String(questionType || '') === 'TERM_HELP';
   const preserveRawNoSelectionWorkflowReply = answerEntityType === 'screen'
     && !reasoningAssistant.selectedContextPresent
     && [
@@ -5313,14 +5409,14 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const selectedReply = preferClarifyingQuestionReplyForRoomShiftsSelectedBuNe
     ? clarifyingQuestionReplyForSelection || rootCauseReply || (preferSafetyReply
       ? reasoningAssistant.reply
-      : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawRoleExplanationReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
+      : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawRoleExplanationReply || preserveRawTermReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
         ? rawReply
         : (reasoningAssistant.reply || rawReply))
     : (preferRawScreenFocusReply
       ? firstNonEmpty(rawReply, reasoningAssistant.reply, '')
-      : (rootCauseReply || clarifyingQuestionReplyForSelection || (preferSafetyReply
+    : (rootCauseReply || clarifyingQuestionReplyForSelection || (preferSafetyReply
     ? reasoningAssistant.reply
-    : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawRoleExplanationReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
+    : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawRoleExplanationReply || preserveRawTermReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
       ? rawReply
       : (reasoningAssistant.reply || rawReply))));
   let finalReply = selectedReply;
@@ -5857,7 +5953,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       reply = 'Bu ekran, saha geri bildirimlerini toplar. İlk bakılacak yer: Açık veya kritik kayıtları incele.';
     }
     if (String(screenPath || '').includes('/school/operations')) {
-      reply = 'Bu ekran, şirket tarafındaki operasyon özetini, bekleyen işleri ve sonraki adımları görmek için kullanılır. İlk bakılacak yer: Vardiyalar sekmesini veya takip sekmesini seç. Sonra: Yeni iş kuracaksan Planlama Merkezi\'ne dön; mevcut işin takibini burada sürdür.';
+      reply = 'Bu ekran, okul servis operasyon özetini, bekleyen işleri ve öğrenci/rota durumunu görmek için kullanılır. İlk bakılacak yer: Vardiyalar sekmesini veya takip sekmesini seç. Sonra: yeni planı Planlama Merkezi\'nde kur; mevcut okul servis işinin takibini burada sürdür.';
     }
     const strippedLabelReply = String(reply || '').replace(/^[^.]+\.\s*(?=(Bu ekran|Şimdi:|Bu bilgi|Bu kayıt|Bekleyen işleri|Açık veya riskli))/i, '').trim();
     if (strippedLabelReply && strippedLabelReply !== String(reply || '').trim()) {
@@ -6051,12 +6147,13 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   }
   if (
     responseQuestionType === 'SCREEN_FOCUS'
+    && String(screenPath || '').startsWith('/company')
     && /planlama merkezi/.test(companyPlanningCenterSurfaceTextValue)
     && /(yeni plan oluşturma|rehberi başlat|rehberli mod)/.test(companyPlanningCenterSurfaceTextValue)
   ) {
     reply = 'Planlama Merkezi yeni işi kurma ve planlama akışını yönetmek için kullanılır. Burada paket, tarih, saat, servis yönü, kapsam, personel, adres / konum, durak ve rota önizlemesini kontrol edersin. Yeni Plan Oluştur veya Rehberi Başlat ile yeni akışı açarsın. Plan netleşince Vardiyalar ekranında takip edersin, sonra teklif ve sözleşme hazırlığına geçersin.';
   }
-  if (!dynamicQuestionReply && !semanticOverrideReply && responseQuestionType === 'NEXT_BEST_ACTION' && /(planlama merkezi|rehberli mod|yeni plan oluştur|rehberi başlat|yeni plan)/.test(companyPlanningCenterSurfaceTextValue)) {
+  if (!dynamicQuestionReply && !semanticOverrideReply && responseQuestionType === 'NEXT_BEST_ACTION' && String(screenPath || '').startsWith('/company') && /(planlama merkezi|rehberli mod|yeni plan oluştur|rehberi başlat|yeni plan)/.test(companyPlanningCenterSurfaceTextValue)) {
     reply = companyPlanningNextActionReplyText;
   }
   if (['SCREEN_FOCUS', 'SCREEN_PURPOSE', 'SCREEN_EXPLANATION_HELP', 'PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP'].includes(String(responseQuestionType || questionType || ''))) {
@@ -6624,7 +6721,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     && normalizeText(firstNonEmpty(rawMessage, effectiveMessage, message, '')).includes(normalizeText('teklifi kabul et'))
     ? 'Teklifi senin yerine kabul edemem. Kabul öncesi fiyat, kapasite, kalite, araç / sürücü uygunluğu ve sözleşme hazırlığı kontrollerini adım adım gösterebilirim. Son onay yetkili kullanıcı tarafından verilmelidir.'
     : '';
-  return {
+  return normalizeSeferAbiUserFacingPayload({
     ok: true,
     provider: 'local-chat-help',
     mode: 'CHAT_HELP',
@@ -6709,5 +6806,5 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       lastGuidedTaskClarificationQuestion: guidedTaskMeta?.clarificationQuestion || '',
       recentMessages: Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages.slice(-8) : [],
     }),
-  };
+  });
 }

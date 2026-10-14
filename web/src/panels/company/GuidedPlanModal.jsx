@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { useSession } from "../../state/session";
 import { getPath } from "../../router";
-import { getGuidedTarget, setGuidedTarget } from "../../copilot/guidedTargetState";
+import { getGuidedTarget, setGuidedTarget, shouldRestoreGuidedTargetAfterRouteChange } from "../../copilot/guidedTargetState";
 import { personLabel } from "../../utils/labels";
 import { planCenterOverlayLayerEventName, readPlanCenterOverlayLayer, setPlanCenterOverlayLayer } from "../../utils/planCenterOverlayLayer";
 import { getApiErrorMessage } from "../../utils/apiContract";
@@ -60,6 +60,7 @@ import {
   useGuidedPlanModalActions,
   cleanupGuidedDraftShifts,
   loadGuidedCompanyHub,
+  loadGuidedDraftCandidates,
   loadGuidedResumeDraftShifts,
 } from "./guidedPlanModalActions";
 import {
@@ -80,6 +81,11 @@ function guidedModalTargetLabel(step, organization) {
   if (step === 1) return "Taslak vardiya oluştur";
   if (step === 2) return organization ? "İleri" : "Adres Temizle ve İlerle";
   return organization ? "Toplu Teklifleri Gönder" : "Toplu Teklifleri Gönder";
+}
+
+function guidedModalTargetKey(step, organization) {
+  if (step === 2 && !organization) return 'company-shifts:step3:address-next';
+  return `${getPath()}:button:${guidedModalTargetLabel(step, organization)}`;
 }
 
 export default function GuidedPlanModal({
@@ -147,6 +153,10 @@ export default function GuidedPlanModal({
 
   const [draftShiftIds, setDraftShiftIds] = useState([]);
   const [draftShifts, setDraftShifts] = useState([]);
+  const [resumeCandidates, setResumeCandidates] = useState([]);
+  const [resumeChooserOpen, setResumeChooserOpen] = useState(false);
+  const [resumeSelectionBusy, setResumeSelectionBusy] = useState(false);
+  const [resumeConfirmDeleteId, setResumeConfirmDeleteId] = useState(null);
   const [osrmBatch, setOsrmBatch] = useState({ running: false, done: 0, total: 0 });
   const [osrmResById, setOsrmResById] = useState({});
 
@@ -263,26 +273,59 @@ export default function GuidedPlanModal({
   // highlight into the actual modal step instead of leaving it attached to
   // the now-covered underlying disclosure. This is presentation grounding;
   // it does not authorize or execute any business action.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) {
       const previous = guidedTargetBeforeModalRef.current;
-      if (previous) setGuidedTarget(previous);
+      if (shouldRestoreGuidedTargetAfterRouteChange(previous, getPath())) setGuidedTarget(previous);
+      else setGuidedTarget(null);
       guidedTargetBeforeModalRef.current = null;
+      return undefined;
+    }
+    if (resumeChooserOpen) {
+      setGuidedTarget(null);
       return undefined;
     }
     const existing = getGuidedTarget();
     if (!guidedTargetBeforeModalRef.current && existing?.status === "FOUND") {
       guidedTargetBeforeModalRef.current = existing;
     }
-    if (!guidedTargetBeforeModalRef.current) return undefined;
     const label = guidedModalTargetLabel(step, organization);
+    const targetKey = guidedModalTargetKey(step, organization);
+    const candidates = Array.from(document.querySelectorAll('button,[role="button"],input,select,summary'));
+    const node = candidates.find((item) => String(item.textContent || item.getAttribute("aria-label") || item.value || "").replace(/\s+/g, " ").trim() === label);
+    if (!node) return undefined;
+    setGuidedTarget({
+      status: "FOUND",
+      targetKey,
+      identitySource: "CANONICAL",
+      label,
+      semanticType: "button",
+      screenPath: getPath(),
+      role: me?.role || "COMPANY",
+      safeAction: "HIGHLIGHT",
+      criticalActionExecution: false,
+      reason: "Açık rehber adımındaki gerçek ve yetkili kontrol gösteriliyor; iş yazımı çalıştırılmıyor.",
+    });
+    return undefined;
+  }, [open, step, organization, me?.role, resumeChooserOpen]);
+
+  // The overlay observes the old step's DOM removal in the same commit. A
+  // post-paint reassertion lets that observer finish before the modal-owned
+  // current-step target becomes authoritative again.
+  useEffect(() => {
+    if (!open || resumeChooserOpen) {
+      if (resumeChooserOpen) setGuidedTarget(null);
+      return undefined;
+    }
     const frame = window.requestAnimationFrame(() => {
-      const candidates = Array.from(document.querySelectorAll('button,[role="button"],input,select,summary'));
-      const node = candidates.find((item) => String(item.textContent || item.getAttribute("aria-label") || item.value || "").replace(/\s+/g, " ").trim() === label);
+      const label = guidedModalTargetLabel(step, organization);
+      const node = Array.from(document.querySelectorAll('button,[role="button"],input,select,summary'))
+        .find((item) => String(item.textContent || item.getAttribute("aria-label") || item.value || "").replace(/\s+/g, " ").trim() === label);
       if (!node) return;
       setGuidedTarget({
         status: "FOUND",
-        targetKey: `${getPath()}:button:${label}`,
+        targetKey: guidedModalTargetKey(step, organization),
+        identitySource: "CANONICAL",
         label,
         semanticType: "button",
         screenPath: getPath(),
@@ -293,7 +336,7 @@ export default function GuidedPlanModal({
       });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [open, step, organization, me?.role]);
+  }, [open, step, organization, me?.role, resumeChooserOpen]);
 
   useEffect(() => {
     function onLayerChange(event) {
@@ -417,74 +460,117 @@ export default function GuidedPlanModal({
     if (!open) return;
     if (!token) return;
     if (!isPristineGuidedPlanDraft) return;
-
-    const savedDraft = readGuidedPlanModalDraftState(guidedPlanDraftStorageKey);
-    const resumeMode = resumeStep != null && Number(resumeNonce || 0) > 0;
-
-    if (savedDraft?.state) {
-      skipPersistOnceRef.current = true;
-      const next = normalizePersistedGuidedPlanDraftState(savedDraft.state);
-      next.hubLoaded = true;
-      const restoredStep = resumeMode ? Math.max(0, Math.min(3, Number(resumeStep) || 0)) : next.step;
-      setStep(restoredStep);
-      setBusy(false);
-      setErr("");
-      setInfo("");
-      setHubLat(next.hubLat);
-      setHubLng(next.hubLng);
-      setAddr(next.addr);
-      setHubLoaded(true);
-      setPackKey(next.packKey);
-      setStartDate(next.startDate);
-      setDurationKey(next.durationKey);
-      setEndDate(next.endDate);
-      setDaysSel(next.daysSel);
-      setCustomSlots(next.customSlots);
-      setDraftNote(next.draftNote);
-      setDraftAmount(next.draftAmount);
-      setOrgEstimatedPax(next.orgEstimatedPax);
-      setOrgGatheringName(next.orgGatheringName);
-      setOrgReturnType(next.orgReturnType);
-      setOrgDestinations(next.orgDestinations);
-      setMapPickIdx(next.mapPickIdx);
-      setMapPickPoint(next.mapPickPoint);
-      setDraftShiftIds(next.draftShiftIds);
-      setDraftShifts(next.draftShifts);
-      setOsrmBatch({ running: false, done: 0, total: 0 });
-      setOsrmResById(next.osrmResById);
-      setRoomQ(next.roomQ);
-      setOnlyHubRooms(next.onlyHubRooms);
-      setSelRoomIds(next.selRoomIds);
-      setRoomScores({});
-      setOfferAmount(next.offerAmount);
-      setOfferNote(next.offerNote);
-      setSentOk(next.sentOk);
-      setOfferOutcome(next.offerOutcome);
-      setCompanyGeoGate(next.companyGeoGate);
-      _writeGuidedTempShiftIds(next.draftShiftIds);
-      skipStep3ResetOnceRef.current = restoredStep === 3;
-      return;
-    }
-
     let alive = true;
     hydratingDraftRef.current = true;
     (async () => {
+      const savedDraft = readGuidedPlanModalDraftState(guidedPlanDraftStorageKey);
+      const savedState = savedDraft?.state ? normalizePersistedGuidedPlanDraftState(savedDraft.state) : null;
+      const savedIds = Array.isArray(savedState?.draftShiftIds)
+        ? savedState.draftShiftIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)
+        : [];
+      const resumeMode = resumeStep != null && Number(resumeNonce || 0) > 0;
       const lingeringIds = readGuidedTempShiftIds();
-      if (lingeringIds.length && !resumeMode) {
-        await cleanupGuidedDraftShifts({ token, ids: lingeringIds });
+      let candidates = [];
+      if (!routeRefreshMode) {
+        try {
+          candidates = await loadGuidedDraftCandidates({ token });
+        } catch {
+          if (alive) setInfo("Taslaklar şu anda alınamadı. Yeni plan başlatmadan önce tekrar deneyebilirsin.");
+        }
       }
-      if (resumeMode && lingeringIds.length) {
-        if (!alive) return;
+      if (!alive) return;
+
+      const candidateIds = new Set(candidates.map((item) => Number(item?.id)).filter((id) => Number.isFinite(id) && id > 0));
+      const savedIdsValid = savedIds.length > 0 && savedIds.every((id) => candidateIds.has(id));
+      const restoreState = (state, forcedStep = null) => {
+        skipPersistOnceRef.current = true;
+        const next = normalizePersistedGuidedPlanDraftState(state);
+        next.hubLoaded = true;
+        const restoredStep = forcedStep == null ? next.step : Math.max(0, Math.min(3, Number(forcedStep) || 0));
+        setStep(restoredStep);
+        setBusy(false);
+        setErr("");
+        setHubLat(next.hubLat);
+        setHubLng(next.hubLng);
+        setAddr(next.addr);
+        setHubLoaded(true);
+        setPackKey(next.packKey);
+        setStartDate(next.startDate);
+        setDurationKey(next.durationKey);
+        setEndDate(next.endDate);
+        setDaysSel(next.daysSel);
+        setCustomSlots(next.customSlots);
+        setDraftNote(next.draftNote);
+        setDraftAmount(next.draftAmount);
+        setOrgEstimatedPax(next.orgEstimatedPax);
+        setOrgGatheringName(next.orgGatheringName);
+        setOrgReturnType(next.orgReturnType);
+        setOrgDestinations(next.orgDestinations);
+        setMapPickIdx(next.mapPickIdx);
+        setMapPickPoint(next.mapPickPoint);
+        setDraftShiftIds(next.draftShiftIds);
+        setDraftShifts(next.draftShifts);
+        setOsrmBatch({ running: false, done: 0, total: 0 });
+        setOsrmResById(next.osrmResById);
+        setRoomQ(next.roomQ);
+        setOnlyHubRooms(next.onlyHubRooms);
+        setSelRoomIds(next.selRoomIds);
+        setRoomScores({});
+        setOfferAmount(next.offerAmount);
+        setOfferNote(next.offerNote);
+        setSentOk(next.sentOk);
+        setOfferOutcome(next.offerOutcome);
+        setCompanyGeoGate(next.companyGeoGate);
+        _writeGuidedTempShiftIds(next.draftShiftIds);
+        skipStep3ResetOnceRef.current = restoredStep === 2;
+      };
+
+      // A normal entry is not an implicit resume.  Even when the client has a
+      // locally persisted snapshot whose draft ids are still valid, the
+      // server-backed chooser remains authoritative so desktop/tablet/mobile
+      // cannot diverge into a silent replacement/new-plan path.  Local state
+      // may still restore an unsaved new-plan form (no server draft ids), and
+      // an explicit resume flow may restore its selected server draft.
+      const mayRestoreLocalState = resumeMode || !savedIds.length || !candidates.length;
+      if (savedState && mayRestoreLocalState && (!savedIds.length || savedIdsValid)) {
+        restoreState(savedState, resumeMode ? resumeStep : null);
+        if (candidates.length && !savedIds.length && !resumeMode) {
+          setResumeCandidates(candidates);
+          setResumeChooserOpen(true);
+        }
+        hydratingDraftRef.current = false;
+        return;
+      }
+
+      if (savedState && savedIds.length && !savedIdsValid) {
+        clearGuidedPlanModalDraftState(guidedPlanDraftStorageKey);
+        _writeGuidedTempShiftIds([]);
+        setInfo("Önceki yerel taslak bağlantısı artık geçerli değil; mevcut server taslaklarını kontrol edebilirsin.");
+      }
+
+      if (resumeMode && lingeringIds.length && lingeringIds.every((id) => candidateIds.has(Number(id)))) {
+        const matching = candidates.filter((item) => lingeringIds.includes(Number(item?.id)));
+        const safeStep = matching.reduce((max, item) => Math.max(max, Number(item?.resumeStep || 0)), 0);
         setDraftShiftIds(lingeringIds);
         try {
           const items = await loadGuidedResumeDraftShifts({ token, ids: lingeringIds });
           if (!alive) return;
           setDraftShifts(items);
+          setStep(safeStep);
+          skipStep3ResetOnceRef.current = safeStep === 2;
         } catch {
           if (!alive) return;
           setDraftShifts([]);
+          setInfo("Taslak ayrıntıları alınamadı; güvenli başlangıç adımından devam edebilirsin.");
         }
+      } else if (candidates.length && !routeRefreshMode) {
+        setResumeCandidates(candidates);
+        setResumeChooserOpen(true);
+      } else if (resumeMode && lingeringIds.length) {
+        _writeGuidedTempShiftIds([]);
+        setInfo("Önceki taslak artık bulunamadı; yeni bir plan başlatabilirsin.");
       }
+
       try {
         const h = await loadGuidedCompanyHub({ token });
         if (!alive) return;
@@ -664,6 +750,88 @@ export default function GuidedPlanModal({
     onClose,
   });
 
+  async function resumeGuidedDraft(candidate) {
+    const selectedId = Number(candidate?.id || 0);
+    if (!selectedId || resumeSelectionBusy) return;
+    setResumeSelectionBusy(true);
+    setErr("");
+    try {
+      const latestCandidates = await loadGuidedDraftCandidates({ token });
+      const latest = latestCandidates.find((item) => Number(item?.id) === selectedId);
+      if (!latest || String(latest.status || "").toUpperCase() !== "DRAFT") {
+        setResumeCandidates(latestCandidates);
+        setInfo("Bu taslak artık kullanılamıyor; listeyi güncelledim.");
+        return;
+      }
+      const items = await loadGuidedResumeDraftShifts({ token, ids: [selectedId] });
+      if (!items.length) {
+        setResumeCandidates(latestCandidates.filter((item) => Number(item?.id) !== selectedId));
+        setInfo("Bu taslak artık bulunamadı; başka bir taslak seçebilirsin.");
+        return;
+      }
+      const shift = items[0];
+      setDraftShiftIds([selectedId]);
+      setDraftShifts(items);
+      setHubLat(shift?.hubLat == null ? "" : String(shift.hubLat));
+      setHubLng(shift?.hubLng == null ? "" : String(shift.hubLng));
+      setStartDate(String(shift?.startAt || "").slice(0, 10) || todayYmd());
+      setEndDate(String(shift?.endAt || "").slice(0, 10) || createInitialEndDate());
+      setHubLoaded(true);
+      setStep(Math.max(0, Math.min(3, Number(latest.resumeStep) || 0)));
+      skipStep3ResetOnceRef.current = Number(latest.resumeStep) === 2;
+      _writeGuidedTempShiftIds([selectedId]);
+      setResumeCandidates([]);
+      setResumeChooserOpen(false);
+      setResumeConfirmDeleteId(null);
+      setInfo(`Taslak #${selectedId} aynı kayıt üzerinden sürdürülebilir.`);
+    } catch (error) {
+      setErr(getApiErrorMessage(error) || "Taslak şu anda alınamadı.");
+    } finally {
+      setResumeSelectionBusy(false);
+    }
+  }
+
+  function startNewGuidedPlan() {
+    setResumeChooserOpen(false);
+    setResumeCandidates([]);
+    setResumeConfirmDeleteId(null);
+    setDraftShiftIds([]);
+    setDraftShifts([]);
+    _writeGuidedTempShiftIds([]);
+    setStep(0);
+    setInfo("Yeni plan başlatıldı. Mevcut taslaklar korunuyor.");
+  }
+
+  async function discardGuidedDraft(candidate) {
+    const selectedId = Number(candidate?.id || 0);
+    if (!selectedId || resumeSelectionBusy) return;
+    setResumeSelectionBusy(true);
+    setErr("");
+    try {
+      const latestCandidates = await loadGuidedDraftCandidates({ token });
+      const latest = latestCandidates.find((item) => Number(item?.id) === selectedId);
+      const sameIdentity = latest
+        && String(latest.status || "").toUpperCase() === "DRAFT"
+        && String(latest.createdAt || "") === String(candidate?.createdAt || "");
+      if (!sameIdentity) {
+        setResumeCandidates(latestCandidates);
+        setResumeConfirmDeleteId(null);
+        setInfo("Taslak değişti veya artık yok; silme işlemini uygulamadım.");
+        return;
+      }
+      await cleanupGuidedDraftShifts({ token, ids: [selectedId] });
+      const remaining = latestCandidates.filter((item) => Number(item?.id) !== selectedId);
+      setResumeCandidates(remaining);
+      setResumeConfirmDeleteId(null);
+      if (!remaining.length) setResumeChooserOpen(false);
+      setInfo(`Taslak #${selectedId} açık onayla silindi.`);
+    } catch (error) {
+      setErr(getApiErrorMessage(error) || "Taslak silinemedi; mevcut kayıt korunuyor.");
+    } finally {
+      setResumeSelectionBusy(false);
+    }
+  }
+
   const planSummary = useMemo(() => {
     const lines = currentStepItems.map((it) => {
       const p = organization ? (orgReturnType === "RETURN_TO_START" ? "LOOP" : "ONE_WAY") : it.pattern;
@@ -672,7 +840,11 @@ export default function GuidedPlanModal({
     return lines;
   }, [currentStepItems, organization, orgReturnType]);
 
-  const modalContentStyle = undefined;
+  const modalContentStyle = {
+    width: "min(1680px, 100%)",
+    maxWidth: "100%",
+    boxSizing: "border-box",
+  };
 
   return (
     <>
@@ -682,21 +854,33 @@ export default function GuidedPlanModal({
       dismissOnBackdrop={false}
       // Safe company-action layer: zIndex: 9060
       zIndex={9060}
+      backdropClassName="guidedPlanModalBackdrop"
+      backdropStyle={{
+        background: "rgba(2, 6, 23, 0.72)",
+        backdropFilter: "blur(2px)",
+        isolation: "isolate",
+      }}
       contentProps={{
         style: modalContentStyle,
+        className: "guidedPlanModalContent guidedPlanModalContent--primary guidedPlanModalSurface",
         "data-overlay-layer": activeOverlayLayer,
+        "data-copilot-workflow-id": resumeChooserOpen ? undefined : "COMPANY_GUIDED_NEW_PLAN",
+        "data-copilot-workflow-step": resumeChooserOpen ? undefined : String(step + 1),
+        "data-copilot-workflow-completed-through": resumeChooserOpen ? undefined : String(step),
+        "data-copilot-workflow-target-label": resumeChooserOpen ? undefined : guidedModalTargetLabel(step, organization),
+        "data-copilot-workflow-target-key": resumeChooserOpen ? undefined : guidedModalTargetKey(step, organization),
         onPointerDownCapture: () => setPlanCenterOverlayLayer("guide"),
         onMouseDownCapture: () => setPlanCenterOverlayLayer("guide"),
         onFocusCapture: () => setPlanCenterOverlayLayer("guide"),
       }}
     >
-      <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+      <div className="guidedPlanModalHeader row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <div>
-          <div data-dialog-title style={{ fontWeight: 900, fontSize: 18 }}>{routeRefreshMode ? "Rehberli Mod → Rota Güncelle" : "Rehberli Mod → Yeni Plan"}</div>
-          <div className="muted" style={{ marginTop: 4 }}>{stepTitle(step, who, organization)}</div>
+          <div data-dialog-title className="guidedPlanModalTitle" style={{ fontWeight: 900, fontSize: 18 }}>{routeRefreshMode ? "Rehberli Mod → Rota Güncelle" : "Rehberli Mod → Yeni Plan"}</div>
+          <div className="guidedPlanModalStepTitle muted" style={{ marginTop: 4 }}>{resumeChooserOpen ? "Kayıtlı taslaklar" : stepTitle(step, who, organization)}</div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          <button type="button" onClick={closeGuidedPlanModal} disabled={busy}>Kapat</button>
+          <button type="button" className="guidedPlanSecondaryAction" onClick={closeGuidedPlanModal} disabled={busy}>Kapat</button>
         </div>
       </div>
 
@@ -705,6 +889,64 @@ export default function GuidedPlanModal({
       ) : null}
       {info ? (
         <div className="card" style={{ marginTop: 10, border: "1px solid #2a7" }}>{info}</div>
+      ) : null}
+      {resumeChooserOpen ? (
+        <div
+          className="card"
+          data-guided-draft-chooser="true"
+          data-copilot-foreground-surface="company:guided-draft-chooser"
+          data-copilot-foreground-surface-kind="SAVED_DRAFT_CHOOSER"
+          style={{ marginTop: 12, border: "1px solid rgba(88,166,255,.45)" }}
+        >
+          <div style={{ fontWeight: 900, fontSize: 16 }}>Kaydedilmiş taslaklar</div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            Bu şirket için server’da kayıtlı rehberli taslak bulundu. Devam etmek mevcut taslağı kullanır; yeni plan eski taslağı silmez.
+          </div>
+          <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+            {resumeCandidates.map((candidate) => {
+              const id = Number(candidate?.id || 0);
+              const confirm = resumeConfirmDeleteId === id;
+              const progress = Number(candidate?.resumeStep || 0) + 1;
+              return (
+                <div key={id} className="card" data-guided-draft-id={String(id)} style={{ border: "1px solid rgba(148,163,184,.35)" }}>
+                  <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                    <div>
+                      <div style={{ fontWeight: 800 }}>Taslak #{id}</div>
+                      <div className="muted" style={{ marginTop: 4 }}>
+                        Durum: DRAFT · Güvenli başlangıç: {progress}. adım
+                        {candidate?.createdAt ? ` · ${String(candidate.createdAt).slice(0, 19).replace("T", " ")}` : ""}
+                      </div>
+                    </div>
+                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                      <button type="button" className="guidedPrimaryAction" data-copilot-target="company:guided-draft-resume" onClick={() => resumeGuidedDraft(candidate)} disabled={resumeSelectionBusy}>
+                        Devam et
+                      </button>
+                      {!confirm ? (
+                        <button type="button" className="guidedPlanSecondaryAction" data-copilot-target="company:guided-draft-discard" onClick={() => setResumeConfirmDeleteId(id)} disabled={resumeSelectionBusy}>
+                          Taslağı sil
+                        </button>
+                      ) : (
+                        <>
+                          <button type="button" className="guidedPlanSecondaryAction" onClick={() => discardGuidedDraft(candidate)} disabled={resumeSelectionBusy}>
+                            Silmeyi onayla
+                          </button>
+                          <button type="button" className="guidedPlanSecondaryAction" onClick={() => setResumeConfirmDeleteId(null)} disabled={resumeSelectionBusy}>
+                            Vazgeç
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="row" style={{ gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+            <button type="button" className="guidedPrimaryAction" data-copilot-target="company:guided-draft-new" onClick={startNewGuidedPlan} disabled={resumeSelectionBusy}>
+              Yeni plan
+            </button>
+          </div>
+        </div>
       ) : null}
       {routeRefreshMode ? (
         <div className="card" style={{ marginTop: 10, border: "1px solid rgba(88,166,255,.28)" }}>
@@ -723,7 +965,7 @@ export default function GuidedPlanModal({
       ) : null}
 
       {/* Step-0: Konum */}
-      {step === 0 ? (
+      {!resumeChooserOpen && step === 0 ? (
         <GuidedHubStep
           organization={organization}
           busy={busy}
@@ -737,11 +979,12 @@ export default function GuidedPlanModal({
           setHubLng={setHubLng}
           hubLoaded={hubLoaded}
           saveHub={saveHub}
+          guidedTargetKey={guidedModalTargetKey(0, organization)}
         />
       ) : null}
 
       {/* Step-1: Plan */}
-      {step === 1 ? (
+      {!resumeChooserOpen && step === 1 ? (
         <GuidedPlanSetupStep
           organization={organization}
           busy={busy}
@@ -796,11 +1039,12 @@ export default function GuidedPlanModal({
           setOrgReturnType={setOrgReturnType}
           setStep={setStep}
           createDraftShifts={createDraftShifts}
+          guidedTargetKey={guidedModalTargetKey(1, organization)}
         />
       ) : null}
 
       {/* Step-2: People + stops */}
-      {step === 2 ? (
+      {!resumeChooserOpen && step === 2 ? (
         <GuidedPeopleStopsStep
           organization={organization}
           busy={busy}
@@ -818,11 +1062,12 @@ export default function GuidedPlanModal({
           setStep={setStep}
           refreshDraftShifts={refreshDraftShifts}
           setErr={setErr}
+          guidedTargetKey={guidedModalTargetKey(2, organization)}
         />
       ) : null}
 
       {/* Step-3: Solve + offers */}
-      {step === 3 ? (
+      {!resumeChooserOpen && step === 3 ? (
         <GuidedSolveOffersStep
           organization={organization}
           busy={busy}
@@ -866,6 +1111,7 @@ export default function GuidedPlanModal({
           onAfterCreated={onAfterCreated}
           onClose={closeGuidedPlanModal}
           resetAll={resetAll}
+          guidedTargetKey={guidedModalTargetKey(3, organization)}
         />
       ) : null}
 

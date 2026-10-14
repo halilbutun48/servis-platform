@@ -19,6 +19,23 @@ const JOB_LEASE_MS = 30_000;
 const JOB_RENEW_MS = 10_000;
 const JOB_RETRY_MS = 5_000;
 
+export function localMaintenanceModeDecision(env = process.env) {
+  const requested = String(env.LOCAL_MAINTENANCE_MODE ?? "").trim() === "1";
+  const nodeEnv = String(env.NODE_ENV ?? "").trim().toLowerCase();
+  const scope = String(env.LOCAL_MAINTENANCE_SCOPE ?? "").trim().toUpperCase();
+  const valid = !requested || (nodeEnv === "development" && scope === "DEMO_FIXTURE_ONLY");
+  return {
+    requested,
+    enabled: requested && valid,
+    valid,
+    reason: !requested
+      ? "NOT_REQUESTED"
+      : valid
+        ? "DEMO_FIXTURE_ONLY_DEVELOPMENT_SCOPE"
+        : "LOCAL_MAINTENANCE_MODE_REJECTED",
+  };
+}
+
 function newLeaderId() {
   return `${process.pid}:${crypto.randomBytes(8).toString("hex")}`;
 }
@@ -111,6 +128,14 @@ function startLocalMonitors(io, opts = {}) {
  * @param {object} opts
  */
 export function startMonitors(io, opts = {}) {
+  const maintenance = localMaintenanceModeDecision();
+  if (maintenance.requested && !maintenance.valid) {
+    throw new Error("LOCAL_MAINTENANCE_MODE_REJECTED");
+  }
+  if (maintenance.enabled) {
+    console.warn("[jobs] local maintenance mode enabled: DEMO_FIXTURE_ONLY; background monitors are not started");
+    return () => {};
+  }
   const redis = getRedis();
   if (!redis?.send) {
     return startLocalMonitors(io, opts);

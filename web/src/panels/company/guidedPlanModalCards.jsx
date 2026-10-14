@@ -184,6 +184,7 @@ export function GuidedBulkOffersCard({
   selRoomIds,
   setSelRoomIds,
   sendBulkOffers,
+  guidedTargetKey,
   organization,
   orgDraftCompletion,
   offerOsrmGate,
@@ -321,6 +322,7 @@ export function GuidedBulkOffersCard({
             )}
             <button
               type="button"
+              data-copilot-target={guidedTargetKey}
               onClick={sendBulkOffers}
               disabled={busy || (!routeRefreshMode && !roomsSupported) || (!routeRefreshMode && selectedRoomCount < 1) || (organization && !orgDraftCompletion.ready) || (!organization && offerOsrmGate.blocking)}
             >

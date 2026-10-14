@@ -50,7 +50,7 @@ export const SEFER_ABI_REASONING_ASSISTANT_GUARD_REQUIREMENTS = Object.freeze([
   'no tool execution',
   'no write-action dispatcher',
   'no DB write',
-  'no AI/model/tool/write-action runtime',
+  'no external AI/model/tool/write-action runtime; local advisory semantic proposal is allowed only behind an explicit maintenance-mode flag',
 ]);
 
 export const SEFER_ABI_REASONING_ASSISTANT_PUBLIC_PROMISE = Object.freeze([

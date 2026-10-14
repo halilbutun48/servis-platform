@@ -51,7 +51,8 @@ export const COST_REASONING_QUESTION_INTENTS = Object.freeze([
 ]);
 
 const FINANCIAL_PATH_PATTERN = /(?:\/|^)(?:room|company|school|organization)\/financial-operations\b/i;
-const FOLLOW_UP_PATTERN = /^(?:peki|neden|nasıl|nasil|bunu aç|bunu ac|devam|aynı|ayni|bu durumda|hangi veri|ne öner|ne oner|detay|açıkla|acikla|yaptım|yaptim|bulamadım|bulamadim|başka seçenek|baska secenek)\b/i;
+const FOLLOW_UP_PATTERN = /^(?:peki|neden|nasıl|nasil|bunu aç|bunu ac|devam|aynı|ayni|bu durumda|hangi veri|ne öner|ne oner|detay|açıkla|acikla|kayna\p{L}*|dayana\p{L}*|hesaplama\p{L}*|temel\p{L}*|provenans\p{L}*|yaptım|yaptim|bulamadım|bulamadim|başka seçenek|baska secenek)\b/iu;
+const DEICTIC_FINANCIAL_FOLLOW_UP_PATTERN = /^(?:bu|bunun|bu\s+(?:tutar|deger|sonuc))\b.*\b(?:nasil|hesap|detay|ayrinti|neden|acikla|anlat)\p{L}*\b/iu;
 
 function normalizeText(value) {
   return String(value || "")
@@ -96,6 +97,26 @@ function formatMoneyMinor(value, currencyCode = "TRY") {
   } catch {
     return `${(amount / 100).toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ${String(currencyCode || "TRY").toUpperCase()}`;
   }
+}
+
+function formatBasisPointsPercentage(value) {
+  const basisPoints = finiteNumber(value);
+  if (basisPoints === null) return "";
+  return `${(basisPoints / 100).toLocaleString("tr-TR", { maximumFractionDigits: 2 })}%`;
+}
+
+export function buildQuoteFloorCalculationBreakdown({ quoteFloor = null, currencyCode = "TRY" } = {}) {
+  const baselineOperationalCostMinor = integer(quoteFloor?.baselineOperationalCostMinor);
+  const targetContributionBps = finiteNumber(quoteFloor?.targetContributionBps);
+  const riskReserveBps = finiteNumber(quoteFloor?.riskReserveBps);
+  const quoteFloorMinor = integer(quoteFloor?.quoteFloorMinor);
+  if ([baselineOperationalCostMinor, targetContributionBps, riskReserveBps, quoteFloorMinor].some((value) => value === null)) return "";
+  return [
+    `Operasyon maliyeti: ${formatMoneyMinor(baselineOperationalCostMinor, currencyCode)}`,
+    `Katkı payı: ${formatBasisPointsPercentage(targetContributionBps)}`,
+    `Risk rezervi: ${formatBasisPointsPercentage(riskReserveBps)}`,
+    `Minimum teklif tabanı: ${formatMoneyMinor(quoteFloorMinor, currencyCode)}`,
+  ].join(" • ");
 }
 
 function formatNumber(value, maximumFractionDigits = 2) {
@@ -152,7 +173,9 @@ function contextText(screenContext, conversationState) {
 
 function isFollowUpMessage(message, conversationState) {
   const previous = conversationState?.costAnalysisState || conversationState?.costReasoning || null;
-  if (previous?.lastIntentFamily && FOLLOW_UP_PATTERN.test(String(message || "").trim())) return true;
+  const normalizedMessage = normalizeText(message);
+  const isFinancialExplanationFollowUp = DEICTIC_FINANCIAL_FOLLOW_UP_PATTERN.test(normalizedMessage);
+  if (previous?.lastIntentFamily && (FOLLOW_UP_PATTERN.test(normalizedMessage) || isFinancialExplanationFollowUp)) return true;
   // The floating drawer intentionally sends a compact recent-message window
   // rather than a mutable cost object.  Preserve cost continuity from that
   // canonical conversation evidence so a terse follow-up is not reclassified
@@ -164,7 +187,7 @@ function isFollowUpMessage(message, conversationState) {
       ? Boolean(familyFromText(text))
       : /(?:SONUÇ|NEDEN|KANIT|FİNANSAL ETKİ|OPERASYON ETKİSİ|EKSİK VERİ|GÜVEN SEVİYESİ|maliyet|senaryo|teklif)/iu.test(text);
   });
-  return hasCostTurn && FOLLOW_UP_PATTERN.test(String(message || "").trim());
+  return hasCostTurn && (FOLLOW_UP_PATTERN.test(normalizedMessage) || isFinancialExplanationFollowUp);
 }
 
 function continuationTypeFromText(message) {
@@ -181,9 +204,30 @@ function familyFromText(text) {
   if (/(?:teklif|kâr|kar|kârlılık|karlilik|marj|fiyat|teklif tabanı|teklif tabani|minimum fiyat)/.test(text)) return "OFFER_PROFITABILITY";
   if (/(?:senaryo|varsay|olursa|gelirse|gelecekse|uzarsa|artarsa|azalırsa|azalirsa|değiştir|degistir|artır|artir|azalt|eklersem|çıkarırsam|cikarsam|what if|alternatif|daha iyi|kişi daha|kisi daha)/.test(text)) return "WHAT_IF_SCENARIO";
   if (/(?:rota|mesafe|durak|araç|arac|sürücü|surucu|operasyon|sefer|süre|sure|gecik|kapasite|pahalı|pahali|riskli|risk)/.test(text)) return "ROUTE_OPERATION";
-  if (/(?:bütçe|butce|maliyet|masraf|harcama|servis maliyeti|maliyet neden|maliyetim|tasarruf|nereden)/.test(text)) return "BUDGET_COST";
+  if (/(?:bütçe|butce|maliyet|masraf|harcama|finansal|finans|mali|servis maliyeti|maliyet neden|maliyetim|tasarruf|nereden)/.test(text)) return "BUDGET_COST";
   if (/(?:kaynak|kanıt|kanit|veri|güven|guven|güncel|guncel|referans|piyasa|gerçek|gercek|tazelik)/.test(text)) return "DATA_CONFIDENCE";
   return "";
+}
+
+function metricIdentityFromText(text, previous = null) {
+  const value = normalizeText(text);
+  const metricAnchors = [
+    /tahmini\s+maliyet/,
+    /operasyonel\s+maliyet(?:\s+tahmini)?/,
+    /teklif\s+tabani/,
+    /onerilen\s+minimum\s+teklif/,
+    /tahmini\s+k(?:ar|â)r/,
+    /planlanan\s+teklif/,
+  ].filter((pattern) => pattern.test(value));
+  const singleMetric = metricAnchors.length === 1;
+  const explanationCue = /(?:kaynak|dayanak|hesap|temel|acikla|anlat|nedir|ne\s+kadar)/.test(value);
+  if (singleMetric && /(?:operasyonel\s+maliyet|maliyet\s+tahmini.*operasyon|operasyon.*maliyet\s+tahmini)/.test(value)) {
+    return "OPERATIONAL_COST_MODEL_ESTIMATE";
+  }
+  if (singleMetric && (explanationCue || /^(?:tahmini\s+maliyet|teklif\s+tabani)[.!?]?$/i.test(value))) {
+    return "MANUAL_FINANCIAL_PREVIEW_COST";
+  }
+  return previous?.lastMetricIdentity || null;
 }
 
 function questionIntentFromText(text, family, continuationType = "") {
@@ -213,6 +257,11 @@ export function detectCostAnalysisIntent({ message = "", screenContext = null, c
     .find(Boolean) || "";
   const family = familyFromText(text) || (followUp ? String(previous?.lastIntentFamily || recentFamily || "") : "");
   const continuationType = continuationTypeFromText(message);
+  const recentMetricIdentity = [...recent].reverse()
+    .filter((item) => item?.role === "user")
+    .map((item) => metricIdentityFromText(normalizeText(item?.text), null))
+    .find(Boolean) || null;
+  const metricIdentity = metricIdentityFromText(text, previous) || recentMetricIdentity;
   const financialScreen = FINANCIAL_PATH_PATTERN.test(screen) || /(?:bütçe|butce|servis maliyeti|teklif ve kârlılık|teklif ve karlilik)/.test(screen);
   const isCostAnalysis = Boolean(family) || (financialScreen && /(?:maliyet|bütçe|butce|teklif|kâr|kar|senaryo|veri|güven|guven|referans|pahalı|pahali|risk|tasarruf|alternatif|araç|arac)/.test(text));
   if (!isCostAnalysis) {
@@ -234,6 +283,7 @@ export function detectCostAnalysisIntent({ message = "", screenContext = null, c
     confidence: family ? (followUp ? 0.86 : 0.93) : 0.58,
     isFollowUp: followUp,
     continuationType,
+    metricIdentity,
     matchedSignals: unique([
       family,
       financialScreen ? "FINANCIAL_SCREEN_CONTEXT" : "COST_LANGUAGE",
@@ -828,6 +878,25 @@ function buildClarificationResponse({ baseResponse, request, roleKey, scope, scr
   };
 }
 
+function buildUnsupportedFinancialSurfaceResponse({ baseResponse, screenPath }) {
+  const reply = "Bu ROOM finans ekranında hakediş veya fatura mutabakatı için doğrulanabilir bir liste/hedef yok. Mevcut yetkili yüzey Teklif ve Kârlılık önizlemesi; burada kayıt ya da finansal hedef uydurmuyorum.";
+  return {
+    ...baseResponse,
+    provider: "local-sefer-abi-cost-analysis",
+    copilotVersion: SEFER_ABI_COST_ANALYSIS_ASSISTANT_VERSION,
+    screenPath: screenPath || baseResponse?.screenPath || null,
+    reply,
+    summary: reply,
+    questionType: "FINANCIAL_SURFACE_LIMITATION",
+    questionLabel: "Finansal yüzey sınırı",
+    responseSections: [{ kind: "SONUÇ", title: "SONUÇ", text: reply }],
+    evidenceConfidence: "ROOM ekran sözleşmesi ve mevcut hedef metadatası ile sınırlı.",
+    guidedTarget: { status: "NOT_FOUND", targetKey: null, screenPath: screenPath || baseResponse?.screenPath || null },
+    roleBoundary: "Yalnızca mevcut ROOM yüzeyinin doğrulanabilir kapsamı kullanıldı; kayıt, ödeme veya mutabakat işlemi yapılmadı.",
+    safety: { readOnly: true, previewOnly: true, writeAction: false, noLiveMutation: true, notPersisted: true },
+  };
+}
+
 export async function buildSeferAbiCostAnalysisResponse({
   baseResponse = {},
   user = {},
@@ -838,7 +907,27 @@ export async function buildSeferAbiCostAnalysisResponse({
   resolvedEntityId = 0,
 } = {}) {
   const request = detectCostAnalysisIntent({ message, screenContext, conversationState });
-  if (!request.isCostAnalysis) return baseResponse;
+  const canonicalRequest = baseResponse?.semanticPlan?.canonicalRequest || null;
+  const requestedDomains = Array.isArray(baseResponse?.semanticPlan?.requestedDomains)
+    ? baseResponse.semanticPlan.requestedDomains.map((domain) => String(domain).toUpperCase())
+    : [];
+  const financialObject = String(canonicalRequest?.typedEvidence?.object?.value || "").toUpperCase() === "FINANCIAL";
+  const explicitFinanceRequest = requestedDomains.includes("FINANCE") || financialObject;
+  // Invoice/reconciliation is not a cost-analysis result on the ROOM
+  // financial surface.  Once the canonical request proves the financial
+  // object, return the truthful unsupported-capability explanation before a
+  // broad "nereden"/cost cue can manufacture a generic cost summary.
+  if (explicitFinanceRequest && /(?:hakediş|hakedis|fatura|mutabakat)/iu.test(String(message || ""))) {
+    const screenPath = String(screenContext?.path || baseResponse?.screenPath || "").split("?")[0];
+    return buildUnsupportedFinancialSurfaceResponse({ baseResponse, screenPath });
+  }
+  if (!request.isCostAnalysis) {
+    if (explicitFinanceRequest && /(?:hakediş|hakedis|fatura|mutabakat)/iu.test(String(message || ""))) {
+      const screenPath = String(screenContext?.path || baseResponse?.screenPath || "").split("?")[0];
+      return buildUnsupportedFinancialSurfaceResponse({ baseResponse, screenPath });
+    }
+    return baseResponse;
+  }
 
   const roleKey = await roleKeyForUser(user);
   const screenPath = String(screenContext?.path || conversationState?.lastScreenPath || baseResponse?.screenPath || "").split("?")[0];
@@ -861,6 +950,14 @@ export async function buildSeferAbiCostAnalysisResponse({
   }
 
   const canonicalFinancial = await loadCanonicalFinancialEvidence({ user, baseline });
+  const canonicalQuoteFloorQuestion = baseResponse?.semanticPlan?.canonicalRequest?.domain === "BUDGET"
+    && baseResponse?.semanticPlan?.canonicalRequest?.typedEvidence?.specificity?.quoteFloorAnalysisEvidence === true;
+  const manualMetricMinor = canonicalFinancial?.financePreview?.roomProfitability?.costInputs?.manualBaselineOperationalCostMinor
+    ?? canonicalFinancial?.financePreview?.baselineOperationalCostMinor
+    ?? null;
+  const manualMetricSource = canonicalFinancial?.financePreview?.roomProfitability?.costInputs?.manualBaselineOperationalCostMinor != null
+    ? "Manuel maliyet girdisi"
+    : "Kanonik finans önizlemesi";
   let scenarioOverrides = request.family === "WHAT_IF_SCENARIO"
     ? extractScenarioOverrides(message, baseline?.input)
     : {};
@@ -936,8 +1033,27 @@ export async function buildSeferAbiCostAnalysisResponse({
   const partialProfitabilityQualifier = completeness.costLevel === "PARTIAL"
     ? " Bu fark tam kârlılık sonucu değildir; eksik maliyet kalemleri sonucu artırabilir."
     : "";
-  const resultText = request.questionIntent === "MULTI_ROUTE_RANKING"
-    ? routeRanking?.status === "READY"
+  const quoteFloorCalculationFollowUp = canonicalQuoteFloorQuestion
+    && (request.isFollowUp || DEICTIC_FINANCIAL_FOLLOW_UP_PATTERN.test(normalizeText(message)));
+  const quoteFloorCalculationBreakdown = quoteFloorCalculationFollowUp
+    ? buildQuoteFloorCalculationBreakdown({
+      quoteFloor: canonicalFinancial?.financePreview?.quoteFloor,
+      currencyCode: canonicalFinancial?.financePreview?.currencyCode || "TRY",
+    })
+    : "";
+  const resultText = request.metricIdentity === "MANUAL_FINANCIAL_PREVIEW_COST"
+    ? manualMetricMinor != null
+      ? `Finans önizlemesindeki tahmini maliyet: ${formatMoneyMinor(manualMetricMinor, canonicalFinancial.financePreview.currencyCode || "TRY")}. Kaynak: ${manualMetricSource}; bu değer teklif tabanı hesabının maliyet girdisidir ve operasyonel maliyet modelinden ayrıdır.`
+      : "Finans önizlemesindeki tahmini maliyet için yetkili bir tutar bulunamadı; değer uydurulmadı."
+    : request.metricIdentity === "OPERATIONAL_COST_MODEL_ESTIMATE"
+      ? `${costLevelText(completeness, scenarioPreview)} Kaynak: operasyonel maliyet modeli; araç, kişi, durak, km ve süre girdileriyle salt okunur önizleme üretildi.`
+    : canonicalQuoteFloorQuestion
+    ? canonicalFinancial?.financePreview?.quoteFloor?.quoteFloorMinor !== null
+      && canonicalFinancial?.financePreview?.quoteFloor?.quoteFloorMinor !== undefined
+      ? `Kanonik teklif tabanı toplamı: ${formatMoneyMinor(canonicalFinancial.financePreview.quoteFloor.quoteFloorMinor, canonicalFinancial.financePreview.currencyCode || "TRY")}.${quoteFloorCalculationBreakdown ? ` ${quoteFloorCalculationBreakdown}.` : ""} Bu değer salt okunur önizlemedir; teklif göndermez veya değişiklik uygulamaz.`
+      : "Kanonik teklif tabanı toplamı için doğrulanabilir bir değer bulunamadı; eksik veriyi sıfır kabul etmiyorum."
+    : request.questionIntent === "MULTI_ROUTE_RANKING"
+      ? routeRanking?.status === "READY"
       ? `Karşılaştırılan rotalar içinde en pahalı kanonik rota ${routeRanking.mostExpensive.label}: ${formatMoneyMinor(routeRanking.mostExpensive.costMinor, routeRanking.mostExpensive.currencyCode)}.`
       : routeRanking?.reason || "Maliyet sıralaması için karşılaştırılabilir rota kanıtı eksik."
     : request.questionIntent === "VEHICLE_RECOMMENDATION"
@@ -1071,6 +1187,7 @@ export async function buildSeferAbiCostAnalysisResponse({
       routeRanking,
       commercialProfitability,
       contractProfitability,
+      quoteFloorCalculationBreakdown: quoteFloorCalculationBreakdown || null,
       fuelIncrease: { percent: fuelIncrease.percent, applied: fuelIncrease.applied },
     },
     evidence: {
@@ -1089,6 +1206,7 @@ export async function buildSeferAbiCostAnalysisResponse({
       includedComponents: completeness.includedComponents,
       missingComponents: completeness.missingComponents,
       provenance: completeness.provenance,
+      quoteFloorCalculationBreakdown: quoteFloorCalculationBreakdown || null,
     },
     answer: {
       sections,
@@ -1129,6 +1247,7 @@ export async function buildSeferAbiCostAnalysisResponse({
       lastIntentFamily: request.family,
       lastIntent: request.intent,
       lastQuestionIntent: request.questionIntent,
+      lastMetricIdentity: request.metricIdentity,
       lastContinuationType: request.continuationType,
       lastScreenPath: screenPath,
       lastBaselineReference: baseline?.baselineReference || null,

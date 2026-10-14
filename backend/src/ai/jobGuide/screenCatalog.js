@@ -1,5 +1,5 @@
 import { pickTerms } from "./glossary.js";
-import { button, screen } from "./screenCatalog.shared.js";
+import { button, canonicalButton, screen, semanticBlock } from "./screenCatalog.shared.js";
 import { COMPANY, ROOM } from './screenCatalog.roomCompany.js';
 
 // Copilot role/task matrix route anchors:
@@ -12,11 +12,40 @@ import { COMPANY, ROOM } from './screenCatalog.roomCompany.js';
 // /school/operations
 // /organization/operations
 
-const SCHOOL = COMPANY.map((x) => ({
-  ...x,
-  path: x.path.replace('/company', '/school'),
-  label: x.path === '/company/georeview' ? 'Öğrenci Konum İncele' : x.label,
-})).concat([
+const SCHOOL = COMPANY.map((x) => {
+  const path = x.path.replace('/company', '/school');
+  const remapPaths = (items) => (Array.isArray(items) ? items.map((item) => ({
+    ...item,
+    path: String(item?.path || '').replace('/company', '/school'),
+  })) : items);
+  const base = {
+    ...x,
+    path,
+    label: x.path === '/company' ? 'Okul Planlama' : x.path === '/company/georeview' ? 'Öğrenci Konum İncele' : x.label,
+    screenMenus: remapPaths(x.screenMenus),
+    nextScreens: remapPaths(x.nextScreens),
+  };
+  if (x.path === '/company') return {
+    ...base,
+    menuPurpose: 'Okul servis planını, öğrenci kapsamını ve durak hazırlığını kurmak için kullanılır.',
+    forWhom: 'Okul tarafında servis planlayan yetkili kullanıcı içindir.',
+    firstStep: 'Önce öğrenci ve durak konumlarının hazır olduğunu kontrol et.',
+    nextStep: 'Plan hazırlandıktan sonra Vardiyalar ekranında takip et.',
+  };
+  if (x.path === '/company/operations') return {
+    ...base,
+    menuPurpose: 'Okul servis operasyon özetini, bekleyen işleri ve öğrenci/rota durumunu görmek için kullanılır.',
+    forWhom: 'Okul servis operasyonunu yöneten kullanıcı içindir.',
+    firstStep: 'Önce açık veya bekleyen servis işini seç.',
+    nextStep: 'Gerekirse Vardiyalar veya Öğrenci Konum İncele ekranına geç.',
+  };
+  if (x.path === '/company/agreements') return {
+    ...base,
+    menuPurpose: 'Okulun sözleşmeli servis işlerini ve bağlı vardiyaları görmek için kullanılır.',
+    forWhom: 'Okulun sözleşmeli servis akışını yöneten kullanıcı içindir.',
+  };
+  return base;
+}).concat([
   screen(2201, '/school/parents', 'Veli Erişimi', {
     menuPurpose: 'Veli tarafı için süreli link, erişim kodu ve PIN üretmek için kullanılır.',
     forWhom: 'Okul yönetimi içindir.',
@@ -33,7 +62,17 @@ const SCHOOL = COMPANY.map((x) => ({
 ]);
 
 const ORGANIZATION = COMPANY.map((x) => {
-  const mapped = { ...x, path: x.path.replace('/company', '/organization'), label: x.path === '/company/georeview' ? 'Lokasyon İncele' : x.label === 'Planlama Merkezi' ? 'Organizasyon Merkezi' : x.label };
+  const remapPaths = (items) => (Array.isArray(items) ? items.map((item) => ({
+    ...item,
+    path: String(item?.path || '').replace('/company', '/organization'),
+  })) : items);
+  const mapped = {
+    ...x,
+    path: x.path.replace('/company', '/organization'),
+    label: x.path === '/company/georeview' ? 'Lokasyon İncele' : x.label === 'Planlama Merkezi' ? 'Organizasyon Merkezi' : x.label,
+    screenMenus: remapPaths(x.screenMenus),
+    nextScreens: remapPaths(x.nextScreens),
+  };
 
   if (x.path === '/company') {
     return screen(2101, '/organization', 'Gezi / Planlama Merkezi', {
@@ -46,7 +85,7 @@ const ORGANIZATION = COMPANY.map((x) => {
       commonMistakes: ['Toplanma noktasını kaydetmeden devam etmek.', 'Gidilecek yerleri eksik koordinatla bırakmak.', 'Takip ekranını yeni plan kurma ekranı sanmak.'],
       doneChecklist: ['Toplanma noktası kaydedildi.', 'Tahmini kişi sayısı girildi.', 'Gidilecek yerler ve dönüş tipi tamamlandı.', 'Teklif veya plan çıktısı üretildi.'],
       buttonGuides: [
-        button('Rehberi Başlat', 'Gezi planlama akışını adım adım açar.', 'Yeni gezi veya organizasyon işi kuracaksan kullan.', 'Toplanma noktası → plan paketi → kişi sayısı / yerler → ön izleme akışı açılır.'),
+        canonicalButton('organization:guided-plan-start', 'Rehberi Başlat', 'Gezi planlama akışını adım adım açar.', 'Yeni gezi veya organizasyon işi kuracaksan kullan.', 'Toplanma noktası → plan paketi → kişi sayısı / yerler → ön izleme akışı açılır.'),
         button('Konum kontrol et', 'Toplanma noktası ve gidilecek yerlerin konum sorunlarını düzeltmeye yardım eder.', 'Koordinat eksik veya hatalıysa kullan.', 'Eksik konumları tamamlayıp plana geri dönersin.'),
         button('Vardiyalar', 'Kurulan işin teklif ve operasyon takibine götürür.', 'Plan çıktıktan sonra kullan.', 'Vardiyalar ekranı açılır.'),
       ],
@@ -80,6 +119,23 @@ const ORGANIZATION = COMPANY.map((x) => {
       ],
       simpleTerms: pickTerms(['atama']),
     });
+  }
+
+  if (x.path === '/company/operations') {
+    return {
+      ...mapped,
+      menuPurpose: 'Gezi ve organizasyon işlerinin operasyon özetini, bekleyen işleri ve sonraki adımları görmek için kullanılır.',
+      forWhom: 'Organizasyon operasyonunu yöneten kullanıcı içindir.',
+      firstStep: 'Önce açık veya bekleyen gezi işini seç.',
+      nextStep: 'Gerekirse Vardiyalar veya Lokasyon İncele ekranına geç.',
+    };
+  }
+  if (x.path === '/company/agreements') {
+    return {
+      ...mapped,
+      menuPurpose: 'Organizasyon ve gezi işlerine bağlı sözleşmeleri görmek ve takip etmek için kullanılır.',
+      forWhom: 'Organizasyonun sözleşmeli iş akışını yöneten kullanıcı içindir.',
+    };
   }
 
   if (x.path === '/company/copilot') {
@@ -251,6 +307,15 @@ const DRIVER = [
       { label: 'YOK', meaning: 'Bugün atanmış görev görünmüyor olabilir.', actionHint: 'Room/company tarafında sürücü atamasını kontrol et.' },
     ],
     rowReadHint: 'Önce görev ve araç bilgisini oku. Sonra saat ve durum alanıyla bugün ne yapacağını netleştir. Eksik alan varsa rota veya haritaya geçmeden önce atama tarafını kontrol et.',
+    semanticBlocks: [
+      semanticBlock({
+        semanticId: 'product:driver-today:assignment-block',
+        blockKey: 'driver-today:assignment-block',
+        label: 'Bugünkü Görev ve Atama',
+        order: 1,
+        controlSemanticIds: ['driver-today:route', 'driver-today:map'],
+      }),
+    ],
   }),
   screen(3102, '/driver/route', 'Rota', {
     menuPurpose: 'Durak sırasını ve rota akışını görmek için kullanılır.',
@@ -263,6 +328,15 @@ const DRIVER = [
     doneChecklist: ['Sıradaki durak netleşti.'],
     buttonGuides: [button('Harita aç', 'Rota için haritayı açar.', 'Yol ve konum görmek için kullan.', 'Harita ekranı açılır.')],
     screenMenus: [{ label: 'Bugün', path: '/driver/today', purpose: 'Görev özetine dönmek için açılır.' }],
+    semanticBlocks: [
+      semanticBlock({
+        semanticId: 'product:driver-route:route-block',
+        blockKey: 'driver-route:route-block',
+        label: 'Rota ve Sıradaki Durak',
+        order: 1,
+        controlSemanticIds: ['driver-route:map'],
+      }),
+    ],
   }),
   screen(3103, '/driver/map', 'Harita', {
     menuPurpose: 'Sürücünün canlı konumunu ve işi harita üzerinde görmek için kullanılır.',
@@ -639,6 +713,15 @@ const SUPER_ADMIN = [
       { key: 'SUPERADMIN_OPERATION_NEXT', title: 'Güvenli sonraki adım', action: 'Gerekirse ilgili vardiya, araç, kanıt veya kalite ekranına geç.', doneWhen: 'Bir sonraki ekran belli olur.', ifBlocked: 'Yetkisiz yönetim işlemi önermeden sadece yol göster.' },
     ],
     chatQuestions: ['Bu vardiya neden başlayamıyor?', 'Bu araç neden haritada görünmüyor?', 'Bu sözleşmeden bugün vardiya üretildi mi?', 'Bunu kim yapabilir?', 'Sürücünün telefonundan konum sinyali geliyor mu?', 'Yetkili rolü göster'],
+    semanticBlocks: [
+      semanticBlock({
+        semanticId: 'product:superadmin-operations:audit-block',
+        blockKey: 'superadmin-operations:audit-block',
+        label: 'Denetim ve Kanıt Özeti',
+        order: 1,
+        controlSemanticIds: ['superadmin-operations:refresh', 'superadmin-operations:details'],
+      }),
+    ],
   }),
   screen(6118, '/superadmin/onboarding-review', 'Başvuru İncelemesi', {
     menuPurpose: 'Public lead başvurularını insan inceleme kuyruğunda okumak için kullanılır.',
@@ -754,5 +837,215 @@ export function buildRoleHelpSummary(user, _screenContext = {}) {
     roleLabel: roleLabelForKey(key),
     screens: list.map((x) => ({ label: x.label, path: x.path, purpose: x.menuPurpose })),
     firstPath: first?.path || '',
+  };
+}
+
+function inventoryText(value, fallback = "") {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value).trim() || fallback;
+  if (Array.isArray(value)) return value.map((item) => inventoryText(item)).filter(Boolean).join(" ") || fallback;
+  if (typeof value === "object") return inventoryText(value.label || value.title || value.name || value.text || value.purpose, fallback);
+  return fallback;
+}
+
+function inventoryStableId({ roleKey, path, type, label, key = "" }) {
+  const normalized = `${roleKey}|${path}|${type}|${key || label}`
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-+|-+$/g, "");
+  return `product:${normalized}`;
+}
+
+function inventoryRow({ roleKey, roleLabel, screen, type, label, key, purpose, requiredInput, precondition, validation, recovery, workflowState, completionEvidence, nextStep, safeAction, businessWriteBoundary, source = "SCREEN_CATALOG", authorization = "authorized-role-screen", required = false, expanded = null, invalid = false }) {
+  const cleanLabel = inventoryText(label);
+  if (!cleanLabel) return null;
+  return {
+    semanticId: inventoryStableId({ roleKey, path: screen.path, type, label: cleanLabel, key }),
+    roleKey,
+    roleLabel,
+    path: screen.path,
+    screenId: Number(screen.id || 0) || null,
+    screenLabel: screen.label,
+    type,
+    label: cleanLabel,
+    targetKey: inventoryText(key),
+    required: Boolean(required),
+    expanded: typeof expanded === "boolean" ? expanded : null,
+    invalid: Boolean(invalid),
+    purpose: inventoryText(purpose, "Bu öğe yetkili ekranda bu bağlamda kullanılır."),
+    requiredInput: inventoryText(requiredInput, "Gerekli giriş yoksa Sefer Abi önce hangi bilginin gerektiğini netleştirir."),
+    precondition: inventoryText(precondition, "Ekran ve rol yetkisi doğrulanmış olmalıdır."),
+    validation: inventoryText(validation, "Geçersiz veya eksik girişte mevcut doğrulama mesajı açıklanır."),
+    recovery: inventoryText(recovery, "Sorun olursa mevcut ekran ve görünür hata durumu yeniden kontrol edilir."),
+    workflowState: inventoryText(workflowState, "Bu öğenin iş akışındaki durumu mevcut UI kanıtıyla belirlenir."),
+    completionEvidence: inventoryText(completionEvidence, "Tamamlanma yalnızca görünür UI kanıtı veya kanonik workflow durumu ile kabul edilir."),
+    nextStep: inventoryText(nextStep, "Sonraki adım doğrulanamazsa soru sorulur; uydurma işlem yapılmaz."),
+    safeAction: inventoryText(safeAction, "Gerekirse yalnızca güvenli gezinme, odaklama veya açıklama önerilir."),
+    businessWriteBoundary: inventoryText(businessWriteBoundary, "İş veya onay yazımı bu bilgi kaydından otomatik olarak çalıştırılmaz."),
+    authorization,
+    source,
+    uncertaintyBehavior: "Anlamı kanıtlanamayan durumda açıklama istenir ve işlem yürütülmez.",
+  };
+}
+
+function catalogRowsForScreen({ screen, roleKey, roleLabel }) {
+  const rows = [];
+  const add = (type, items, mapper = (item) => item) => {
+    for (const item of Array.isArray(items) ? items : []) {
+      const mapped = mapper(item);
+      const row = inventoryRow({ roleKey, roleLabel, screen, type, ...mapped });
+      if (row) rows.push(row);
+    }
+  };
+  rows.push(inventoryRow({
+    roleKey, roleLabel, screen, type: "SCREEN", label: screen.label, key: String(screen.id),
+    purpose: screen.menuPurpose, precondition: screen.forWhom, nextStep: screen.nextStep,
+    recovery: screen.stuckChecks?.join(" "), workflowState: screen.workflowStages?.map((x) => x.title).join(" → "),
+    completionEvidence: screen.doneChecklist?.join(" "), safeAction: screen.firstStep,
+  }));
+  add("MENU", screen.screenMenus, (item) => ({ label: item?.label, key: item?.path, purpose: item?.purpose, nextStep: item?.path }));
+  add("CONTROL", screen.buttonGuides, (item) => ({ label: item?.label, purpose: item?.purpose, requiredInput: item?.whenToUse, nextStep: item?.whatHappens, businessWriteBoundary: item?.riskNote }));
+  add("FIELD", screen.fieldGuides, (item) => ({ label: item?.label || item?.name, purpose: item?.purpose || item?.meaning, requiredInput: item?.required || item?.requiredInput, precondition: item?.precondition, validation: item?.validation || item?.invalid, recovery: item?.recovery }));
+  add("BADGE", screen.badgeGuides, (item) => ({ label: item?.label || item?.name, purpose: item?.meaning || item?.purpose, workflowState: item?.status || item?.state }));
+  add("WORKFLOW_STATE", screen.workflowStages, (item) => ({ label: item?.title || item?.key, key: item?.key, purpose: item?.action, completionEvidence: item?.doneWhen, recovery: item?.ifBlocked, workflowState: item?.key, nextStep: screen.nextStep }));
+  add("NAVIGATION", screen.nextScreens, (item) => ({ label: item?.label, key: item?.path, purpose: item?.reason, nextStep: item?.path, safeAction: `Yetkili ${item?.label || "ekran"} ekranına güvenli geçiş.` }));
+  add("CONTROL", screen.firstControls, (item) => ({ label: item?.label || item?.name || item, purpose: item?.purpose, nextStep: item?.nextStep, safeAction: item?.safeAction }));
+  add("RECOVERY", screen.stuckChecks, (item) => ({ label: item?.label || item?.question || item, purpose: item?.purpose || item?.meaning, recovery: item?.recovery || item?.action }));
+  add("SEMANTIC_RULE", screen.dataRules, (item) => ({ label: item?.label || item?.name || item, purpose: item?.purpose || item?.meaning, validation: item?.validation }));
+  return rows.filter(Boolean);
+}
+
+export function buildCanonicalProductKnowledgeInventory(user, { screenContext = {}, includeLive = true } = {}) {
+  const resolved = resolveAuthorizedScreenContext(user, screenContext || {}, Number(screenContext?.id || 0) || null);
+  if (resolved.status !== "FOUND" || !resolved.screen) {
+    return {
+      status: resolved.status === "UNAUTHORIZED" ? "UNAUTHORIZED" : "UNKNOWN_SCREEN",
+      roleKey: resolved.effectiveRoleKey || resolveRoleGuideKey(user),
+      elements: [],
+      observedDomInstances: 0,
+      normalizedUniqueSemanticElements: 0,
+      canonicallyCoveredUniqueElements: 0,
+      unresolvedProductKnowledgeGaps: [],
+      fabricatedProductElements: [],
+      countsByType: {},
+    };
+  }
+  const screen = resolved.screen;
+  const roleKey = resolved.effectiveRoleKey;
+  const roleLabel = resolved.screen.roleLabel || roleLabelForKey(roleKey);
+  const catalogElements = catalogRowsForScreen({ screen, roleKey, roleLabel });
+  const liveElements = includeLive && Array.isArray(screenContext?.uiHints?.semanticElements)
+    ? screenContext.uiHints.semanticElements.map((item) => inventoryRow({
+      roleKey, roleLabel, screen,
+      type: inventoryText(item?.semanticType, "element").toUpperCase(),
+      label: item?.label,
+      key: item?.targetKey,
+      purpose: `Görünür ${inventoryText(item?.semanticType, "ürün")}: ${inventoryText(item?.label)}. İş anlamı yalnızca katalog veya mevcut ekran kanıtı ile doğrulanır.`,
+      requiredInput: item?.required ? "Bu alan görünür UI tarafından zorunlu işaretlenmiş." : "Zorunluluk görünür UI tarafından doğrulanmadı.",
+      precondition: item?.expanded === false ? "Açmadan içeriği doğrulanamaz." : undefined,
+      validation: item?.invalid ? "Mevcut UI bu öğeyi geçersiz işaretliyor; hata açıklanmalıdır." : undefined,
+      recovery: item?.invalid ? "Mevcut hata mesajını ve gerekli alanı birlikte kontrol et." : undefined,
+      workflowState: screenContext?.uiHints?.workflowState?.workflowId || undefined,
+      completionEvidence: screenContext?.uiHints?.workflowState?.completedThroughOrdinal ? "Canlı workflow tamamlanma kanıtı mevcut." : undefined,
+      nextStep: screen.nextStep,
+      source: "LIVE_UI",
+      required: Boolean(item?.required),
+      expanded: typeof item?.expanded === "boolean" ? item.expanded : null,
+      invalid: Boolean(item?.invalid),
+    })).filter(Boolean)
+    : [];
+  const byId = new Map();
+  for (const row of [...catalogElements, ...liveElements]) if (!byId.has(row.semanticId)) byId.set(row.semanticId, row);
+  const elements = [...byId.values()];
+  const countsByType = elements.reduce((acc, row) => { acc[row.type] = (acc[row.type] || 0) + 1; return acc; }, {});
+  const catalogIds = new Set(catalogElements.map((row) => row.semanticId));
+  const gaps = liveElements.filter((row) => !catalogIds.has(row.semanticId)).map((row) => ({ semanticId: row.semanticId, type: row.type, label: row.label, path: row.path, reason: "Canlı öğe katalogda benzersiz iş anlamıyla eşleşmedi." }));
+  return {
+    status: "AUTHORIZED",
+    roleKey,
+    roleLabel,
+    screen: { id: screen.id, path: screen.path, label: screen.label },
+    elements,
+    observedDomInstances: liveElements.length,
+    normalizedUniqueSemanticElements: elements.length,
+    canonicallyCoveredUniqueElements: elements.filter((row) => row.source !== "LIVE_UI" || catalogIds.has(row.semanticId)).length,
+    unresolvedProductKnowledgeGaps: gaps,
+    fabricatedProductElements: [],
+    countsByType,
+  };
+}
+
+/**
+ * Returns the canonical semantic-block envelope for the authorized screen.
+ * Blocks are identity-bearing product knowledge, not DOM guesses: a live block
+ * is grounded only when its canonical blockKey/semanticId is present in the
+ * authorized screen catalog.
+ */
+export function buildCanonicalSemanticBlockInventory(user, { screenContext = {}, includeLive = true } = {}) {
+  const resolved = resolveAuthorizedScreenContext(user, screenContext || {}, Number(screenContext?.id || 0) || null);
+  if (resolved.status !== "FOUND" || !resolved.screen) {
+    return {
+      status: resolved.status === "UNAUTHORIZED" ? "UNAUTHORIZED" : "UNKNOWN_SCREEN",
+      roleKey: resolved.effectiveRoleKey || resolveRoleGuideKey(user),
+      screen: null,
+      catalogBlocks: [],
+      liveBlocks: [],
+      blocks: [],
+      authorizedSemanticBlockCount: 0,
+      groundedSemanticBlockCount: 0,
+      unresolvedSemanticBlockCount: 0,
+      fabricatedSemanticBlockCount: 0,
+    };
+  }
+  const screen = resolved.screen;
+  const roleKey = resolved.effectiveRoleKey;
+  const catalogBlocks = (Array.isArray(screen.semanticBlocks) ? screen.semanticBlocks : [])
+    .map((item) => semanticBlock(item))
+    .filter((item) => item.semanticId && item.blockKey && item.label)
+    .map((item) => ({
+      ...item,
+      purpose: item.purpose || screen.menuPurpose,
+      precondition: item.precondition || screen.forWhom,
+      workflowMeaning: item.workflowMeaning || screen.stepByStep?.[Math.max(0, Number(item.order || 1) - 1)] || screen.firstStep,
+      nextStep: item.nextStep || screen.nextStep,
+      safeAction: item.safeAction || screen.firstStep,
+      businessWriteBoundary: item.businessWriteBoundary || screen.doNotDo,
+      roleKey,
+      path: screen.path,
+      screenId: Number(screen.id || 0) || null,
+      screenLabel: screen.label,
+      authorization: "authorized-role-screen",
+      source: "SCREEN_CATALOG",
+    }));
+  const liveBlocks = includeLive && Array.isArray(screenContext?.uiHints?.semanticBlocks)
+    ? screenContext.uiHints.semanticBlocks
+      .map((item) => semanticBlock(item))
+      .filter((item) => item.semanticId || item.blockKey)
+      .map((item) => ({ ...item, roleKey, path: screen.path, source: "LIVE_UI" }))
+    : [];
+  const catalogKeys = new Set(catalogBlocks.flatMap((item) => [item.blockKey, item.semanticId]).filter(Boolean));
+  const grounded = liveBlocks.filter((item) => catalogKeys.has(item.blockKey) || catalogKeys.has(item.semanticId));
+  const unresolved = liveBlocks.filter((item) => !catalogKeys.has(item.blockKey) && !catalogKeys.has(item.semanticId));
+  const byKey = new Map();
+  for (const item of [...catalogBlocks, ...grounded]) {
+    const identity = item.blockKey || item.semanticId;
+    if (!byKey.has(identity)) byKey.set(identity, item);
+  }
+  return {
+    status: "AUTHORIZED",
+    roleKey,
+    roleLabel: roleLabelForKey(roleKey),
+    screen: { id: screen.id, path: screen.path, label: screen.label },
+    catalogBlocks,
+    liveBlocks,
+    blocks: [...byKey.values()],
+    authorizedSemanticBlockCount: catalogBlocks.length,
+    groundedSemanticBlockCount: grounded.length,
+    unresolvedSemanticBlockCount: unresolved.length,
+    unresolvedSemanticBlocks: unresolved,
+    fabricatedSemanticBlockCount: 0,
+    fabricatedSemanticBlocks: [],
   };
 }

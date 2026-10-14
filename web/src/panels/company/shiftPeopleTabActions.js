@@ -12,6 +12,7 @@ export function buildShiftPeopleTabActions(ctx) {
     importMode,
     importPeopleToBackendApi,
     loadPeopleFromBackendApi,
+    mapPersistedStopsForDisplay,
     mirrorIds,
     navigate,
     parseCsv,
@@ -40,6 +41,7 @@ export function buildShiftPeopleTabActions(ctx) {
     setPName,
     setRowGeocodeBusyId,
     setStopSummary,
+    setStopEvidenceSource,
     setStopActionBusy,
     setShiftPatchById,
     stripHubStop,
@@ -549,6 +551,7 @@ export function buildShiftPeopleTabActions(ctx) {
             setDraftStops([]);
             setStopSummary(buildStopSummary({
               base: {
+                source: "GENERATED",
                 maxWalkM: mw,
                 stopCount: Number(firstResp?.stopCount || 0),
                 coveredCount: Number(firstResp?.assignmentCount || 0),
@@ -559,6 +562,7 @@ export function buildShiftPeopleTabActions(ctx) {
               peopleInput: ctx.people,
               computeGeoStatus,
             }));
+            setStopEvidenceSource("GENERATED");
             setInfo(
               shiftCount > 1
                 ? `Durak üretimi tamamlandı: ${shiftCount} vardiya için durak üretildi. Sonraki adım: Vardiyadan Durakları Çek.`
@@ -587,11 +591,12 @@ export function buildShiftPeopleTabActions(ctx) {
     const withHub = withHubStop(stops, selectedShift);
     setDraftStops(withHub);
     setStopSummary(buildStopSummary({
-      base: { maxWalkM: mw, hubApplied: Boolean(selectedShift?.hubLat && selectedShift?.hubLng) },
+      base: { source: "LOCAL_DRAFT", maxWalkM: mw, hubApplied: Boolean(selectedShift?.hubLat && selectedShift?.hubLng) },
       stopsInput: withHub,
       peopleInput: ctx.people,
       computeGeoStatus,
     }));
+    setStopEvidenceSource("LOCAL_DRAFT");
     setInfo(stops.length ? `Taslak durak oluşturuldu: ${stops.length} durak` : "Koordinatı uygun kayıt yok - durak oluşturulamadı.");
     return true;
   }
@@ -623,25 +628,22 @@ export function buildShiftPeopleTabActions(ctx) {
       const sid = Number(selectedShiftId);
       const resp = await api(`/api/shifts/${sid}/stops`, { token });
       const list = Array.isArray(resp) ? resp : resp?.items ?? resp?.stops ?? [];
-      const mapped = (list || [])
-        .filter((s) => typeof s?.lat === "number" && typeof s?.lng === "number")
-        .map((s, i) => ({
-          id: String(s.id ?? `api_${i}`),
-          title: String(s.title || s.name || `Durak ${i + 1}`),
-          lat: s.lat,
-          lng: s.lng,
-          count: s.assignmentCount ?? null,
-          memberIds: [],
-        }));
-      const withHub = withHubStop(mapped, selectedShift);
+      const withHub = mapPersistedStopsForDisplay(list, selectedShift);
       setDraftStops(withHub);
       setStopSummary(buildStopSummary({
-        base: {},
+        base: { source: "PERSISTED_SHIFT" },
         stopsInput: withHub,
         peopleInput: ctx.people,
         computeGeoStatus,
       }));
-      setInfo(`Vardiya durakları yüklendi: ${withHub.length}`);
+      setStopEvidenceSource("PERSISTED_SHIFT");
+      const realCount = stripHubStop(withHub).length;
+      const hubCount = withHub.length - realCount;
+      setInfo(
+        hubCount
+          ? `Vardiya durakları yüklendi: ${realCount} gerçek durak + ${hubCount} toplanma konumu (${withHub.length} toplam).`
+          : `Vardiya durakları yüklendi: ${realCount} gerçek durak.`
+      );
       return withHub;
     } catch (e) {
       if (!quiet) setErr(`Vardiya durakları yüklenemedi: ${getApiErrorMessage(e)}`);

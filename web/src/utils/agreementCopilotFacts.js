@@ -153,27 +153,37 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
   const routeRefreshState = compactText(summary.routeRefreshState || summary.routeRefreshStatus || "");
   const routeRefreshRequestId = safeInt(summary.routeRefreshRequestId || summary.routeRefreshId || 0);
   const routeRefreshLabel = compactText(summary.routeRefreshLabel || (routeRefreshState ? (routeRefreshRequestId > 0 ? `Rota güncelleme #${routeRefreshRequestId}` : 'Rota güncellemesi') : ""));
-  const routeRefreshNote = compactText(summary.routeRefreshNote || routeRefreshStatusLabel(routeRefreshState) || "", "");
-  const routeRefreshChangeType = compactText(summary.routeRefreshChangeType || item?.changeType || item?.type || "");
-  const routeRefreshCurrentText = compactText(summary.routeRefreshCurrentText || "");
-  const routeRefreshProposedText = compactText(summary.routeRefreshProposedText || "");
-  const routeRefreshDiffText = compactText(summary.routeRefreshDiffText || "");
-  const routeRefreshPriceImpactText = compactText(summary.routeRefreshPriceImpactText || "");
-  const routeRefreshRoomCounterText = compactText(summary.routeRefreshRoomCounterText || "");
+  const hasRouteRefreshContext = Boolean(routeRefreshState || routeRefreshRequestId > 0 || routeRefreshLabel);
+  const routeRefreshNote = hasRouteRefreshContext
+    ? compactText(summary.routeRefreshNote || routeRefreshStatusLabel(routeRefreshState) || "", "")
+    : "";
+  const routeRefreshChangeType = hasRouteRefreshContext
+    ? compactText(summary.routeRefreshChangeType || item?.changeType || item?.type || "")
+    : "";
+  const routeRefreshCurrentText = hasRouteRefreshContext ? compactText(summary.routeRefreshCurrentText || "") : "";
+  const routeRefreshProposedText = hasRouteRefreshContext ? compactText(summary.routeRefreshProposedText || "") : "";
+  const routeRefreshDiffText = hasRouteRefreshContext ? compactText(summary.routeRefreshDiffText || "") : "";
+  const routeRefreshPriceImpactText = hasRouteRefreshContext ? compactText(summary.routeRefreshPriceImpactText || "") : "";
+  const routeRefreshRoomCounterText = hasRouteRefreshContext ? compactText(summary.routeRefreshRoomCounterText || "") : "";
   const routeRefreshCurrentPreviewShiftId = safeInt(summary.routeRefreshCurrentPreviewShiftId || 0);
   const routeRefreshProposedPreviewShiftId = safeInt(summary.routeRefreshProposedPreviewShiftId || 0);
-  const routeRefreshSummaryText = compactText(summary.routeRefreshSummaryText || [
-    routeRefreshLabel,
-    routeRefreshNote ? `Durum: ${routeRefreshNote}` : "",
-    routeRefreshChangeType ? `Tür: ${routeRefreshChangeType}` : "",
-    routeRefreshCurrentText ? `Mevcut rota: ${routeRefreshCurrentText}` : "",
-    routeRefreshProposedText ? `Yeni rota: ${routeRefreshProposedText}` : "",
-    routeRefreshDiffText ? `Fark: ${routeRefreshDiffText}` : "",
-    routeRefreshPriceImpactText ? `Ücret etkisi: ${routeRefreshPriceImpactText}` : "",
-    routeRefreshRoomCounterText ? `Taşımacılık Firması karşı teklifi: ${routeRefreshRoomCounterText}` : "",
-  ].filter(Boolean).join(" • "), "");
-  const dynamicSavingsPreview = summary.dynamicSavingsPreview && typeof summary.dynamicSavingsPreview === "object"
+  const routeRefreshSummaryText = hasRouteRefreshContext
+    ? compactText(summary.routeRefreshSummaryText || [
+      routeRefreshLabel,
+      routeRefreshNote ? `Durum: ${routeRefreshNote}` : "",
+      routeRefreshChangeType ? `Tür: ${routeRefreshChangeType}` : "",
+      routeRefreshCurrentText ? `Mevcut rota: ${routeRefreshCurrentText}` : "",
+      routeRefreshProposedText ? `Yeni rota: ${routeRefreshProposedText}` : "",
+      routeRefreshDiffText ? `Fark: ${routeRefreshDiffText}` : "",
+      routeRefreshPriceImpactText ? `Ücret etkisi: ${routeRefreshPriceImpactText}` : "",
+      routeRefreshRoomCounterText ? `Taşımacılık Firması karşı teklifi: ${routeRefreshRoomCounterText}` : "",
+    ].filter(Boolean).join(" • "), "")
+    : "";
+  const dynamicSavingsPreviewCandidate = summary.dynamicSavingsPreview && typeof summary.dynamicSavingsPreview === "object"
     ? summary.dynamicSavingsPreview
+    : null;
+  const dynamicSavingsPreview = dynamicSavingsPreviewCandidate?.ok === true
+    ? dynamicSavingsPreviewCandidate
     : null;
   const dynamicSavingsSummaryText = compactText(summary.dynamicSavingsSummaryText || summary.dynamicSavingsPreviewText || dynamicSavingsPreview?.summaryText || "");
   const dynamicSavingsCurrentText = compactText(summary.dynamicSavingsCurrentText || dynamicSavingsPreview?.currentRouteText || "");

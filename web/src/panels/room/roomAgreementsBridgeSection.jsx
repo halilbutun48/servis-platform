@@ -55,6 +55,8 @@ export default function RoomAgreementsBridgeSection({
           <button
             type="button"
             className="btn sm primary roomActionCTA"
+            data-copilot-target={copilotAgreementTarget?.id ? `room:agreements:agreement:${Number(copilotAgreementTarget.id)}:operation-bridge` : undefined}
+            data-copilot-semantic-id={copilotAgreementTarget?.id ? `product:room:agreement:${Number(copilotAgreementTarget.id)}:operation-bridge` : undefined}
             onClick={onRequestBridgeDetails}
           >
             Detayı aç

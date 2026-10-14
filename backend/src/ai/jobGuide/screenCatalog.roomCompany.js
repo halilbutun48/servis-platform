@@ -1,5 +1,5 @@
 import { pickTerms } from "./glossary.js";
-import { button, screen } from "./screenCatalog.shared.js";
+import { button, canonicalButton, screen, semanticBlock } from "./screenCatalog.shared.js";
 
 export const ROOM = [
   screen(1100, "/room", "Taşımacılık Firması Merkezi", {
@@ -69,6 +69,15 @@ export const ROOM = [
       { label: 'ONLINE', meaning: 'Canlı konum sinyali görülüyor.' },
     ],
     rowReadHint: 'Önce plaka ve shift durumunu oku. Sonra konum sinyali, son konum bilgisi ve tahmini varış süresi alanlarını birlikte değerlendir. En son toplam, tamamlanan ve kalan ile rotanın neresinde olduğunu anla.',
+    semanticBlocks: [
+      semanticBlock({
+        semanticId: 'product:room-map:live-tracking-block',
+        blockKey: 'room-map:live-tracking-block',
+        label: 'Canlı Takip',
+        order: 1,
+        controlSemanticIds: ['room-map:vehicle-select', 'room-map:refresh', 'room-map:stops-toggle'],
+      }),
+    ],
   }),
   screen(1102, "/room/offers", "Teklifler", {
     menuPurpose: "Gelen teklifleri görmek, karşılaştırmak ve karar vermek için kullanılır.",
@@ -89,7 +98,7 @@ export const ROOM = [
       { label: "Sözleşmeler", path: "/room/agreements", purpose: "İş sözleşmeye bağlıysa önce burayı kontrol et." },
     ],
     simpleTerms: pickTerms(["teklif", "sozlesme", "atama"]),
-    dataRules: ["Market, kabul ve operasyon aynı aşama değildir; aynı kaydın farklı evreleridir.", "Bu ekran yeni plan kurmaz; yeni iş için Planlama Merkezi açılır.", "Kabul edildi görünmesi operasyonun sahada başladığı anlamına gelmez; vardiya ve atama ayrıca okunur.", "Operasyon başladıysa kalite ve sonuç takibi Hizmet Değerlendirme tarafına kayar."],
+    dataRules: ["Market, kabul ve operasyon aynı aşama değildir; aynı kaydın farklı evreleridir.", "Bu ekran yeni vardiya veya talep kaydı oluşturmaz; yeni iş planını Hizmet Alan Firma başlatır.", "Kabul edildi görünmesi operasyonun sahada başladığı anlamına gelmez; vardiya ve atama ayrıca okunur.", "Operasyon başladıysa kalite ve sonuç takibi Hizmet Değerlendirme tarafına kayar."],
   }),
   screen(1103, "/room/shifts", "Vardiyalar", {
     menuPurpose: "İşleri, atamaları ve operasyon akışını yönetmek için kullanılır.",
@@ -101,7 +110,6 @@ export const ROOM = [
     commonMistakes: ["Yanlış vardiya üzerinde işlem yapmak.", "Durak bilgisi eksikken hazır sanmak."],
     doneChecklist: ["Doğru vardiya seçildi.", "Eksik alanlar görüldü."],
     buttonGuides: [
-      button("Yeni oluştur", "Yeni iş kaydı açar.", "Yeni bir iş başlatılacaksa kullan.", "Boş bir kayıt akışı açılır."),
       button("Önizle", "Seçili işin özetini gösterir.", "Karar vermeden önce hızlı özet görmek istersen kullan.", "Kısa bilgi açılır."),
       button("Süre uzat", "Seçili işin süresini uzatma akışını açar.", "İş planı uzayacaksa kullan.", "Uzatma akışı açılır."),
     ],
@@ -409,7 +417,7 @@ export const COMPANY = [
     commonMistakes: ["Konum sorunu varken plan kurmaya çalışmak.", "Planlama Merkezi ile Vardiyalar ekranının görevini karıştırmak.", "Teklif gönderdikten sonra takibi bu ekranda aramak."],
     doneChecklist: ["Konum tarafı kontrol edildi.", "Plan akışı başlatıldı.", "Teklif veya plan çıktısı üretildi.", "Takip için doğru ekrana geçildi."],
     buttonGuides: [
-      button("Rehberi Başlat", "Planlama akışını adım adım açar.", "Yeni iş kuracaksan kullan.", "Şirket konumu → plan paketi → kişi/durak → çözüm akışı açılır."),
+      canonicalButton("company:guided-plan-start", "Rehberi Başlat", "Planlama akışını adım adım açar.", "Yeni iş kuracaksan kullan.", "Şirket konumu → plan paketi → kişi/durak → çözüm akışı açılır."),
       button("Konum İncele", "Konum problemi olan kayıtları düzeltmeye götürür.", "NEEDS_REVIEW görüyorsan kullan.", "Konum inceleme ekranı açılır."),
       button("Vardiyalar", "Kurulan işin teklif ve operasyon takibine götürür.", "Plan çıktıktan sonra kullan.", "Vardiyalar ekranı açılır."),
     ],
@@ -527,6 +535,18 @@ export const COMPANY = [
       { label: 'SÖZLEŞME', meaning: 'Sözleşme tabanlı akış olduğu için klasik teklif mantığı değişebilir.' },
     ],
     rowReadHint: 'Önce durum ve hangi sekmede olduğuna bak. Sonra room, araç ve sürücü dolu mu kontrol et. En son başlangıç, bitiş ve durak bilgisiyle işin operasyon hazır olup olmadığını değerlendir.',
+    semanticBlocks: [
+      semanticBlock({
+        semanticId: 'product:company-shifts:step3:address-block',
+        blockKey: 'company-shifts:step3:address-block',
+        label: 'Vardiya Toplanma / Dağıtım Konumu',
+        order: 1,
+        controlSemanticIds: [
+          'company-shifts:step3:address-input',
+          'company-shifts:step3:address-next',
+        ],
+      }),
+    ],
   }),
   screen(2103, "/company/agreements", "Sözleşmeler", {
     menuPurpose: "Şirket tarafındaki sözleşmeli işleri görmek ve yönetmek için kullanılır.",

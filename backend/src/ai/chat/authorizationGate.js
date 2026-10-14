@@ -12,12 +12,48 @@ function integer(value) {
   return Number.isInteger(number) && number > 0 ? number : null;
 }
 
+function canonicalDomain(value) {
+  const domain = String(value || "").trim().toUpperCase();
+  return {
+    AGREEMENT: "AGREEMENTS",
+    SHIFT: "SHIFTS",
+    VEHICLE: "VEHICLES",
+    DRIVER: "DRIVERS",
+    PERSONNEL: "PERSONNEL",
+    OFFER: "OFFERS",
+    SERVICE_REQUEST: "SERVICE_REQUESTS",
+  }[domain] || domain;
+}
+
+function authorizationResult({ status, reason, deniedDomains = [], unauthorizedEntities = [], authorizedEntityRefs = [], deniedCandidateRefs = [], canonicalPolicy }) {
+  const authorizationStatus = status === "ALLOW"
+    ? (deniedCandidateRefs.length ? "REQUIRES_CLARIFICATION" : "AUTHORIZED")
+    : status === "NOT_FOUND" ? "NOT_FOUND" : "DENIED";
+  return {
+    status,
+    authorizationStatus,
+    reason,
+    deniedDomains,
+    unauthorizedEntities,
+    authorizedEntityRefs,
+    deniedCandidateRefs,
+    canonicalPolicy,
+  };
+}
+
 function roleFor(user) {
   const role = String(user?.role || "").toUpperCase();
   if (role === "COMPANY" && ["SCHOOL", "ORGANIZATION"].includes(String(user?.companyKind || "").toUpperCase())) {
     return String(user.companyKind).toUpperCase();
   }
   return role;
+}
+
+export function normalizeAuthorizationEntityType(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["service_request", "servicerequest"].includes(normalized)
+    ? "serviceRequest"
+    : normalized;
 }
 
 async function driverIdsForUser(user) {
@@ -73,7 +109,8 @@ async function authorizedEntityIds(user, entity) {
   // Student is a semantic request type backed by the authorized personnel
   // record model.  Preserve the semantic type in the plan and only map it at
   // this deterministic authorization boundary.
-  const type = entity.type === "student" ? "personnel" : entity.type;
+  const normalizedType = normalizeAuthorizationEntityType(entity.type);
+  const type = normalizedType === "student" ? "personnel" : normalizedType;
   const scope = await scopedWhere(user, type);
   if (type === "shift") {
     const rows = await prisma.shift.findMany({ where: { ...scope, id: { in: ids } }, select: { id: true } });
@@ -151,23 +188,66 @@ async function authorizedEntityIds(user, entity) {
   return [];
 }
 
-export async function authorizeSemanticRequest({ user, plan } = {}) {
+export async function authorizeSemanticRequest({ user, plan, request } = {}) {
+  const isSupportedCanonicalTransport = (candidate) => ["SEFER-ABI-CANONICAL-REQUEST-V2", "SEFER-ABI-CANONICAL-REQUEST-V3"].includes(candidate?.version);
+  const canonicalRequest = isSupportedCanonicalTransport(request)
+    ? request
+    : isSupportedCanonicalTransport(plan?.request)
+      ? plan.request
+      : null;
+  if (request && !canonicalRequest) {
+    return authorizationResult({
+      status: "DENY",
+      reason: "CANONICAL_REQUEST_UNRESOLVED",
+      canonicalPolicy: "CANONICAL_REQUEST_VALIDATION_REQUIRED",
+    });
+  }
+  const semanticPlan = canonicalRequest ? plan?.plan || {} : plan || {};
+  const plannerState = plan?.plan || plan || {};
+  const collectionRead = Boolean(
+    canonicalRequest?.operation === "VIEW_AUTHORIZED_SURFACE"
+      && plannerState?.typedRequest?.taskType === "SCREEN_CONTEXT"
+      && plannerState?.typedRequest?.selectedRecordIntent !== true
+      && plannerState?.typedRequest?.recordDetailsIntent !== true,
+  );
   const role = roleFor(user);
   const capabilities = getRoleDomainCapabilities(user).capabilities || {};
-  const requestedDomains = Array.isArray(plan?.requestedDomains) ? plan.requestedDomains : [];
+  const requestedDomains = canonicalRequest
+    ? [canonicalDomain(canonicalRequest.domain)].filter(Boolean)
+    : Array.isArray(semanticPlan?.requestedDomains) ? semanticPlan.requestedDomains : [];
+  const createShiftOperation = canonicalRequest?.operation === "CREATE_SHIFT"
+    && canonicalRequest?.semanticAction?.actionClass === "CREATE";
+  const createShiftAuthorizedRole = role === "COMPANY" || role === "SUPER_ADMIN";
+  // CREATE is a semantic action, not a permission grant.  The read-domain
+  // capability map must not authorize a create workflow for roles that do not
+  // own that capability.  ROOM is intentionally mapped upstream to the
+  // existing-shift read surface and therefore does not enter this branch.
+  if (createShiftOperation && !createShiftAuthorizedRole) {
+    return authorizationResult({
+      status: "DENY",
+      reason: "CREATE_CAPABILITY_DENIED_BY_ROLE",
+      deniedDomains: ["SHIFTS"],
+      unauthorizedEntities: [],
+      deniedCandidateRefs: canonicalRequest?.candidateEntityRefs || [],
+      canonicalPolicy: "ROLE_CREATE_CAPABILITY_BOUNDARY",
+    });
+  }
   const deniedDomains = requestedDomains.filter((domain) => PROTECTED_DOMAINS.has(domain) && capabilities[domain] !== "ALLOW_READ" && capabilities[domain] !== "CONDITIONAL_RECORD_SCOPE");
-  const crossTenant = Boolean(plan?.crossTenantRequested);
+  const crossTenant = Boolean(semanticPlan?.crossTenantRequested || canonicalRequest?.candidateEntityRefs?.some((ref) => ref?.tenantId && Number(ref.tenantId) !== Number(user?.companyId)));
   if ((crossTenant && role !== "SUPER_ADMIN") || deniedDomains.length) {
-    return {
+    return authorizationResult({
       status: "DENY",
       reason: crossTenant && role !== "SUPER_ADMIN" ? "TENANT_SCOPE_DENIED_BEFORE_RETRIEVAL" : "DOMAIN_CAPABILITY_DENIED",
       deniedDomains,
       unauthorizedEntities: [],
+      deniedCandidateRefs: canonicalRequest?.candidateEntityRefs || [],
       canonicalPolicy: role === "SUPER_ADMIN" ? "SUPER_ADMIN_ALLOW_READ_ALL_DOMAINS" : "ROLE_TENANT_SCOPE",
-    };
+    });
   }
 
-  const entities = Array.isArray(plan?.entities) ? plan.entities : plan?.entity ? [plan.entity] : [];
+  const entities = canonicalRequest
+    ? (Array.isArray(canonicalRequest.candidateEntityRefs) ? canonicalRequest.candidateEntityRefs.filter((ref) => ref?.id) : [])
+    : Array.isArray(semanticPlan?.entities) ? semanticPlan.entities : semanticPlan?.entity ? [semanticPlan.entity] : [];
   const unauthorizedEntities = [];
   for (const entity of entities) {
     if (!entity?.id || role === "SUPER_ADMIN") continue;
@@ -181,21 +261,28 @@ export async function authorizeSemanticRequest({ user, plan } = {}) {
     if (!allowedIds.includes(integer(entity.id))) unauthorizedEntities.push({ type: entity.type, id: integer(entity.id) });
   }
   if (unauthorizedEntities.length) {
-    return {
+    return authorizationResult({
       status: "DENY",
       reason: "RECORD_SCOPE_DENIED_BEFORE_RETRIEVAL",
       deniedDomains: requestedDomains,
       unauthorizedEntities,
+      deniedCandidateRefs: unauthorizedEntities,
       canonicalPolicy: "ROLE_TENANT_SCOPE",
-    };
+    });
   }
-  return {
+  return authorizationResult({
     status: "ALLOW",
     reason: role === "SUPER_ADMIN" ? "SUPER_ADMIN_CANONICAL_READ_SCOPE" : "CANONICAL_RBAC_AND_TENANT_SCOPE_ALLOW",
     deniedDomains: [],
     unauthorizedEntities: [],
+    authorizedEntityRefs: entities.map((entity) => ({ type: entity.type, id: integer(entity.id) })).filter((entity) => entity.id),
+    deniedCandidateRefs: canonicalRequest
+      ? (canonicalRequest.candidateEntityRefs || []).filter((ref) => !ref?.id
+        && !(collectionRead && ref?.source === "TEXT_ENTITY_CANDIDATE")
+        && !(createShiftOperation && createShiftAuthorizedRole && ref?.source === "TEXT_ENTITY_CANDIDATE"))
+      : [],
     canonicalPolicy: role === "SUPER_ADMIN" ? "SUPER_ADMIN_ALLOW_READ_ALL_DOMAINS" : "ROLE_TENANT_SCOPE",
-  };
+  });
 }
 
 export function authorizationBoundaryReply(decision) {

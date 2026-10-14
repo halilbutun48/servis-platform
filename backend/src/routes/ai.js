@@ -34,7 +34,6 @@ export function aiRouter() {
       if (!parsed.success) {
         throw httpError(400, "VALIDATION_ERROR", "Bunu anlayamadım. Kısaca ne yapmak istediğini yazabilir misin?", parsed.error.flatten());
       }
-
       const role = String(req.user?.role || "");
       const isCoreRole = ["SUPER_ADMIN", "ROOM", "COMPANY"].includes(role);
       const isSimpleGuideRole = ["DRIVER", "PERSONEL", "PARENT"].includes(role)
@@ -52,7 +51,7 @@ export function aiRouter() {
       const payload = await runCopilotFoundation({
         ...parsed.data,
         user: copilotUser,
-        authSessionId: [req.auth?.userId, req.auth?.iat, req.auth?.sv, req.auth?.pwdChangeOnly ? "pwd" : "full"].filter(Boolean).join(":"),
+        authSessionId: [req.auth?.userId, req.auth?.jti || req.auth?.sid || req.auth?.iat, req.auth?.sv, req.auth?.pwdChangeOnly ? "pwd" : "full"].filter(Boolean).join(":"),
       });
 
       await audit(req, {

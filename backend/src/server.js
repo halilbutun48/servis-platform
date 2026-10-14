@@ -381,7 +381,13 @@ async function shutdown() {
   try {
     await stopMonitors?.();
   } catch {}
-  server.close(() => process.exit(0));
+  // Socket.IO owns the upgraded HTTP/WebSocket connections. Calling only
+  // server.close() waits indefinitely when a browser keeps a live socket,
+  // which prevents nodemon from replacing the child after SIGTERM.
+  try {
+    await io.close();
+  } catch {}
+  process.exit(0);
 }
 
 process.on("SIGTERM", shutdown);

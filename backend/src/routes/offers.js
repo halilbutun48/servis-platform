@@ -12,6 +12,7 @@ import { httpError, sendErrorResponse } from "../errors/http.js";
 import { validateWithZod } from "../z.js";
 import { findPackageShiftIdsByShiftId } from "../services/shiftPackage.js";
 import { wrapAsyncRouterMethods } from "../middleware/asyncHandler.js";
+import { sanitizeUserFacingOfferNote } from "../services/userFacingOfferNote.js";
 
 import { counterShiftOfferSchema } from "./shifts/schemas.js";
 import * as H from "./shifts/helpers.js";
@@ -76,6 +77,8 @@ async function loadCompanyDirectoryItems(where, take) {
   });
   return items.map((item) => ({
     ...item,
+    noteCompany: sanitizeUserFacingOfferNote(item.noteCompany),
+    noteRoom: sanitizeUserFacingOfferNote(item.noteRoom),
     shift: item.shift ? decorateShiftWithRegionContext(item.shift) : item.shift,
   }));
 }
@@ -301,6 +304,8 @@ export function offersRouter(io) {
 
           return {
             ...o,
+            noteCompany: sanitizeUserFacingOfferNote(o.noteCompany),
+            noteRoom: sanitizeUserFacingOfferNote(o.noteRoom),
             shift: o.shift
               ? {
                   ...decorateShiftWithRegionContext(o.shift),

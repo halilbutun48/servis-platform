@@ -55,9 +55,56 @@ const buildShiftsWhereFromQuery =
 const getDriverIdOrThrow = H.getDriverIdOrThrow;
 const getPersonelIdOrThrow = H.getPersonelIdOrThrow;
 const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
+const buildGuidedDraftResumeCandidates = H.buildGuidedDraftResumeCandidates;
 
 // Shared endpoints: list, my, detail
 export function attachShiftSharedRoutes(r) {
+  // Server-backed guided draft discovery.  Provenance comes from the
+  // canonical SHIFT_CREATE/GUIDED_BATCH audit contract; client heuristics
+  // alone must never expose an arbitrary DRAFT as resumable.
+  r.get(
+    "/guided-drafts",
+    authRequired(),
+    requireRole("COMPANY", "SUPER_ADMIN"),
+    asyncHandler(async (req, res) => {
+      const where = buildShiftsWhereFromQuery(
+        { status: "DRAFT", includeDrafts: "1" },
+        req.user,
+      );
+      const rows = await prisma.shift.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: 50,
+        include: {
+          stops: { orderBy: { order: "asc" } },
+          offers: { select: { id: true, roomId: true, status: true } },
+          _count: { select: { people: true, assignments: true } },
+        },
+      });
+
+      const ids = rows.map((row) => Number(row.id)).filter((id) => Number.isFinite(id) && id > 0);
+      if (!ids.length) return res.json({ items: [] });
+
+      const audits = await prisma.auditLog.findMany({
+        where: {
+          entity: "Shift",
+          entityId: { in: ids },
+          action: "SHIFT_CREATE",
+          actorRole: { in: ["COMPANY", "SUPER_ADMIN"] },
+        },
+        orderBy: { createdAt: "desc" },
+        select: { entityId: true, action: true, actorRole: true, meta: true, createdAt: true },
+      });
+
+      const mappedRows = rows.map((row) => ({
+        ...row,
+        peopleCount: Number(row?._count?.people || 0),
+      }));
+      const candidates = buildGuidedDraftResumeCandidates(mappedRows, audits, req.user)
+        .map((candidate) => sanitizeShiftParticipantPayload(candidate, { role: req.user?.role }));
+      return res.json({ items: candidates });
+    }),
+  );
   
   r.get(
     "/:id/operation-events",

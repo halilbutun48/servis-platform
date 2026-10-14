@@ -63,7 +63,15 @@ function formatTRY(value) {
   if (value === null || value === undefined || String(value).trim() === "") return "-";
   const n = Number(value);
   if (!Number.isFinite(n)) return "-";
-  return `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(n)} ₺`;
+  const major = n / 100;
+  return `${new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(major)} ₺`;
+}
+
+function formatPeople(value) {
+  if (value === null || value === undefined || String(value).trim() === "") return "UNKNOWN";
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return "UNKNOWN";
+  return `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(n)} kişi`;
 }
 
 function formatBps(value) {
@@ -636,6 +644,11 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
   const quoteFloorStateLabel = quoteFloorComputed ? "Teklif tabanı hazır" : "Teklif tabanı bekliyor";
   const quoteFloorStateTone = quoteFloorComputed ? "good" : "warm";
   const currentRoomDraftLabel = lifecycleStateLabel(currentRoomQuoteFloorDraft?.status || "DRAFT");
+  const draftSnapshot = currentRoomQuoteFloorDraft?.inputSnapshot || null;
+  const draftPassengerCount = draftSnapshot?.costInputs?.passengerCount ?? draftSnapshot?.passengerCount ?? null;
+  const draftPassengerLabel = formatPeople(draftPassengerCount);
+  const livePassengerLabel = formatPeople(snapshot.passengerCount);
+  const livePreviewSourceLabel = snapshot.sourceLabel ? `Canlı ${snapshot.sourceLabel}` : "Canlı vardiya önizlemesi";
   const baselineSourceHuman = baselineSourceLabel(quoteFloor?.baselineSource || currentRoomQuoteFloorDraft?.baselineSource || form.baselineSource);
   const periodLabel = visibleText(
     preview?.period?.periodLabel
@@ -707,7 +720,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
       <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
         <MetricCard title={meta.currentLabel} value={formatTRY(currentAmountMinor)} note={snapshotCurrentAmountLabel} tone={currentAmountMinor != null ? "good" : "default"} />
         <MetricCard title={meta.baselineLabel} value={formatTRY(baselineMinor)} note={baselineSourceHuman} tone={quoteFloorComputed ? "good" : "warm"} />
-        <MetricCard title={meta.resultLabel} value={formatTRY(quoteFloor?.quoteFloorMinor)} note={quoteFloorComputed ? `Kişi başı ${formatTRY(quoteFloor?.quoteFloorPerPassengerMinor)}` : "Maliyet bilgileri bekleniyor"} tone={quoteFloorComputed ? "good" : "warm"} />
+        <MetricCard title={meta.resultLabel} value={quoteFloorComputed ? formatTRY(quoteFloor?.quoteFloorMinor) : "UNKNOWN"} note={quoteFloorComputed ? `${livePreviewSourceLabel} • ${livePassengerLabel} • Kişi başı ${formatTRY(quoteFloor?.quoteFloorPerPassengerMinor)}` : "Maliyet bilgileri bekleniyor"} tone={quoteFloorComputed ? "good" : "warm"} />
         <MetricCard title={meta.amountGapLabel} value={formatTRY(currentGapMinor)} note="Planlanan teklif - tahmini maliyet" tone={currentGapMinor != null && Number(currentGapMinor) >= 0 ? "good" : "warm"} />
         <MetricCard title="Veri güveni" value={confidenceValue || "Bilinmiyor"} note={modelStatusValue || "Model durumu"} tone={confidenceMetricTone} />
       </div>
@@ -729,7 +742,14 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
       </details>
       <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
         <details className="card" style={{ minWidth: 0 }} open={roomDetailsOpen} onToggle={(event) => setRoomDetailsOpen(event.currentTarget.open)}>
-          <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Teklif detayları</summary>
+          <summary
+            className="panelSectionTitle"
+            style={{ cursor: "pointer" }}
+            data-copilot-target="room:financial-operations:quote-floor-details"
+            data-copilot-semantic-id="product:room:financial-operations:quote-floor-details"
+          >
+            Teklif detayları
+          </summary>
           <div className="card" style={{ minWidth: 0, marginTop: 12 }}>
           <div className="panelSectionTitle">Teklif tabanı yaşam döngüsü</div>
           <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
@@ -757,8 +777,9 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
             <MetricCard
               title="Teklif tabanı"
               value={formatTRY(currentRoomQuoteFloorDraft?.quoteFloorMinor ?? form.quoteFloorMinor)}
-              note={currentRoomQuoteFloorDraft?.quoteFloorPerPassengerMinor != null ? `Kişi başı ${formatTRY(currentRoomQuoteFloorDraft.quoteFloorPerPassengerMinor)}` : "Hesap bekliyor"}
+              note={currentRoomQuoteFloorDraft?.quoteFloorPerPassengerMinor != null ? `Taslak snapshot ${draftPassengerLabel} • Kişi başı ${formatTRY(currentRoomQuoteFloorDraft.quoteFloorPerPassengerMinor)}` : "Hesap bekliyor"}
             />
+            <MetricCard title="Taslak snapshot kişi sayısı" value={draftPassengerLabel} note="Taslak girdisinden okunur; canlı vardiya değildir." />
           </div>
           <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
             <div className="muted">Dönem: <b>{periodLabel}</b></div>
@@ -949,7 +970,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
             <div className="card" style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
               <MetricCard title={meta.currentLabel} value={formatTRY(currentAmountMinor)} note={snapshotCounterLabel} tone={currentAmountMinor != null ? "good" : "default"} />
               <MetricCard title={meta.amountGapLabel} value={formatTRY(currentGapMinor)} note="Planlanan teklif - tahmini maliyet" tone={currentGapMinor != null && Number(currentGapMinor) >= 0 ? "good" : "warm"} />
-              <MetricCard title={meta.resultLabel} value={formatTRY(quoteFloor?.quoteFloorMinor)} note={quoteFloorComputed ? `Kişi başı ${formatTRY(quoteFloor?.quoteFloorPerPassengerMinor)}` : "Maliyet bilgileri bekleniyor"} tone={quoteFloorComputed ? "good" : "warm"} />
+              <MetricCard title={meta.resultLabel} value={quoteFloorComputed ? formatTRY(quoteFloor?.quoteFloorMinor) : "UNKNOWN"} note={quoteFloorComputed ? `${livePreviewSourceLabel} • ${livePassengerLabel} • Kişi başı ${formatTRY(quoteFloor?.quoteFloorPerPassengerMinor)}` : "Maliyet bilgileri bekleniyor"} tone={quoteFloorComputed ? "good" : "warm"} />
             </div>
           </div>
         </details>
@@ -988,6 +1009,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
               <div className="muted">Aktif sözleşme: <b>{snapshot.activeAgreementCount || 0}</b></div>
               <div className="muted">Açık teklif: <b>{snapshot.openOfferCount || 0}</b></div>
               <div className="muted">Karşı teklif: <b>{snapshot.counterOfferCount || 0}</b></div>
+              <div className="muted">Canlı önizleme kişi sayısı: <b>{livePassengerLabel}</b></div>
               <div className="muted">Firma rolü: <b>{snapshotCounterLabel}</b></div>
             </div>
           </div>

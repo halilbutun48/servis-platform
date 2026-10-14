@@ -91,6 +91,60 @@ async function ensureVehicleScope(user, vehicle) {
   throw e;
 }
 
+async function ensureDriverScope(user, driver) {
+  if (!driver) {
+    const e = new Error("DRIVER_NOT_FOUND");
+    e.status = 404;
+    e.code = "DRIVER_NOT_FOUND";
+    throw e;
+  }
+  if (String(user.role) === "SUPER_ADMIN") return;
+  if (String(user.role) === "ROOM" && Number(driver.roomId) === Number(user.roomId || 0)) return;
+  if (String(user.role) === "DRIVER" && Number(driver.userId) === Number(user.id || 0)) return;
+  if (String(user.role) === "COMPANY") {
+    const linked = await prisma.shift.findFirst({ where: { companyId: Number(user.companyId || 0), driverId: Number(driver.id) }, select: { id: true } });
+    if (linked) return;
+  }
+  const e = new Error("FORBIDDEN");
+  e.status = 403;
+  e.code = "FORBIDDEN";
+  throw e;
+}
+
+async function ensureOfferScope(user, offer) {
+  if (!offer) {
+    const e = new Error("OFFER_NOT_FOUND");
+    e.status = 404;
+    e.code = "OFFER_NOT_FOUND";
+    throw e;
+  }
+  if (String(user.role) === "SUPER_ADMIN") return;
+  if (String(user.role) === "ROOM" && Number(offer.roomId) === Number(user.roomId || 0)) return;
+  if (String(user.role) === "COMPANY" && Number(offer.shift?.companyId) === Number(user.companyId || 0)) return;
+  if (String(user.role) === "DRIVER" && Number(offer.shift?.driver?.userId) === Number(user.id || 0)) return;
+  const e = new Error("FORBIDDEN");
+  e.status = 403;
+  e.code = "FORBIDDEN";
+  throw e;
+}
+
+async function ensureAgreementScope(user, agreement) {
+  if (!agreement) {
+    const e = new Error("AGREEMENT_NOT_FOUND");
+    e.status = 404;
+    e.code = "AGREEMENT_NOT_FOUND";
+    throw e;
+  }
+  if (String(user.role) === "SUPER_ADMIN") return;
+  if (String(user.role) === "ROOM" && Number(agreement.roomId) === Number(user.roomId || 0)) return;
+  if (String(user.role) === "COMPANY" && Number(agreement.companyId) === Number(user.companyId || 0)) return;
+  if (String(user.role) === "DRIVER" && Number(agreement.driver?.userId) === Number(user.id || 0)) return;
+  const e = new Error("FORBIDDEN");
+  e.status = 403;
+  e.code = "FORBIDDEN";
+  throw e;
+}
+
 function buildShiftFacts(shift) {
   const facts = [];
   facts.push(`Durum: ${shift.status}`);
@@ -413,6 +467,7 @@ export async function getShiftContext(user, shiftId) {
       offers: { select: { id: true, roomId: true, status: true } },
       agreement: { select: { id: true, status: true, startDate: true, endDate: true } },
       progress: { select: { id: true, lastReachedOrder: true, startedAt: true, pausedAt: true, completedAt: true } },
+      checkinEvents: { select: { eventType: true } },
       _count: { select: { people: true, assignments: true } },
       organizationPlan: { select: { id: true, stops: { select: { passengerCount: true } } } },
     },
@@ -429,6 +484,11 @@ export async function getShiftContext(user, shiftId) {
     Number(orgPassengerCount || 0),
     0
   );
+  const checkinEvents = Array.isArray(shift?.checkinEvents) ? shift.checkinEvents : [];
+  const checkinCounts = {
+    BOARD: checkinEvents.filter((event) => String(event?.eventType || "").toUpperCase() === "BOARD").length,
+    ALIGHT: checkinEvents.filter((event) => String(event?.eventType || "").toUpperCase() === "ALIGHT").length,
+  };
 
   return {
     id: shift.id,
@@ -463,6 +523,9 @@ export async function getShiftContext(user, shiftId) {
     extendRequestedEndAt: shift.extendRequestedEndAt,
     extendDecision: shift.extendDecision,
     progress: shift.progress,
+    checkinCounts,
+    boardingCount: checkinCounts.BOARD,
+    alightingCount: checkinCounts.ALIGHT,
   };
 }
 
@@ -503,6 +566,70 @@ export async function getVehicleContext(user, vehicleId) {
     currentShiftIds: Array.isArray(vehicle.shifts) ? vehicle.shifts.map((x) => x.id) : [],
     currentCompanyNames,
   };
+}
+
+export async function getDriverContext(user, driverId) {
+  const driver = await prisma.driver.findUnique({
+    where: { id: Number(driverId) },
+    include: {
+      room: { select: { id: true, name: true } },
+      user: { select: { id: true, role: true } },
+      vehicles: { select: { id: true, plate: true, status: true, roomId: true } },
+      shifts: {
+        where: { status: { in: ["APPROVED", "ACTIVE", "REQUESTED"] } },
+        orderBy: [{ startAt: "desc" }],
+        take: 5,
+        select: { id: true, status: true, companyId: true, roomId: true, vehicle: { select: { id: true, plate: true } } },
+      },
+    },
+  });
+  await ensureDriverScope(user, driver);
+  return {
+    id: driver.id,
+    type: "driver",
+    roomId: driver.roomId,
+    fullName: driver.fullName,
+    userId: driver.userId,
+    user: driver.user,
+    room: driver.room,
+    vehicles: driver.vehicles || [],
+    shifts: driver.shifts || [],
+  };
+}
+
+export async function getOfferContext(user, offerId) {
+  const offer = await prisma.shiftOffer.findUnique({
+    where: { id: Number(offerId) },
+    include: {
+      room: { select: { id: true, name: true } },
+      shift: {
+        select: {
+          id: true, status: true, companyId: true, roomId: true, startAt: true, endAt: true,
+          company: { select: { id: true, name: true } },
+          room: { select: { id: true, name: true } },
+          driver: { select: { id: true, fullName: true, userId: true } },
+          vehicle: { select: { id: true, plate: true } },
+        },
+      },
+    },
+  });
+  await ensureOfferScope(user, offer);
+  return { id: offer.id, type: "offer", roomId: offer.roomId, status: offer.status, amountCompany: offer.amountCompany, amountRoom: offer.amountRoom, noteCompany: offer.noteCompany, noteRoom: offer.noteRoom, room: offer.room, shift: offer.shift };
+}
+
+export async function getAgreementContext(user, agreementId) {
+  const agreement = await prisma.agreement.findUnique({
+    where: { id: Number(agreementId) },
+    include: {
+      room: { select: { id: true, name: true } },
+      company: { select: { id: true, name: true } },
+      driver: { select: { id: true, fullName: true, userId: true } },
+      vehicle: { select: { id: true, plate: true } },
+      shifts: { select: { id: true, status: true, startAt: true, endAt: true }, orderBy: [{ startAt: "desc" }], take: 5 },
+    },
+  });
+  await ensureAgreementScope(user, agreement);
+  return { id: agreement.id, type: "agreement", roomId: agreement.roomId, companyId: agreement.companyId, status: agreement.status, company: agreement.company, room: agreement.room, driver: agreement.driver, vehicle: agreement.vehicle, shifts: agreement.shifts || [], startDate: agreement.startDate, endDate: agreement.endDate };
 }
 
 function clamp(min, value, max) {

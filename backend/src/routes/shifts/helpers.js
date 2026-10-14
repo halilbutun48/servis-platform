@@ -315,6 +315,83 @@ export function buildShiftsWhereFromQuery(query, user) {
   return where;
 }
 
+function isGuidedBatchDraftCreationAudit(row) {
+  const meta = row?.meta && typeof row.meta === "object" ? row.meta : {};
+  return (
+    row?.action === "SHIFT_CREATE" &&
+    ["COMPANY", "SUPER_ADMIN"].includes(String(row?.actorRole || "").toUpperCase()) &&
+    String(meta?.via || "").toUpperCase() === "GUIDED_BATCH" &&
+    String(meta?.status || "").toUpperCase() === "DRAFT"
+  );
+}
+
+function hasFinitePair(a, b) {
+  return Number.isFinite(Number(a)) && Number.isFinite(Number(b));
+}
+
+function hasValidSchedule(shift) {
+  const start = Date.parse(String(shift?.startAt || ""));
+  const end = Date.parse(String(shift?.endAt || ""));
+  return Number.isFinite(start) && Number.isFinite(end) && end > start;
+}
+
+/**
+ * Derives only the highest guided step proven by persisted prerequisites.
+ * A personnel-only or stops-only partial state is deliberately not enough
+ * for Step 3; it falls back to the earliest proven precondition step.
+ */
+export function deriveGuidedDraftResumeStep(shift) {
+  const locationAndScheduleReady = hasFinitePair(shift?.hubLat, shift?.hubLng) && hasValidSchedule(shift);
+  if (!locationAndScheduleReady) return 0;
+
+  const peopleCount = Number(shift?.peopleCount ?? shift?._count?.people ?? 0);
+  const stopCount = Array.isArray(shift?.stops)
+    ? shift.stops.length
+    : Number(shift?.stopCount ?? 0);
+  const personnelReady = Number.isFinite(peopleCount) && peopleCount > 0;
+  const stopsReady = Number.isFinite(stopCount) && stopCount > 0;
+  return personnelReady && stopsReady ? 2 : 1;
+}
+
+/**
+ * Selects only server drafts with canonical guided provenance.  The caller
+ * must pass the already tenant-scoped server rows; this helper repeats the
+ * tenant check so a future caller cannot accidentally widen the scope.
+ */
+export function buildGuidedDraftResumeCandidates(shifts, auditRows, user) {
+  const role = String(user?.role || "").toUpperCase();
+  if (!['COMPANY', 'SUPER_ADMIN'].includes(role)) return [];
+
+  const guidedIds = new Set(
+    (Array.isArray(auditRows) ? auditRows : [])
+      .filter(isGuidedBatchDraftCreationAudit)
+      .map((row) => Number(row?.entityId))
+      .filter((id) => Number.isFinite(id) && id > 0)
+  );
+
+  return (Array.isArray(shifts) ? shifts : [])
+    .filter((shift) => {
+      const id = Number(shift?.id);
+      if (!Number.isFinite(id) || !guidedIds.has(id)) return false;
+      if (String(shift?.status || '').toUpperCase() !== 'DRAFT') return false;
+      if (role === 'COMPANY' && Number(shift?.companyId) !== Number(user?.companyId)) return false;
+      if (shift?.roomId != null) return false;
+      if (Array.isArray(shift?.offers) && shift.offers.length > 0) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const at = Date.parse(String(a?.createdAt || ""));
+      const bt = Date.parse(String(b?.createdAt || ""));
+      if (Number.isFinite(bt) && Number.isFinite(at) && bt !== at) return bt - at;
+      return Number(b?.id || 0) - Number(a?.id || 0);
+    })
+    .map((shift) => ({
+      ...shift,
+      guidedProvenance: 'GUIDED_BATCH',
+      resumeStep: deriveGuidedDraftResumeStep(shift),
+    }));
+}
+
 // =======================
 // Identity helpers (used by /api/shifts/my)
 // =======================

@@ -736,6 +736,7 @@ export function buildOperationHealthCopilotFacts({
   summary,
   copilotDriver,
   copilotIssue,
+  roomOperations = null,
 }) {
   const counters = {
     activeDrivers: Number(summary?.cards?.activeDrivers || 0),
@@ -747,7 +748,17 @@ export function buildOperationHealthCopilotFacts({
   const summaryText = hasSignal
     ? `Şimdi: En kritik sorun canlılık ve cihaz riski. Aktif sürücü ${Number.isFinite(counters.activeDrivers) ? counters.activeDrivers : 0}, riskli cihaz ${Number.isFinite(counters.riskyDevices) ? counters.riskyDevices : 0}, GPS güncel değil / çevrim dışı ${Number.isFinite(counters.staleOrOffline) ? counters.staleOrOffline : 0} ve açık sorun ${Number.isFinite(counters.openIssues) ? counters.openIssues : 0} görünüyor.`
     : 'Şimdi: Bu ekranda somut operasyon sağlığı sinyali görünmüyor; açık sorun, riskli cihaz, aktif sürücü ve GPS güncel değil / çevrim dışı satırlarını kontrol et.';
-  return buildReadonlyCopilotFacts({
+  const projectionMetric = (value) => typeof value === 'number' && Number.isFinite(value) ? value : null;
+  const projectionMetrics = {
+    dailyShiftTotal: projectionMetric(roomOperations?.shiftSummary?.total),
+    dailyVehicleTotal: projectionMetric(roomOperations?.vehicleSummary?.total),
+    dailyDriverTotal: projectionMetric(roomOperations?.driverSummary?.total),
+    dailyRequestTotal: Array.isArray(roomOperations?.requests) ? roomOperations.requests.length : null,
+    shiftWindowFrom: roomOperations?.shiftSummary?.from || null,
+    shiftWindowTo: roomOperations?.shiftSummary?.to || null,
+    source: 'ROOM_OPERATION_HEALTH_DAILY_REPORTS',
+  };
+  const readonlyFacts = buildReadonlyCopilotFacts({
     screenType: 'OPERATION_HEALTH',
     stage: String(summary?.status || 'ROOM_VIEW').toUpperCase(),
     readiness: counters.openIssues > 0 || counters.riskyDevices > 0 || counters.staleOrOffline > 0 ? 'REVIEW_NEEDED' : 'READY',
@@ -783,6 +794,7 @@ export function buildOperationHealthCopilotFacts({
     ].filter(Boolean),
     boundaryNotes: ['Bu ekran operasyon sağlığı içindir.'],
   });
+  return { ...readonlyFacts, projectionMetrics };
 }
 
 export function buildTrustQualityCopilotFacts({
@@ -1960,10 +1972,15 @@ function finalizeStarterChips(primary = [], fallback = []) {
 export function buildCopilotStarterChips({
   screenPath = '',
   selection = null,
+  role = '',
 } = {}) {
   const path = compactText(screenPath, '').split('?')[0];
+  const isRoomAgreementPath = path.includes('/room/agreements');
   const selectionText = selectionStarterText(selection);
   const fallback = ['Bu ekranda neye bakmalıyım?', 'Riskleri sırala', 'Sıradaki doğru işlem ne?'];
+  const surfaceRole = compactText(role, '').toUpperCase();
+  const roomRoleMismatch = (path === '/room' || path.startsWith('/room/')) && surfaceRole && surfaceRole !== 'ROOM';
+  if (roomRoleMismatch) return finalizeStarterChips([], fallback);
 
   const isBoardingApplication = selection?.facts?.screenType === 'BOARDING_CHANGE_APPLICATION'
     || selection?.liveFacts?.screenType === 'BOARDING_CHANGE_APPLICATION'
@@ -2049,7 +2066,7 @@ export function buildCopilotStarterChips({
   );
   const isDriverToday = path.includes('/driver/today');
   const isDriverRouteOrMap = path.includes('/driver/route') || path.includes('/driver/map');
-  if (isDynamicSavingsPreview) {
+  if (isDynamicSavingsPreview && !isRoomAgreementPath) {
     return finalizeStarterChips([
       'Tasarruf hesabını göster',
       'Km / süre farkını açıkla',
@@ -2057,7 +2074,7 @@ export function buildCopilotStarterChips({
       'Yaklaşık maliyet etkisini açıkla',
     ], fallback);
   }
-  if (isSeferScorePreview) {
+  if (isSeferScorePreview && !isRoomAgreementPath) {
     return finalizeStarterChips([
       'Bu tedarikçinin SeferPuanı kaç?',
       'Kalite puanı neden düşük?',
@@ -2065,7 +2082,7 @@ export function buildCopilotStarterChips({
       'SeferPuanı nasıl yükselir?',
     ], fallback);
   }
-  if (isMarketplaceFreeToOperatePreview) {
+  if (isMarketplaceFreeToOperatePreview && !isRoomAgreementPath) {
     return finalizeStarterChips([
       'Sözleşme ödeme modeli nedir?',
       'Ödeme hazırlığı hangi aşamada?',
@@ -2074,7 +2091,7 @@ export function buildCopilotStarterChips({
       'Bu sözleşme SeferPakt kaynaklı mı?',
     ], fallback);
   }
-  if (isQualityPaymentBridgePreview) {
+  if (isQualityPaymentBridgePreview && !isRoomAgreementPath) {
     return finalizeStarterChips([
       'Kanıt eksiklerini göster',
       'Hakediş etkisini açıkla',
@@ -2110,10 +2127,51 @@ export function buildCopilotStarterChips({
   }
   const isRoomMap = path.includes('/room/map') || path.includes('/company/map') || path.includes('/school/map') || path.includes('/organization/map');
   const isRoomOperationHealth = path.includes('/room/operation-health');
+  const selectionFacts = selection?.facts || selection?.liveFacts || selection?.structuredFacts || {};
+  const selectionScreenType = compactText(selectionFacts?.screenType || selection?.screenType || '', '').toUpperCase();
+  const selectionStage = compactText(selectionFacts?.stage || '', '').toUpperCase();
+  const selectionStops = Number(selectionFacts?.counters?.stops ?? selectionFacts?.stops ?? selectionFacts?.totalStops ?? 0);
+  const selectedShiftTargetReady = selectionScreenType === 'SHIFTS'
+    && ['APPROVED', 'ACCEPTED', 'ACTIVE'].includes(selectionStage)
+    && Number.isFinite(selectionStops)
+    && selectionStops > 0;
+  const isRoomShifts = path === '/room/shifts';
+  const isRoomDrivers = path === '/room/drivers';
+  const isRoomVehicles = path === '/room/vehicles';
   const isSuperAdminOps = path.includes('/superadmin/observability') || path.includes('/superadmin/operations');
   const isOnboardingReview = path.includes('/superadmin/onboarding-review') || path.includes('/superadmin/public-leads')
     || selection?.facts?.screenType === 'PUBLIC_LEAD_REVIEW';
   const isAgreementSurface = path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements');
+  const isRoomAgreementSurface = isRoomAgreementPath;
+  const isRoomAgreementSelected = Boolean(
+    selection?.entityType === 'agreement'
+    || selection?.selectedRecordType === 'agreement'
+    || selectionFacts?.selectedRecordType === 'agreement'
+    || selection?.entityId
+    || selection?.selectedRecordId
+    || selectionFacts?.selectedRecordId,
+  );
+  const roomAgreementStatus = compactText(
+    selectionFacts?.selectedRecordStatus || selection?.selectedRecordStatus || selection?.status || '',
+    '',
+  ).toUpperCase();
+  const roomAgreementPending = roomAgreementStatus === 'REQUESTED'
+    || roomAgreementStatus === 'PENDING'
+    || includesAny(roomAgreementStatus, ['inceleme bekliyor', 'bekleyen', 'bekliyor']);
+  const roomAgreementContextText = [
+    selectionFacts?.activeTab,
+    selectionFacts?.expandedDisclosure,
+    selectionFacts?.expandedSection,
+    selectionFacts?.openDisclosure,
+  ].filter(Boolean).join(' ');
+  const roomAgreementBridgeContext = includesAny(roomAgreementContextText, [
+    'operasyon köprüsü',
+    'operasyon koprusu',
+    'operasyon bağlantısı',
+    'operasyon baglantisi',
+    'operation bridge',
+    'operation-bridge',
+  ]);
   const isAgreementRouteRefresh = isAgreementSurface && Boolean(
     selection?.facts?.routeRefreshState
     || selection?.liveFacts?.routeRefreshState
@@ -2178,12 +2236,34 @@ export function buildCopilotStarterChips({
     || Number(selection?.facts?.vehicleCount || selection?.vehicleCount || NaN) === 0
     || includesAny(selectionText, ['canlı araç görünmüyor', 'aktif servis görünmüyor', 'aktif vardiya görünmüyor', 'bugün için aktif servis', 'bugün için aktif vardiya', 'araç yok', 'araç: 0', 'canlı araç yok', 'konum henüz alınamadı']),
   );
+  // Driver task questions require a real selected shift/route record. The
+  // route panel can still expose a selection-shaped object while its id is 0
+  // (NO_ACTIVE_SHIFT); treat that as surface-only context so chips do not
+  // promise record-specific answers that the canonical path cannot ground.
+  const driverHasSelectedRecord = Number(selection?.entityId || selection?.selectedRecordId || 0) > 0;
 
   let chips = [];
   if (isRoomMap) {
     chips = ['Bu araç neden görünmüyor?', 'Son GPS ne zaman geldi?', 'Sürücünün telefon GPS’i devrede mi?', 'Araç bağlantısı var mı?'];
   } else if (isRoomOperationHealth) {
-    chips = ['Riskli cihazları göster', 'GPS güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücü durumunu sor'];
+    const operationHealthTab = compactText(selectionFacts?.activeTab || 'summary', '').toLowerCase();
+    chips = operationHealthTab === 'proof'
+      ? ['Operasyon kanıtını açıkla', 'Kanıt eksiklerini göster', 'Sıradaki güvenli işlem ne?']
+      : ['Riskli cihazları göster', 'GPS güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücü durumunu sor'];
+  } else if (isRoomShifts) {
+    chips = selection && selectedShiftTargetReady
+      ? ['Rotasını göster', 'İşlem kaydını göster', 'Atama değişikliğini göster', 'Bu vardiyanın güvenli sonraki adımı ne?']
+      : selection && selectionScreenType === 'SHIFTS'
+        ? ['Teklif durumunu açıkla', 'Eksik vardiya bilgilerini göster', 'Sıradaki güvenli işlem ne?']
+      : ['Bekleyen vardiyaları açıkla', 'Sözleşmeden üretilen vardiyaları göster', 'Sıradaki güvenli işlem ne?'];
+  } else if (isRoomDrivers) {
+    chips = selection && selectionScreenType === 'DRIVERS'
+      ? ['Bu sürücünün atama durumunu göster', 'GPS durumunu açıkla', 'Bağlı aracı göster', 'Sıradaki güvenli işlem ne?']
+      : ['Sürücü listesini açıkla', 'Atama ve bağlantı durumunu göster', 'Sıradaki güvenli işlem ne?'];
+  } else if (isRoomVehicles) {
+    chips = selection && selectionScreenType === 'VEHICLES'
+      ? ['Bu aracın GPS durumunu açıkla', 'Bağlı sürücüyü göster', 'Vardiya bağını göster', 'Sıradaki güvenli işlem ne?']
+      : ['Araç listesini açıkla', 'GPS ve araç durumunu göster', 'Sıradaki güvenli işlem ne?'];
   } else if (isSuperAdminOps) {
     chips = ['Riskleri sırala', 'GPS görünürlüğünü kontrol et', 'Açık sorunları göster', 'Sıradaki doğru işlem ne?'];
   } else if (isOnboardingReview) {
@@ -2199,7 +2279,15 @@ export function buildCopilotStarterChips({
   } else if (isDynamicSavingsPreview) {
     chips = ['Tasarruf hesabını göster', 'Km / süre farkını açıkla', 'Kapasite etkisini göster', 'Yaklaşık maliyet etkisini açıkla'];
   } else if (isAgreementSurface) {
-    chips = isMarketplaceFreeToOperatePreview
+    chips = isRoomAgreementSurface
+      ? isRoomAgreementSelected
+        ? roomAgreementPending
+          ? ['Bu sözleşmenin durumu ne?', 'Bu sözleşmenin detaylarını anlat.', 'İnceleme bekleyen sözleşmem var mı?', 'Bunun operasyon köprüsünü göster.']
+          : roomAgreementBridgeContext
+            ? ['Bu operasyon köprüsünü açıkla', 'Bu sözleşmenin durumu ne?', 'Bu sözleşmenin detaylarını anlat.', 'Sözleşmeleri nereden inceleyebilirim?']
+            : ['Bu sözleşmenin durumu ne?', 'Bu sözleşmenin detaylarını anlat.', 'Bunun operasyon köprüsünü göster.', 'Sözleşmeleri nereden inceleyebilirim?']
+        : ['Mevcut sözleşmelerim neler?', 'İnceleme bekleyen sözleşmem var mı?', 'Sözleşmeleri nereden inceleyebilirim?', 'Sözleşme durumları ne anlama geliyor?']
+      : isMarketplaceFreeToOperatePreview
       ? ['Sözleşme ödeme modeli nedir?', 'Ödeme hazırlığı hangi aşamada?', 'Bu sözleşmenin kaynak durumu ne?', 'Bu sözleşme SeferPakt kaynaklı mı?', 'Kaynak vardiyası var mı?', 'Bu sözleşme hangi vardiyadan geldi?']
       : isSeferScorePreview
       ? ['Bu tedarikçinin SeferPuanı kaç?', 'Kalite puanı neden düşük?', 'Eksik sinyalleri göster', 'SeferPuanı nasıl yükselir?']
@@ -2229,9 +2317,13 @@ export function buildCopilotStarterChips({
       chips = ['Servis neden görünmüyor?', 'ETA nedir?', 'Son GPS ne zaman geldi?', 'Araç bağlantısı var mı?'];
     }
   } else if (isDriverToday) {
-    chips = ['Görev neden başlamıyor?', 'Başlatma zamanı uygun mu?', 'Araç ve rota hazır mı?', 'GPS ve başlatma kanıtını kontrol et'];
+    chips = driverHasSelectedRecord
+      ? ['Görev neden başlamıyor?', 'Başlatma zamanı uygun mu?', 'Araç ve rota hazır mı?', 'GPS ve başlatma kanıtını kontrol et']
+      : ['Bu ekranı detaylı anlat', 'Ne yapayım?', 'Konum sinyali bekleniyor'];
   } else if (isDriverRouteOrMap) {
-    chips = ['Sıradaki durak ne?', 'Rota neden görünmüyor?', 'GPS durumu ne?', 'Başlatma adımı ne?'];
+    chips = driverHasSelectedRecord
+      ? ['Sıradaki durak ne?', 'Rota neden görünmüyor?', 'GPS durumu ne?', 'Başlatma adımı ne?']
+      : ['Bu ekranı detaylı anlat', 'Sonraki adımı göster', 'Bu ne demek?'];
   }
 
   if (!chips.length) {

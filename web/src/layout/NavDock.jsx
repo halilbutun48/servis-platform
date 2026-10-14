@@ -10,6 +10,15 @@ function roleTitle(role, me) {
   return roleLabelForUser(me || role);
 }
 
+function navTargetKey(path) {
+  const normalizedPath = String(path || '').split(/[?#]/, 1)[0];
+  const segments = normalizedPath.split('/').filter(Boolean);
+  if (!segments.length) return '';
+  return segments.length === 1
+    ? `${segments[0]}:home`
+    : `${segments[0]}:${segments.slice(1).join(':')}`;
+}
+
 function Item({ label, path, active, badge, onSelect }) {
   return (
     <button
@@ -22,6 +31,7 @@ function Item({ label, path, active, badge, onSelect }) {
       aria-current={active ? "page" : undefined}
       aria-label={label}
       title={label}
+      data-copilot-target={navTargetKey(path) || undefined}
     >
       <span className="navLabel">{label}</span>
       {badge ? <span className="navBadge">{badge}</span> : null}
@@ -67,6 +77,7 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
 
   const cfg = useMemo(() => getRoleNavigation(me || { role }), [me, role]);
   const hasAdvanced = cfg.advanced.length > 0;
+  const advancedVisible = showAdvanced || mobileOpen;
   const handleMobileSelect = () => onMobileClose?.();
 
   return (
@@ -90,8 +101,8 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
 
         {hasAdvanced ? (
           <div className="navAdvanced">
-            <button type="button" className="navToggle" onClick={toggleAdvanced}>{showAdvanced ? `${advancedTitle} ▾` : `${advancedTitle} ▸`}</button>
-            {showAdvanced ? <Section title={null} items={cfg.advanced} path={path} onItemSelect={handleMobileSelect} /> : null}
+            <button type="button" className="navToggle" onClick={toggleAdvanced}>{advancedVisible ? `${advancedTitle} ▾` : `${advancedTitle} ▸`}</button>
+            {advancedVisible ? <Section title={null} items={cfg.advanced} path={path} onItemSelect={handleMobileSelect} /> : null}
           </div>
         ) : null}
       </div>

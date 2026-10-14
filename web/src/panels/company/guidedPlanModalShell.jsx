@@ -7,6 +7,8 @@ export function Modal({
   zIndex = 9060,
   dismissOnBackdrop = true,
   contentProps = {},
+  backdropClassName = "",
+  backdropStyle = {},
 }) {
   if (!open) return null;
   const { style: contentStyle, ...restContentProps } = contentProps || {};
@@ -14,6 +16,7 @@ export function Modal({
     <div
       role="dialog"
       aria-modal="true"
+      className={backdropClassName || undefined}
       style={{
         position: "fixed",
         inset: 0,
@@ -23,6 +26,7 @@ export function Modal({
         paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
         overflow: "auto",
         pointerEvents: dismissOnBackdrop ? "auto" : "none",
+        ...backdropStyle,
       }}
       onMouseDown={
         dismissOnBackdrop

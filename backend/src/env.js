@@ -41,6 +41,12 @@ export const ENV = {
   // M46: AI Copilot Foundation
   AI_COPILOT_ENABLED: (process.env.AI_COPILOT_ENABLED ?? "1") === "1",
 
+  // M18 bounded local semantic pilot. Disabled by default; when enabled it
+  // may only emit an advisory proposal in DEMO_FIXTURE_ONLY maintenance mode.
+  SEFER_ABI_LOCAL_MODEL_ENABLED: (process.env.SEFER_ABI_LOCAL_MODEL_ENABLED ?? "0") === "1",
+  SEFER_ABI_LOCAL_MODEL_URL: process.env.SEFER_ABI_LOCAL_MODEL_URL ?? "",
+  SEFER_ABI_LOCAL_MODEL_ALLOW_DOCKER_HOST: (process.env.SEFER_ABI_LOCAL_MODEL_ALLOW_DOCKER_HOST ?? "0") === "1",
+
   // M82.9: payment backbone activation gate
   // 0 = preparation / dormant, 1 = live-capable activation hook
   PAYMENT_BACKBONE_ENABLED: (process.env.PAYMENT_BACKBONE_ENABLED ?? "0") === "1",

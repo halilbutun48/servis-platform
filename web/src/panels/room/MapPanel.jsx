@@ -639,7 +639,7 @@ export default function RoomMapPanel() {
   const vehiclesCardHeight = isCompactViewport ? "min(360px, calc(100vh - 450px))" : "min(760px, calc(100vh - 330px))";
 
   return (
-    <div className="wrap wrap--fluid">
+    <div className="wrap wrap--fluid" data-copilot-block-key="room-map:live-tracking-block" data-copilot-semantic-id="product:room-map:live-tracking-block" data-copilot-label="Canlı Takip">
       <PanelChrome
         title="Taşımacılık Firması • Canlı Takip"
         subtitle="Tek panel: canlı liste + seçili araç + duraklar + harita"
@@ -668,7 +668,7 @@ export default function RoomMapPanel() {
               style={{ width: 280 }}
             />
 
-            <button className="btn sm" onClick={load} disabled={busy}>
+            <button className="btn sm" data-copilot-target="room-map:refresh" onClick={load} disabled={busy}>
               {busy ? "..." : "Yenile"}
             </button>
             </div>

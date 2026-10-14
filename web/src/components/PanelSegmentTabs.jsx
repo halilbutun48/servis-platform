@@ -26,6 +26,8 @@ export default function PanelSegmentTabs({
             type="button"
             role="tab"
             aria-selected={active}
+            data-copilot-target={tab?.copilotTarget || undefined}
+            data-copilot-semantic-id={tab?.copilotSemanticId || undefined}
             className={`panelSegmentTab${active ? " active" : ""}`}
             onClick={(event) => {
               onClick?.(tab, event);

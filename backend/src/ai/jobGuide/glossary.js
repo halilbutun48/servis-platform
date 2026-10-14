@@ -19,6 +19,9 @@ const TERMS = {
   matrix: { term: "Matrix", meaning: "Birden çok nokta için toplu süre ve mesafe tablosu", aliases: ["matrix", "matris", "süre tablosu", "sure tablosu", "distance matrix"] },
   sureHesabi: { term: "Süre hesabını yenile", meaning: "Seçili noktalar için yol ve süre hesabını yeniden çalıştırma işlemi", aliases: ["matrix al", "matrix çöz", "matrix coz", "süre hesabını yenile", "sure hesabini yenile", "yol hesaplarını çıkar", "yol hesaplarini cikar"] },
   checkin: { term: "Check-in", meaning: "Kişinin araca bindiğini, indiğini veya varlığını doğrulayan kayıt", aliases: ["check-in", "checkin", "indi bindi", "qr giriş", "nfc giriş"] },
+  hakedis: { term: "Hakediş", meaning: "Yapılan işin ödeme önizlemesi", aliases: ["hakediş", "hakedis"] },
+  routeReadiness: { term: "Route readiness", meaning: "Rota ve atama zincirinin ilerlemeye hazır olup olmadığını gösteren durum", aliases: ["route readiness"] },
+  servisKaniti: { term: "Servis Kanıtı", meaning: "Sürücünün telefonundan konum sinyali ve ilgili sinyallerle hizmetin görünürlüğünü doğrulayan kart", aliases: ["servis kanıtı", "servis kaniti"] },
 };
 
 function normalizeText(value) {

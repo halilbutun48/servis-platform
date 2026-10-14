@@ -345,9 +345,10 @@ export function normalizeIntentArgs(entityTypeOrOptions = 'screen', screenPath =
       userRole: String(entityTypeOrOptions.userRole || entityTypeOrOptions.role || ''),
       conversationState: entityTypeOrOptions.conversationState || null,
       originalMessage: String(entityTypeOrOptions.originalMessage || ''),
+      canonicalRequest: entityTypeOrOptions.canonicalRequest || null,
     };
   }
-  return { entityType: String(entityTypeOrOptions || 'screen'), screenPath: String(screenPath || ''), sourceScreenPath: '', roleMode: 'OPERATIONS', userRole: '', conversationState: null, originalMessage: '' };
+  return { entityType: String(entityTypeOrOptions || 'screen'), screenPath: String(screenPath || ''), sourceScreenPath: '', roleMode: 'OPERATIONS', userRole: '', conversationState: null, originalMessage: '', canonicalRequest: null };
 }
 
 export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN', message = '', screenPath = '', guidedTaskMeta = null }) {

@@ -693,15 +693,36 @@ export function buildOperationHealthState({
     taskState?.selectedSummary,
     '',
   );
+  const staleSelectedRecord = (value) => /kayıt\s*#?\d+.*yetkili kayıtta yok/i.test(String(value || ''));
   const selectedRecordStatus = firstNonBlank(
-    screenContext?.selectedRecordStatus,
-    sourceScreenContext?.selectedRecordStatus,
-    analysis?.selectedRecordStatus,
-    contextPriority?.selectedRecordStatus,
-    taskState?.selectedRecordStatus,
+    // Operation Health is a live surface summary, not the previously
+    // selected record's status. A stale generic record sentence must not
+    // shadow the current issue counters supplied by this screen.
+    surface.key === 'ROOM_OPERATION_HEALTH' && countersState.hasSignal && !staleSelectedRecord(screenContext?.selectedRecordStatus)
+      ? screenContext?.selectedRecordStatus
+      : '',
+    surface.key === 'ROOM_OPERATION_HEALTH' && countersState.hasSignal && !staleSelectedRecord(sourceScreenContext?.selectedRecordStatus)
+      ? sourceScreenContext?.selectedRecordStatus
+      : '',
+    surface.key === 'ROOM_OPERATION_HEALTH' && countersState.hasSignal && !staleSelectedRecord(analysis?.selectedRecordStatus)
+      ? analysis?.selectedRecordStatus
+      : '',
+    surface.key === 'ROOM_OPERATION_HEALTH' && countersState.hasSignal && !staleSelectedRecord(contextPriority?.selectedRecordStatus)
+      ? contextPriority?.selectedRecordStatus
+      : '',
+    surface.key === 'ROOM_OPERATION_HEALTH' && countersState.hasSignal && !staleSelectedRecord(taskState?.selectedRecordStatus)
+      ? taskState?.selectedRecordStatus
+      : '',
     countersState.hasSignal
       ? `Aktif sürücü ${Number.isFinite(countersState.counters.activeDrivers) ? countersState.counters.activeDrivers : 0} • Riskli cihaz ${Number.isFinite(countersState.counters.riskyDevices) ? countersState.counters.riskyDevices : 0} • Konum sinyali güncel değil / çevrim dışı ${Number.isFinite(countersState.counters.staleOrOffline) ? countersState.counters.staleOrOffline : 0} • Açık sorun ${Number.isFinite(countersState.counters.openIssues) ? countersState.counters.openIssues : 0}`
-      : '',
+      : firstNonBlank(
+        screenContext?.selectedRecordStatus,
+        sourceScreenContext?.selectedRecordStatus,
+        analysis?.selectedRecordStatus,
+        contextPriority?.selectedRecordStatus,
+        taskState?.selectedRecordStatus,
+        '',
+      ),
     '',
   );
   const roleText = firstNonBlank(

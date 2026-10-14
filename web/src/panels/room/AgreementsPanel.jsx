@@ -399,8 +399,8 @@ export default function AgreementsPanel() {
     });
     setCopilotSelection({
       scopeKey: '/room/agreements',
-      entityType: item?.shiftId ? 'shift' : 'screen',
-      entityId: Number(item?.shiftId || 1106) || 1106,
+      entityType: 'agreement',
+      entityId: Number(item?.id || 0) || null,
       label: `Sözleşme ID ${item.id}`,
       summary: [String(item?.status || '').toUpperCase() || '-', ymdTR(item?.startDate), ymdTR(item?.endDate), qualityBridgeSummaryText, seferScoreSummaryText, platformFeeSummaryText].filter(Boolean).join(' • '),
       fields: [
@@ -1015,20 +1015,26 @@ export default function AgreementsPanel() {
         </div>
       ) : null}
 
-      <div className="card" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
-        <div>
-          <div className="muted">Filtre</div>
-          <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="Kayıt no / durum / teklif / tarih / not" />
+      <div
+        data-copilot-target="room:agreements:list"
+        data-copilot-semantic-id="product:room:agreements:list"
+        data-copilot-label="Sözleşme listesi"
+      >
+        <div className="card" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
+          <div>
+            <div className="muted">Filtre</div>
+            <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="Kayıt no / durum / teklif / tarih / not" />
+          </div>
+          <div className="muted">Gösterilen: <b>{filteredRouteRefreshItems.length + filteredAcceptedRouteRefreshItems.length + filteredPending.length + filteredOthers.length + filteredExtendItems.length}</b> / Toplam: <b>{routeRefreshItems.length + pending.length + others.length + extendItems.length}</b></div>
         </div>
-        <div className="muted">Gösterilen: <b>{filteredRouteRefreshItems.length + filteredAcceptedRouteRefreshItems.length + filteredPending.length + filteredOthers.length + filteredExtendItems.length}</b> / Toplam: <b>{routeRefreshItems.length + pending.length + others.length + extendItems.length}</b></div>
-      </div>
 
-      <PanelSegmentTabs
-        tabs={roomAgreementTabs}
-        value={viewMode}
-        onChange={setViewMode}
-        compact
-      />
+        <PanelSegmentTabs
+          tabs={roomAgreementTabs}
+          value={viewMode}
+          onChange={setViewMode}
+          compact
+        />
+      </div>
 
       {viewMode === "bridge" ? (
         <ReconciliationPreviewCard agreementId={copilotAgreementTarget?.id} token={token} style={{ marginTop: 12 }} />

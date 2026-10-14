@@ -2,20 +2,38 @@ import { buildCopilotPayload, getShiftContext, getVehicleContext } from "./tools
 import { buildJobGuideResponse } from "./jobGuide/index.js";
 import { buildIfStuck, buildQuickActions } from "./jobGuide/quickActions.js";
 import { normalizeGuideLevel } from "./jobGuide/levels.js";
-import { getScreenDefinitionForUser, resolveAuthorizedScreenContext } from "./jobGuide/screenCatalog.js";
+import { buildCanonicalProductKnowledgeInventory, getScreenDefinitionForUser, resolveAuthorizedScreenContext } from "./jobGuide/screenCatalog.js";
 import { resolveChatContext } from "./chat/contextResolver.js";
 import { buildChatHelpResponse, buildGenericProductHelpResponse } from "./chat/helpComposer.js";
-import { buildProductOverviewHelpReply } from "./chat/conversationTaskStateBuilders.js";
+import { buildProductOverviewHelpReply, buildProductTeachingReply, buildRoleExplanationHelpReply } from "./chat/conversationTaskStateBuilders.js";
 import { buildSeferAbiCostAnalysisResponse, detectCostAnalysisIntent } from "./chat/seferAbiCostAnalysisAssistant.js";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel, normalizeGpsFreshness } from "./chat/etaSanity.js";
 import { ACTIONABLE_EVENT_SOURCE_ID, buildActionableAnswer, buildActionableEventsForUser } from "../services/actionableEvents.js";
 import { buildAuthorizedProductAwarenessAnswer, buildAuthorizedReasoningAnswer, buildVisibleFactText, resolveAuthorizedProductDomains } from "../services/authorizedProductAwareness.js";
 import { isCurrentSituationDiagnosticQuestion } from "./chat/intentRouter.js";
 import { buildConversationRoutingResponse } from "./chat/conversationRouting.js";
+import { COMPANY_GUIDED_NEW_PLAN_WORKFLOW, resolveCanonicalConversationRequest } from "./chat/canonicalSemanticRequest.js";
+import { buildCanonicalSemanticContext } from "./chat/canonicalSemanticContext.js";
 import { resolveSemanticIntent } from "./chat/semanticIntentPlanner.js";
+import { authorizeSemanticRequest } from "./chat/authorizationGate.js";
 import { commitCanonicalConversationState, getCanonicalConversationState } from "./chat/canonicalConversationState.js";
 import { normalizeSeferAbiUserFacingPayload } from "./chat/userFacingLanguageNormalizer.js";
-import { resolveCopilotGuidedTarget } from "./chat/copilotUiElementAnchor.js";
+import { GUIDED_TARGET_STATUSES, resolveCopilotGuidedTarget } from "./chat/copilotUiElementAnchor.js";
+import { requestLocalSemanticProposal } from "./chat/localSemanticProposal.js";
+
+function hasCanonicalCostIntent(semanticPlan) {
+  const request = semanticPlan?.canonicalRequest;
+  if (!['SEFER-ABI-CANONICAL-REQUEST-V2', 'SEFER-ABI-CANONICAL-REQUEST-V3'].includes(request?.version)) return false;
+  return request.operation === "ASSESS_CURRENT_RISK"
+    || ["BUDGET", "FINANCE"].includes(String(request.domain || "").toUpperCase())
+    || request.capability === "COST_ANALYSIS";
+}
+
+function hasCanonicalQuoteFloorEvidence(semanticPlan) {
+  const request = semanticPlan?.canonicalRequest;
+  return request?.domain === "BUDGET"
+    && request?.typedEvidence?.specificity?.quoteFloorAnalysisEvidence === true;
+}
 
 function roleGlobalActionableFallbackAllowed(semanticPlan, _conversationState) {
   if (!semanticPlan || semanticPlan.planStatus !== "READY") return false;
@@ -91,16 +109,29 @@ function buildGenericProductHelpProjection({ message, semanticPlan, user = null,
   const screenDefinition = contextual
     ? getScreenDefinitionForUser(user, screenContext, Number(screenContext?.id || 0) || null)
     : null;
-  const reply = contextual
-    ? buildProductOverviewHelpReply({
+  const roleHelp = semanticPlan?.family === "ROLE_EXPLANATION_HELP";
+  const roleCapabilityReply = contextual && roleHelp
+    ? buildRoleExplanationHelpReply({
       message,
       userRole: user?.role,
       user,
-      roleMode: "OPERATIONS",
-      screenDefinition,
-      screenContext,
+      roleMode: "FULL",
+      screenDefinition: null,
+      screenContext: null,
     })
-    : buildGenericProductHelpResponse({ message });
+    : "";
+  const replyState = contextual
+    && !roleHelp
+    ? buildProductTeachingReply({
+      message,
+      userRole: user?.role,
+      user,
+      sectionIndex: roleHelp ? 1 : 0,
+    })
+    : null;
+  const reply = contextual
+    ? roleHelp ? roleCapabilityReply : replyState.reply
+    : buildGenericProductHelpResponse({ message, semanticPlan });
   return {
     ok: true,
     copilotVersion: "ROUND-10-GENERIC-PRODUCT-HELP",
@@ -133,6 +164,7 @@ function buildGenericProductHelpProjection({ message, semanticPlan, user = null,
       ? "Ürün yardımı, kayıt okumadan mevcut yetkili rol ve ekranın başlangıç adımlarına bağlandı."
       : "Genel ürün yardımı, yetkili kayıt veya route-bound bağlam okumadan yanıtlandı.",
     semanticPlan,
+    teachingState: replyState?.teachingState || null,
     conversationRoute: "GENERIC_PRODUCT_HELP",
     dialogueTopic: "GENERIC_PRODUCT_HELP",
     authorizedProductContext: null,
@@ -143,6 +175,66 @@ function buildGenericProductHelpProjection({ message, semanticPlan, user = null,
       askText: "Bu ekran ne işe yarıyor?",
       reason: "Mevcut yetkili ekranı açıklamak için güvenli ürün yardımı ister; işlem başlatmaz.",
     }] : [],
+  };
+}
+
+function buildProductTeachingContinuationProjection({ message, semanticPlan, user = null, screenContext = null, conversationState = null }) {
+  const state = conversationState?.productTeachingState || null;
+  const currentIndex = Number(state?.sectionIndex || 0);
+  const continuationAction = String(
+    semanticPlan?.typedRequest?.continuationAction
+      || semanticPlan?.continuationAction
+      || "NEXT",
+  ).toUpperCase();
+  const direction = continuationAction === "RECOVER"
+    ? "RECOVER"
+    : ["BACK", "PREVIOUS", "GERI"].includes(continuationAction) ? "BACK" : "NEXT";
+  const nextIndex = direction === "BACK" || direction === "RECOVER" ? currentIndex : currentIndex + 1;
+  const rendered = buildProductTeachingReply({
+    message,
+    userRole: user?.role,
+    user,
+    sectionIndex: nextIndex,
+    direction,
+  });
+  return {
+    ok: true,
+    copilotVersion: "ROUND-10-PRODUCT-TEACHING",
+    generatedAt: new Date().toISOString(),
+    intent: "CHAT_HELP",
+    intentLabel: "Ürün öğretimi",
+    provider: "local-product-teaching-state",
+    providerSummary: "server-owned-product-teaching-continuation",
+    mode: "RULE_BASED",
+    scope: {
+      role: String(user?.role || ""),
+      companyKind: String(user?.companyKind || ""),
+      roomId: user?.roomId ?? null,
+      companyId: user?.companyId ?? null,
+      summary: "Ürün öğretimi, aynı yetkili rol/tenant kapsamındaki sunucu durumundan ilerletildi.",
+    },
+    reply: rendered.reply,
+    summary: rendered.summary,
+    contextSummary: "Ürün öğretiminin bir sonraki anlamlı bölümü sunuldu; kayıt verisi okunmadı.",
+    questionType: "PRODUCT_TEACHING_CONTINUATION",
+    activeTopic: "PRODUCT_TEACHING",
+    assistantIntent: "PRODUCT_TEACHING",
+    authorizedDomainMap: [],
+    authorizedRecords: [],
+    retrievedFacts: [],
+    responseSections: [{ title: "Ürün öğretimi", body: rendered.reply }],
+    dataSources: ["mevcut rol yetenek sözleşmesi", "sunucu sahipli öğretim durumu"],
+    reasoning: direction === "BACK"
+      ? "Devam durumu bir önceki öğretim bölümüne alındı."
+      : "Devam durumu, mevcut öğretim konusunun sonraki yeni bölümüne ilerletildi.",
+    semanticPlan,
+    teachingState: rendered.teachingState,
+    conversationRoute: semanticPlan.conversationRoute,
+    dialogueTopic: "PRODUCT",
+    authorizedProductContext: null,
+    readOnly: true,
+    quickActions: [],
+    followUpPrompt: rendered.teachingState.completed ? "İstersen belirli bir ekranı anlatayım." : "Devamını anlat",
   };
 }
 
@@ -234,6 +326,67 @@ function buildVisibleContextDiagnosticResponse({ user, entityType, entityId, scr
       { title: "Şimdi ne yapmalıyım?", body: "Araç cihazı ve konum bağlantısını kontrol et; güncel konum geldikten sonra tahmini süreyi yeniden doğrula." },
     ],
     followUpPrompt: "Devamını anlat",
+  };
+}
+
+function buildRoleScopedTargetBoundaryResponse({ user, entityType, entityId, screenContext, semanticPlan }) {
+  const roleTargetDenied = semanticPlan?.roleTargetResolution === "UNAUTHORIZED";
+  const createCapabilityDenied = semanticPlan?.authorizationDecision?.reason === "CREATE_CAPABILITY_DENIED_BY_ROLE";
+  if (!roleTargetDenied && !createCapabilityDenied) return null;
+  const requestedRole = String(semanticPlan?.requestedRoleTarget?.roleKey || "başka bir rol").toUpperCase();
+  const currentRole = String(semanticPlan?.role || user?.role || "mevcut rol").toUpperCase();
+  const reply = createCapabilityDenied
+    ? `Yeni vardiya oluşturma yetkisi ${currentRole} rolünde bulunmuyor; bu nedenle oluşturma akışını başlatmıyorum. Mevcut yetkili ekranlarını açıklayabilirim.`
+    : `İstenen ${requestedRole} ekranı veya yeteneği, mevcut ${currentRole} rolünün yetkili bağlamında kullanılamıyor. Bu nedenle bu hedefe yönlendirme yapmıyorum.`;
+  return {
+    ok: true,
+    copilotVersion: createCapabilityDenied ? "ROUND-18-CREATE-CAPABILITY-AUTHORIZATION" : "ROUND-18-ROLE-TARGET-AUTHORIZATION",
+    generatedAt: new Date().toISOString(),
+    intent: "CHAT_HELP",
+    intentLabel: "Yetki sınırı",
+    entityType,
+    entityId: Number(entityId),
+    entityLabel: screenContext?.label || "Sefer Abi",
+    provider: "canonical-role-target-authorization",
+    providerSummary: createCapabilityDenied ? "create-capability-denied-before-workflow-fallback" : "role-scoped-target-denied-before-workflow-fallback",
+    mode: "RULE_BASED",
+    scope: {
+      role: currentRole,
+      companyKind: String(user?.companyKind || ""),
+      roomId: user?.roomId ?? null,
+      companyId: user?.companyId ?? null,
+      summary: "İstenen rol ekranı mevcut rol ve tenant yetki sınırında reddedildi; ürün kaydı okunmadı.",
+    },
+    reply,
+    summary: reply,
+    contextSummary: createCapabilityDenied ? "Yeni vardiya oluşturma capability sınırı mevcut rol için reddedildi." : "İstenen rol kapsamındaki ekran mevcut kullanıcı için yetkili değil.",
+    questionType: "AUTHORIZATION_BOUNDARY",
+    activeTopic: "AUTHORIZATION_BOUNDARY",
+    assistantIntent: "AUTHORIZATION_BOUNDARY",
+    authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
+    authorizedRecords: [],
+    retrievedFacts: [],
+    responseSections: [{ title: "Yetki sınırı", body: reply }],
+    dataSources: ["mevcut rol/tenant yetki kapsamı"],
+    reasoning: createCapabilityDenied
+      ? "CREATE semantic action korunurken, mevcut rolün create capability sınırı workflow fallback'inden önce reddedildi."
+      : "Mevcut isteğin rol-scoped hedefi, aktif iş akışı veya alan açıklaması fallback'inden önce reddedildi.",
+    roleBoundary: reply,
+    readOnly: true,
+    quickActions: [],
+    followUpPrompt: "Mevcut rolündeki yetkili bir ekranı sorabilirsin.",
+    semanticPlan,
+    conversationRoute: semanticPlan.conversationRoute,
+    dialogueTopic: semanticPlan.dialogueTopic,
+    authorizedProductContext: null,
+    guidedTarget: {
+      status: GUIDED_TARGET_STATUSES.UNAUTHORIZED,
+      targetKey: null,
+      targetKind: "ROLE_SCOPED_UI",
+      roleKey: requestedRole,
+      screenPath: screenContext?.path || null,
+      reason: "REQUESTED_ROLE_TARGET_NOT_AUTHORIZED",
+    },
   };
 }
 
@@ -341,6 +494,13 @@ function buildCrossChildBoundaryResponse({ user, entityType, entityId, screenCon
 
 function buildProductAwarenessResponse({ awareness, user, entityType, entityId, screenContext }) {
   if (!awareness) return null;
+  const continuationComplete = awareness.semanticPlan?.family === "CONTINUE_CURRENT_REASONING"
+    && awareness.queryPlanExecution?.continuationComplete === true;
+  const requestedOfferId = (Array.isArray(awareness?.semanticPlan?.canonicalRequest?.candidateEntityRefs)
+    ? awareness.semanticPlan.canonicalRequest.candidateEntityRefs
+    : [])
+    .find((candidate) => String(candidate?.type || '').toUpperCase() === 'OFFER' && Number(candidate?.id) > 0)?.id || null;
+  const productKnowledgeInventory = buildCanonicalProductKnowledgeInventory(user, { screenContext: screenContext || {} });
   const authorized = resolveAuthorizedProductDomains(user);
   const authorizationBoundary = awareness.authorizationBoundary === true || awareness.domain === "AUTHORIZATION_BOUNDARY";
   const domainLabel = {
@@ -385,6 +545,7 @@ function buildProductAwarenessResponse({ awareness, user, entityType, entityId, 
     authorizedDomain: awareness.domain,
     authorizedDomainMap: authorized.domains,
     authorizedRecords: awareness.records,
+    discourseEntities: awareness.discourseEntities || [],
     authorizedRecordCount: awareness.count,
     assistantIntent: `AUTHORIZED_DOMAIN_${awareness.domain}`,
     dataSources: awareness.dataSources,
@@ -399,6 +560,7 @@ function buildProductAwarenessResponse({ awareness, user, entityType, entityId, 
       && awareness.semanticPlan?.family !== "AUTHORIZATION_BOUNDARY"
       ? { semanticPlan: awareness.semanticPlan, screenPath: screenContext?.path || null }
       : null,
+    productKnowledgeInventory,
     priority: awareness.priority,
     safeNextStep: awareness.nextAction,
     nextAction: awareness.nextAction,
@@ -414,11 +576,12 @@ function buildProductAwarenessResponse({ awareness, user, entityType, entityId, 
         actionKind: "OPEN_ROUTE",
         label: `${awareness.navigationTarget.label || "Yetkili ekran"} ekranına git`,
         path: awareness.navigationTarget.path,
+        ...(requestedOfferId ? { routeParams: { offerId: Math.trunc(Number(requestedOfferId)) } } : {}),
         safeNavigation: true,
         criticalActionExecution: false,
       }]
       : [],
-    followUpPrompt: "Devamını anlat",
+    followUpPrompt: continuationComplete ? "" : "Devamını anlat",
   };
 }
 
@@ -505,6 +668,414 @@ function selectedRows(screenContext, key) {
 function buildLegacyChatHelpResponse(input) {
   const baseResponse = buildChatHelpResponse(input);
   return baseResponse;
+}
+
+function createShiftWorkflowModelForPlan(semanticPlan, conversationState = null) {
+  return semanticPlan?.workflowModel
+    || semanticPlan?.continuationBasePlan?.workflowModel
+    || conversationState?.activeGuidedTask?.semanticPlan?.workflowModel
+    || (semanticPlan?.workflowIntent === "CREATE_SHIFT" ? COMPANY_GUIDED_NEW_PLAN_WORKFLOW : null);
+}
+
+function createShiftWorkflowStepForPlan(semanticPlan, conversationState = null) {
+  const model = createShiftWorkflowModelForPlan(semanticPlan, conversationState);
+  if (!model?.steps?.length) return { model: null, step: null };
+  const liveWorkflowActive = Boolean(
+    semanticPlan?.workflowActualUiState?.workflowId
+      || semanticPlan?.workflowStepReference?.ordinal
+      || semanticPlan?.workflowStepOrdinal,
+  );
+  const workflowEntryState = liveWorkflowActive
+    ? null
+    : (semanticPlan?.workflowEntryState
+      || semanticPlan?.continuationBasePlan?.workflowEntryState
+      || conversationState?.activeGuidedTask?.semanticPlan?.workflowEntryState
+      || null);
+  if (workflowEntryState === "PRE_WIZARD") {
+    return { model, step: null, entry: true, nextStep: model.steps[0] || null };
+  }
+  const ordinal = Number(
+    semanticPlan?.workflowStepReference?.ordinal
+      || semanticPlan?.workflowStepOrdinal
+      || semanticPlan?.continuationBasePlan?.workflowStepReference?.ordinal
+      || conversationState?.activeGuidedTask?.semanticPlan?.workflowStepReference?.ordinal
+      || 1,
+  ) || 1;
+  return {
+    model,
+    step: model.steps.find((item) => Number(item.ordinal) === ordinal) || model.steps[0],
+  };
+}
+
+function buildCreateShiftWorkflowResponse({ user, entityType, entityId, screenContext, semanticPlan, conversationState, guidedTarget = null } = {}) {
+  const { model, step, entry, nextStep } = createShiftWorkflowStepForPlan(semanticPlan, conversationState);
+  if (!model) return null;
+  if (entry) {
+    const canonicalEntryTarget = semanticPlan?.workflowEntryTarget
+      || semanticPlan?.continuationBasePlan?.workflowEntryTarget
+      || null;
+    // A disclosure can be a safe reveal step, but it is not the requested
+    // guided-entry control. Use a resolved target only when it proves the
+    // same canonical identity; the existing target resolver may reveal the
+    // enclosing disclosure and then re-resolve the exact child separately.
+    const guidedTargetMatchesEntry = guidedTarget?.status === "FOUND"
+      && canonicalEntryTarget?.targetKey
+      && String(guidedTarget.targetKey || "") === String(canonicalEntryTarget.targetKey);
+    const entryTarget = guidedTargetMatchesEntry
+      ? guidedTarget
+      : canonicalEntryTarget;
+    const targetLabel = String(entryTarget?.label || "Rehberi Başlat").trim();
+    const nextLabel = String(nextStep?.label || "Şirket konumu").trim();
+    const nextState = String(semanticPlan?.workflowNextState || "").toUpperCase();
+    const draftAvailability = semanticPlan?.workflowDraftAvailability || null;
+    const hasKnownDraftChooser = nextState === "SAVED_DRAFT_CHOOSER" && Number(draftAvailability?.count || 0) > 0;
+    const nextStateLine = hasKnownDraftChooser
+      ? `Bu düğmeye bastıktan sonra önce kayıtlı taslak seçimi açılır; ${Number(draftAvailability.count)} uygun taslak bulundu. Devam et mevcut taslağı kanıtlanan güvenli adımından sürdürür, Yeni plan eski taslakları koruyarak başlangıç akışını açar.`
+      : nextState === "NEW_PLAN_STEP_1"
+        ? `Bu düğmeye bastıktan sonra kayıtlı taslak seçimi yok; yeni akışın ilk adımı “${nextLabel}” olur.`
+        : `Bu düğmeye bastıktan sonra uygun kayıtlı taslak varsa önce seçim ekranı, yoksa yeni akışın ilk adımı “${nextLabel}” görünür.`;
+    const recovery = semanticPlan?.continuationAction === "RECOVER"
+      ? ` Bu hedefte takıldığını anlıyorum. “${targetLabel}” düğmesine yeniden dokun; açılmazsa düğmenin görünür ve etkin durumunu birlikte kontrol edelim. Akış açılmadan sonraki adıma geçtiğini varsaymıyorum.`
+      : "";
+    const reply = `Yeni vardiya planını bu ekrandan başlatabilirsin. Rehberli akış şu anda açık değil; mevcut güvenli hedef “${targetLabel}”. ${nextStateLine} ${nextLabel} adımının kontrolleri, akış gerçekten açıldıktan sonra görünür ve o zaman mevcut adım olarak açıklanır.${recovery} Sefer Abi yalnızca görünür hedefi gösterir; iş kaydı oluşturmaz veya ilerletmez.`;
+    const currentTarget = entryTarget?.status === "FOUND"
+      ? {
+        targetKind: entryTarget.targetKind || "CONTROL",
+        targetKey: entryTarget.targetKey || null,
+        semanticId: entryTarget.semanticId || null,
+        blockKey: entryTarget.blockKey || null,
+        label: entryTarget.label || null,
+        semanticType: entryTarget.semanticType || null,
+        screenPath: entryTarget.screenPath || screenContext?.path || null,
+        locator: entryTarget.locator || null,
+        callout: entryTarget.callout || null,
+      }
+      : null;
+    const taskState = {
+      activeGoal: model.goal,
+      activeWorkflow: model.id,
+      activeStep: null,
+      currentExpectedStep: null,
+      nextStep: nextStep ? { ordinal: nextStep.ordinal, key: nextStep.key, label: nextStep.label } : null,
+      workflowEntryState: "PRE_WIZARD",
+      lastCompletedStep: null,
+      actualUiState: null,
+      workflowProgression: null,
+      currentTarget,
+      currentSurface: { path: screenContext?.path || null, label: screenContext?.label || null },
+      currentRole: String(user?.role || "").toUpperCase() || null,
+      currentEntity: semanticPlan?.entity || null,
+      authorizedActionSet: Array.isArray(screenContext?.uiHints?.visibleButtons)
+        ? screenContext.uiHints.visibleButtons.map((item) => item?.label).filter(Boolean).slice(0, 32)
+        : [],
+      safeOnly: true,
+    };
+    return {
+      ok: true,
+      copilotVersion: "M18-CANONICAL-CREATE-SHIFT-WORKFLOW",
+      generatedAt: new Date().toISOString(),
+      intent: "CHAT_HELP",
+      intentLabel: "Vardiya oluşturma rehberi",
+      entityType,
+      entityId: Number(entityId),
+      entityLabel: screenContext?.label || "Sefer Abi",
+      provider: "local-canonical-workflow-guidance",
+      providerSummary: model.id,
+      mode: "RULE_BASED",
+      scope: {
+        role: String(user?.role || ""),
+        companyKind: String(user?.companyKind || ""),
+        roomId: user?.roomId ?? null,
+        companyId: user?.companyId ?? null,
+        summary: "Yetkili mevcut ekran ve rehberli akış başlangıcı kullanıldı; kayıt yazımı yapılmadı.",
+      },
+      reply,
+      summary: reply,
+      contextSummary: "Rehberli akış başlangıcı",
+      questionType: semanticPlan?.family === "EXPLAIN_CURRENT_TARGET" ? "EXPLAIN_CURRENT_TARGET" : "UI_GUIDANCE",
+      activeTopic: "CREATE_SHIFT",
+      assistantIntent: "CREATE_SHIFT_WORKFLOW_GUIDANCE",
+      authorizedDomainMap: ["SHIFTS"],
+      authorizedRecords: [],
+      retrievedFacts: [],
+      responseSections: [
+        { title: "Mevcut durum", body: `Rehberli akış açık değil; “${targetLabel}” mevcut güvenli hedef.` },
+        { title: "Sıradaki canlı durum", body: nextStateLine },
+        { title: "Güvenli sınır", body: "Sefer Abi hedefi gösterir; düğmeye basmaz, iş kaydı yazmaz veya akışı ilerletmez." },
+      ],
+      dataSources: ["kanonik COMPANY Guided New Plan iş akışı", "yetkili mevcut ekran"],
+      reasoning: "Canlı modal/iş akışı işareti bulunmadığı için giriş kontrolü mevcut, ilk adım ise sıradaki durumdur.",
+      safeNextStep: `“${targetLabel}” hedefini kontrol et.`,
+      nextAction: `Sıradaki güvenli hedef: ${targetLabel}.`,
+      workflowModel: model,
+      workflowEntryState: "PRE_WIZARD",
+      workflowEntryTarget: currentTarget,
+      workflowNextStepReference: nextStep ? { ordinal: nextStep.ordinal, key: nextStep.key, label: nextStep.label } : null,
+      workflowNextState: nextState || "UNKNOWN_ENTRY_NEXT_STATE",
+      workflowDraftAvailability: draftAvailability,
+      workflowStepReference: null,
+      workflowStepOrdinal: null,
+      workflowOrder: [],
+      workflowCompletionEvidence: [],
+      workflowStateTransitions: [],
+      taskState,
+      semanticPlan,
+      guidedTarget: guidedTarget || null,
+      roleBoundary: "Sadece mevcut role ve tenant kapsamındaki güvenli UI rehberliği verildi.",
+      readOnly: true,
+      quickActions: [],
+      followUpPrompt: "Devamını anlat",
+      recoveryAction: semanticPlan?.continuationAction === "RECOVER"
+        ? { type: "RECHECK_CANONICAL_TARGET", targetKey: currentTarget?.targetKey || null, label: targetLabel }
+        : null,
+    };
+  }
+  if (!step) return null;
+  const capability = Array.isArray(step.capabilityGuides)
+    ? step.capabilityGuides.find((item) => item?.intent === semanticPlan?.capabilityIntent)
+    : null;
+  const knowledge = capability || step;
+  const targetLabel = String(guidedTarget?.status === "FOUND" ? guidedTarget.label || "" : "").trim();
+  const targetLine = targetLabel
+    ? `Ekranda doğrulayabildiğim mevcut hedef: “${targetLabel}”.`
+    : "Bu adım için ekranda doğrulanabilir bir hedef görünmüyorsa ilerleme iddiasında bulunmuyorum.";
+  const controls = Array.isArray(knowledge.controls) ? knowledge.controls.join(", ") : "";
+  const preconditions = Array.isArray(knowledge.preconditions)
+    ? knowledge.preconditions.join(", ")
+    : String(knowledge.precondition || "");
+  const blockedProgressionLine = semanticPlan?.workflowPreconditionBlocked
+    ? `Bu adımın tamamlandığını mevcut arayüzde doğrulayamadım; ${step.label} tamamlanmadan sonraki adıma geçmiyorum. Önce ${step.completion}`
+    : "";
+  const capabilityLead = capability ? `Bu adımda ${capability.label} yeteneğini kullanırsın. ` : "";
+  const recoveryLine = semanticPlan?.continuationAction === "RECOVER"
+    ? ` Bu hedefte zorlanıyorsan “${targetLabel || step.label}” hedefini yeniden kontrol et; mevcut arayüz doğrulanmadan ilerleme varsaymıyorum.`
+    : "";
+  const continuationDepth = Number(semanticPlan?.continuationDepth || 0);
+  const proceduralOrder = Array.isArray(step.proceduralOrder) ? step.proceduralOrder : [];
+  const continuationUnit = semanticPlan?.family === "CONTINUE_CURRENT_REASONING" && proceduralOrder.length
+    ? proceduralOrder[Math.min(Math.max(continuationDepth - 1, 0), proceduralOrder.length - 1)]
+    : "";
+  const continuationLine = continuationUnit
+    ? ` Bu devam açıklamasının ${continuationDepth}. anlamlı parçası: ${continuationUnit}. Bu yalnızca açıklama sırasıdır; canlı arayüz kanıtı olmadan tamamlandı sayılmaz.`
+    : "";
+  const continuationMode = String(semanticPlan?.canonicalRequest?.continuation?.mode || "").trim().toUpperCase();
+  const continuationAction = String(
+    semanticPlan?.typedRequest?.continuationAction
+      || semanticPlan?.continuationAction
+      || "CONTINUE",
+  ).toUpperCase();
+  const isBack = ["BACK", "PREVIOUS", "GERI"].includes(continuationAction);
+  const isRecovery = continuationAction === "RECOVER";
+  const isContinuation = !isBack && !isRecovery
+    && (continuationMode === "CONTINUE" || semanticPlan?.family === "CONTINUE_CURRENT_REASONING");
+  const isRestart = continuationMode === "RESTART";
+  const currentStepAction = knowledge.action || step.action || controls;
+  const currentStepBoundary = knowledge.businessWriteBoundary || step.businessWriteBoundary || "Sefer Abi iş kaydı yazmaz.";
+  const reply = isRestart
+    ? `Akışı baştan başlatıyoruz. Şimdi ${step.ordinal}. adım olan ${step.label} üzerindesin. ${currentStepAction} ${targetLine} Bu başlangıç yalnızca güvenli rehberliktir; ${currentStepBoundary}`
+    : isBack
+      ? step.ordinal === 1
+        ? `Geri isteğini aldım; bu akışın ilk adımındasın: ${step.label}. Önceki bir adım yok. ${currentStepAction} ${targetLine} Arayüzü kullanıcı olarak değiştirmeden yalnızca mevcut güvenli adımı açıklıyorum. ${currentStepBoundary}`
+        : `Geri isteğini aldım. Önceki uygun adım: ${step.label}. ${currentStepAction} ${targetLine} Arayüzde geçişi kullanıcı yapar; Sefer Abi yalnızca önceki adımı açıklar ve iş kaydı yazmaz. ${currentStepBoundary}`
+    : isContinuation
+      ? `Aynı vardiya akışında ${step.ordinal}. adım olan ${step.label} devam ediyor. Bu ${continuationDepth}. devam açıklaması. ${continuationUnit ? `Sıradaki açıklama parçası: ${continuationUnit}. Şimdi: ${currentStepAction}` : currentStepAction} ${blockedProgressionLine} ${targetLine} Bu adımın tamamlandığını canlı arayüzde doğrulamadan sonraki adıma geçtiğini varsaymıyorum. ${currentStepBoundary}`
+      : `Vardiya oluşturma akışında ${step.ordinal}. adım: ${step.label}. ${capabilityLead}${knowledge.what || step.what || step.purpose} Neden: ${knowledge.why || step.why || step.purpose} Şimdi: ${currentStepAction} Görünür kontroller: ${controls}. Ön koşul: ${preconditions}. ${knowledge.completion || step.completion} ${blockedProgressionLine} ${continuationLine} Sonraki adım: ${step.nextStep || "Akışın mevcut doğrulanabilir adımını kontrol et."} ${targetLine}${recoveryLine} ${knowledge.safeAction || step.safeAction || "Sefer Abi yalnızca güvenli rehberlik eder."} ${currentStepBoundary}`;
+  const responseSections = isRestart
+    ? [
+      { title: "Yeniden başlangıç", body: `Akış ${step.ordinal}. adım olan ${step.label} üzerinden başlatılıyor.` },
+      { title: "Şimdi", body: currentStepAction },
+      { title: "Güvenli sınır", body: currentStepBoundary },
+    ]
+    : isBack
+      ? [
+        { title: "Önceki adım", body: step.ordinal === 1 ? `İlk adımdasın: ${step.label}` : `${step.ordinal}. adım: ${step.label}` },
+        { title: "Güvenli sınır", body: "Sefer Abi arayüzü kullanıcı yerine değiştirmez veya iş kaydı yazmaz." },
+      ]
+    : isContinuation
+      ? [
+        { title: "Devam edilen adım", body: `${step.ordinal}. adım: ${step.label}` },
+        { title: "Sıradaki açıklama", body: `${continuationDepth}. devam açıklaması: ${continuationUnit || currentStepAction}` },
+        { title: "Güvenli sınır", body: currentStepBoundary },
+      ]
+      : [
+        { title: `Adım ${step.ordinal}: ${step.label}`, body: `${step.what || step.purpose} ${step.action || ""}`.trim() },
+        { title: "Neden bu adım?", body: knowledge.why || step.why || step.purpose },
+        { title: "Ön koşul ve tamamlanma", body: `${preconditions}. ${knowledge.completion || step.completion}`.trim() },
+        { title: "Sonraki adım", body: step.nextStep || "Mevcut doğrulanabilir adımı kontrol et." },
+        ...(isRecovery ? [{ title: "Kurtarma", body: `“${targetLabel || step.label}” hedefini yeniden kontrol et; canlı arayüz doğrulanmadan ilerleme varsaymıyorum.` }] : []),
+        { title: "Güvenli sınır", body: currentStepBoundary },
+      ];
+  const activeWorkflowStep = {
+    ordinal: step.ordinal,
+    key: step.key,
+    label: step.label,
+  };
+  const currentTarget = guidedTarget?.status === "FOUND"
+    ? {
+      targetKind: guidedTarget.targetKind || "CONTROL",
+      targetKey: guidedTarget.targetKey || null,
+      semanticId: guidedTarget.semanticId || null,
+      blockKey: guidedTarget.blockKey || null,
+      label: guidedTarget.label || null,
+      semanticType: guidedTarget.semanticType || null,
+      screenPath: guidedTarget.screenPath || screenContext?.path || null,
+      locator: guidedTarget.locator || null,
+      callout: guidedTarget.callout || null,
+    }
+    : null;
+  const authorizedActionSet = Array.isArray(screenContext?.uiHints?.visibleButtons)
+    ? screenContext.uiHints.visibleButtons.map((item) => item?.label).filter(Boolean).slice(0, 32)
+    : [];
+  const actualUiState = semanticPlan?.workflowActualUiState
+    || screenContext?.uiHints?.workflowState
+    || null;
+  const completionVerified = semanticPlan?.workflowCompletionVerified === true
+    && semanticPlan?.workflowProgression?.action === "NEXT";
+  const priorTaskState = conversationState?.activeGuidedTask?.taskState || null;
+  const taskState = {
+    activeGoal: model.goal,
+    activeWorkflow: model.id,
+    activeStep: activeWorkflowStep,
+    currentExpectedStep: activeWorkflowStep,
+    lastCompletedStep: completionVerified
+      ? Number(semanticPlan.workflowProgression.fromOrdinal || 0) || null
+      : Number(priorTaskState?.lastCompletedStep || 0) || null,
+    stepPreconditions: Array.isArray(step.preconditions) ? step.preconditions.slice() : [],
+    stepCompletionCondition: step.completion || null,
+    workflowOrder: Array.isArray(step.proceduralOrder) ? step.proceduralOrder.slice() : [],
+    alternativePath: step.alternativePath || null,
+    completionEvidence: Array.isArray(step.completionEvidence) ? step.completionEvidence.slice() : [],
+    stateTransitions: Array.isArray(step.stateTransitions) ? step.stateTransitions.slice() : [],
+    stepCompletionVerified: completionVerified,
+    actualUiState,
+    workflowProgression: semanticPlan?.workflowProgression || null,
+    currentTarget,
+    currentSurface: {
+      path: screenContext?.path || null,
+      label: screenContext?.label || null,
+    },
+    currentRole: String(user?.role || "").toUpperCase() || null,
+    currentEntity: semanticPlan?.entity || null,
+    authorizedActionSet,
+    safeOnly: true,
+  };
+  return {
+    ok: true,
+    copilotVersion: "M18-CANONICAL-CREATE-SHIFT-WORKFLOW",
+    generatedAt: new Date().toISOString(),
+    intent: "CHAT_HELP",
+    intentLabel: "Vardiya oluşturma rehberi",
+    entityType,
+    entityId: Number(entityId),
+    entityLabel: screenContext?.label || "Sefer Abi",
+    provider: "local-canonical-workflow-guidance",
+    providerSummary: model.id,
+    mode: "RULE_BASED",
+    scope: {
+      role: String(user?.role || ""),
+      companyKind: String(user?.companyKind || ""),
+      roomId: user?.roomId ?? null,
+      companyId: user?.companyId ?? null,
+      summary: "Yetkili mevcut ekran ve kanonik vardiya iş akışı kullanıldı; kayıt yazımı yapılmadı.",
+    },
+    reply,
+    summary: reply,
+    contextSummary: isRestart
+      ? `Baştan başlatılan ${step.ordinal}. adım: ${step.label}`
+      : isContinuation
+        ? `Devam edilen ${step.ordinal}. adım: ${step.label}`
+        : `${step.ordinal}. adım: ${step.label}`,
+    questionType: semanticPlan?.family === "CONTINUE_CURRENT_REASONING" ? "CONTINUE_FLOW" : semanticPlan?.family || "UI_GUIDANCE",
+    activeTopic: "CREATE_SHIFT",
+    assistantIntent: "CREATE_SHIFT_WORKFLOW_GUIDANCE",
+    authorizedDomainMap: ["SHIFTS"],
+    authorizedRecords: [],
+    retrievedFacts: [],
+    responseSections,
+    dataSources: ["kanonik COMPANY Guided New Plan iş akışı", "yetkili mevcut ekran"],
+    reasoning: step.purpose,
+    safeNextStep: targetLabel ? `“${targetLabel}” hedefini kontrol et; ardından ${step.completion}` : step.completion,
+    nextAction: targetLabel ? `Sıradaki güvenli hedef: ${targetLabel}.` : (step.nextStep || step.completion),
+    workflowModel: model,
+    workflowStepReference: { ordinal: step.ordinal, key: step.key, label: step.label },
+    workflowStepOrdinal: step.ordinal,
+    workflowOrder: Array.isArray(step.proceduralOrder) ? step.proceduralOrder.slice() : [],
+    workflowAlternativePath: step.alternativePath || null,
+    workflowCompletionEvidence: Array.isArray(step.completionEvidence) ? step.completionEvidence.slice() : [],
+    workflowStateTransitions: Array.isArray(step.stateTransitions) ? step.stateTransitions.slice() : [],
+    taskState,
+    semanticPlan,
+    guidedTarget: guidedTarget || null,
+    roleBoundary: "Sadece mevcut role ve tenant kapsamındaki güvenli UI rehberliği verildi.",
+    readOnly: true,
+    quickActions: [],
+    followUpPrompt: "Devamını anlat",
+  };
+}
+
+function canonicalVisibleControl(screenContext, targetKey) {
+  return (Array.isArray(screenContext?.uiHints?.visibleButtons) ? screenContext.uiHints.visibleButtons : [])
+    .find((item) => (
+      String(item?.identitySource || '').trim().toUpperCase() === 'CANONICAL'
+        && String(item?.targetKey || '').trim() === targetKey
+        && !item?.disabled
+    )) || null;
+}
+
+// The server-backed saved-draft chooser is an actual foreground surface. It
+// has a different product meaning from both the pre-wizard entry action and
+// the first wizard step. Compose it from only the live canonical controls
+// carried by the authorized UI envelope; no chooser action is executed here.
+function buildGuidedDraftChooserResponse({ user, screenContext, semanticPlan } = {}) {
+  const chooser = semanticPlan?.guidedDraftChooser;
+  if (!semanticPlan?.guidedDraftChooserIntent || chooser?.kind !== 'SAVED_DRAFT_CHOOSER') return null;
+  const title = String(chooser.title || '').trim();
+  const resume = canonicalVisibleControl(screenContext, 'company:guided-draft-resume');
+  if (!title || !resume) return null;
+  const newPlan = canonicalVisibleControl(screenContext, 'company:guided-draft-new');
+  const discard = canonicalVisibleControl(screenContext, 'company:guided-draft-discard');
+  const availability = chooser.draftAvailability && typeof chooser.draftAvailability === 'object'
+    ? chooser.draftAvailability
+    : null;
+  const draftCount = Math.max(0, Number(availability?.count || 0) || 0);
+  const actionLines = [
+    `“${String(resume.label || '').trim()}” mevcut taslağı kanıtlanan güvenli adımından sürdürür.`,
+    newPlan ? `“${String(newPlan.label || '').trim()}” mevcut taslağı silmeden yeni başlangıç yolunu açar.` : null,
+    discard ? `“${String(discard.label || '').trim()}” yıkıcı bir işlemdir; yalnızca açık kullanıcı niyeti ve ayrı onayla uygulanır.` : null,
+  ].filter(Boolean);
+  const countLine = draftCount > 0 ? `Şu anda ${draftCount} kayıtlı taslak var.` : '';
+  const reply = `${title} seçimindesin. Bu pencere, mevcut rehberli taslağı nasıl sürdüreceğini seçmek içindir. ${countLine} ${actionLines.join(' ')} Bu seçimi yapana kadar Şirket konumu adımında değilsin. Sefer Abi yalnızca seçenekleri açıklar; taslak oluşturmaz, silmez veya ilerletmez.`.replace(/\s+/g, ' ').trim();
+  return {
+    reply,
+    summary: reply,
+    contextSummary: title,
+    questionType: 'SCREEN_PURPOSE',
+    activeTopic: 'CREATE_SHIFT',
+    assistantIntent: 'GUIDED_DRAFT_CHOOSER_GUIDANCE',
+    responseSections: [
+      { title: 'Mevcut yüzey', body: `${title} seçimindesin. ${countLine}`.trim() },
+      { title: 'Seçenekler', body: actionLines.join(' ') },
+      { title: 'Güvenli sınır', body: 'Sefer Abi seçim yapmaz, taslak oluşturmaz veya silmez.' },
+    ],
+    dataSources: ['yetkili canlı taslak seçici', 'sunucu destekli rehberli taslak durumu'],
+    reasoning: 'Ön plandaki canlı taslak seçici, geniş Planlama Merkezi ekranından daha özgül mevcut yüzeydir.',
+    safeNextStep: `Önce “${String(resume.label || '').trim()}” seçeneğinin uygun olup olmadığını kontrol et.`,
+    nextAction: `Sıradaki güvenli seçim: ${String(resume.label || '').trim()}.`,
+    workflowEntryState: 'SAVED_DRAFT_CHOOSER',
+    workflowStepReference: null,
+    workflowStepOrdinal: null,
+    taskState: {
+      activeGoal: 'GUIDED_DRAFT_SELECTION',
+      activeWorkflow: 'COMPANY_GUIDED_NEW_PLAN',
+      activeStep: null,
+      currentExpectedStep: null,
+      workflowEntryState: 'SAVED_DRAFT_CHOOSER',
+      currentSurface: { path: screenContext?.path || null, label: title },
+      currentRole: String(user?.role || '').toUpperCase() || null,
+      safeOnly: true,
+    },
+    readOnly: true,
+  };
 }
 
 function rowValueByLabels(rows, labels) {
@@ -1186,6 +1757,22 @@ function enrichDecisionLayer(intent, context, base) {
   };
 }
 
+function previousRoomCapabilityGuidanceReply(conversationState) {
+  const messages = Array.isArray(conversationState?.recentMessages)
+    ? conversationState.recentMessages
+    : [];
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    const plan = message?.semanticPlan || null;
+    if (String(message?.role || '').toLowerCase() !== 'assistant') continue;
+    if (String(plan?.family || '').toUpperCase() !== 'UI_GUIDANCE') continue;
+    if (String(plan?.roleCapabilityBoundary || '').toUpperCase() !== 'ROOM_CREATE_UNSUPPORTED') continue;
+    const reply = String(message?.text || '').trim();
+    if (reply) return reply;
+  }
+  return '';
+}
+
 export async function runCopilotFoundation(args = {}) {
   const authorizedScreenContext = resolveIncomingCopilotScreenContext({
     user: args.user,
@@ -1199,13 +1786,133 @@ export async function runCopilotFoundation(args = {}) {
     screenContext: canonicalState.screenContext,
     conversationState: canonicalState,
   });
-  const guidedTarget = resolveCopilotGuidedTarget({
-    user: args.user,
-    screenContext: canonicalState.screenContext,
-    conversationState: canonicalState,
-    semanticPlan: rawPayload?.semanticPlan || null,
-    message: args.message,
-  });
+  // An explicit canonical authorization result owns the target state for this
+  // turn. Do not let the resolver reuse a previous workflow/control target
+  // after the current request has been denied for a different role.
+  const guidedTarget = rawPayload?.semanticPlan?.roleTargetResolution === "UNAUTHORIZED"
+    && rawPayload?.guidedTarget?.status === GUIDED_TARGET_STATUSES.UNAUTHORIZED
+    ? rawPayload.guidedTarget
+    : resolveCopilotGuidedTarget({
+      user: args.user,
+      screenContext: canonicalState.screenContext,
+      conversationState: canonicalState,
+      semanticPlan: rawPayload?.semanticPlan || null,
+      message: args.message,
+    });
+  if (guidedTarget?.status === 'FOUND'
+    && rawPayload?.semanticPlan?.family === 'CONTINUE_CURRENT_REASONING'
+    && rawPayload?.semanticPlan?.continuationBasePlan?.family === 'UI_GUIDANCE') {
+    const targetLabel = String(guidedTarget.label || '').trim();
+    if (targetLabel) {
+      const continuationAction = String(
+        rawPayload.semanticPlan?.typedRequest?.continuationAction
+          || rawPayload.semanticPlan?.continuationAction
+          || 'CONTINUE',
+      ).toUpperCase();
+      const previousGuidanceReply = continuationAction === 'BACK'
+        ? previousRoomCapabilityGuidanceReply(canonicalState)
+        : '';
+      if (previousGuidanceReply) {
+        rawPayload.reply = previousGuidanceReply;
+        rawPayload.summary = previousGuidanceReply;
+        if (Array.isArray(rawPayload.responseSections) && rawPayload.responseSections[0]) rawPayload.responseSections[0].body = previousGuidanceReply;
+      } else {
+        const continuationDepth = Number(rawPayload.semanticPlan?.continuationDepth || 0);
+        const progressionReply = continuationDepth > 1
+          ? `Bu görevde ${continuationDepth}. devam adımındasın. ${canonicalState.screenContext?.label || 'Bu ekran'} ekranında "${targetLabel}" hâlâ doğrulanabilir sonraki kontrol; tamamlandığını doğrulamadan başka bir adımı tamamlandı saymıyorum.`
+          : `Şu anda ${canonicalState.screenContext?.label || 'bu ekran'} ekranındasın. Sıradaki güvenli adım: ${targetLabel}. Bu hedefi kontrol ederek akışa devam edebilirsin.`;
+        rawPayload.reply = progressionReply;
+        rawPayload.summary = progressionReply;
+        if (Array.isArray(rawPayload.responseSections) && rawPayload.responseSections[0]) rawPayload.responseSections[0].body = progressionReply;
+      }
+      rawPayload.nextAction = `Sıradaki hedef: ${targetLabel}.`;
+      rawPayload.safeNextStep = rawPayload.nextAction;
+    }
+  }
+  // A canonical surface-navigation turn must expose the live target that the
+  // browser can actually reveal.  The legacy screen composer may otherwise
+  // return only a generic current-screen summary even though the same
+  // authorized target was resolved for the transport payload.  Keep this
+  // presentation-only bridge bounded to the canonical navigation operation;
+  // it does not infer a target or grant permission.
+  const canonicalTargetedGuidance = [
+    'NAVIGATE_AUTHORIZED_SURFACE',
+    'VIEW_AUTHORIZED_SURFACE',
+    'LOOK_UP_FIELD',
+  ].includes(rawPayload?.semanticPlan?.canonicalRequest?.operation);
+  if (canonicalTargetedGuidance && guidedTarget?.status === 'FOUND') {
+    const targetLabel = String(guidedTarget.label || '').trim();
+    if (targetLabel && !String(rawPayload.reply || '').includes(targetLabel)) {
+      const targetLine = `Ekranda doğrulayabildiğim hedef: “${targetLabel}”.`;
+      rawPayload.reply = `${targetLine} ${String(rawPayload.reply || '').trim()}`.trim();
+      rawPayload.summary = rawPayload.reply;
+      if (Array.isArray(rawPayload.responseSections) && rawPayload.responseSections[0]) {
+        rawPayload.responseSections[0].body = rawPayload.reply;
+      }
+      rawPayload.nextAction = `“${targetLabel}” hedefini aç.`;
+      rawPayload.safeNextStep = rawPayload.nextAction;
+    }
+  }
+  const createCapabilityDenied = rawPayload?.semanticPlan?.authorizationDecision?.reason === "CREATE_CAPABILITY_DENIED_BY_ROLE";
+  const guidedDraftChooserResponse = createCapabilityDenied
+    ? null
+    : buildGuidedDraftChooserResponse({
+      user: args.user,
+      entityType: args.entityType,
+      entityId: args.entityId,
+      screenContext: canonicalState.screenContext,
+      semanticPlan: rawPayload?.semanticPlan,
+    });
+  if (guidedDraftChooserResponse) {
+    rawPayload.reply = guidedDraftChooserResponse.reply;
+    rawPayload.summary = guidedDraftChooserResponse.summary;
+    rawPayload.contextSummary = guidedDraftChooserResponse.contextSummary;
+    rawPayload.questionType = guidedDraftChooserResponse.questionType;
+    rawPayload.activeTopic = guidedDraftChooserResponse.activeTopic;
+    rawPayload.assistantIntent = guidedDraftChooserResponse.assistantIntent;
+    rawPayload.responseSections = guidedDraftChooserResponse.responseSections;
+    rawPayload.dataSources = guidedDraftChooserResponse.dataSources;
+    rawPayload.reasoning = guidedDraftChooserResponse.reasoning;
+    rawPayload.safeNextStep = guidedDraftChooserResponse.safeNextStep;
+    rawPayload.nextAction = guidedDraftChooserResponse.nextAction;
+    rawPayload.workflowEntryState = guidedDraftChooserResponse.workflowEntryState;
+    rawPayload.workflowStepReference = guidedDraftChooserResponse.workflowStepReference;
+    rawPayload.workflowStepOrdinal = guidedDraftChooserResponse.workflowStepOrdinal;
+    rawPayload.taskState = guidedDraftChooserResponse.taskState;
+  }
+  const createShiftTurn = rawPayload?.semanticPlan?.workflowIntent === "CREATE_SHIFT"
+    || rawPayload?.semanticPlan?.continuationBasePlan?.workflowIntent === "CREATE_SHIFT";
+  if (!createCapabilityDenied
+    && createShiftTurn
+    && ["UI_GUIDANCE", "CONTINUE_CURRENT_REASONING", "EXPLAIN_CURRENT_TARGET"].includes(rawPayload?.semanticPlan?.family)) {
+    const workflowResponse = buildCreateShiftWorkflowResponse({
+      user: args.user,
+      entityType: args.entityType,
+      entityId: args.entityId,
+      screenContext: canonicalState.screenContext,
+      semanticPlan: rawPayload.semanticPlan,
+      conversationState: canonicalState,
+      guidedTarget,
+    });
+    if (workflowResponse) {
+      rawPayload.reply = workflowResponse.reply;
+      rawPayload.summary = workflowResponse.summary;
+      rawPayload.contextSummary = workflowResponse.contextSummary;
+      rawPayload.questionType = workflowResponse.questionType;
+      rawPayload.activeTopic = workflowResponse.activeTopic;
+      rawPayload.assistantIntent = workflowResponse.assistantIntent;
+      rawPayload.responseSections = workflowResponse.responseSections;
+      rawPayload.dataSources = workflowResponse.dataSources;
+      rawPayload.reasoning = workflowResponse.reasoning;
+      rawPayload.safeNextStep = workflowResponse.safeNextStep;
+      rawPayload.nextAction = workflowResponse.nextAction;
+      rawPayload.workflowModel = workflowResponse.workflowModel;
+      rawPayload.workflowStepReference = workflowResponse.workflowStepReference;
+      rawPayload.workflowStepOrdinal = workflowResponse.workflowStepOrdinal;
+      rawPayload.taskState = workflowResponse.taskState;
+      if (guidedTarget) rawPayload.guidedTarget = guidedTarget;
+    }
+  }
   const payload = normalizeSeferAbiUserFacingPayload({
     ...rawPayload,
     ...(guidedTarget ? { guidedTarget } : {}),
@@ -1231,24 +1938,131 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
     // Interpret natural language once.  Every later stage receives this same
     // typed request; authorization and retrieval may reject it, but neither
     // may silently reinterpret its task, entity target, or context scope.
-    const semanticPlan = resolveSemanticIntent({ message, user, conversationState, screenContext });
-    const costRequest = detectCostAnalysisIntent({ message, screenContext, conversationState });
+    const semanticContext = buildCanonicalSemanticContext({ message, user, conversationState, screenContext });
+    const localSemanticProposalResult = await requestLocalSemanticProposal({
+      message,
+      user,
+      screenContext,
+      conversationState,
+    });
+    const localSemanticProposal = localSemanticProposalResult.status === "VALID"
+      ? localSemanticProposalResult.proposal
+      : null;
+    const canonicalRequestResult = resolveCanonicalConversationRequest({
+      message,
+      user,
+      conversationState,
+      screenContext,
+      semanticContext,
+      localSemanticProposal,
+    });
+    const semanticPlan = resolveSemanticIntent({ message, user, conversationState, screenContext, canonicalRequest: canonicalRequestResult });
+    semanticPlan.canonicalRequest = canonicalRequestResult.request;
+    semanticPlan.canonicalRequestEnvelope = canonicalRequestResult;
+    semanticPlan.canonicalRequestValidation = canonicalRequestResult.validation;
+    semanticPlan.canonicalRequestId = canonicalRequestResult.requestId;
+    // Stage A exposes the provider-neutral eligibility decision as bounded
+    // provenance only. It does not invoke a proposer or alter the canonical
+    // semantic/authorization path.
+    semanticPlan.canonicalFallbackEligibility = canonicalRequestResult.fallbackEligibility;
+    if (localSemanticProposalResult.status !== "DISABLED") {
+      semanticPlan.localSemanticProposal = {
+        status: localSemanticProposalResult.status,
+        applied: Boolean(localSemanticProposal),
+        latencyMs: Number(localSemanticProposalResult.latencyMs || 0),
+      };
+    }
+    if (canonicalRequestResult.validation?.status === "SEMANTIC_UNRESOLVED") {
+      const reply = "Bu isteği güvenli biçimde ürün anlamına bağlayamadım; hangi yetkili alanı açıklamamı istediğini belirtir misin?";
+      return {
+        ok: true,
+        intent: "CHAT_HELP",
+        intentLabel: "Güvenli açıklama",
+        provider: "local-canonical-semantic-validation",
+        mode: "RULE_BASED",
+        scope: { role: String(user?.role || ""), companyId: user?.companyId ?? null, roomId: user?.roomId ?? null },
+        reply,
+        summary: reply,
+        contextSummary: "Geçersiz veya eksik canonical semantic envelope; güvenli açıklama istendi.",
+        questionType: "SAFE_CLARIFICATION",
+        activeTopic: "SEMANTIC_UNRESOLVED",
+        assistantIntent: "SAFE_CLARIFICATION",
+        authorizedDomainMap: [],
+        authorizedRecords: [],
+        retrievedFacts: [],
+        responseSections: [{ title: "Güvenli açıklama", body: reply }],
+        dataSources: ["canonical semantic validation"],
+        reasoning: "Geçersiz envelope OOS olarak sınıflandırılmadı.",
+        semanticPlan,
+        conversationRoute: "SAFE_CLARIFICATION",
+        dialogueTopic: "PRODUCT",
+        authorizedProductContext: null,
+        readOnly: true,
+        quickActions: [],
+      };
+    }
+    const canonicalAuthorization = await authorizeSemanticRequest({ user, plan: semanticPlan, request: canonicalRequestResult.request });
+    const roleScopedTargetDenied = semanticPlan.roleTargetResolution === "UNAUTHORIZED";
+    semanticPlan.authorizationDecision = {
+      ...(semanticPlan.authorizationDecision || {}),
+      status: roleScopedTargetDenied ? "DENY" : canonicalAuthorization.status,
+      authorizationStatus: roleScopedTargetDenied ? "DENIED" : canonicalAuthorization.authorizationStatus,
+      reason: roleScopedTargetDenied ? "ROLE_SCOPED_TARGET_DENIED" : canonicalAuthorization.reason,
+      authorizedEntityRefs: canonicalAuthorization.authorizedEntityRefs,
+      deniedCandidateRefs: roleScopedTargetDenied
+        ? (canonicalRequestResult.request?.candidateEntityRefs || [])
+        : canonicalAuthorization.deniedCandidateRefs,
+    };
+    // A canonical role-scoped target denial is terminal for this turn. It must
+    // not be reinterpreted as a stale active-workflow field clarification,
+    // generic recovery, or a previous selected target. Task state remains
+    // context only and never grants authorization.
+    const roleScopedTargetBoundary = buildRoleScopedTargetBoundaryResponse({
+      user,
+      entityType,
+      entityId,
+      screenContext,
+      semanticPlan,
+    });
+    if (roleScopedTargetBoundary) return roleScopedTargetBoundary;
+    const canonicalCostIntent = hasCanonicalCostIntent(semanticPlan);
+    // Cost routing is frozen in the V3 canonical request before authorization;
+    // downstream raw-text analysis cannot take over this decision.
     const requestedDomains = semanticPlan.requestedDomains || [];
     const financialScreen = /\/(?:room|company|school|organization)\/(?:financial-operations|operations)\b/i.test(String(screenContext?.path || ""));
     const explicitRoleGlobal = semanticPlan.scopeTarget === "ROLE_GLOBAL"
       || semanticPlan.typedRequest?.scopeTarget === "ROLE_GLOBAL"
       || semanticPlan.primaryTask === "ROLE_GLOBAL";
-    const costDomainAllowed = semanticPlan.authorizationDecision?.status === "ALLOW"
+    const explicitFinancialMetric = semanticPlan.canonicalRequest?.typedEvidence?.specificity?.financialMetricIdentityEvidence === true;
+    const costDomainAllowed = canonicalCostIntent
+      && semanticPlan.authorizationDecision?.status === "ALLOW"
       && (
         requestedDomains.some((domain) => ["BUDGET", "FINANCE"].includes(domain))
-        || (costRequest.isCostAnalysis && requestedDomains.some((domain) => ["VEHICLES", "OPERATIONS", "PERSONNEL", "ORGANIZATION_PLANS"].includes(domain)))
-        || (costRequest.isCostAnalysis && financialScreen && ["COMPANY", "ROOM", "SCHOOL", "ORGANIZATION"].includes(String(user?.companyKind || user?.role || "").toUpperCase()))
+        || (semanticPlan.canonicalRequest?.capability === "COST_ANALYSIS" && requestedDomains.some((domain) => ["VEHICLES", "OPERATIONS", "PERSONNEL", "ORGANIZATION_PLANS"].includes(domain)))
+        || (semanticPlan.canonicalRequest?.capability === "COST_ANALYSIS" && financialScreen && ["COMPANY", "ROOM", "SCHOOL", "ORGANIZATION"].includes(String(user?.companyKind || user?.role || "").toUpperCase()))
+        || hasCanonicalQuoteFloorEvidence(semanticPlan)
       );
+    // The canonical semantic plan owns a grounded guided workflow turn.  A
+    // broad cost classifier may still inspect the same raw text (for example
+    // “durak”), but it cannot replace an already-authorized workflow meaning
+    // with an unrelated cost answer.  Explicit cost plans keep their normal
+    // route because they do not carry the CREATE_SHIFT workflow intent.
+    const canonicalWorkflowOwnsTurn = Boolean(
+      semanticPlan?.planStatus === "READY"
+      && (
+        semanticPlan?.workflowIntent === "CREATE_SHIFT"
+        || semanticPlan?.continuationBasePlan?.workflowIntent === "CREATE_SHIFT"
+      )
+    );
     // A financial follow-up can be intentionally terse (for example,
     // "10 kişi daha gelirse?").  The current screen and the immediately
     // preceding cost conversation keep it inside the same read-only owner;
     // it must not be downgraded to off-topic before cost analysis sees it.
-    if (costRequest.isCostAnalysis && costDomainAllowed && !explicitRoleGlobal && semanticPlan.family !== "SCREEN_CONTEXT") {
+    if (canonicalCostIntent
+      && costDomainAllowed
+      && (!explicitRoleGlobal || explicitFinancialMetric)
+      && semanticPlan.family !== "SCREEN_CONTEXT"
+      && !canonicalWorkflowOwnsTurn) {
       const resolved = await resolveChatContext({ entityType, entityId, user, screenContext, conversationState });
       return buildSeferAbiCostAnalysisResponse({
         baseResponse: {
@@ -1265,6 +2079,9 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
           scope: resolved.scope,
           screenPath: screenContext?.path || null,
           screenLabel: screenContext?.label || null,
+          semanticPlan,
+          conversationRoute: semanticPlan.conversationRoute,
+          dialogueTopic: semanticPlan.dialogueTopic,
         },
         user,
         message,
@@ -1286,7 +2103,26 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
       suspendProductContext: semanticPlan.suspendProductContext,
       retrieveProductData: semanticPlan.retrieveProductData,
     };
-    if (conversationRoute.route === "GENERIC_PRODUCT_HELP") {
+    const hasExplicitCandidateRecord = Array.isArray(semanticPlan.canonicalRequest?.candidateEntityRefs)
+      && semanticPlan.canonicalRequest.candidateEntityRefs.some((candidate) => (
+        String(candidate?.type || "").trim().length > 0
+        && Number(candidate?.id) > 0
+      ));
+    const productTeachingContinuation = semanticPlan.family === "CONTINUE_CURRENT_REASONING"
+      && ["GENERIC_PRODUCT_HELP", "ROLE_EXPLANATION_HELP"].includes(String(semanticPlan.continuationBasePlan?.family || ""))
+      && conversationState?.productTeachingState;
+    if (productTeachingContinuation) {
+      return buildProductTeachingContinuationProjection({
+        message,
+        semanticPlan,
+        user,
+        screenContext,
+        conversationState,
+      });
+    }
+    if (!hasExplicitCandidateRecord
+      && (conversationRoute.route === "GENERIC_PRODUCT_HELP"
+        || ["GENERIC_PRODUCT_HELP", "ROLE_EXPLANATION_HELP"].includes(String(semanticPlan.family || "")))) {
       return buildGenericProductHelpProjection({ message, semanticPlan, user, screenContext });
     }
     if (["OFF_TOPIC_SAFE", "GENERAL_KNOWLEDGE", "LIVE_EXTERNAL_DATA", "UNCLEAR_OR_AMBIGUOUS"].includes(conversationRoute.route)) {
@@ -1349,16 +2185,50 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
     // Financial questions have a dedicated read-only assistant and must reach
     // its canonical cost/scenario owners before the generic priority fallback.
     // The typed authorization decision remains the gate for this early route.
-    const workflowGuidance = semanticPlan.family === "UI_GUIDANCE"
-      || semanticPlan.continuationBasePlan?.family === "UI_GUIDANCE";
+    const domainScopedGuidance = semanticPlan.family === "UI_GUIDANCE"
+      && (semanticPlan.requestedDomains || []).length > 0;
+    const workflowGuidance = (["UI_GUIDANCE", "EXPLAIN_CURRENT_TARGET"].includes(semanticPlan.family)
+      || semanticPlan.continuationBasePlan?.family === "UI_GUIDANCE")
+      && !domainScopedGuidance
+      && !hasExplicitCandidateRecord;
+    // A resolved canonical VIEW request is already an authorized, read-only
+    // request for the current product surface. Keep it on the surface-help
+    // composition path even when the legacy planner classified the same
+    // wording as a cross-domain summary family. This preserves the canonical
+    // action/object decision instead of asking the reasoning composer to infer
+    // fields again from raw text.
+    const canonicalSurfaceView = Boolean(
+      semanticPlan.canonicalRequest?.operation === "VIEW_AUTHORIZED_SURFACE"
+      && semanticPlan.canonicalRequest?.semanticAction?.actionClass === "VIEW"
+      && semanticPlan.canonicalRequest?.semanticAction?.objectClass,
+    );
     // A canonical screen-context question is already an authorized UI-help
     // decision.  Let the screen-aware composer explain the real surface;
     // the cross-domain reasoning path otherwise collapses it to a one-line
     // situation summary before the richer UI guidance can run.
-    const screenContextHelp = semanticPlan.family === "SCREEN_CONTEXT"
-      && Boolean(screenContext?.path)
+    const currentSurfaceGuidance = Boolean(
+      screenContext?.path
+      && !semanticPlan.workflowIntent
+      && !hasExplicitCandidateRecord
+      && (
+        semanticPlan.family === "SCREEN_CONTEXT"
+        || canonicalSurfaceView
+        || (["NEXT_STEP", "RISK_RANKING"].includes(semanticPlan.family) && (
+          semanticPlan.scopeTarget === "CURRENT_SCREEN"
+          || semanticPlan.typedRequest?.scopeTarget === "CURRENT_SCREEN"
+        ))
+        || (semanticPlan.family === "UI_GUIDANCE" && (
+          semanticPlan.scopeTarget === "CURRENT_SCREEN"
+          || semanticPlan.typedRequest?.scopeTarget === "CURRENT_SCREEN"
+          || semanticPlan.typedRequest?.screenContextIntent === true
+        ))
+      ),
+    );
+    const genericCurrentSurfaceGuidance = currentSurfaceGuidance && !domainScopedGuidance;
+    const screenContextHelp = genericCurrentSurfaceGuidance
       && !(semanticPlan.requestedDomains || []).length;
-    const reasoningAnswer = workflowGuidance || screenContextHelp
+    const selectedRecordContextRequest = semanticPlan.typedRequest?.taskType === "SELECTED_RECORD_CONTEXT";
+    const reasoningAnswer = workflowGuidance || screenContextHelp || (hasExplicitCandidateRecord && !selectedRecordContextRequest)
       ? null
       : await buildAuthorizedReasoningAnswer({
         user,
@@ -1397,6 +2267,7 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
         assistantIntent: reasoningAnswer.intent || reasoningAnswer.topic,
         authorizedDomainMap: authorized.domains,
         authorizedRecords: reasoningAnswer.records,
+        discourseEntities: reasoningAnswer.discourseEntities || [],
         responseSections: [
           { title: "Özet", body: reasoningAnswer.reply },
           { title: "Neden böyle söyledim", body: reasoningAnswer.reasoning || "Yetkili kayıtlar birlikte değerlendirildi." },
@@ -1430,16 +2301,85 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
     const visibleContextPlan = semanticPlan;
     const retainedProductResult = Boolean(conversationState?.lastSettledResult?.semanticPlan || conversationState?.authorizedProductContext?.semanticPlan);
     const visibleContextDiagnostic = semanticPlan.family !== "SCREEN_CONTEXT"
+      && !hasExplicitCandidateRecord
       && (!retainedProductResult || ["CURRENT_SITUATION", "LOCATION_GPS", "ETA"].includes(visibleContextPlan.family))
       ? buildVisibleContextDiagnosticResponse({ user, entityType, entityId, screenContext, message })
       : null;
     if (visibleContextDiagnostic) return visibleContextDiagnostic;
 
+    // An active guided target explanation is a presentation turn over the
+    // canonical target. Keep it on the existing screen-aware composer before
+    // product awareness or record fallbacks can reinterpret the raw question
+    // as out-of-scope or a lookup.
+    if (semanticPlan.family === "EXPLAIN_CURRENT_TARGET") {
+      if (semanticPlan.workflowIntent === "CREATE_SHIFT" || semanticPlan.continuationBasePlan?.workflowIntent === "CREATE_SHIFT") {
+        const workflowTarget = resolveCopilotGuidedTarget({
+          user,
+          screenContext,
+          conversationState,
+          semanticPlan,
+          message,
+        });
+        const workflowResponse = buildCreateShiftWorkflowResponse({
+          user,
+          entityType,
+          entityId,
+          screenContext,
+          semanticPlan,
+          conversationState,
+          guidedTarget: workflowTarget,
+        });
+        if (workflowResponse) return workflowResponse;
+      }
+      const targetContext = await resolveChatContext({ entityType, entityId, user, screenContext, conversationState });
+      const targetResponse = buildLegacyChatHelpResponse({
+        entityType,
+        entityId,
+        user,
+        message,
+        semanticPlan,
+        conversationState,
+        screenContext,
+        ...targetContext,
+      });
+      return {
+        ...targetResponse,
+        semanticPlan,
+        conversationRoute: semanticPlan.conversationRoute,
+        dialogueTopic: semanticPlan.dialogueTopic,
+      };
+    }
+
+    // CREATE_SHIFT is a canonical workflow task. Keep its product knowledge
+    // bound to the active semantic plan instead of sending the request back
+    // through broad record-awareness or generic screen fallbacks.
+    const createShiftPlan = semanticPlan?.workflowIntent === "CREATE_SHIFT"
+      || semanticPlan?.continuationBasePlan?.workflowIntent === "CREATE_SHIFT";
+    if (createShiftPlan && ["UI_GUIDANCE", "CONTINUE_CURRENT_REASONING"].includes(semanticPlan.family)) {
+      const workflowTarget = resolveCopilotGuidedTarget({
+        user,
+        screenContext,
+        conversationState,
+        semanticPlan,
+        message,
+      });
+      const workflowResponse = buildCreateShiftWorkflowResponse({
+        user,
+        entityType,
+        entityId,
+        screenContext,
+        semanticPlan,
+        conversationState,
+        guidedTarget: workflowTarget,
+      });
+      if (workflowResponse) return workflowResponse;
+    }
+
     // SCREEN_CONTEXT is already a canonical UI-help decision. Let the
     // screen-aware composer describe the real authorized surface and its safe
     // next steps; the broad awareness snapshot must not collapse it into a
     // one-line situation label.
-    const productAwareness = semanticPlan.family === "SCREEN_CONTEXT"
+    const productAwareness = genericCurrentSurfaceGuidance
       ? null
       : await buildAuthorizedProductAwarenessAnswer({ user, message, screenContext, conversationState, semanticPlan });
     const productAwarenessResponse = buildProductAwarenessResponse({
@@ -1459,7 +2399,7 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
       // read-only cross-panel snapshot is temporarily unavailable.
     }
     const actionableAnswer = actionableSource
-      && semanticPlan.family !== "SCREEN_CONTEXT"
+      && !genericCurrentSurfaceGuidance
       && roleGlobalActionableFallbackAllowed(semanticPlan, conversationState)
       ? buildActionableAnswer({ message, snapshot: actionableSource })
       : null;
@@ -1510,14 +2450,17 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
         entityId,
         user,
         message,
+        semanticPlan,
         conversationState,
         screenContext,
         ...resolved,
       });
     } catch (error) {
-      const costRequest = detectCostAnalysisIntent({ message, screenContext, conversationState });
+      const costRequest = canonicalCostIntent
+        ? detectCostAnalysisIntent({ message, screenContext, conversationState })
+        : { isCostAnalysis: false };
       const legacyGuideMismatch = ["JOB_TYPE_ENTITY_MISMATCH", "UNSUPPORTED_JOB_TYPE"].includes(String(error?.code || ""));
-      if (!costRequest.isCostAnalysis || !legacyGuideMismatch) throw error;
+      if (!canonicalCostIntent || !costRequest.isCostAnalysis || !legacyGuideMismatch) throw error;
       baseResponse = {
         ok: true,
         generatedAt: new Date().toISOString(),
@@ -1538,7 +2481,15 @@ async function runCopilotFoundationInternal({ intent, entityType, entityId, user
     // a colloquial phrase contains a cost-like verb such as "çalışıyor".
     // Screen context is already the semantic decision and must not be wrapped
     // by the financial assistant.
-    if (semanticPlan.family === "SCREEN_CONTEXT") {
+    if (genericCurrentSurfaceGuidance) {
+      return {
+        ...baseResponse,
+        semanticPlan,
+        conversationRoute: semanticPlan.conversationRoute,
+        dialogueTopic: semanticPlan.dialogueTopic,
+      };
+    }
+    if (!canonicalCostIntent) {
       return {
         ...baseResponse,
         semanticPlan,

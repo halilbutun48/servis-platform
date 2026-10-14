@@ -444,6 +444,8 @@ async function buildCommercialFlowSummary(company) {
         return {
           id: `shift-${shiftId}`,
           shiftId,
+          offerId: latestOffer?.id || null,
+          agreementId: shift?.agreementId || null,
           counterparty,
           flowLabel: "Operasyon",
           amountLabel,
@@ -461,6 +463,8 @@ async function buildCommercialFlowSummary(company) {
         return {
           id: `shift-${shiftId}`,
           shiftId,
+          offerId: latestOffer?.id || null,
+          agreementId: shift?.agreementId || null,
           counterparty,
           flowLabel: "Bekleyen",
           amountLabel,
@@ -475,6 +479,8 @@ async function buildCommercialFlowSummary(company) {
       return {
         id: `shift-${shiftId}`,
         shiftId,
+        offerId: latestOffer?.id || null,
+        agreementId: shift?.agreementId || null,
         counterparty,
         flowLabel:
           hasCounter

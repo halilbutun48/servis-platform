@@ -152,7 +152,10 @@ export function stepFlowSentence(steps, limit = 3) {
 
 export function stripStepLead(text) {
   return String(text || '')
-    .replace(/^(Önce|Sonra|Ardından|İlk bakılacak yer:)\s*/iu, '')
+    // Require a word boundary after a step lead. Without this boundary,
+    // "Öncelikli" is split into the malformed visible text "likli".
+    .replace(/^(?:Önce|Sonra|Ardından)(?=\s|$)\s*/iu, '')
+    .replace(/^İlk bakılacak yer:\s*/iu, '')
     .trim();
 }
 
@@ -274,6 +277,11 @@ export function companyPlanningCenterSurfaceText({ screenPath = '', screenDefini
     sourceScreenContext?.path,
     '',
   ));
+  // Planning language is not, by itself, proof that the current surface is
+  // the COMPANY planning flow. SCHOOL and ORGANIZATION surfaces also expose
+  // planning vocabulary, but their guidance contract is different. Keep this
+  // shared company-only surface projection route-bound.
+  if (!/^\/company(?:\/|$)/u.test(path)) return '';
   if (path === '/company') return 'planlama merkezi';
   return normalizeLooseText(uniqueStrings([
     screenDefinition?.label,
