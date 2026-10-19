@@ -32,6 +32,7 @@ export const OPERATION_HEALTH_TRIGGER_PHRASES = Object.freeze([
   'aktif surucu',
   'açık sorun',
   'acik sorun',
+  'problem',
   'konum sinyali',
   'konum bilgisi',
   'çevrim dışı',
@@ -505,11 +506,13 @@ function detectSurfaceProfile({ screenPath = '', screenDefinition = null, screen
   )) || genericSurfaceProfile();
 }
 
-function getOperationHealthCounters({ screenContext = null, sourceScreenContext = null } = {}) {
+function getOperationHealthCounters({ screenContext = null, sourceScreenContext = null, authoritativeCounters = null } = {}) {
   const screenFacts = structuredFacts(screenContext);
   const sourceFacts = structuredFacts(sourceScreenContext);
   const facts = screenFacts || sourceFacts || {};
-  const counters = facts?.counters && typeof facts.counters === 'object'
+  const counters = authoritativeCounters && typeof authoritativeCounters === 'object'
+    ? authoritativeCounters
+    : facts?.counters && typeof facts.counters === 'object'
     ? facts.counters
     : facts?.counts && typeof facts.counts === 'object'
       ? facts.counts
@@ -670,6 +673,8 @@ export function buildOperationHealthState({
   entityType = 'screen',
   context = null,
   taskState = null,
+  issueRecords = [],
+  authoritativeCounters = null,
 } = {}) {
   const normalizedMessage = firstNonBlank(message, rawMessage, '');
   const surface = detectSurfaceProfile({
@@ -685,7 +690,25 @@ export function buildOperationHealthState({
   const countersState = getOperationHealthCounters({
     screenContext,
     sourceScreenContext,
+    authoritativeCounters,
   });
+  // The authorized screen already carries issue records inside structuredFacts.
+  // Keep that source as the canonical fallback so the reasoning/composer path
+  // cannot silently degrade a valid ISSUE response to counters-only output
+  // when an intermediate caller omits the convenience argument.
+  const sourceIssueRecords = Array.isArray(issueRecords) && issueRecords.length
+    ? issueRecords
+    : (structuredFacts(screenContext)?.issueRecords
+      || structuredFacts(sourceScreenContext)?.issueRecords
+      || []);
+  const safeIssueRecords = (Array.isArray(sourceIssueRecords) ? sourceIssueRecords : [])
+    .filter((item) => item && String(item.title || '').trim())
+    .slice(0, 12)
+    .map((item) => ({
+      title: String(item.title).trim(),
+      severity: String(item.severity || '').trim().toUpperCase(),
+      detail: String(item.detail || '').trim(),
+    }));
   const selectedSummaryText = firstNonBlank(
     screenContext?.selectedSummary,
     sourceScreenContext?.selectedSummary,
@@ -741,19 +764,28 @@ export function buildOperationHealthState({
   const countSummary = countersState.hasSignal
     ? `Şimdi: En kritik sorun canlılık ve cihaz riski. Aktif sürücü ${Number.isFinite(countersState.counters.activeDrivers) ? countersState.counters.activeDrivers : 0}, riskli cihaz ${Number.isFinite(countersState.counters.riskyDevices) ? countersState.counters.riskyDevices : 0}, konum sinyali güncel değil / çevrim dışı ${Number.isFinite(countersState.counters.staleOrOffline) ? countersState.counters.staleOrOffline : 0} ve açık sorun ${Number.isFinite(countersState.counters.openIssues) ? countersState.counters.openIssues : 0} görünüyor.`
     : `Şimdi: Bu ekranda somut operasyon sağlığı sinyali görünmüyor; açık sorun, riskli cihaz, aktif sürücü ve konum sinyali güncel değil / çevrim dışı satırlarını kontrol et.`;
+  const hasActionableSignals = countersState.hasSignal && [
+    countersState.counters.riskyDevices,
+    countersState.counters.staleOrOffline,
+    countersState.counters.openIssues,
+  ].some((value) => Number.isFinite(value) && value > 0);
   const specificNextBestAction = countersState.hasSignal
-    ? 'Riskli cihazı aç, konum sinyali güncel değil / çevrim dışı satırını aç ve açık sorunları sırala.'
+    ? hasActionableSignals
+      ? 'Riskli cihazı aç, konum sinyali güncel değil / çevrim dışı satırını aç ve açık sorunları sırala.'
+      : 'Şu anda doğrulanmış açık sorun veya güncel olmayan konum sinyali görünmüyor; ekranı yenileyip yeni bir uyarı oluşup oluşmadığını kontrol et.'
     : firstNonBlank(
       countersState.sampleIssue ? 'Önce örnek sorunu aç. Sonra hangi ekrana gitmen gerektiğini netleştir.' : '',
       countersState.sampleDriver ? 'Önce örnek sürücünün canlılık, izin ve oturum durumunu birlikte kontrol et.' : '',
       surface.nextBestAction,
     );
-  const specificSafestNextStep = firstNonBlank(
-    surface.safestNextStep,
-    countersState.hasSignal
-      ? 'En risksiz adım, önce riskli cihaz ve konum sinyali güncel değil / çevrim dışı satırını açmaktır.'
-      : '',
-  );
+  const specificSafestNextStep = countersState.hasSignal && !hasActionableSignals
+    ? 'En güvenli kontrol, ekranı yenileyip yeni bir uyarı oluşup oluşmadığını doğrulamaktır.'
+    : firstNonBlank(
+      surface.safestNextStep,
+      countersState.hasSignal
+        ? 'En risksiz adım, önce riskli cihaz ve konum sinyali güncel değil / çevrim dışı satırını açmaktır.'
+        : '',
+    );
   const compareHint = firstNonBlank(
     surface.compareHint,
     countersState.hasSignal ? 'Operasyon sağlığı canlılık ve risk okuması içindir; tek başına işlem kararı değildir.' : '',
@@ -805,9 +837,19 @@ export function buildOperationHealthState({
   const roomOperationHealthTail = surface.key === 'ROOM_OPERATION_HEALTH'
     ? 'Riskli cihazı aç, konum sinyali güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.'
     : '';
-  const replyTail = blockers.length
-    ? (roomOperationHealthTail ? `İnsan onayı gerekir. ${roomOperationHealthTail}` : 'İnsan onayı gerekir.')
-    : roomOperationHealthTail;
+  const severityLabels = { HIGH: 'Yüksek', MEDIUM: 'Orta', LOW: 'Düşük' };
+  const issueListText = (interactionIntentFamily === 'ISSUE_DIAGNOSTIC' || questionType === 'ISSUE_DIAGNOSTIC')
+    ? safeIssueRecords.length
+      ? `Doğrulanmış açık sorunlar: ${safeIssueRecords.map((item) => {
+        const severity = severityLabels[item.severity] || item.severity;
+        return `${item.title} (önem: ${severity || 'belirtilmedi'}, durum: açık)${item.detail ? ` — ${item.detail}` : ''}`;
+      }).join('; ')}.`
+      : countersState.counters.openIssues === 0
+        ? 'Doğrulanmış açık sorun kaydı bulunmuyor.'
+        : 'Açık sorun sayısı var; başlık ve ayrıntılar bu turda doğrulanamadı.'
+    : '';
+  const replyTailParts = [issueListText, blockers.length ? 'İnsan onayı gerekir.' : '', roomOperationHealthTail].filter(Boolean);
+  const replyTail = replyTailParts.join(' ');
   const reply = shouldRespond
     ? buildOperationHealthCoreReply({
       surface,
@@ -869,6 +911,7 @@ export function buildOperationHealthState({
     userRole: String(userRole || ''),
     roleMode: String(roleMode || ''),
     counters: countersState.counters,
+    issueRecords: safeIssueRecords,
     sampleDriver: countersState.sampleDriver,
     sampleIssue: countersState.sampleIssue,
   });

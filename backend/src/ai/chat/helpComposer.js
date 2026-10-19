@@ -70,6 +70,8 @@ import {
   WORKFLOW_DIAGNOSTIC_QUESTION_TYPES, hasSeferScoreSignal, matchesStandalonePhrase, normalizeGuideText,
   pickWorkflowVisibleReply, pickButtons, pickTerms, polishReply, questionTypeLabel,
   collapseDuplicateVisibleActionPair,
+  buildVisibleReplyOverrides,
+  buildVisibleReplyWithLead,
   sameVisibleReplyFragment,
   stripVisibleNowLeadMarkers,
   termComparisonReplyV2,
@@ -554,7 +556,11 @@ function splitCompoundQuestion(message) {
     .filter(Boolean);
 }
 
-function expandFollowUpMessage(message, conversationState, screenContext) {
+function expandFollowUpMessage(message, conversationState, screenContext, canonicalRequest = null) {
+  const canonicalCurrentSurfaceExplanation = canonicalRequest?.operation === 'EXPLAIN_CURRENT_SURFACE'
+    && canonicalRequest?.semanticAction?.actionClass === 'EXPLAIN'
+    && canonicalRequest?.semanticAction?.objectClass === 'SURFACE';
+  if (canonicalCurrentSurfaceExplanation) return String(message || '');
   return resolveFollowUpContextQuestion({ message, conversationState, screenContext });
 }
 
@@ -2396,6 +2402,24 @@ function composeDetailContinuationReply({ guide, screenDefinition, screenContext
   ].filter(Boolean).join(' ').trim();
 }
 
+function composeKvkkVisibilityReply({ screenContext, sourceScreenContext, userRole = '' } = {}) {
+  const facts = [screenContext, sourceScreenContext]
+    .map((context) => context?.structuredFacts?.kvkkAccess)
+    .find((value) => value && typeof value === 'object') || null;
+  if (!facts) {
+    return 'Bu oturum için KVKK erişim durumu doğrulanmış bir yetki sinyaliyle taşınmadı; erişimi kapalı varsaymıyorum. Görünürlük yalnız mevcut rol ve tenant kapsamındaki bilgilerle sınırlıdır.';
+  }
+  const requiredCount = Number(facts.requiredCount || 0);
+  const acceptedCount = Number(facts.acceptedCount || 0);
+  const blocking = Boolean(facts.blocking);
+  const role = firstNonEmpty(userRole, screenContext?.role, sourceScreenContext?.role, 'mevcut rol');
+  if (blocking || requiredCount > acceptedCount) {
+    const pendingCount = Math.max(requiredCount - acceptedCount, 0);
+    return `Bu oturumda KVKK erişimi kapalı görünüyor: ${role} rolü için ${pendingCount || 'gerekli'} zorunlu belge/onay bekliyor ve yetki kapsamı blokajlı. Önce KVKK ekranındaki bekleyen onayı tamamlamak gerekir; yetki dışı bilgiyi açamam.`;
+  }
+  return `Bu oturumda KVKK erişimi kapalı görünmüyor: ${role} rolü için zorunlu belge/onay blokajı yok (${acceptedCount}/${requiredCount} onay). Görünürlük yalnız mevcut rol ve tenant kapsamındaki yetkili bilgilerle sınırlıdır; kapsam dışı bilgi bu ekranda gösterilmez.`;
+}
+
 function ageMinutes(input) {
   const d = input ? new Date(input) : null;
   if (!d || Number.isNaN(d.getTime())) return null;
@@ -3483,6 +3507,9 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
     });
     if (canonicalClarifyingQuestionReply) return toReply(canonicalClarifyingQuestionReply);
   }
+  if (questionType === 'KVKK_VISIBILITY') {
+    return toReply(composeKvkkVisibilityReply({ screenContext, sourceScreenContext, userRole }));
+  }
   const guidedTaskReply = resolvedGuidedTaskMeta?.familyId
     ? composeCopilotGuidedTaskEngineReply({
       questionType,
@@ -3833,6 +3860,12 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
       return toReply(shiftScreenNoSelectionReply(questionType, screenDefinition));
     }
   }
+  if (questionType === 'MISSING_DATA_HELP' && entityType === 'shift') {
+    return toReply(shiftMissingDataReply(context));
+  }
+  if (questionType === 'MISSING_DATA_HELP' && entityType === 'vehicle') {
+    return toReply(vehicleMissingDataReply(context));
+  }
   if (questionType === 'MISSING_DATA_HELP') {
     const missingReply = selectedMissingReply(screenContext, screenDefinition);
     if (missingReply) return toReply(missingReply);
@@ -3848,12 +3881,6 @@ if (questionType === 'EVIDENCE_HELP') {
   const uiEvidence = uiSurfaceEvidence(screenContext);
   if (analysis) return toReply(`${analyzerReply(analysis, 'EVIDENCE')} ${uiEvidence}`.trim());
   return toReply(uiEvidence || 'Bu yorum seçili alan, rozet ve ekrandaki görünen ipuçlarına dayanır.');
-}
-if (questionType === 'MISSING_DATA_HELP' && entityType === 'shift') {
-  return toReply(shiftMissingDataReply(context));
-}
-if (questionType === 'MISSING_DATA_HELP' && entityType === 'vehicle') {
-  return toReply(vehicleMissingDataReply(context));
 }
 if (questionType === 'READINESS_CHECK' && entityType === 'shift') {
   return toReply(shiftReadinessReply(context));
@@ -4829,6 +4856,9 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const rawMessage = extractUserQuestion(message);
   const canonicalRequestInput = semanticPlan?.canonicalRequestEnvelope || semanticPlan?.canonicalRequest || null;
   const hasCanonicalRequest = Boolean(canonicalRequestInput?.request?.version || canonicalRequestInput?.version);
+  const canonicalCurrentSurfaceExplanation = (canonicalRequestInput?.request || canonicalRequestInput)?.operation === 'EXPLAIN_CURRENT_SURFACE'
+    && (canonicalRequestInput?.request || canonicalRequestInput)?.semanticAction?.actionClass === 'EXPLAIN'
+    && (canonicalRequestInput?.request || canonicalRequestInput)?.semanticAction?.objectClass === 'SURFACE';
   if (!hasCanonicalRequest && isGenericProductHelpIntent(rawMessage)) {
     const reply = buildStaticGenericProductHelpReply();
     return {
@@ -4904,7 +4934,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       retrievedFacts: [],
     };
   }
-  const expandedMessage = expandFollowUpMessage(rawMessage, conversationState, screenContext);
+  const expandedMessage = expandFollowUpMessage(rawMessage, conversationState, screenContext, canonicalRequestInput?.request || canonicalRequestInput);
   const effectiveMessage = extractPrimaryConcern(expandedMessage);
   // An explicit Konum İncele follow-up owns its semantic turn. Do not replace
   // it with a derived vehicle diagnostic before canonical routing.
@@ -4923,15 +4953,24 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   // compatibility and must not remap a generic current-screen explanation to
   // an unrelated surface using stale token overlap or prior context.
   const canonicalCurrentScreenHelp = requestEntityType === 'screen'
-    && ['SCREEN_CONTEXT', 'UI_GUIDANCE'].includes(String(semanticPlan?.family || ''))
+    && (
+      ['SCREEN_CONTEXT', 'UI_GUIDANCE'].includes(String(semanticPlan?.family || ''))
+      // A record-less risk request is still scoped to the authorized current
+      // surface. The legacy referenced-screen scorer must not remap it to an
+      // unrelated screen before the canonical risk response is composed.
+      || String(semanticPlan?.family || '') === 'RISK_RANKING'
+    )
     && (
       semanticPlan?.scopeTarget === 'CURRENT_SCREEN'
       || semanticPlan?.typedRequest?.scopeTarget === 'CURRENT_SCREEN'
       || semanticPlan?.typedRequest?.screenContextIntent === true
     );
+  const canonicalSurfaceDefinition = canonicalCurrentScreenHelp
+    ? (screenDefinition || getScreenDefinitionForUser(user, screenContext || {}, Number(screenContext?.id || 0) || null))
+    : screenDefinition;
   const selectedEntityScreenDefinition = requestEntityType === 'screen'
     ? (canonicalCurrentScreenHelp
-      ? screenDefinition
+      ? canonicalSurfaceDefinition
       : resolveReferencedScreenDefinition(user, screenContext, screenDefinition, firstNonEmpty(rawMessage, effectiveMessage)))
     : screenDefinition;
   const effectiveScreenDefinition = requestEntityType === 'screen'
@@ -5017,6 +5056,32 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   });
   let guidedTaskMeta = intentMeta.guidedTaskMeta || null;
   let questionType = intentMeta.questionType;
+  // The canonical planner has already adjudicated a KVKK visibility question
+  // against the current authorized surface. Preserve that typed family when
+  // projecting into the legacy composer; otherwise the composer reclassifies
+  // the same request as a generic screen-purpose explanation and loses the
+  // verified access-state facts.
+  if (semanticPlan?.screenKnowledgeKind === 'KVKK_VISIBILITY'
+    && String(firstNonEmpty(screenContext?.path, effectiveScreenContext?.path, screenPath, '')).split('?')[0] === '/shared/kvkk') {
+    questionType = 'KVKK_VISIBILITY';
+  }
+  const selectedRoomShift = String(firstNonEmpty(screenContext?.path, effectiveScreenContext?.path, '')).split('?')[0] === '/room/shifts'
+    && (
+      String(firstNonEmpty(effectiveScreenContext?.selectedEntityType, screenContext?.selectedEntityType, semanticPlan?.entity?.type, '')).toLowerCase() === 'shift'
+      || String(semanticPlan?.entity?.type || '').toLowerCase() === 'shift'
+    )
+    && Number(effectiveScreenContext?.selectedEntityId || screenContext?.selectedEntityId || semanticPlan?.entity?.id || 0) > 0;
+  // The canonical planner owns the task family, while this composer owns the
+  // user-facing ROOM wording. Keep a selected shift's next-action and its
+  // continuation on the existing shift-specific composer instead of the
+  // generic authorized-screen explanation lane.
+  if (selectedRoomShift && semanticPlan?.typedRequest?.taskType === 'NEXT_ACTION') {
+    questionType = 'NEXT_STEP';
+  } else if (selectedRoomShift
+    && semanticPlan?.family === 'CONTINUE_CURRENT_REASONING'
+    && semanticPlan?.continuationBasePlan?.family === 'UI_GUIDANCE') {
+    questionType = 'DETAIL_FLOW';
+  }
   const normalizedGeoreviewPath = normalizeText(firstNonEmpty(screenPath, effectiveScreenDefinition?.path, effectiveScreenContext?.path, screenContext?.path, ''));
   const roomShiftSurface = String(firstNonEmpty(
     screenDefinition?.path,
@@ -5317,10 +5382,14 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     'sozlesmeyi yururluge al',
   ].some((needle) => normalizedDelegateMessage.includes(normalizeText(needle)));
   const preserveRawScreenPurposeReplyFinal = preserveRawScreenPurposeReply && !preserveRawScreenPurposeMessage;
+  const preserveRawCanonicalSurfaceExplanationReply = canonicalCurrentSurfaceExplanation
+    && answerEntityType === 'screen'
+    && !reasoningAssistant.selectedContextPresent;
   // Role-help copy is already produced by the canonical public-intent adapter.
   // The reasoning presentation layer may enrich it, but must not replace it
   // with a current-screen fallback that loses the requested role semantics.
   const preserveRawRoleExplanationReply = String(questionType || '') === 'ROLE_EXPLANATION_HELP';
+  const preserveRawKvkkVisibilityReply = String(questionType || '') === 'KVKK_VISIBILITY';
   const preserveRawTermReply = String(questionType || '') === 'TERM_HELP';
   const preserveRawNoSelectionWorkflowReply = answerEntityType === 'screen'
     && !reasoningAssistant.selectedContextPresent
@@ -5350,6 +5419,14 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     && ['SHIFT_BLOCKED', 'READINESS_CHECK', 'WHY_BLOCKED', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'MISSING_DATA'].includes(String(questionType || ''));
   const preserveRawMissingLookupReply = /bulamadım|bulamadim|bulamıyorum|bulamiyorum|göremedim|goremedim/i.test(firstNonEmpty(rawMessage, effectiveMessage, ''))
     && ['NEXT_STEP', 'NEXT_SCREEN', 'FIRST_CONTROL', 'READINESS_CHECK', 'SAFE_NEXT_STEP', 'WHY_BLOCKED', 'MISSING_DATA'].includes(String(questionType || ''));
+  // Selected-record evidence replies are already composed from the authorized
+  // entity context. Do not let the generic reasoning presenter replace them
+  // with a role/screen guide after the typed composer has resolved the record.
+  const preserveRawSelectedEntityEvidenceReply = Boolean(
+    reasoningAssistant?.selectedContextPresent
+    && ['shift', 'vehicle', 'offer', 'agreement'].includes(String(answerEntityType || '').toLowerCase())
+    && ['MISSING_DATA_HELP', 'READINESS_CHECK', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'WHY_BLOCKED'].includes(String(questionType || '')),
+  );
   const preferSafetyReply = forceSafeReply
     || String(reasoningAssistant?.interactionIntentFamily || '') === 'DELEGATE_SAFE'
     || String(reasoningAssistant?.mode || '') === 'SAFE_REFUSAL_WITH_ALTERNATIVE';
@@ -5375,19 +5452,21 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       entityType: answerEntityType,
     })
     : '';
-  const clarifyingQuestionReplyForSelection = buildClarifyingQuestionReplyImpl({
-    message: firstNonEmpty(rawMessage, effectiveMessage, ''),
-    questionType,
-    screenPath,
-    screenDefinition: effectiveScreenDefinition,
-    screenContext: effectiveScreenContext,
-    sourceScreenDefinition: screenDefinition,
-    sourceScreenContext: screenContext,
-    contextPriority,
-    userRole,
-    user,
-    conversationState,
-  });
+  const clarifyingQuestionReplyForSelection = canonicalCurrentSurfaceExplanation
+    ? ''
+    : buildClarifyingQuestionReplyImpl({
+      message: firstNonEmpty(rawMessage, effectiveMessage, ''),
+      questionType,
+      screenPath,
+      screenDefinition: effectiveScreenDefinition,
+      screenContext: effectiveScreenContext,
+      sourceScreenDefinition: screenDefinition,
+      sourceScreenContext: screenContext,
+      contextPriority,
+      userRole,
+      user,
+      conversationState,
+    });
   const preferClarifyingQuestionReplyForRoomShiftsSelectedBuNe = String(screenPath || '') === '/room/shifts'
     && String(questionType || '') === 'SCREEN_PURPOSE'
     && String(rawMessage || '').trim() === 'Bu ne?'
@@ -5409,14 +5488,14 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const selectedReply = preferClarifyingQuestionReplyForRoomShiftsSelectedBuNe
     ? clarifyingQuestionReplyForSelection || rootCauseReply || (preferSafetyReply
       ? reasoningAssistant.reply
-      : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawRoleExplanationReply || preserveRawTermReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
+      : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawCanonicalSurfaceExplanationReply || preserveRawRoleExplanationReply || preserveRawKvkkVisibilityReply || preserveRawTermReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || preserveRawSelectedEntityEvidenceReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
         ? rawReply
         : (reasoningAssistant.reply || rawReply))
     : (preferRawScreenFocusReply
       ? firstNonEmpty(rawReply, reasoningAssistant.reply, '')
     : (rootCauseReply || clarifyingQuestionReplyForSelection || (preferSafetyReply
     ? reasoningAssistant.reply
-    : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawRoleExplanationReply || preserveRawTermReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
+    : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawCanonicalSurfaceExplanationReply || preserveRawRoleExplanationReply || preserveRawKvkkVisibilityReply || preserveRawTermReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || preserveRawSelectedEntityEvidenceReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
       ? rawReply
       : (reasoningAssistant.reply || rawReply))));
   let finalReply = selectedReply;
@@ -5797,10 +5876,12 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     questionType,
     screenDefinition: effectiveScreenDefinition,
     roleMode,
+    maxLength: reasoningAssistant?.roleProfile?.maxLength,
   });
   const semanticOverrideReply = buildRoomShiftSemanticOverrideReply({
     message: rawMessage || message,
     questionType,
+    semanticPlan,
     userRole,
     user,
     screenDefinition: effectiveScreenDefinition,
@@ -5825,10 +5906,26 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     // A role explanation has already been resolved through the shared
     // semantic adapter and composed from the role playbook.  Preserve that
     // answer against generic reasoning copy reduction.
-    overrideFinalReply: semanticOverrideReply || (questionType === 'ROLE_EXPLANATION_HELP' ? rawReply : undefined),
+    overrideFinalReply: semanticOverrideReply || (preserveRawKvkkVisibilityReply || questionType === 'ROLE_EXPLANATION_HELP' ? rawReply : undefined),
   });
   reply = normalizeQuestionTypeReplySurface(reply, questionType);
   reply = normalizeRoleLeadSurface(reply);
+  // The canonical envelope already resolved an explicit current-surface
+  // explanation. When no record is selected, the visible answer must remain
+  // the screen-help composition; the reasoning presenter must not replace it
+  // with a selected-record follow-up inherited from the previous turn.
+  if (canonicalCurrentSurfaceExplanation && !hasSelection && !semanticOverrideReply && !preserveRawKvkkVisibilityReply) {
+    const canonicalSurfaceReply = canonicalSurfaceDefinition
+      ? buildScreenExplanationHelpReply({
+        guide: {},
+        screenDefinition: canonicalSurfaceDefinition,
+        screenContext: effectiveScreenContext,
+        sourceScreenDefinition: null,
+        sourceScreenContext: null,
+      })
+      : '';
+    reply = normalizeRoleLeadSurface(firstNonEmpty(canonicalSurfaceReply, rawReply));
+  }
   if (preferClarifyingQuestionReplyForRoomShiftsSelectedBuNe) {
     reply = 'Netleştirelim: Hangi kayıt için bakayım? Ekranın amacını mı, seçili kaydı mı netleştireyim? Alternatif: Önce seçili kayıt ve ekran amacını birlikte kontrol edelim.';
   } else if (
@@ -6027,7 +6124,9 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   // precise authorized reply for this turn.  Dynamic question copy is a
   // presentation fallback; it must not replace that settled reply later in
   // the pipeline.
-  const dynamicQuestionReply = semanticOverrideReply || questionType === 'ROLE_EXPLANATION_HELP'
+  const dynamicQuestionReply = semanticOverrideReply
+    || questionType === 'ROLE_EXPLANATION_HELP'
+    || questionType === 'KVKK_VISIBILITY'
     ? ''
     : buildDynamicQuestionReplyImpl({
       message: firstNonEmpty(rawMessage, message, ''),
@@ -6576,6 +6675,21 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       reasoningAssistant = { ...reasoningAssistant, reply };
     }
   }
+  // KVKK visibility is a canonical, authorized access-state answer. Keep it
+  // as the final user-facing reply after generic presentation/fallback
+  // branches have run; those branches must not replace a verified access
+  // explanation with a generic ROOM role guide.
+  const kvkkVisibilityFinalReply = responseQuestionType === 'KVKK_VISIBILITY'
+    ? composeKvkkVisibilityReply({
+      screenContext: effectiveScreenContext,
+      sourceScreenContext: screenContext,
+      userRole,
+    })
+    : '';
+  if (kvkkVisibilityFinalReply) {
+    reply = kvkkVisibilityFinalReply;
+    reasoningAssistant = { ...reasoningAssistant, reply: kvkkVisibilityFinalReply, rawReply: kvkkVisibilityFinalReply };
+  }
   const visibleReasoningAssistant = normalizeVisibleReasoningAssistant(reasoningAssistant);
   const sanitizeLiveVisibleSurface = ['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'WHY_BLOCKED'].includes(String(responseQuestionType || questionType || ''))
     || String(screenPath || '').includes('/superadmin/telematics')
@@ -6650,17 +6764,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     : roomMapVisibleReply;
   const actionLeadVisibleReplyTypes = new Set(['NEXT_SCREEN', 'NEXT_STEP', 'FIRST_CONTROL', 'WHY_BLOCKED', 'STATUS_HELP', 'READINESS_CHECK', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'DYNAMIC_SAVINGS_PREVIEW', 'EXCEL_ROUTE_PREVIEW', 'ADDRESS_GEOCODE_PREVIEW', 'OSRM_ROUTE_DRAFT_PREVIEW', 'ROUTE_APPLY_BLOCKED', 'ROUTE_REVIEW_HUMAN_APPROVAL', 'FAKE_SUCCESS_REQUEST_BLOCKED', 'IMPORT_WRITE_BLOCKED', 'DETAIL_FLOW']);
   const responseQuestionTypeKey = String(responseQuestionType || questionType || '');
-  const visibleReplyStartsWithClarifier = /^(\s*Şimdi:\s*)?Netleştirelim:/i.test(visibleReply);
-  const visibleReplyWithLead = collapseDuplicateVisibleActionPair(visibleReplyStartsWithClarifier
-    ? (actionLeadVisibleReplyTypes.has(responseQuestionTypeKey)
-      ? (String(visibleReply).trim().startsWith('Şimdi:')
-        ? String(visibleReply).trim()
-        : `Şimdi: ${String(visibleReply).trim()}`)
-      : String(visibleReply).replace(/^\s*Şimdi:\s*/i, '').trim())
-    : (actionLeadVisibleReplyTypes.has(responseQuestionTypeKey)
-      && !/^(Şimdi:|Şimdi yap:|Önce:)/i.test(visibleReply)
-        ? `Şimdi: ${visibleReply}`.trim()
-        : visibleReply));
+  const visibleReplyWithLead = collapseDuplicateVisibleActionPair(buildVisibleReplyWithLead({ visibleReply, responseQuestionTypeKey, actionLeadVisibleReplyTypes }));
   const visibleFollowUpPrompt = visibleSurfaceValue(normalizeVisibleReplyFragment(contextPriority?.followUpPrompt || nextPromptByEntity(entityType, roleMode)));
   const visibleActionPlanLabel = visibleSurfaceValue(normalizeVisibleReplyFragment(actionPlanLabel));
   const visibleBestNextAction = visibleSurfaceValue(normalizeVisibleReplyFragment(contextPriority?.bestNextAction || ''));
@@ -6676,51 +6780,34 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const visibleReasoningAssistantSurface = visibleSurfaceSanitizer
     ? normalizeVisibleLocationSurfaceValue(visibleReasoningAssistant)
     : visibleReasoningAssistant;
-  const roomShiftNextStepVisibleReply = roomShiftSurface
-    && responseQuestionTypeKey === 'NEXT_STEP'
-    && !/(\bvardiyalar ekranı\b|\bilk kontrol\b|\bvardiya engeli\b)/i.test(normalizeText(visibleReplyWithLead))
-    ? `İlk kontrol: ${ensureVisibleSentence(firstNonEmpty(
-      effectiveScreenDefinition?.firstStep,
-      screenDefinition?.firstStep,
-      effectiveScreenContext?.firstStep,
-      screenContext?.firstStep,
-      'Doğru vardiya kaydını seç.',
-    ))} ${ensureVisibleSentence(firstNonEmpty(
-      effectiveScreenDefinition?.nextStep,
-      screenDefinition?.nextStep,
-      effectiveScreenContext?.nextStep,
-      screenContext?.nextStep,
-      'Sonra durum, araç/sürücü, durak/rota ve canlı başlatma sinyalini kontrol et.',
-    ))}`.trim()
-    : '';
-  const companyShiftPlanningVisibleReply = String(firstNonEmpty(screenDefinition?.path, screenContext?.path, '')).includes('/company/shifts') && ['DETAIL_FLOW', 'SCREEN_PURPOSE'].includes(String(responseQuestionType || questionType || '')) && /(teklif isi(?:ni)? nas[ıi]l yapar[ıi]m|servis planlamak istiyorum)/.test(normalizeText(firstNonEmpty(rawMessage, effectiveMessage, message, ''))) ? 'Plan açısından: Planlama Merkezi yeni işi kurma ve planlama akışını yönetmek için kullanılır. Vardiyalar ekranında yapılır.' : '';
-  const roomShiftProgressVisibleReply = roomShiftSurface
-    && ['CONTINUE_FLOW', 'ALTERNATIVE_PATH'].includes(String(reasoningProgressFamily || ''))
-    ? firstNonEmpty(reasoningAssistant?.rawReply, reasoningAssistant?.reply, visibleReplyWithLead)
-    : '';
-  const companyShiftWhyBlockedVisibleReply = String(screenPath || '').includes('/company/shifts')
-    && responseQuestionTypeKey === 'WHY_BLOCKED'
-    ? (() => {
-      const selectedFieldSummary = uniqueStrings((Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields : [])
-        .map((row) => {
-          const label = normalizeVisibleReplyFragment(firstNonEmpty(row?.label, row?.key, ''));
-          const value = normalizeVisibleReplyFragment(firstNonEmpty(row?.value, row?.text, ''));
-          return label && value ? `${label}: ${value}` : firstNonEmpty(label, value, '');
-        })
-        .filter(Boolean));
-      if (!selectedFieldSummary.length && !firstNonEmpty(screenContext?.selectedLabel, sourceScreenContext?.selectedLabel, '', visibleReplyWithLead)) return '';
-      return [
-        firstNonEmpty(screenContext?.selectedLabel, sourceScreenContext?.selectedLabel, '') ? `Seçili vardiya: ${normalizeVisibleReplyFragment(firstNonEmpty(screenContext?.selectedLabel, sourceScreenContext?.selectedLabel, ''))}.` : '',
-        selectedFieldSummary.length ? `Seçili kayıt: ${selectedFieldSummary.join(' • ')}.` : '',
-        roomShiftProgressVisibleReply || roomShiftNextStepVisibleReply || visibleReplyWithLead,
-      ].filter(Boolean).join(' ').trim();
-    })()
-    : '';
-  const companyDelegateSafeVisibleReply = String(userRole || '').trim().toUpperCase() === 'COMPANY'
-    && delegateSafeMessage
-    && normalizeText(firstNonEmpty(rawMessage, effectiveMessage, message, '')).includes(normalizeText('teklifi kabul et'))
-    ? 'Teklifi senin yerine kabul edemem. Kabul öncesi fiyat, kapasite, kalite, araç / sürücü uygunluğu ve sözleşme hazırlığı kontrollerini adım adım gösterebilirim. Son onay yetkili kullanıcı tarafından verilmelidir.'
-    : '';
+  const {
+    roomShiftNextStepVisibleReply,
+    companyShiftPlanningVisibleReply,
+    roomShiftProgressVisibleReply,
+    companyShiftWhyBlockedVisibleReply,
+    companyDelegateSafeVisibleReply,
+  } = buildVisibleReplyOverrides({
+    roomShiftSurface,
+    responseQuestionType,
+    questionType,
+    semanticOverrideReply,
+    reasoningProgressFamily,
+    reasoningAssistant,
+    visibleReplyWithLead,
+    effectiveScreenDefinition,
+    screenDefinition,
+    effectiveScreenContext,
+    screenContext,
+    sourceScreenContext,
+    screenPath,
+    responseQuestionTypeKey,
+    companyShiftMessage: rawMessage || effectiveMessage || message,
+    rawMessage,
+    effectiveMessage,
+    message,
+    userRole,
+    delegateSafeMessage,
+  });
   return normalizeSeferAbiUserFacingPayload({
     ok: true,
     provider: 'local-chat-help',
@@ -6739,7 +6826,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     screenPath,
     summary: workflowStyle ? visibleSummary : visibleSummary,
     contextSummary: visibleContextSummary,
-    reply: companyShiftPlanningVisibleReply || companyShiftWhyBlockedVisibleReply || roomShiftProgressVisibleReply || roomShiftNextStepVisibleReply || companyDelegateSafeVisibleReply || visibleReplyWithLead,
+    reply: kvkkVisibilityFinalReply || companyShiftPlanningVisibleReply || companyShiftWhyBlockedVisibleReply || roomShiftProgressVisibleReply || roomShiftNextStepVisibleReply || companyDelegateSafeVisibleReply || visibleReplyWithLead,
     reasoningAssistant: visibleReasoningAssistantSurface,
     replyMode,
     questionType: responseQuestionType,

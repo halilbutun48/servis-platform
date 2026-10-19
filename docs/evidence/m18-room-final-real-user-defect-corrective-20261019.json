@@ -1,0 +1,109 @@
+{
+  "evidenceId": "M18-ROOM-FINAL-REAL-USER-DEFECT-CORRECTIVE-20261019",
+  "kind": "bounded_product_corrective_checkpoint",
+  "createdAt": "2026-10-19T21:51:17.0574903+03:00",
+  "scope": "Three real-user defects from m18-room-final-real-user-blackbox-acceptance-20261019.json",
+  "repository": {
+    "path": "D:\\servis-platform",
+    "branch": "m90d1_web_lint_inventory",
+    "head": "3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+    "dirtyWorktree": true,
+    "dirtyEntryCountAtCheckpoint": 737
+  },
+  "runtime": {
+    "publicOrigin": "https://further-history-universities-hugo.trycloudflare.com",
+    "backendContainer": "personel_api",
+    "backendStartedAt": "2026-10-19T18:46:35.573Z",
+    "localHealth": { "ok": true, "dbOk": true },
+    "publicHealth": { "ok": true, "dbOk": true },
+    "sourceRuntimeParity": {
+      "bindMount": "D:\\servis-platform -> /app",
+      "process": "npm -> nodemon -> node",
+      "maintenanceMode": "DEMO_FIXTURE_ONLY",
+      "backgroundJobs": "not started",
+      "exactPublicSourceSha": null,
+      "exactPublicSourceShaReason": "The runtime does not serve an exact source SHA; mount, restart freshness, health and user-visible behavior are recorded separately."
+    },
+    "frontendActivation": "Vite HMR/public DOM showed the updated active-scope reconciliation text and rows without backend restart."
+  },
+  "changes": [
+    {
+      "path": "backend/src/services/authorizedProductAwareness.js",
+      "sha256": "46A5D44C9F59DD8424B7BE47AFB4A02E9CF60513FAA5AA3BF76F38B8252E68DF",
+      "purpose": "Preserve explicit shift #209 RECORD_DETAILS navigation and build the HOME ROOM reconciliation answer from authorized ACTIVE agreements and current read-only previews."
+    },
+    {
+      "path": "backend/src/ai/service.js",
+      "sha256": "B5F75A05BFF76384FBA641A677840595F1AFE4CC257A6B649402E7F815E88D05",
+      "purpose": "Retain all five canonical reconciliation facts in the HOME risk answer."
+    },
+    {
+      "path": "web/src/panels/room/CommercialFlowPanel.jsx",
+      "sha256": "16A3D75A8B5190AFC5D6BEBCBD8F8F62F06E63A631E45DCE0FCD44A5F9A1EECD",
+      "purpose": "Align the bulk settlement summary with ACTIVE agreements and explain why historical agreements are opened only by direct selection."
+    },
+    {
+      "path": "backend/scripts/m18_room_final_defect_corrective_regression.mjs",
+      "sha256": "F7CFD0433BA2F2D170BAEE3A15DB7FD4E29E119F6D3798A00A795BBF9D2FF7F2",
+      "purpose": "Targeted RED-to-GREEN regression for shift #209, agreement #184 commercial routing and HOME canonical reconciliation facts."
+    },
+    {
+      "path": "web/scripts/m18_room_hakedis_scope_regression.mjs",
+      "sha256": "2434C81294B64F4199A475D5677C61CA9DD7099BE9A274462FF64BAAC9DB3836",
+      "purpose": "Targeted regression for HOME/Commercial Flow active-scope parity and visible scope explanation."
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "FINAL-BLACKBOX-SHIFT-209",
+      "userRequest": "Vardiya 209'un ayrıntısını açar mısın?",
+      "startUrl": "https://further-history-universities-hugo.trycloudflare.com/#/room/shifts",
+      "resultUrl": "https://further-history-universities-hugo.trycloudflare.com/#/room/shifts?focusShiftId=209",
+      "backendResult": "EXPLAIN_RECORD_DETAILS; authorized shift #209; vehicle 34ABC123; Driver One",
+      "visibleResult": "Vardiya ID 209 selected in the real DOM with its detail fields; visible action Vardiyalar ekranına git was clicked.",
+      "security": "ROOM tenant/role scope; read-only; businessWrite=0",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "FINAL-BLACKBOX-AGREEMENT-184-COMMERCIAL",
+      "userRequest": "Bu sözleşmenin ticari akışını aç.",
+      "startUrl": "https://further-history-universities-hugo.trycloudflare.com/#/room/agreements?focusAgreementId=184",
+      "resultUrl": "https://further-history-universities-hugo.trycloudflare.com/#/room/commercial-flow?agreementId=184&tab=settlement",
+      "backendResult": "OPEN_ROUTE to /room/commercial-flow with agreementId=184 and tab=settlement",
+      "visibleResult": "Ticari Çalışma Alanı and Hakediş önizleme 7 are visible; the selected agreement preview is read-only; the visible action Ticari Çalışma Alanı ekranına git was clicked.",
+      "security": "ROOM tenant/role scope; no payment, approval, accounting or business write",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "FINAL-BLACKBOX-HOME-HAKEDIS",
+      "userRequest": "Hakedişlerimde sorun var mı?",
+      "startUrl": "https://further-history-universities-hugo.trycloudflare.com/#/room",
+      "resultUrl": "https://further-history-universities-hugo.trycloudflare.com/#/room/commercial-flow?tab=settlement",
+      "backendResult": "HOME answer cites current authorized ACTIVE agreements #186, #187, #188, #189 and #190; stale preview IDs #151, #150, #147 and #146 are absent.",
+      "visibleResult": "The clicked Hakediş ve mutabakat görünümünü aç action opens the real settlement tab. DOM shows exactly the active-scope rows #186–#190, including #186 healthy, #187 over-invoiced, #188 missing hakediş, #189 missing operation evidence and #190 review-required/demo evidence. The DOM explicitly explains that pending/completed historical agreements open only by direct selection.",
+      "scopeDecision": "HOME and bulk settlement use the same ACTIVE agreement scope; direct historical agreement selection remains available.",
+      "security": "ROOM tenant/role scope; read-only; no payment, approval, accounting or business write",
+      "status": "PRODUCT_PASS"
+    }
+  ],
+  "verification": {
+    "targetedBackendRegression": "PASS",
+    "targetedFrontendScopeRegression": "PASS",
+    "crossSurfaceNavigationRegression": "PASS",
+    "webBuild": "PASS",
+    "globalLockedInvariantSuite": "PASS",
+    "databaseWrites": 0,
+    "restartCountInThisBoundedPackage": 1,
+    "restartTarget": "personel_api only",
+    "publicChromium": "PASS for all three scenarios",
+    "publicChromiumNote": "The headed session reported four existing Socket.IO WebSocket handshake 502 console errors; tested HTTP/DOM workflows completed and this transport observation is retained as a separate runtime follow-up, not converted into a product PASS."
+  },
+  "outcome": {
+    "formerProductFailsClosed": "3/3",
+    "currentBoundedBlackboxAcceptance": "10/10 including the seven previously passing scenarios",
+    "roomFunctional10of10": "NOT_CLOSED",
+    "nextFrontier": "Preserve this checkpoint, then continue the remaining independent ROOM acceptance/evidence reconciliation and immutable-baseline gates; do not reopen the three corrected scenarios without concrete regression evidence."
+  },
+  "supersedes": "docs/evidence/m18-room-final-real-user-blackbox-acceptance-20261019.json",
+  "historicalEvidencePreserved": true
+}

@@ -1,0 +1,118 @@
+{
+  "evidenceId": "M18-ROOM-FINAL-ACCEPTANCE-EXIT-20261019",
+  "kind": "bounded_final_real_user_acceptance_checkpoint",
+  "createdAt": "2026-10-19T22:00:14.5160311+03:00",
+  "scope": "Targeted regressions for the three final ROOM defects, public live-transport recovery, affected suggested-question contexts, and final closure decision.",
+  "repository": {
+    "path": "D:\\servis-platform",
+    "branch": "m90d1_web_lint_inventory",
+    "head": "3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+    "dirtyWorktree": true,
+    "dirtyEntryCountAtCheckpoint": 739
+  },
+  "runtime": {
+    "publicOrigin": "https://further-history-universities-hugo.trycloudflare.com",
+    "backendContainer": "personel_api",
+    "backendStartedAt": "2026-10-19T18:46:35.573Z",
+    "localHealth": { "ok": true, "dbOk": true, "wsClients": 3 },
+    "publicHealth": { "ok": true, "dbOk": true, "wsClients": 3 },
+    "sourceRuntime": {
+      "backendBindMount": "D:\\servis-platform -> /app",
+      "backendProcess": "npm -> nodemon -> node",
+      "maintenanceMode": "DEMO_FIXTURE_ONLY",
+      "backgroundJobs": "not started",
+      "backendExactPublicSourceSha": null,
+      "frontendActivation": "Vite HMR served the updated web/src/live/ws.js module; public module response was observed and the browser loaded it.",
+      "publicExactSourceSha": null,
+      "publicExactSourceShaReason": "Vite development module transformation/HMR response is not an exact raw repository blob; source hash and public behavior are recorded separately."
+    }
+  },
+  "finalDefectRegressions": {
+    "shift209": "PASS",
+    "agreement184Commercial": "PASS",
+    "homeHakedisActiveScope": "PASS",
+    "crossSurfaceNavigation": "PASS",
+    "hakedisScope": "PASS",
+    "webBuild": "PASS",
+    "databaseWrites": 0
+  },
+  "transportInvestigation": {
+    "initialObservation": {
+      "publicBrowser": "wss://further-history-universities-hugo.trycloudflare.com/socket.io/?EIO=4&transport=websocket",
+      "result": "502 handshake",
+      "browserErrors": 4,
+      "sourceCause": "web/src/live/ws.js configured transports as websocket-only; ROOM map/vehicle consumers had no HTTP live-update fallback."
+    },
+    "boundaryEvidence": {
+      "publicPollingHandshake": "HTTP 200 with Socket.IO sid using the authenticated ROOM token",
+      "viteProxy": "public /socket.io is proxied to http://127.0.0.1:3000 with ws enabled",
+      "backendSocket": "Socket.IO server and auth/join path are present",
+      "uiStatus": "ROOM DOM derives LIVE/STALE/OFFLINE from canonical state/timestamps and does not synthesize LIVE from a vehicle record"
+    },
+    "corrective": {
+      "path": "web/src/live/ws.js",
+      "sha256": "E94D7DFA1B5B8C33550F675FC9FB3C5ABCA4625AC776EB0652CC53FFB567C19C",
+      "change": "Socket.IO transports changed from websocket-only to polling-first with websocket upgrade: transports=[polling, websocket].",
+      "regression": "web/scripts/m18_room_live_transport_regression.mjs PASS",
+      "classification": "PRODUCT_DEFECT corrected at the client transport owner; the 502 was an environment/proxy symptom exposed by the websocket-only client, not a reason to weaken security or bypass the tunnel."
+    },
+    "currentPublicResult": {
+      "consoleErrorsAfterHMR": 0,
+      "pollingRequests": "GET/POST Socket.IO polling requests returned HTTP 200",
+      "healthWsClients": 3,
+      "mapDom": "Vardiya #168 context visible; 34ABC123 and 34 ABC 124 visible; status is Çevrim dışı; map shows 2 araç haritada and Yakınlaştır/Uzaklaştır controls.",
+      "vehiclesDom": "3 authorized vehicles visible; GPS summary Canlı 0 / Güncel değil 0 / Çevrim dışı 3; each card preserves the canonical status and timestamps.",
+      "businessWrite": 0,
+      "status": "PRODUCT_PASS"
+    }
+  },
+  "suggestedQuestions": {
+    "historicalEvidence": "51/51 previously proven suggested-question results preserved; no historical evidence reopened.",
+    "currentHomeContext": {
+      "displayed": 3,
+      "tested": 3,
+      "results": {
+        "Bu ekranda neye bakmalıyım?": "PRODUCT_PASS: current ROOM-center guidance and visible screen actions.",
+        "Riskleri sırala": "PRODUCT_PASS: current screen counts and safe no-record-substitution explanation.",
+        "Sıradaki doğru işlem ne?": "PRODUCT_PASS: current safe next-step guidance without stale record substitution."
+      }
+    },
+    "affectedMapAndVehiclesContexts": "Visible context chips and current selected-record/status DOM remained safe after polling fallback; prior chip acceptance evidence remains preserved.",
+    "result": "No suggested-question PRODUCT_FAIL observed in the affected contexts; full historical 51/51 remains the accepted evidence set."
+  },
+  "naturalLanguageReconciliation": {
+    "previousTen": "The seven earlier black-box PASS results remain preserved; the three former failures are current-runtime PRODUCT_PASS in the superseding corrective checkpoint and current targeted regressions.",
+    "currentFinalDefects": [
+      "Vardiya #209 detail selected and visible in DOM.",
+      "Sözleşme #184 routes to Ticari Çalışma Alanı with agreementId=184 and settlement tab.",
+      "HOME Hakediş answer and bulk settlement view use the same authorized ACTIVE #186-#190 scope."
+    ],
+    "security": "ROOM role/tenant scope preserved; no unauthorized data access and no business write."
+  },
+  "roomScope": {
+    "canonicalRoutes": 19,
+    "liveAlias": "/room/live aliases /room/map and is not counted as a second route.",
+    "part4UniqueProductPass": 21,
+    "part5UniqueProductPass": 27,
+    "part5HistoricalSpecGaps": "Owner-approved de-scoped as legacy/undefined obligations; historical records preserved.",
+    "historical132Boundary": "OPEN_GOVERNANCE_RECONCILIATION. The current evidence does not contain a complete unique 132-cell manifest, so no artificial 132/132 claim is made.",
+    "mandatorySurfaceRule": "Any concrete mandatory surface discovered outside the historical count remains in scope."
+  },
+  "closureDecision": {
+    "targetedCurrentProductFails": 0,
+    "targetedCurrentProductGaps": 0,
+    "securityBlock": 0,
+    "roomFunctional10of10": "NOT_CLOSED",
+    "immutableBaseline": "NOT_READY",
+    "blockers": [
+      "A complete unique, traceable ROOM acceptance manifest for the mandatory 132-cell boundary has not been produced from the existing evidence."
+    ],
+    "provenanceLimitations": [
+      "Public runtime does not serve an exact raw source SHA; current provenance is instead mount/process freshness plus public DOM/HMR evidence."
+    ],
+    "nextFrontier": "Complete the single final ROOM acceptance-cell reconciliation and immutable baseline package without reopening proven product scenarios or starting a general checker/provenance loop.",
+    "m18FormalClosed": "NOT_CLOSED"
+  },
+  "historicalEvidencePreserved": true,
+  "supersedes": "docs/evidence/m18-room-final-real-user-defect-corrective-20261019.json"
+}

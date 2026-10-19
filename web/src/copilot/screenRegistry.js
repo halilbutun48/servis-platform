@@ -41,6 +41,7 @@ const REGISTRY = {
     { id: 1114, path: "/room/operation-health", label: "Operasyon Sağlığı" },
     { id: 1115, path: "/room/commercial-flow", label: "Ticari Akışım" },
     { id: 1116, path: "/room/reports", label: "Raporlar" },
+    { id: 1119, path: "/room/cost-scenarios", label: "Maliyet Senaryoları" },
     ...SHARED,
   ],
   COMPANY: [

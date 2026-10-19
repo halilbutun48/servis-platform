@@ -1,0 +1,170 @@
+{
+  "evidenceType": "M18_ROOM_PART5_EMPTY_RESULT_RECOVERY_PUBLIC_ACCEPTANCE",
+  "recordedAt": "2026-10-19T17:22:15Z",
+  "parentCheckpoint": "docs/evidence/m18-room-part5-security-empty-followup-20261019.json",
+  "scope": [
+    "ROOM /room/agreements zero-result filter recovery",
+    "ROOM /room/vehicles zero-result filter recovery"
+  ],
+  "classification": {
+    "agreements": "PRODUCT_PASS",
+    "vehicles": "PRODUCT_PASS",
+    "part5Frontier": "RESPONSIVE_MOBILE_AND_REMAINING_REAL_FUNCTIONS",
+    "roomFunctional10of10": "NOT_CLOSED"
+  },
+  "rootCauseAndCorrective": [
+    {
+      "rootCause": "Live filter state and its clear control were not preserved through the bounded canonical uiHints projection, so the assistant could not safely distinguish a current zero-result filter from a generic screen request.",
+      "owners": [
+        "web/src/components/copilot/uiSurface.js",
+        "backend/src/ai/chat/canonicalConversationState.js"
+      ],
+      "corrective": "Expose bounded live filterStates with scope, value, visibleCount, totalCount and clearTargetKey, while retaining role/tenant-safe projection limits."
+    },
+    {
+      "rootCause": "The final generic EXPLAIN_CURRENT_TARGET presentation bridge replaced the specialized empty-filter recovery response.",
+      "owner": "backend/src/ai/service.js",
+      "corrective": "Preserve the local-room-empty-filter-recovery provider response and its CLEAR_FILTER action through final presentation handling."
+    },
+    {
+      "rootCause": "Clearing an agreement filter fell through to the panel's implicit first-record fallback and resurrected agreement #184 even though the user had not selected a record.",
+      "owner": "web/src/panels/room/AgreementsPanel.jsx",
+      "corrective": "After a user-triggered filter clear, suppress implicit agreement selection until the user explicitly selects a visible record; keep stale selection and bridge/action state cleared."
+    }
+  ],
+  "changedFiles": [
+    "backend/src/ai/service.js",
+    "backend/src/ai/chat/canonicalConversationState.js",
+    "backend/src/ai/chat/qualityScorer.js",
+    "backend/scripts/m18_room_part5_empty_result_recovery_regression.mjs",
+    "web/src/components/copilot/uiSurface.js",
+    "web/src/components/ListSelectionBanner.jsx",
+    "web/src/panels/room/roomVehiclesPanelSections.jsx",
+    "web/src/panels/room/AgreementsPanel.jsx",
+    "web/src/components/copilot/FloatingCopilotDrawer.jsx",
+    "web/src/components/copilot/ChatQuickActions.jsx",
+    "web/src/panels/shared/CopilotPanel.jsx"
+  ],
+  "redEvidence": [
+    "The targeted regression initially failed because empty agreements did not expose a live clear-filter action through the canonical state projection.",
+    "The first public agreement attempt cleared the filter but resurrected agreement #184 through the implicit first-record fallback.",
+    "Before the controlled backend activation, public runtime returned generic guidance despite the live zero-result DOM state; this was treated as stale runtime evidence, not as the final product result."
+  ],
+  "greenEvidence": {
+    "targetedRegression": {
+      "command": "node backend/scripts/m18_room_part5_empty_result_recovery_regression.mjs",
+      "result": "PASS",
+      "coverage": [
+        "ROOM agreements zero-result recovery",
+        "ROOM vehicles zero-result recovery",
+        "no-filter no-action guard",
+        "foreign-role fail-closed guard"
+      ]
+    },
+    "relatedRegression": {
+      "command": "node backend/scripts/m18_room_part5_cross_surface_navigation_regression.mjs",
+      "result": "PASS"
+    },
+    "syntax": [
+      "node --check backend/src/ai/service.js",
+      "node --check backend/src/ai/chat/canonicalConversationState.js",
+      "node --check backend/scripts/m18_room_part5_empty_result_recovery_regression.mjs"
+    ],
+    "frontendBuild": {
+      "command": "npm run build",
+      "workdir": "web",
+      "result": "PASS"
+    }
+  },
+  "runtime": {
+    "publicOrigin": "https://further-history-universities-hugo.trycloudflare.com",
+    "startedAt": "2026-10-19T17:20:09.877Z",
+    "localHealth": "ok=true, dbOk=true",
+    "publicHealth": "ok=true, dbOk=true",
+    "role": "ROOM / Turizm-Taşımacılık Firması",
+    "frontendAcceptanceMethod": "Windows headed Chrome via @playwright/cli session m18-room-part4",
+    "sourceRuntimeNotes": [
+      "personel_api uses the D:\\servis-platform to /app bind mount.",
+      "LOCAL_MAINTENANCE_MODE=1 and LOCAL_MAINTENANCE_SCOPE=DEMO_FIXTURE_ONLY were preserved.",
+      "Host/container hashes for the changed backend service and canonical conversation-state sources matched after activation.",
+      "The public runtime does not expose an exact source SHA; source hashes are recorded separately below."
+    ]
+  },
+  "sourceHashesSha256": {
+    "backend/src/ai/service.js": "35110670203BFFE0C3EE46807529C100894615E141B643C881820FBDCB3C4350",
+    "backend/src/ai/chat/canonicalConversationState.js": "F8BCD985A7E1C424B413CD98FF810D3BE07666B41E9B553903C80949A33BE051",
+    "backend/src/ai/chat/qualityScorer.js": "5764E4DD6CAA98618BA57203FD9BADC6E4F798046B4E0A795635CA85CD40F033",
+    "backend/scripts/m18_room_part5_empty_result_recovery_regression.mjs": "84605E0A70029B8D2CF9E76709BFE222254EAC9B92234258904E33FAF040B4F7",
+    "web/src/components/copilot/uiSurface.js": "58DAD71412257EF1FF4126E0DC091B656281F593A4A4F6DAA19C1CEB5D91B92A",
+    "web/src/components/ListSelectionBanner.jsx": "F8EA591468804BE91EE1D9F2CBA62A8035DC67CE9BB584A7928790F2ADA19746",
+    "web/src/panels/room/roomVehiclesPanelSections.jsx": "F7B26A9353F580A1013F8BEE05E39725FA3CFD68E458D5868F4A12B3ABA97712",
+    "web/src/panels/room/AgreementsPanel.jsx": "D8ECD1A60E5D87DD4C20EC1BD16430DC5BD2F04994E166F86056BCC77A6986D1",
+    "web/src/components/copilot/FloatingCopilotDrawer.jsx": "4158E96A8CF2A3A91C664438855BAF553344AA0C216FDBB02F6356803508885E",
+    "web/src/components/copilot/ChatQuickActions.jsx": "D3E54183E6D3027548178B8B47D2D731E24B04DCD387B15FD1F6FEE26588DA65",
+    "web/src/panels/shared/CopilotPanel.jsx": "DD2425D9B9CFE2FEEC39F2A1652C97B67C59B34A1B90CECC241870D3CEC8A010"
+  },
+  "scenarios": {
+    "agreements": {
+      "scenarioId": "M18-PART5-EMPTY-AGREEMENTS-FILTER-RECOVERY",
+      "question": "Sözleşmemi göremiyorum, ne yapmalıyım?",
+      "startRoute": "/room/agreements",
+      "filter": "999999",
+      "beforeActionDom": [
+        "Filtre değeri 999999",
+        "Gösterilen: 0 / Toplam: 7",
+        "Seçili kayıt yok",
+        "Görünür gerçek Filtreyi Temizle kontrolü"
+      ],
+      "backendReply": "Sözleşmeler ekranındasın. “999999” filtresi 7 yetkili sözleşme içinden 0 kayıt gösteriyor. Eski sözleşme seçimini geri getirmiyorum; önce filtreyi temizleyip listeyi yeniden görünür hâle getirebilirsin.",
+      "action": {
+        "kind": "CLEAR_FILTER",
+        "targetKey": "room:agreements:filter-clear",
+        "safeUiAction": true,
+        "businessWrite": false
+      },
+      "afterActionDom": [
+        "Filtre boş",
+        "Gösterilen: 7 / Toplam: 7",
+        "Operasyon köprüsü için bir sözleşme seç.",
+        "Sözleşme #184 preview/selected-record otomatik açılmadı"
+      ],
+      "result": "PRODUCT_PASS"
+    },
+    "vehicles": {
+      "scenarioId": "M18-PART5-EMPTY-VEHICLES-FILTER-RECOVERY",
+      "question": "Aracımı bulamıyorum, ne yapmalıyım?",
+      "startRoute": "/room/vehicles",
+      "filter": "999999",
+      "beforeActionDom": [
+        "Filtre değeri 999999",
+        "Gösterilen: 0 / Toplam: 3",
+        "Seçili kayıt yok",
+        "Görünür gerçek Filtreyi Temizle kontrolü"
+      ],
+      "backendReply": "Araçlar ekranındasın. “999999 ALL” filtresi 3 yetkili araç içinden 0 kayıt gösteriyor. Eski araç seçimini geri getirmiyorum; önce filtreyi temizleyip listeyi yeniden görünür hâle getirebilirsin.",
+      "action": {
+        "kind": "CLEAR_FILTER",
+        "targetKey": "room:vehicles:filter-clear",
+        "safeUiAction": true,
+        "businessWrite": false
+      },
+      "afterActionDom": [
+        "Filtre boş",
+        "Gösterilen: 3 / Toplam: 3",
+        "Seçili kayıt yok",
+        "34ABC123, 34 ABC 124 and 34 ABC 125 visible",
+        "No map or Atamalar target opened"
+      ],
+      "result": "PRODUCT_PASS"
+    }
+  },
+  "security": {
+    "roleTenant": "ROOM-only response and live targets; foreign-role regression remained fail-closed.",
+    "staleSelection": "Both clear actions leave selection empty; agreement #184 and vehicle 34ABC123 are not resurrected.",
+    "businessWrite": 0,
+    "paymentApprovalAccountingWrite": 0,
+    "unauthorizedDataAccess": 0
+  },
+  "nextFrontier": "PART 5 remaining responsive/mobile real interactions and any still-unproven unique security/empty-state functions; do not reopen these two scenarios.",
+  "historicalCounting": "The historical 34-cell PART 5 grouping and ROOM 132-cell governance count remain subject to the existing deduplication/manifest reconciliation; this checkpoint does not invent or reduce cells."
+}

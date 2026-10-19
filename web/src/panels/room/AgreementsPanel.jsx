@@ -37,7 +37,7 @@ const EMPTY_QUALITY_BRIDGE_LIST = [];
 const ROOM_AGREEMENT_TABS = [
   { key: "bridge", label: "Operasyon Köprüsü" },
   { key: "route", label: "Rota Talepleri" },
-  { key: "applied", label: "Uygulanan Rota" },
+  { key: "applied", label: "Uygulanan Rota", copilotTarget: "room:agreements:tab:applied", copilotSemanticId: "product:room:agreements:tab:applied" },
   { key: "extend", label: "Uzatma Talepleri" },
   { key: "pending", label: "Bekleyen" },
   { key: "other", label: "Diğer Sözleşmeler" },
@@ -79,6 +79,7 @@ export default function AgreementsPanel() {
   const [extendCounterNote, setExtendCounterNote] = useState("");
   const [selectedAgreementId, setSelectedAgreementId] = useState(null);
   const [filterQ, setFilterQ] = useState("");
+  const [suppressImplicitAgreementTarget, setSuppressImplicitAgreementTarget] = useState(false);
   const [viewMode, setViewMode] = useState("bridge");
   const [bridgeDetailsRequested, setBridgeDetailsRequested] = useState(false);
   const viewModeInitializedRef = useRef(false);
@@ -91,7 +92,9 @@ export default function AgreementsPanel() {
     if (!wanted) return null;
     return pending.find((x) => Number(x.id) === wanted) || others.find((x) => Number(x.id) === wanted) || extendItems.find((x) => Number(x.id) === wanted) || null;
   }, [selectedAgreementId, pending, others, extendItems]);
-  const copilotAgreementTarget = useMemo(() => selectedAgreement || approveTarget || counterTarget || extendCounterTarget || pending[0] || others[0] || null, [selectedAgreement, approveTarget, counterTarget, extendCounterTarget, pending, others]);
+  // Keep the visual bridge populated without publishing an implicit list row
+  // as the user's selected Copilot record.
+  const copilotAgreementTarget = useMemo(() => selectedAgreement || approveTarget || counterTarget || extendCounterTarget || null, [selectedAgreement, approveTarget, counterTarget, extendCounterTarget]);
   const filteredExtendItems = useMemo(() => extendItems.filter((a) => includesFilter([
     a?.id, a?.status, a?.extendStatus, a?.startDate, a?.endDate, a?.extendRequestedEndDate, a?.extendRequestedEndAt,
     a?.companyOfferAmount, a?.roomOfferAmount, a?.extendOfferAmount, a?.extendCounterAmount,
@@ -105,6 +108,26 @@ export default function AgreementsPanel() {
     a?.id, a?.status, a?.startDate, a?.endDate, a?.companyOfferAmount, a?.roomOfferAmount, a?.companyOfferNote, a?.roomOfferNote,
     a?.direction, a?.pattern, a?.hubLat, a?.hubLng, weekMaskToText(a?.weekMask),
   ], filterQ)), [others, filterQ]);
+  const agreementDisplayTarget = useMemo(() => {
+    const hasFilter = String(filterQ || "").trim().length > 0;
+    const visibleIds = new Set([
+      ...filteredPending,
+      ...filteredOthers,
+      ...filteredExtendItems,
+    ].map((item) => Number(item?.id || 0)).filter((id) => id > 0));
+
+    if (copilotAgreementTarget) {
+      const targetId = Number(copilotAgreementTarget?.id || 0);
+      if (!hasFilter || visibleIds.has(targetId)) return copilotAgreementTarget;
+      return null;
+    }
+
+    // A non-matching filter is an explicit empty-result state. Do not
+    // resurrect the first agreement as an unrelated preview/selected target.
+    if (hasFilter) return filteredPending[0] || filteredOthers[0] || filteredExtendItems[0] || null;
+    if (suppressImplicitAgreementTarget) return null;
+    return pending[0] || others[0] || null;
+  }, [copilotAgreementTarget, filterQ, filteredExtendItems, filteredOthers, filteredPending, others, pending, suppressImplicitAgreementTarget]);
   const pendingRouteRefreshItems = useMemo(() => routeRefreshItems.filter((item) => ["PENDING", "COUNTERED"].includes(String(item?.status || '').toUpperCase())), [routeRefreshItems]);
   const acceptedRouteRefreshItems = useMemo(() => routeRefreshItems.filter((item) => String(item?.status || '').toUpperCase() === 'ACCEPTED'), [routeRefreshItems]);
   const filteredRouteRefreshItems = useMemo(() => pendingRouteRefreshItems.filter((item) => includesFilter([
@@ -212,7 +235,7 @@ export default function AgreementsPanel() {
     });
     return map;
   }, [pending, others, extendItems]);
-  const selectedRouteRefreshAgreementId = Number(copilotAgreementTarget?.id || selectedAgreement?.id || 0);
+  const selectedRouteRefreshAgreementId = Number(agreementDisplayTarget?.id || selectedAgreement?.id || 0);
   const selectedRouteRefreshItem = useMemo(() => (
     selectedRouteRefreshAgreementId > 0
       ? routeRefreshItems.find((item) => Number(item?.agreementId || 0) === selectedRouteRefreshAgreementId) || null
@@ -569,7 +592,7 @@ export default function AgreementsPanel() {
 
   useEffect(() => {
     let cancelled = false;
-    const agreementId = Number(copilotAgreementTarget?.id || 0);
+    const agreementId = Number(agreementDisplayTarget?.id || 0);
     if (!token || !agreementId) {
       setQualityPaymentBridgePreview({ loading: false, data: null, err: "" });
       setPlatformFeePreview({ loading: false, data: null, err: "" });
@@ -612,7 +635,7 @@ export default function AgreementsPanel() {
       cancelled = true;
       controller.abort();
     };
-  }, [token, copilotAgreementTarget?.id]);
+  }, [token, agreementDisplayTarget?.id]);
 
   function openAgreementShift(shiftId) {
     const sid = Number(shiftId || 0);
@@ -635,9 +658,33 @@ export default function AgreementsPanel() {
   function openAgreementDetail(agreement) {
     const id = Number(agreement?.id || 0);
     if (!id) return;
+    setSuppressImplicitAgreementTarget(false);
     setSelectedAgreementId(id);
     setBridgeDetailsRequested(true);
     setViewMode("bridge");
+  }
+
+  function clearAgreementFilter() {
+    const selectedId = Number(selectedAgreementId || 0);
+    const visibleIds = new Set([
+      ...filteredRouteRefreshItems,
+      ...filteredAcceptedRouteRefreshItems,
+      ...filteredPending,
+      ...filteredOthers,
+      ...filteredExtendItems,
+    ].map((item) => Number(item?.id || item?.agreementId || 0)).filter((id) => id > 0));
+    setFilterQ("");
+    setSuppressImplicitAgreementTarget(true);
+    // A selected agreement hidden by the active filter is stale for the
+    // user's empty-result recovery. Clear it together with that filter so
+    // the unfiltered view does not silently resurrect an old preview.
+    if (selectedId > 0 && !visibleIds.has(selectedId)) {
+      setSelectedAgreementId(null);
+      setBridgeDetailsRequested(false);
+      setApproveId(null);
+      setCounterId(null);
+      setExtendCounterId(null);
+    }
   }
 
   function agreementPreviewShiftId(agreement) {
@@ -705,6 +752,11 @@ export default function AgreementsPanel() {
     try {
       const all = await cachedGet("/api/agreements?take=200", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 90 });
       const items = all?.items ?? [];
+      const hashQuery = typeof window !== "undefined" ? String(window.location.hash || "").split("?")[1] || "" : "";
+      const requestedFocusAgreementId = Number(new URLSearchParams(hashQuery).get("focusAgreementId") || 0);
+      if (requestedFocusAgreementId > 0 && items.some((agreement) => Number(agreement?.id || 0) === requestedFocusAgreementId)) {
+        setSelectedAgreementId(requestedFocusAgreementId);
+      }
 
       // ✅ M59: shift stats (today/horizon) for UI clarity
       try {
@@ -1003,9 +1055,9 @@ export default function AgreementsPanel() {
             <div className="muted" style={{ marginTop: 4 }}>{roomAgreementsNotice.detail}</div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            {copilotAgreementTarget ? (
-              <button type="button" className="btn sm" onClick={() => openAgreementDetail(copilotAgreementTarget)}>
-                Detayı aç
+            {agreementDisplayTarget ? (
+              <button type="button" className="btn sm" onClick={() => openAgreementDetail(agreementDisplayTarget)}>
+                Sözleşme detayını aç
               </button>
             ) : null}
             <button type="button" className="btn sm primary" onClick={() => setViewMode(roomAgreementsNotice.actionTab)}>
@@ -1019,6 +1071,11 @@ export default function AgreementsPanel() {
         data-copilot-target="room:agreements:list"
         data-copilot-semantic-id="product:room:agreements:list"
         data-copilot-label="Sözleşme listesi"
+        data-copilot-filter-scope="agreements"
+        data-copilot-filter-value={String(filterQ || '').trim()}
+        data-copilot-filter-visible-count={filteredRouteRefreshItems.length + filteredAcceptedRouteRefreshItems.length + filteredPending.length + filteredOthers.length + filteredExtendItems.length}
+        data-copilot-filter-total-count={routeRefreshItems.length + pending.length + others.length + extendItems.length}
+        data-copilot-filter-clear-target="room:agreements:filter-clear"
       >
         <div className="card" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
           <div>
@@ -1026,6 +1083,16 @@ export default function AgreementsPanel() {
             <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="Kayıt no / durum / teklif / tarih / not" />
           </div>
           <div className="muted">Gösterilen: <b>{filteredRouteRefreshItems.length + filteredAcceptedRouteRefreshItems.length + filteredPending.length + filteredOthers.length + filteredExtendItems.length}</b> / Toplam: <b>{routeRefreshItems.length + pending.length + others.length + extendItems.length}</b></div>
+          {String(filterQ || '').trim() ? (
+            <button
+              type="button"
+              className="btn sm ghost"
+              data-copilot-target="room:agreements:filter-clear"
+              onClick={clearAgreementFilter}
+            >
+              Filtreyi Temizle
+            </button>
+          ) : null}
         </div>
 
         <PanelSegmentTabs
@@ -1037,13 +1104,13 @@ export default function AgreementsPanel() {
       </div>
 
       {viewMode === "bridge" ? (
-        <ReconciliationPreviewCard agreementId={copilotAgreementTarget?.id} token={token} style={{ marginTop: 12 }} />
+        <ReconciliationPreviewCard agreementId={agreementDisplayTarget?.id} token={token} style={{ marginTop: 12 }} />
       ) : null}
 
       {viewMode === "bridge" ? (
         <RoomAgreementsBridgeSection
           busy={busy}
-          copilotAgreementTarget={copilotAgreementTarget}
+          copilotAgreementTarget={agreementDisplayTarget}
           opsBridge={opsBridge}
           bridgeDetailsRequested={bridgeDetailsRequested}
           onRequestBridgeDetails={() => setBridgeDetailsRequested(true)}

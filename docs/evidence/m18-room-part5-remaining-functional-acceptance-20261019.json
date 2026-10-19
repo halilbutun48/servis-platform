@@ -1,0 +1,138 @@
+{
+  "evidenceType": "M18_ROOM_PART5_REMAINING_FUNCTIONAL_ACCEPTANCE",
+  "recordedAt": "2026-10-19T17:50:34Z",
+  "parentCheckpoint": "docs/evidence/m18-room-part5-mobile-functional-acceptance-20261019.json",
+  "publicOrigin": "https://further-history-universities-hugo.trycloudflare.com",
+  "runtime": {
+    "backendStartedAt": "2026-10-19T17:20:09.877Z",
+    "localHealth": "ok=true, dbOk=true",
+    "publicHealth": "ok=true, dbOk=true",
+    "browser": "Windows headed Chrome via @playwright/cli session m18-room-part4",
+    "viewports": ["320x700", "390x844"],
+    "role": "ROOM / Turizm-Taşımacılık Firması",
+    "businessWrite": 0,
+    "unauthorizedDataAccess": 0
+  },
+  "boundedScope": {
+    "purpose": "Continue only unproven real mobile/cross-surface functions; preserve prior PASS evidence.",
+    "historicalMobileRange": "EXH-MOB-001..016",
+    "policy": "Historical grouped ranges are not expanded into synthetic cells. The observations below are unique user functions, not a claim that the historical 16-cell decomposition is complete.",
+    "priorMobileCheckpoint": "docs/evidence/m18-room-part5-mobile-functional-acceptance-20261019.json"
+  },
+  "productCorrective": {
+    "status": "PRODUCT_DEFECT_FIXED",
+    "file": "web/src/components/copilot/FloatingCopilotDrawer.jsx",
+    "rootCause": "On a scrolled mobile map, opening the launcher mounted the drawer before the scheduled scroll-to-top. The map scroll listener then saw the new drawer intersecting the map and immediately closed it.",
+    "minimalFix": "Guard the one safe-top restoration scroll event with restoringMapSafeTopRef and open the drawer after scheduling the restoration; existing task state and selection owners remain unchanged.",
+    "redEvidence": "At 320x700 /room/map after a target response, the visible launcher click left complementary=0 because the newly opened drawer was closed by the map scroll handler.",
+    "greenEvidence": "After the source fix and public Vite HMR/reload, the same launcher click opened the panel with complementary=1; the map task state remained available.",
+    "build": "npm --prefix web run build PASS; 438 modules transformed; git diff --check PASS",
+    "backendRestart": false
+  },
+  "observations": [
+    {
+      "id": "M18-P5-MOB-320-MAP-LAUNCHER-REOPEN",
+      "viewport": "320x700",
+      "startRoute": "/room/map",
+      "userAction": "After the map target response auto-collapsed the assistant, click the visible Sefer Abi launcher again.",
+      "expected": "The real mobile assistant must reopen without losing the route/record context.",
+      "observed": "Before the fix the launcher click left no complementary panel. After the fix the same click opened complementary=1 on the public runtime; no wrong target or record was introduced.",
+      "result": "PRODUCT_PASS_AFTER_CORRECTIVE"
+    },
+    {
+      "id": "M18-P5-MOB-320-MAP-STEP-TARGET",
+      "viewport": "320x700",
+      "startRoute": "/room/map",
+      "userAction": "Adım adım göster.",
+      "expected": "The assistant must explain the current map task, open the real target/disclosure, and preserve the authorized selected context.",
+      "observed": "The answer identified Canlı araçlar ve vardiyalar1, the visible target status appeared, the live list/disclosure opened, and Vardiya #168 / Araç 34 ABC 124 remained the visible context.",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "M18-P5-MOB-320-MAP-CONTINUATION-DEVAM",
+      "viewport": "320x700",
+      "startRoute": "/room/map",
+      "userAction": "Devam.",
+      "expected": "The current Vardiya #168 task step must continue without falling back to another record.",
+      "observed": "The answer supplied verified Vardiya #168 route facts and exposed the real Vardiyalar ekranına git action.",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "M18-P5-MOB-320-MAP-CONTINUATION-GERI",
+      "viewport": "320x700",
+      "startRoute": "/room/map",
+      "userAction": "Geri.",
+      "expected": "The prior step of the same task must be restored safely.",
+      "observed": "The answer returned to the first explanation for Vardiya #168 and kept the real Vardiyalar ekranına git action; no unrelated record appeared.",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "M18-P5-MOB-320-MAP-RECOVERY-BULAMADIM",
+      "viewport": "320x700",
+      "startRoute": "/room/map",
+      "userAction": "Bulamadım.",
+      "expected": "Recovery must stay screen-specific and fail closed if the target is not verified.",
+      "observed": "The answer explicitly kept the user on Canlı Takip, said the Canlı araçlar ve vardiyalar1 target was not verified for completion, and did not invent a record or action.",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "M18-P5-MOB-320-MAP-TABS-DISCLOSURES",
+      "viewport": "320x700",
+      "startRoute": "/room/map",
+      "userAction": "Open the Araçlar tab, then open Rota, zaman çizelgesi ve teknik ayrıntılar and Risk ve kontrol ayrıntıları.",
+      "expected": "Real mobile tab/disclosure controls must be reachable and expose the authorized route/risk details without write actions.",
+      "observed": "Araçlar selected state, the route timeline, Vardiya #168 / Araç 34 ABC 124 details, offline reason, control notes, approval-needed state, and the explicit read-only boundary were visible in the DOM.",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "M18-P5-MOB-320-VEHICLE-MAP",
+      "viewport": "320x700",
+      "startRoute": "/room/vehicles",
+      "userAction": "34ABC123 için bu aracı haritada göster.",
+      "expected": "The authorized vehicle must navigate to map with its real focus identity and remain selected visibly.",
+      "observed": "The action opened /room/map?focusVehicleId=1. DOM showed 34ABC123, Vardiya yok for this vehicle, Çevrim dışı, and 2 araç haritada. No Atamalar fallback, cross-tenant record, or write occurred.",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "M18-P5-MOB-390-COMMERCIAL-AGREEMENT",
+      "viewport": "390x844",
+      "startRoute": "/room/commercial-flow",
+      "userAction": "Ticari akıştan Sözleşme #184'ü göster.",
+      "expected": "The real commercial-flow context must open the authorized agreement record and preserve read-only financial boundaries.",
+      "observed": "The action opened /room/agreements?focusAgreementId=184. DOM showed Sözleşme #184, Operasyon kanıtı yok, 0 / 0 tamamlandı, the agreement context, and the preview-only boundary forbidding invoice approval, hakediş finalization, payment, and accounting writes.",
+      "result": "PRODUCT_PASS"
+    }
+  ],
+  "regressionProtection": {
+    "targetedRelatedFlows": [
+      "Map target/disclosure and mobile assistant reopen",
+      "Vehicle 34ABC123 to map focusVehicleId=1",
+      "Commercial flow to agreement #184 focus",
+      "Map continuation Devam/Geri/Bulamadım"
+    ],
+    "priorPassesReopened": false,
+    "regressionResult": "No regression observed in the directly affected public flows. Prior PART 1-4 PASS evidence was preserved and not re-counted."
+  },
+  "security": {
+    "roleTenantIsolation": "ROOM role and tenant remained active in every observation.",
+    "staleSelection": "The vehicle map flow showed the requested vehicle only; the map continuation kept Vardiya #168 and did not resurrect an unrelated record.",
+    "unauthorizedDataAccess": 0,
+    "businessWrite": 0,
+    "financialBoundary": "Commercial agreement view remained preview/read-only; no payment, approval, accounting, assignment, or route write was triggered."
+  },
+  "result": {
+    "newUniqueObservedFunctions": 8,
+    "newProductPass": 8,
+    "newProductFail": 0,
+    "newProductGap": 0,
+    "newNotProven": 0,
+    "part5Status": "PARTIAL_CHECKPOINT_REAL_FUNCTIONS_EXTENDED;_HISTORICAL_GROUPED_CELL_RECONCILIATION_OPEN",
+    "roomFunctional10of10": "NOT_CLOSED"
+  },
+  "remainingWork": [
+    "Do not convert EXH-MOB-001..016 or the historical 18 security/empty range into synthetic PASS cells.",
+    "Reconcile remaining unique PART 5 security/empty/responsive obligations against existing evidence and mark duplicates MERGED or undefined criteria SPEC_GAP.",
+    "Prepare the final ROOM acceptance manifest and immutable baseline only after every mandatory unique function has real evidence."
+  ],
+  "nextFrontier": "Bounded reconciliation of the remaining PART 5 security/empty/responsive functions; no restart, DB change, checker loop, or prior-PASS rerun."
+}

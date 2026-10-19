@@ -220,13 +220,24 @@ function buildRoomIssuesFromDrivers(items) {
 }
 
 export async function buildRoomObservabilitySummary(user) {
+  const snapshot = await buildRoomObservabilitySnapshot(user);
+  const {
+    issues: _issues,
+    drivers: _drivers,
+    ...summary
+  } = snapshot;
+  return summary;
+}
+
+export async function buildRoomObservabilitySnapshot(user) {
   const roomLabel = String(user?.roomName || user?.name || user?.email || "ROOM").trim() || "ROOM";
   const items = await loadRoomObservabilityDrivers(user);
+  const issues = buildRoomIssuesFromDrivers(items);
   const cards = {
     activeDrivers: items.filter((x) => x.liveState === "LIVE").length,
     riskyDevices: items.filter((x) => x.sessionState === "REFRESH_NEEDED" || x.permissionState !== "GRANTED").length,
     staleOrOffline: items.filter((x) => x.liveState === "STALE" || x.liveState === "OFFLINE").length,
-    openIssues: buildRoomIssuesFromDrivers(items).length,
+    openIssues: issues.length,
   };
 
   return {
@@ -243,6 +254,8 @@ export async function buildRoomObservabilitySummary(user) {
           "GPS canlılığı araç üzerindeki son konum ve UI durum bilgisinden türetilir.",
         ]
       : ["Room kapsamı için gösterilecek sürücü veya araç bulunamadı."],
+    drivers: items,
+    issues,
   };
 }
 
@@ -251,6 +264,6 @@ export async function buildRoomObservabilityDrivers(user) {
 }
 
 export async function buildRoomObservabilityIssues(user) {
-  const items = await loadRoomObservabilityDrivers(user);
-  return buildRoomIssuesFromDrivers(items);
+  const snapshot = await buildRoomObservabilitySnapshot(user);
+  return snapshot.issues;
 }

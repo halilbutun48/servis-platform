@@ -9,6 +9,8 @@ import {
   buildRoomQuoteFloorDraftPreviewInputs,
   getCurrentRoomQuoteFloorDraft,
 } from "../../services/financialOperationsLifecycle.js";
+import { buildAgreementReconciliationPreview } from "../../finance/hakedisInvoiceReconciliation.js";
+import { getFinancialOperationsAccessForRole } from "../../finance/financialOperationsScope.js";
 import { getReferenceLayers } from "../../externalCost/externalCostReferenceService.js";
 import {
   buildCostScenarioPreviewFromBaseline,
@@ -53,6 +55,37 @@ export const COST_REASONING_QUESTION_INTENTS = Object.freeze([
 const FINANCIAL_PATH_PATTERN = /(?:\/|^)(?:room|company|school|organization)\/financial-operations\b/i;
 const FOLLOW_UP_PATTERN = /^(?:peki|neden|nasıl|nasil|bunu aç|bunu ac|devam|aynı|ayni|bu durumda|hangi veri|ne öner|ne oner|detay|açıkla|acikla|kayna\p{L}*|dayana\p{L}*|hesaplama\p{L}*|temel\p{L}*|provenans\p{L}*|yaptım|yaptim|bulamadım|bulamadim|başka seçenek|baska secenek)\b/iu;
 const DEICTIC_FINANCIAL_FOLLOW_UP_PATTERN = /^(?:bu|bunun|bu\s+(?:tutar|deger|sonuc))\b.*\b(?:nasil|hesap|detay|ayrinti|neden|acikla|anlat)\p{L}*\b/iu;
+
+export function financialSurfaceNavigationAction({ message = "", screenPath = "" } = {}) {
+  const normalizedMessage = normalizeText(message);
+  const normalizedPath = String(screenPath || "").split("?")[0];
+  const requestsCostPreview = /\b(?:maliyet|maliyet\s+senaryosu|cost)\p{L}*\b.{0,24}\b(?:onizleme|önizleme|goster|göster|ac|aç)\b/iu.test(normalizedMessage)
+    || /\b(?:onizleme|önizleme)\b.{0,24}\b(?:maliyet|cost)\p{L}*\b/iu.test(normalizedMessage);
+  if (requestsCostPreview && normalizedPath !== "/room/cost-scenarios") {
+    return {
+      actionKind: "OPEN_ROUTE",
+      label: "Maliyet Senaryoları ekranına git",
+      path: "/room/cost-scenarios",
+      safeNavigation: true,
+      criticalActionExecution: false,
+      writeAction: false,
+      reason: "Maliyet önizlemesi yalnızca yetkili Maliyet Senaryoları yüzeyinde salt-okunur açılır.",
+    };
+  }
+  const requestsFinancialDetail = /\b(?:finans\p{L}*|finansal\p{L}*|mali\p{L}*|hakediş\p{L}*|hakedis\p{L}*|ödeme\p{L}*|odeme\p{L}*|fatura\p{L}*|mutabakat\p{L}*|teklif\s+tabani\p{L}*)\b/iu.test(normalizedMessage);
+  const requestsVisibleTarget = /\b(?:goster|ac|incele|goruntule|bak)\b/iu.test(normalizedMessage);
+  const requestsFinancialStatus = /\b(?:sorun|durum|risk|eksik|var\s+mi)\b/iu.test(normalizedMessage);
+  if (FINANCIAL_PATH_PATTERN.test(normalizedPath) || !requestsFinancialDetail || !(requestsVisibleTarget || requestsFinancialStatus)) return null;
+  return {
+    actionKind: "OPEN_ROUTE",
+    label: "Finansal Operasyonlar ekranına git",
+    path: "/room/financial-operations",
+    safeNavigation: true,
+    criticalActionExecution: false,
+    writeAction: false,
+    reason: "Finansal ayrıntı yalnızca yetkili Finansal Operasyonlar yüzeyinde açılır; salt-okunur bir yönlendirmedir.",
+  };
+}
 
 function normalizeText(value) {
   return String(value || "")
@@ -233,11 +266,13 @@ function metricIdentityFromText(text, previous = null) {
 function questionIntentFromText(text, family, continuationType = "") {
   if (continuationType === "ALTERNATIVE") return "ALTERNATIVE_EXPLANATION";
   if (/(?:alternatif|seçenek|secenek).*(?:neden|niçin|nicin|daha iyi)|(?:neden|niçin|nicin).*(?:alternatif|seçenek|secenek)/.test(text)) return "ALTERNATIVE_EXPLANATION";
+  // An explicit risk request must stay a risk assessment even when the
+  // Turkish verb "sırala" also matches the route-ranking cue below.
+  if (/(?:riskli|risk|tehlike|sakınca|sakinca)/.test(text)) return "RISK_SUMMARY";
   if (/(?:en pahalı|en pahali|hangisi daha pahalı|hangisi daha pahali|rota.*hang|hang.*rota|karşılaştır|karsilastir|sıral|sirala)/.test(text)) return "MULTI_ROUTE_RANKING";
   if (/(?:nereden.*tasarruf|tasarruf.*nereden|maliyeti düşür|maliyeti dusur|ucuzlat|azaltabilirim)/.test(text)) return "SAVINGS_OPPORTUNITY";
   if (/(?:sözleşme|sozlesme|anlaşma|anlasma).*(?:kâr|kar|kârlı|karli|zarar|kazanç|kazanc)|(?:kâr|kar|kârlı|karli).*(?:sözleşme|sozlesme|anlaşma|anlasma)/.test(text)) return "CONTRACT_PROFITABILITY";
   if (/(?:kaç araç|kac arac|hangi araç|hangi arac|araç.*mantıklı|arac.*mantikli|araç.*öner|arac.*oner)/.test(text)) return "VEHICLE_RECOMMENDATION";
-  if (/(?:riskli|risk|tehlike|sakınca|sakinca)/.test(text)) return "RISK_SUMMARY";
   if (/(?:neden.*aş|neden.*as|üstüne.*çık|ustune.*cik|bütçe.*aş|butce.*as)/.test(text)) return "BUDGET_OVERRUN";
   if (/(?:hangi maliyet|hangi kalem|artmış|artmis|yüksel|yuksel)/.test(text)) return "COST_DRIVER";
   if (family === "WHAT_IF_SCENARIO") return "WHAT_IF_SCENARIO";
@@ -878,8 +913,534 @@ function buildClarificationResponse({ baseResponse, request, roleKey, scope, scr
   };
 }
 
-function buildUnsupportedFinancialSurfaceResponse({ baseResponse, screenPath }) {
-  const reply = "Bu ROOM finans ekranında hakediş veya fatura mutabakatı için doğrulanabilir bir liste/hedef yok. Mevcut yetkili yüzey Teklif ve Kârlılık önizlemesi; burada kayıt ya da finansal hedef uydurmuyorum.";
+function selectedAgreementFinancialContinuationResponse({ baseResponse = {}, screenContext = null, conversationState = null } = {}) {
+  const semanticPlan = baseResponse?.semanticPlan || null;
+  if (semanticPlan?.family !== 'CONTINUE_CURRENT_REASONING') return null;
+  const action = String(
+    semanticPlan?.typedRequest?.continuationAction
+      || semanticPlan?.continuationAction
+      || '',
+  ).toUpperCase();
+  if (!['BACK', 'RECOVER', 'CONTINUE', 'EXPAND', 'NEXT'].includes(action)) return null;
+  const selectedType = String(
+    screenContext?.selectedEntityType
+      || semanticPlan?.entity?.type
+      || semanticPlan?.continuationBasePlan?.entity?.type
+      || '',
+  ).toLowerCase();
+  const selectedId = Number(
+    screenContext?.selectedEntityId
+      || screenContext?.selectedRecordId
+      || semanticPlan?.entity?.id
+      || semanticPlan?.continuationBasePlan?.entity?.id
+      || 0,
+  ) || 0;
+  if (selectedType !== 'agreement' || selectedId <= 0) return null;
+
+  const currentTarget = screenContext?.uiHints?.currentTarget;
+  const liveTargetLabel = currentTarget?.status === 'FOUND' && String(currentTarget?.label || '').trim()
+    ? String(currentTarget.label).trim()
+    : '';
+  const visibleTargetLabel = (Array.isArray(screenContext?.uiHints?.visibleButtons) ? screenContext.uiHints.visibleButtons : [])
+    .map((item) => typeof item === 'string' ? item : item?.label)
+    .map((label) => String(label || '').trim())
+    .filter((label) => /(?:fark|hakediş|hakedis|fatura|mutabakat|ödeme|odeme|önizleme|onizleme)/iu.test(label))
+    .sort((left, right) => /fark/iu.test(left) ? -1 : /fark/iu.test(right) ? 1 : 0)[0] || '';
+  const activeTab = (Array.isArray(screenContext?.uiHints?.activeTabs) ? screenContext.uiHints.activeTabs : [])
+    .map((tab) => typeof tab === 'string' ? tab : tab?.label)
+    .map((label) => String(label || '').trim())
+    .find(Boolean) || '';
+  const targetLabel = liveTargetLabel || visibleTargetLabel || activeTab;
+  const previousReply = String(
+    conversationState?.lastSettledResult?.reply
+      || conversationState?.costAnalysisState?.lastAnswer
+      || '',
+  ).trim();
+  const safePreviousReply = previousReply && previousReply !== 'Yardım metni oluşmadı.'
+    ? previousReply.slice(0, 420)
+    : '';
+  const targetLine = targetLabel
+    ? `Gerçek UI hedefi: “${targetLabel}”.`
+    : 'Bu turda doğrulanmış bir menü, sekme veya kart hedefi görünmüyor; hedef adı uydurmuyorum.';
+  const normalizedAction = action === 'EXPAND' || action === 'NEXT' ? 'CONTINUE' : action;
+  const financialContinuationState = semanticPlan?.financialContinuationState || null;
+  const enteredExplanationStep = financialContinuationState?.stepKey === 'EXPLAIN_RESULT'
+    && !financialContinuationState?.previousStepKey;
+  const returnedToExplanationStep = normalizedAction === 'BACK'
+    && financialContinuationState?.stepKey === 'EXPLAIN_RESULT'
+    && financialContinuationState?.previousStepKey === 'INSPECT_DIFFERENCE';
+  const advancedToInspectionStep = normalizedAction === 'CONTINUE'
+    && financialContinuationState?.stepKey === 'INSPECT_DIFFERENCE';
+  const reply = normalizedAction === 'BACK'
+    ? returnedToExplanationStep
+      ? `Seçili Sözleşme #${selectedId} için önceki finansal açıklama adımına geri döndük. ${targetLine} Farkı inceleme adımına yeniden geçmeden önce bu açıklamayı gözden geçiriyoruz; iş kaydı değiştirmiyorum.`
+      : safePreviousReply
+        ? `Seçili Sözleşme #${selectedId} bağlamında geri dönülecek önceki finansal adım kanıtlandı: ${safePreviousReply} ${targetLine} Bu yalnızca salt-okunur bir geri dönüş; iş kaydı değiştirmiyorum.`
+        : `Seçili Sözleşme #${selectedId} korunuyor. Bu oturumda geri dönülecek önceki finansal açıklama adımı kanıtlanamadı; mevcut kaydı değiştirmeden yeniden doğrulama yapabilirsin. ${targetLine}`
+    : normalizedAction === 'RECOVER'
+      ? targetLabel
+        ? `Seçili Sözleşme #${selectedId} bağlamında kalıyoruz. “${targetLabel}” hedefini yeniden kontrol et; seçili kaydı değiştirmeden bu sekmede mutabakat/önizleme bilgisini bulabilirsin.`
+        : `Seçili Sözleşme #${selectedId} korunuyor. Gerçek UI hedefi bu turda doğrulanamadı; uydurma menü veya kart yönlendirmesi yapmıyorum. Commercial Flow ekranında seçili kaydı yeniden doğrula.`
+      : advancedToInspectionStep
+        ? `Seçili Sözleşme #${selectedId} için finansal açıklamadan farkı inceleme adımına ilerledik. ${targetLine} Bu hedefi açarak doğrulanmış hakediş/fatura kanıtını inceleyebilirsin.`
+        : enteredExplanationStep
+          ? `Seçili Sözleşme #${selectedId} için finansal açıklama adımını başlattık. ${targetLine} Devam edersen bu doğrulanmış hedefteki fark inceleme adımına geçebilirsin.`
+          : `Seçili Sözleşme #${selectedId} için finansal görev aynı kayıtta korunuyor. ${targetLine} Sayısal veya durum kanıtı olmadan yeni kayıt üretmiyorum.`;
+  const nextAction = financialContinuationState?.stepKey === 'EXPLAIN_RESULT' && financialContinuationState?.nextStepKey && targetLabel
+    ? `Devam ederek “${targetLabel}” fark inceleme adımına geç.`
+    : targetLabel
+      ? `“${targetLabel}” hedefini kontrol et.`
+      : 'Commercial Flow ekranında seçili sözleşmeyi yeniden doğrula.';
+  const sections = [
+    { kind: 'SONUÇ', title: 'SONUÇ', text: reply },
+    { kind: 'HEDEF', title: 'GERÇEK UI HEDEFİ', text: targetLine },
+    { kind: 'GÜVENLİ SINIR', title: 'GÜVENLİ SINIR', text: 'Sefer Abi yalnızca yetkili seçili kaydı açıklar; iş kaydı veya ödeme işlemi başlatmaz.' },
+  ];
+  return {
+    ...baseResponse,
+    provider: 'local-sefer-abi-financial-continuation',
+    reply,
+    summary: reply,
+    questionType: 'FINANCIAL_CONTINUATION',
+    questionLabel: normalizedAction === 'BACK' ? 'Önceki finansal adım' : normalizedAction === 'RECOVER' ? 'Finansal hedef kurtarma' : 'Finansal devam',
+    responseSections: sections,
+    authorizedRecords: [{ type: 'agreement', id: selectedId }],
+    retrievedFacts: [`Seçili Sözleşme #${selectedId} bağlamı korundu`],
+    dataSources: ['yetkili seçili sözleşme bağlamı', ...(targetLabel ? ['canlı görünür UI hedefi'] : [])],
+    financialContinuationState,
+    nextAction,
+    safeNextStep: nextAction,
+    followUpPrompt: 'İstersen aynı seçili sözleşmenin kanıtını açıklamaya devam edebilirim.',
+    roleBoundary: 'Yalnızca yetkili seçili sözleşme bağlamı kullanıldı; iş kaydı değiştirilmedi.',
+    costAnalysisState: {
+      ...(conversationState?.costAnalysisState || {}),
+      lastScreenPath: String(screenContext?.path || ''),
+      lastScope: 'ROOM',
+      lastContinuationType: normalizedAction,
+      lastAnswer: reply,
+      lastSelectedAgreementId: selectedId,
+    },
+    safety: { readOnly: true, previewOnly: true, writeAction: false, noLiveMutation: true, notPersisted: true },
+  };
+}
+
+function visibleRoomAgreementPreviewContext(screenContext) {
+  const path = String(screenContext?.path || "").split("?")[0];
+  // The commercial-flow surface exposes the selected agreement's same
+  // financial preview in its tabs. Keep this scoped to an actual selected
+  // agreement and visible financial text; do not broaden it to role-global
+  // or route-only financial claims.
+  const isAgreementPreviewPath = /^\/room\/agreements$/i.test(path)
+    || /^\/room\/commercial-flow$/i.test(path);
+  if (!isAgreementPreviewPath) return null;
+  const activeTab = String(
+    screenContext?.structuredFacts?.activeTab
+      || screenContext?.facts?.activeTab
+      || screenContext?.liveFacts?.activeTab
+      || "",
+  ).trim().toLowerCase();
+  if (/^\/room\/commercial-flow$/i.test(path) && activeTab === "settlement") {
+    return {
+      previewKind: "payment",
+      agreementId: null,
+      metricLabels: ["Beklenen hakediş", "Fatura tutarı", "Fark"],
+      noVisibleAmount: true,
+      visibleText: "Hakediş önizleme ödeme başlatmaz.",
+    };
+  }
+  const selectedType = String(
+    screenContext?.selectedEntityType
+      || screenContext?.selectedRecordType
+      || screenContext?.structuredFacts?.selectedEntityType
+      || screenContext?.structuredFacts?.selectedRecordType
+      || screenContext?.facts?.selectedRecordType
+      || screenContext?.liveFacts?.selectedRecordType
+      || "",
+  ).trim().toLowerCase();
+  const selectedId = integer(
+    screenContext?.selectedEntityId
+      ?? screenContext?.selectedRecordId
+      ?? screenContext?.structuredFacts?.selectedEntityId
+      ?? screenContext?.structuredFacts?.selectedRecordId
+      ?? screenContext?.facts?.selectedRecordId
+      ?? screenContext?.liveFacts?.selectedRecordId,
+  );
+  if (selectedType !== "agreement" || !selectedId) return null;
+  const visibleText = [
+    screenContext?.visibleText,
+    screenContext?.selectedSummary,
+    screenContext?.selectedRecordSummary,
+    screenContext?.structuredFacts?.summary,
+    screenContext?.structuredFacts?.selectedSummary,
+    screenContext?.structuredFacts?.selectedRecordSummary,
+    screenContext?.facts?.summary,
+    screenContext?.facts?.selectedSummary,
+    screenContext?.facts?.selectedRecordSummary,
+    screenContext?.liveFacts?.summary,
+    screenContext?.liveFacts?.selectedSummary,
+    screenContext?.liveFacts?.selectedRecordSummary,
+    screenContext?.uiHints?.visibleText,
+    screenContext?.uiHints?.structuredFacts?.summary,
+    screenContext?.uiHints?.structuredFacts?.selectedSummary,
+    screenContext?.uiHints?.structuredFacts?.selectedRecordSummary,
+    screenContext?.uiHints?.facts?.summary,
+    screenContext?.uiHints?.facts?.selectedSummary,
+    screenContext?.uiHints?.facts?.selectedRecordSummary,
+    ...(Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields.map((row) => `${row?.label || ""}: ${row?.value || ""}`) : []),
+    ...(Array.isArray(screenContext?.uiHints?.visibleTargets) ? screenContext.uiHints.visibleTargets.map((row) => row?.label || row) : []),
+    ...[screenContext?.structuredFacts, screenContext?.facts, screenContext?.liveFacts, screenContext?.uiHints]
+      .filter(Boolean)
+      .map((facts) => JSON.stringify(facts)),
+  ].filter(Boolean).join(" ");
+  if (!/(?:hakediş|hakedis|ödeme|odeme|mutabakat|fatura|önizleme|onizleme)/iu.test(visibleText)) return null;
+  const metricLabels = [
+    "Beklenen hakediş",
+    "Fatura tutarı",
+    "Fark",
+  ].filter((label) => new RegExp(label.replace(/\s+/gu, "\\s+"), "iu").test(visibleText));
+  return {
+    agreementId: selectedId,
+    metricLabels,
+    noVisibleAmount: /(?:beklenen hakediş|fatura tutarı|fark)[^\n]{0,80}veri\s+yok/iu.test(visibleText),
+    visibleText,
+  };
+}
+
+function formatReconciliationMoneyMinor(value, currencyCode = "TRY") {
+  if (value == null || !Number.isSafeInteger(Number(value))) return "Veri yok";
+  const formatted = new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value) / 100);
+  return String(currencyCode || "TRY").toUpperCase() === "TRY" ? `${formatted} ₺` : `${formatted} ${String(currencyCode).toUpperCase()}`;
+}
+
+function buildSelectedAgreementReconciliationResponse({ baseResponse, screenPath, screenContext = null, reconciliationPreview = null, paymentAccount = null } = {}) {
+  const data = reconciliationPreview?.data || null;
+  const selectedId = Number(data?.agreement?.id || screenContext?.selectedEntityId || screenContext?.selectedRecordId || 0) || 0;
+  if (!data || String(screenContext?.selectedEntityType || "").trim().toLowerCase() !== "agreement" || selectedId <= 0) return null;
+
+  const status = upper(data.status);
+  const currency = data.expectedAmount?.currencyCode || data.invoice?.currencyCode || "TRY";
+  const expected = formatReconciliationMoneyMinor(data.expectedAmount?.amountMinor, currency);
+  const invoice = formatReconciliationMoneyMinor(data.invoice?.amountMinor, currency);
+  const difference = formatReconciliationMoneyMinor(data.difference?.absoluteAmountMinor, currency);
+  const accountStatus = paymentAccount ? `PaymentAccount durumu ${upper(paymentAccount.status, "BILINMIYOR")}.` : "Bu sözleşmenin yetkili şirket/oda kapsamı için PaymentAccount kaydı yok.";
+
+  let result;
+  if (status === "MATCHED") {
+    result = `Seçili Sözleşme #${selectedId} için hakediş ${expected} ve fatura ${invoice}; kayıtlar eşleşiyor.`;
+  } else if (status === "OVER_INVOICED") {
+    result = `Seçili Sözleşme #${selectedId} için hakediş ${expected}, fatura ${invoice}; fatura ${difference} daha yüksek. Durum: fazla faturalandırma.`;
+  } else if (status === "NO_HAKEDIS") {
+    result = `Seçili Sözleşme #${selectedId} için bu dönemde karşılaştırılabilir hakediş kaydı yok. Bu nedenle beklenen hakediş ve fark hesaplanamıyor.`;
+  } else if (status === "NO_OPERATION") {
+    result = `Seçili Sözleşme #${selectedId} için seçilen dönemde sözleşmeye bağlı operasyon/sefer kanıtı yok. ${expected !== "Veri yok" ? `Görünen ${expected} tutar ödeme uygunluğu kanıtı değildir.` : "Tutar bilgisi ödeme uygunluğu kanıtı değildir."}`;
+  } else if (status === "REVIEW_REQUIRED") {
+    const reason = Array.isArray(data.reasons) ? data.reasons.map((item) => item?.label).filter(Boolean).join(" ") : "";
+    const fixtureSource = [data.invoice?.source, data.hakedisPreview?.source]
+      .map((source) => String(source || "").toUpperCase())
+      .find((source) => source === "DEMO_FIXTURE");
+    const nonAuthoritativeEvidence = Array.isArray(data.missingData)
+      && data.missingData.some((item) => String(item?.code || "").toUpperCase() === "NON_AUTHORITATIVE_DATA");
+    const fixtureEvidence = fixtureSource
+      ? "Finansal kanıt demo/test kaynağından geldiği için inceleme gerekiyor."
+      : nonAuthoritativeEvidence
+        ? "Finansal kanıt doğrulanmış gerçek kaynak olmadığı için inceleme gerekiyor."
+        : "Finansal kanıt tamamlanmadan ödeme uygunluğu kesinleştirilmiyor.";
+    result = `Seçili Sözleşme #${selectedId} inceleme bekliyor. ${reason ? `${reason} ` : ""}${fixtureEvidence}`.trim();
+  } else {
+    result = `Seçili Sözleşme #${selectedId} için reconciliation durumu “${data.statusLabel || status || "İncelenmeli"}”.`;
+  }
+  const reply = `${result} ${accountStatus} Bu yüzey salt okunur önizlemedir; ödeme, fatura onayı veya hakediş kesinleştirme başlatmıyorum.`;
+  return {
+    ...baseResponse,
+    provider: "local-canonical-agreement-reconciliation",
+    copilotVersion: SEFER_ABI_COST_ANALYSIS_ASSISTANT_VERSION,
+    screenPath: screenPath || baseResponse?.screenPath || null,
+    reply,
+    summary: reply,
+    questionType: status === "NO_HAKEDIS" ? "PAYMENT_MISSING" : "PAYMENT_READINESS",
+    questionLabel: "Seçili sözleşme hakediş ve fatura mutabakatı",
+    responseSections: [{ kind: "SONUÇ", title: "SONUÇ", text: reply }],
+    evidenceConfidence: "Seçili ve yetkili agreement kapsamındaki canonical reconciliation verisi ile sınırlı.",
+    authorizedRecords: [{ type: "agreement", id: selectedId }],
+    quickActions: [{
+      actionKind: "OPEN_ROUTE",
+      label: "Mutabakat önizlemesini aç",
+      path: "/room/commercial-flow",
+      routeParams: { agreementId: selectedId, tab: "settlement" },
+      safeNavigation: true,
+      criticalActionExecution: false,
+      writeAction: false,
+    }],
+    retrievedFacts: [
+      `Sözleşme #${selectedId}: ${data.statusLabel || status}`,
+      ...(data.expectedAmount?.amountMinor != null ? [`Hakediş: ${expected}`] : []),
+      ...(data.invoice?.amountMinor != null ? [`Fatura: ${invoice}`] : []),
+      ...(data.difference?.absoluteAmountMinor != null ? [`Fark: ${difference}`] : []),
+      accountStatus,
+    ],
+    dataSources: ["yetkili seçili sözleşme", "canonical hakediş/fatura reconciliation", "PaymentAccount readiness"],
+    roleBoundary: "Yalnızca mevcut ROOM tenant ve yetkili seçili sözleşmenin salt-okunur finans kanıtı kullanıldı; işlem başlatılmadı.",
+    guidedTarget: { status: "NOT_FOUND", targetKey: null, screenPath: screenPath || baseResponse?.screenPath || null },
+    readOnly: true,
+    writeAction: false,
+    safety: { readOnly: true, previewOnly: true, writeAction: false, noLiveMutation: true, notPersisted: true },
+  };
+}
+
+async function loadAuthorizedAgreementFinanceEvidenceForUser({ user = {}, agreementId = 0 } = {}) {
+  const id = Number(agreementId) || 0;
+  const roomId = Number(user?.roomId) || 0;
+  if (!id || String(user?.role || "").toUpperCase() !== "ROOM" || !roomId) return null;
+  const agreement = await prisma.agreement.findFirst({
+    where: { id, roomId },
+    select: { id: true, roomId: true, companyId: true },
+  });
+  if (!agreement) return null;
+  return loadSelectedAgreementFinanceEvidence({
+    type: "agreement",
+    id: agreement.id,
+    roomId: agreement.roomId,
+    companyId: agreement.companyId,
+  });
+}
+
+async function loadRoomReconciliationSummary(user = {}) {
+  const roomId = Number(user?.roomId) || 0;
+  if (String(user?.role || "").toUpperCase() !== "ROOM" || !roomId) return [];
+  const agreements = await prisma.agreement.findMany({
+    where: { roomId },
+    select: { id: true },
+    orderBy: [{ id: "asc" }],
+  });
+  const previews = await Promise.all(agreements.map(async ({ id }) => buildAgreementReconciliationPreview({ agreementId: id })));
+  return previews
+    .filter((preview) => preview?.data?.agreement?.id)
+    .map((preview) => preview.data);
+}
+
+function explicitAgreementIdFromSemanticPlan(baseResponse) {
+  const request = baseResponse?.semanticPlan?.canonicalRequest?.request
+    || baseResponse?.semanticPlan?.canonicalRequest
+    || null;
+  return (Array.isArray(request?.candidateEntityRefs) ? request.candidateEntityRefs : [])
+    .find((candidate) => String(candidate?.type || "").toUpperCase() === "AGREEMENT" && Number(candidate?.id) > 0)?.id || 0;
+}
+
+function buildHomeReconciliationResponse({ baseResponse, screenPath, summary = [] } = {}) {
+  const labels = {
+    MATCHED: "sağlıklı/eşleşen",
+    OVER_INVOICED: "fatura tutarı uyuşmazlığı",
+    NO_HAKEDIS: "hakediş verisi eksik",
+    NO_OPERATION: "operasyon kanıtı yok",
+    REVIEW_REQUIRED: "inceleme gerekli",
+  };
+  const lines = summary.map((data) => `#${data.agreement?.id}: ${labels[upper(data.status)] || data.statusLabel || "incelenmeli"}`);
+  const reply = lines.length
+    ? `ROOM kapsamındaki hakediş/mutabakat özeti: ${lines.join("; ")}. Bu özet yalnızca yetkili salt-okunur reconciliation verisine dayanır; ödeme, onay veya fatura kesinleştirme başlatmıyorum.`
+    : "ROOM kapsamındaki yetkili hakediş/mutabakat verisi bu turda bulunamadı; finansal sonuç uydurmuyorum.";
+  return {
+    ...baseResponse,
+    provider: "local-canonical-agreement-reconciliation",
+    copilotVersion: SEFER_ABI_COST_ANALYSIS_ASSISTANT_VERSION,
+    screenPath: screenPath || baseResponse?.screenPath || null,
+    reply,
+    summary: reply,
+    questionType: "PAYMENT_READINESS",
+    questionLabel: "ROOM hakediş ve fatura mutabakat özeti",
+    responseSections: [{ kind: "SONUÇ", title: "SONUÇ", text: reply }],
+    authorizedRecords: summary.map((data) => ({ type: "agreement", id: Number(data.agreement.id) })),
+    retrievedFacts: lines,
+    dataSources: ["ROOM tenant yetkili sözleşmeleri", "canonical hakediş/fatura reconciliation"],
+    roleBoundary: "Yalnızca mevcut ROOM tenant kapsamındaki sözleşmelerin salt-okunur reconciliation kanıtı kullanıldı; işlem başlatılmadı.",
+    quickActions: [{
+      actionKind: "OPEN_ROUTE",
+      label: "Mutabakat önizlemesini aç",
+      path: "/room/commercial-flow",
+      routeParams: { tab: "settlement" },
+      safeNavigation: true,
+      criticalActionExecution: false,
+      writeAction: false,
+    }],
+    guidedTarget: { status: "NOT_FOUND", targetKey: null, screenPath: screenPath || baseResponse?.screenPath || null },
+    readOnly: true,
+    writeAction: false,
+    safety: { readOnly: true, previewOnly: true, writeAction: false, noLiveMutation: true, notPersisted: true },
+  };
+}
+
+async function loadRoomPaymentReadiness(user = {}) {
+  const roomId = Number(user?.roomId || 0) || 0;
+  if (String(user?.role || "").toUpperCase() !== "ROOM" || roomId <= 0) {
+    return { roomId, account: null, paymentSources: [], activePaymentSources: [] };
+  }
+  const [accounts, paymentSources] = await Promise.all([
+    prisma.paymentAccount.findMany({
+      where: { ownerType: "ROOM", roomId },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      take: 1,
+      select: { id: true, status: true, providerKey: true, label: true, maskedIban: true, updatedAt: true },
+    }),
+    prisma.commercialSource.findMany({
+      where: { roomId, paymentModeSnapshot: { in: ["OPTIONAL", "REQUIRED"] } },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      take: 50,
+      select: { id: true, sourceType: true, sourceKey: true, paymentModeSnapshot: true },
+    }),
+  ]);
+  return {
+    roomId,
+    account: accounts[0] || null,
+    paymentSources,
+    activePaymentSources: paymentSources,
+  };
+}
+
+function buildRoomPaymentReadinessResponse({ baseResponse, screenPath, summary = [], readiness = null, question = "" } = {}) {
+  const account = readiness?.account || null;
+  const accountStatus = String(account?.status || "MISSING").toUpperCase();
+  const accountText = account
+    ? `ROOM ödeme hesabı durumu: ${accountStatus}.`
+    : "ROOM kapsamında ödeme hesabı kaydı bulunmuyor.";
+  const sourceCount = Array.isArray(readiness?.activePaymentSources) ? readiness.activePaymentSources.length : 0;
+  const sourceText = sourceCount
+    ? `${sourceCount} yetkili OPTIONAL/REQUIRED ödeme kaynağı bulundu.`
+    : "Yetkili OPTIONAL/REQUIRED ödeme kaynağı görünmüyor; ödeme hazırlığı etkin bir ödeme kaynağına bağlanmış değil.";
+  const asksAccount = /ödeme\s+hesab/iu.test(String(question || ""));
+  const stageText = account && ["ACTIVE", "VERIFIED"].includes(accountStatus)
+    ? "Ödeme hazırlığı salt-okunur önizleme ve mutabakat kontrolü aşamasında."
+    : "Ödeme hazırlığı salt-okunur önizleme aşamasında; eksik hesap/kaynak nedeniyle hazır sayılmıyor.";
+  const labels = {
+    MATCHED: "sağlıklı/eşleşen",
+    OVER_INVOICED: "fatura tutarı uyuşmazlığı",
+    NO_HAKEDIS: "hakediş verisi eksik",
+    NO_OPERATION: "operasyon kanıtı yok",
+    REVIEW_REQUIRED: "inceleme gerekli",
+  };
+  const reconciliationText = summary.length
+    ? `Mutabakat kanıtı: ${summary.map((data) => `#${data.agreement?.id}: ${labels[upper(data.status)] || data.statusLabel || "incelenmeli"}`).join("; ")}.`
+    : "Yetkili mutabakat kanıtı bu turda bulunamadı; finansal sonuç uydurmuyorum.";
+  const reply = `${asksAccount ? accountText : stageText} ${sourceText} ${reconciliationText} Bu yüzey salt okunur önizlemedir; ödeme, onay veya muhasebe işlemi başlatmıyorum.`;
+  return {
+    ...baseResponse,
+    provider: "local-room-payment-readiness",
+    screenPath: screenPath || baseResponse?.screenPath || null,
+    reply,
+    summary: reply,
+    questionType: asksAccount ? "PAYMENT_MISSING" : "PAYMENT_READINESS",
+    questionLabel: asksAccount ? "ROOM ödeme hesabı hazırlığı" : "ROOM ödeme hazırlığı",
+    responseSections: [{ kind: "SONUÇ", title: "SONUÇ", text: reply }],
+    authorizedRecords: summary.map((data) => ({ type: "agreement", id: Number(data.agreement?.id || 0) })).filter((item) => item.id > 0),
+    retrievedFacts: [accountText, sourceText, ...summary.map((data) => `#${data.agreement?.id}: ${labels[upper(data.status)] || data.statusLabel || "incelenmeli"}`)],
+    dataSources: ["ROOM tenant ödeme hesabı hazırlık metadata", "ROOM tenant commercial source readiness", "canonical hakediş/fatura reconciliation"],
+    roleBoundary: "Yalnızca mevcut ROOM tenant kapsamındaki ödeme hazırlığı metadata ve salt-okunur reconciliation kanıtı kullanıldı; işlem başlatılmadı.",
+    quickActions: [{
+      actionKind: "OPEN_ROUTE",
+      label: "Hakediş önizlemesini aç",
+      path: "/room/commercial-flow",
+      routeParams: { tab: "settlement" },
+      safeNavigation: true,
+      criticalActionExecution: false,
+      writeAction: false,
+    }],
+    guidedTarget: {
+      status: "FOUND",
+      targetKind: "CONTROL",
+      targetKey: "room:commercial-flow:tab:settlement",
+      identitySource: "CANONICAL",
+      semanticId: "product:room:commercial-flow:tab:settlement",
+      label: "Hakediş önizleme",
+      semanticType: "tab",
+      screenPath: screenPath || baseResponse?.screenPath || null,
+      role: "Taşımacılık Firması",
+      safeAction: "HIGHLIGHT",
+    },
+    readOnly: true,
+    writeAction: false,
+    safety: { readOnly: true, previewOnly: true, writeAction: false, noLiveMutation: true, notPersisted: true },
+  };
+}
+
+async function loadSelectedAgreementFinanceEvidence(resolvedContext) {
+  if (String(resolvedContext?.type || "").toLowerCase() !== "agreement") return { reconciliationPreview: null, paymentAccount: null };
+  const agreementId = Number(resolvedContext?.id || 0) || 0;
+  if (!agreementId) return { reconciliationPreview: null, paymentAccount: null };
+  const companyId = Number(resolvedContext?.companyId || 0) || 0;
+  const roomId = Number(resolvedContext?.roomId || 0) || 0;
+  const ownerFilters = [
+    ...(companyId ? [{ ownerType: "COMPANY", companyId }] : []),
+    ...(roomId ? [{ ownerType: "ROOM", roomId }] : []),
+  ];
+  const [reconciliationPreview, paymentAccount] = await Promise.all([
+    buildAgreementReconciliationPreview({ agreementId }),
+    ownerFilters.length
+      ? prisma.paymentAccount.findFirst({ where: { OR: ownerFilters }, orderBy: [{ updatedAt: "desc" }, { id: "desc" }] })
+      : null,
+  ]);
+  return { reconciliationPreview, paymentAccount };
+}
+
+export function buildUnsupportedFinancialSurfaceResponse({ baseResponse, screenPath, message = "", screenContext = null, reconciliationPreview = null, paymentAccount = null }) {
+  const selectedAgreementResponse = buildSelectedAgreementReconciliationResponse({
+    baseResponse,
+    screenPath,
+    message,
+    screenContext,
+    reconciliationPreview,
+    paymentAccount,
+  });
+  if (selectedAgreementResponse) return selectedAgreementResponse;
+  const roomAgreementPreview = visibleRoomAgreementPreviewContext(screenContext);
+  if (roomAgreementPreview) {
+    const text = normalizeText(message);
+    const asksMissing = /(?:eksik|hazır değil|hazir degil|hesap.*eksik|yok)/.test(text);
+    const asksStage = /(?:aşama|asama|hazırlık|hazirlik|durum)/.test(text);
+    if (roomAgreementPreview.previewKind === "payment") {
+      const reply = asksStage
+        ? "Hakediş önizleme sekmesinde süreç şu an salt okunur önizleme aşamasında; ödeme başlatılmaz."
+        : `Ticari Çalışma Alanı'ndaki Hakediş önizleme sekmesinde doğrulanabilir hakediş veya fatura tutarı görünmüyor${asksMissing ? "; bu nedenle ödeme hesabı hazır sayılmaz" : ""}. Bu ekran yalnızca önizlemedir; ödeme başlatılmaz.`;
+      return {
+        ...baseResponse,
+        provider: "local-sefer-abi-cost-analysis",
+        copilotVersion: SEFER_ABI_COST_ANALYSIS_ASSISTANT_VERSION,
+        screenPath: screenPath || baseResponse?.screenPath || null,
+        reply,
+        summary: reply,
+        questionType: asksStage ? "PAYMENT_READINESS" : "PAYMENT_MISSING",
+        questionLabel: "Hakediş önizlemesi",
+        responseSections: [{ kind: "SONUÇ", title: "SONUÇ", text: reply }],
+        evidenceConfidence: "Ticari Çalışma Alanı içindeki yetkili salt okunur Hakediş önizleme bağlamı ile sınırlı.",
+        guidedTarget: { status: "NOT_FOUND", targetKey: null, screenPath: screenPath || baseResponse?.screenPath || null },
+        roleBoundary: "Seçili vardiya veya teklif hakediş kaydı olarak kullanılmadı; yalnızca görünür Hakediş önizleme sekmesi değerlendirildi.",
+        safety: { readOnly: true, previewOnly: true, writeAction: false, noLiveMutation: true, notPersisted: true },
+      };
+    }
+    const metricLine = roomAgreementPreview.metricLabels.length
+      ? `${roomAgreementPreview.metricLabels.join(", ")} alanları bu önizlemede okunuyor.`
+      : "Önizleme kartındaki hakediş, fatura ve fark alanları okunuyor.";
+    const resultLine = asksMissing
+      ? `Seçili Sözleşme #${roomAgreementPreview.agreementId} için ${roomAgreementPreview.noVisibleAmount ? "beklenen hakediş, fatura tutarı ve fark şu anda Veri yok görünüyor; hesap hazır değil." : "doğrulanabilir tutar veya tamamlanmış hakediş kanıtı yoksa hesap hazır sayılmaz."} ${metricLine}`
+      : asksStage
+        ? `Seçili Sözleşme #${roomAgreementPreview.agreementId} için süreç yalnızca önizleme aşamasında. ${metricLine} Ödeme başlatılmıyor.`
+        : `Seçili Sözleşme #${roomAgreementPreview.agreementId} için hakediş ve fatura mutabakatı önizleme kartında gösteriliyor. ${metricLine}`;
+    const reply = `${resultLine} Bu yüzey kayıt oluşturmaz, fatura kesinleştirmez ve ödeme başlatmaz; eksik kanıt varsa önizleme kartındaki eksik veri/kanıt ayrıntılarını kontrol et.`;
+    return {
+      ...baseResponse,
+      provider: "local-sefer-abi-cost-analysis",
+      copilotVersion: SEFER_ABI_COST_ANALYSIS_ASSISTANT_VERSION,
+      screenPath: screenPath || baseResponse?.screenPath || null,
+      reply,
+      summary: reply,
+      questionType: asksMissing ? "PAYMENT_MISSING" : "PAYMENT_READINESS",
+      questionLabel: "Hakediş ve fatura mutabakat önizlemesi",
+      responseSections: [{ kind: "SONUÇ", title: "SONUÇ", text: reply }],
+      evidenceConfidence: "Seçili sözleşme ekranındaki yetkili salt okunur önizleme bağlamı ile sınırlı.",
+      guidedTarget: { status: "NOT_FOUND", targetKey: null, screenPath: screenPath || baseResponse?.screenPath || null },
+      roleBoundary: "Yalnızca seçili ROOM sözleşmesinin mevcut salt okunur önizleme bağlamı kullanıldı; kayıt, ödeme veya mutabakat işlemi yapılmadı.",
+      safety: { readOnly: true, previewOnly: true, writeAction: false, noLiveMutation: true, notPersisted: true },
+    };
+  }
+  const reply = "Bu ROOM finans ekranında hakediş, ödeme hazırlığı veya fatura mutabakatı için doğrulanabilir bir liste/hedef yok. Mevcut yetkili yüzey Teklif ve Kârlılık önizlemesi; burada kayıt, ödeme durumu ya da finansal hedef uydurmuyorum.";
+  const financialNavigationAction = financialSurfaceNavigationAction({ message, screenPath });
   return {
     ...baseResponse,
     provider: "local-sefer-abi-cost-analysis",
@@ -890,9 +1451,11 @@ function buildUnsupportedFinancialSurfaceResponse({ baseResponse, screenPath }) 
     questionType: "FINANCIAL_SURFACE_LIMITATION",
     questionLabel: "Finansal yüzey sınırı",
     responseSections: [{ kind: "SONUÇ", title: "SONUÇ", text: reply }],
+    quickActions: financialNavigationAction ? [financialNavigationAction] : [],
     evidenceConfidence: "ROOM ekran sözleşmesi ve mevcut hedef metadatası ile sınırlı.",
     guidedTarget: { status: "NOT_FOUND", targetKey: null, screenPath: screenPath || baseResponse?.screenPath || null },
     roleBoundary: "Yalnızca mevcut ROOM yüzeyinin doğrulanabilir kapsamı kullanıldı; kayıt, ödeme veya mutabakat işlemi yapılmadı.",
+    readOnly: true,
     safety: { readOnly: true, previewOnly: true, writeAction: false, noLiveMutation: true, notPersisted: true },
   };
 }
@@ -905,26 +1468,71 @@ export async function buildSeferAbiCostAnalysisResponse({
   conversationState = null,
   resolvedEntityType = "screen",
   resolvedEntityId = 0,
+  resolvedContext = null,
 } = {}) {
   const request = detectCostAnalysisIntent({ message, screenContext, conversationState });
   const canonicalRequest = baseResponse?.semanticPlan?.canonicalRequest || null;
+  const continuationResponse = selectedAgreementFinancialContinuationResponse({ baseResponse, screenContext, conversationState });
+  if (continuationResponse) return continuationResponse;
   const requestedDomains = Array.isArray(baseResponse?.semanticPlan?.requestedDomains)
     ? baseResponse.semanticPlan.requestedDomains.map((domain) => String(domain).toUpperCase())
     : [];
   const financialObject = String(canonicalRequest?.typedEvidence?.object?.value || "").toUpperCase() === "FINANCIAL";
   const explicitFinanceRequest = requestedDomains.includes("FINANCE") || financialObject;
+  const financeScreenPath = String(screenContext?.path || baseResponse?.screenPath || "").split("?")[0];
+  const explicitAgreementId = Number(explicitAgreementIdFromSemanticPlan(baseResponse)) || 0;
+  const reconciliationRequest = /(?:hakediş|hakedis|fatura|mutabakat|reconciliation|ödeme|odeme|inceleme)/iu.test(String(message || ""));
+  const buildFinanceSurfaceResponse = async () => {
+    if (explicitAgreementId > 0) {
+      const financeEvidence = await loadAuthorizedAgreementFinanceEvidenceForUser({ user, agreementId: explicitAgreementId });
+      if (financeEvidence) {
+        const selectedScreenContext = {
+          ...(screenContext || {}),
+          selectedEntityType: "agreement",
+          selectedEntityId: explicitAgreementId,
+        };
+        return buildUnsupportedFinancialSurfaceResponse({
+          baseResponse,
+          screenPath: financeScreenPath,
+          message,
+          screenContext: selectedScreenContext,
+          ...financeEvidence,
+        });
+      }
+      return buildUnsupportedFinancialSurfaceResponse({ baseResponse, screenPath: financeScreenPath, message, screenContext });
+    }
+    if (String(user?.role || "").toUpperCase() === "ROOM"
+      && financeScreenPath === "/room/commercial-flow"
+      && /(?:ödeme\s+hesab|ödeme\s+hazırlığı|odeme\s+hesab|odeme\s+hazirligi)/iu.test(String(message || ""))) {
+      const [summary, readiness] = await Promise.all([
+        loadRoomReconciliationSummary(user),
+        loadRoomPaymentReadiness(user),
+      ]);
+      return buildRoomPaymentReadinessResponse({ baseResponse, screenPath: financeScreenPath, summary, readiness, question: message });
+    }
+    if (String(user?.role || "").toUpperCase() === "ROOM"
+      && financeScreenPath === "/room/commercial-flow"
+      && reconciliationRequest) {
+      const summary = await loadRoomReconciliationSummary(user);
+      return buildHomeReconciliationResponse({ baseResponse, screenPath: financeScreenPath, summary });
+    }
+    if (/hakedişlerimde|hakedislerimde|hakediş.*sorun|hakedis.*sorun/iu.test(String(message || ""))) {
+      const summary = await loadRoomReconciliationSummary(user);
+      return buildHomeReconciliationResponse({ baseResponse, screenPath: financeScreenPath, summary });
+    }
+    const financeEvidence = await loadSelectedAgreementFinanceEvidence(resolvedContext);
+    return buildUnsupportedFinancialSurfaceResponse({ baseResponse, screenPath: financeScreenPath, message, screenContext, ...financeEvidence });
+  };
   // Invoice/reconciliation is not a cost-analysis result on the ROOM
   // financial surface.  Once the canonical request proves the financial
   // object, return the truthful unsupported-capability explanation before a
   // broad "nereden"/cost cue can manufacture a generic cost summary.
-  if (explicitFinanceRequest && /(?:hakediş|hakedis|fatura|mutabakat)/iu.test(String(message || ""))) {
-    const screenPath = String(screenContext?.path || baseResponse?.screenPath || "").split("?")[0];
-    return buildUnsupportedFinancialSurfaceResponse({ baseResponse, screenPath });
+  if ((explicitFinanceRequest || explicitAgreementId > 0) && reconciliationRequest) {
+    return buildFinanceSurfaceResponse();
   }
   if (!request.isCostAnalysis) {
-    if (explicitFinanceRequest && /(?:hakediş|hakedis|fatura|mutabakat)/iu.test(String(message || ""))) {
-      const screenPath = String(screenContext?.path || baseResponse?.screenPath || "").split("?")[0];
-      return buildUnsupportedFinancialSurfaceResponse({ baseResponse, screenPath });
+    if ((explicitFinanceRequest || explicitAgreementId > 0) && reconciliationRequest) {
+      return buildFinanceSurfaceResponse();
     }
     return baseResponse;
   }
@@ -933,6 +1541,10 @@ export async function buildSeferAbiCostAnalysisResponse({
   const screenPath = String(screenContext?.path || conversationState?.lastScreenPath || baseResponse?.screenPath || "").split("?")[0];
   const scope = scopeForRole(roleKey, screenPath);
   const effectiveScope = scope || (resolvedEntityType === "shift" && roleKey === "ROOM" ? "ROOM" : "");
+  const financialAccess = getFinancialOperationsAccessForRole(roleKey);
+  if (!financialAccess.visibleSurfaceIds.length) {
+    return buildClarificationResponse({ baseResponse, request, roleKey, scope: null, screenPath, user });
+  }
   if (!effectiveScope || (roleKey === "SUPER_ADMIN" && !user?.companyId && !user?.roomId && resolvedEntityType === "screen" && !/\/(?:room|company|school|organization)\//i.test(screenPath))) {
     return buildClarificationResponse({ baseResponse, request, roleKey, scope: effectiveScope, screenPath, user });
   }
@@ -1221,6 +1833,7 @@ export async function buildSeferAbiCostAnalysisResponse({
     isFollowUp: request.isFollowUp,
     generatedAt,
   };
+  const financialNavigationAction = financialSurfaceNavigationAction({ message, screenPath });
   return {
     ...baseResponse,
     provider: "local-sefer-abi-cost-analysis",
@@ -1239,6 +1852,7 @@ export async function buildSeferAbiCostAnalysisResponse({
     costQuestionIntent: request.questionIntent,
     intentSignals: request.matchedSignals,
     responseSections: sections,
+    quickActions: financialNavigationAction ? [financialNavigationAction] : [],
     followUpPrompt: "Aynı bağlamda devam etmek için maliyet, senaryo veya eksik veri sorusunu yazabilirsin.",
     evidenceConfidence: confidenceText,
     roleBoundary: "Bu yanıt yalnızca yetkili kapsamındaki kanonik veriyi okur; kayıt, teklif, rota veya bütçe değiştirmez.",

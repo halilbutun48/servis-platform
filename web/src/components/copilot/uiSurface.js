@@ -58,21 +58,33 @@ function semanticTypeOf(el) {
 }
 
 function uniqueByLabel(rows) {
+  const candidates = Array.isArray(rows) ? rows : [];
+  const canonicalLabels = new Set(candidates
+    .filter((row) => row?.identitySource === 'CANONICAL' && String(row?.targetKey || '').trim())
+    .map((row) => normalizeText(row?.label))
+    .filter(Boolean));
   const seen = new Set();
+  const seenCanonicalTargets = new Set();
   const out = [];
-  for (const row of Array.isArray(rows) ? rows : []) {
+  for (const row of candidates) {
     const label = String(row?.label || '').trim();
     if (!label) continue;
     const key = normalizeText(label);
-    if (seen.has(key)) {
-      const existingIndex = out.findIndex((item) => normalizeText(item?.label) === key);
-      if (existingIndex >= 0
-        && row?.identitySource === 'CANONICAL'
-        && out[existingIndex]?.identitySource !== 'CANONICAL') {
-        out[existingIndex] = row;
-      }
+    const canonicalTarget = row?.identitySource === 'CANONICAL'
+      ? String(row?.targetKey || '').trim()
+      : '';
+    if (canonicalTarget) {
+      if (seenCanonicalTargets.has(canonicalTarget)) continue;
+      seenCanonicalTargets.add(canonicalTarget);
+      out.push(row);
+      seen.add(key);
+      continue;
+    } else if (canonicalLabels.has(key)) {
+      // A translated/legacy duplicate must not hide the canonical control
+      // that carries the stable target identity for the same visible label.
       continue;
     }
+    if (seen.has(key)) continue;
     seen.add(key);
     out.push(row);
   }
@@ -290,7 +302,7 @@ function collectSemanticElements(excludeSelector) {
 
 export function captureCopilotUiSurface({ excludeSelector = '.copilotDrawer,.copilotFab,.copilotPanel,[data-copilot-ignore="true"]' } = {}) {
   if (typeof document === 'undefined') {
-    return { visibleButtons: [], disabledButtons: [], tableHeaders: [], modalTitles: [], activeTabs: [], pageTitles: [], semanticElements: [], semanticBlocks: [], workflowState: null, currentTarget: null, guidedDraftAvailability: null, foregroundSurface: null };
+    return { visibleButtons: [], disabledButtons: [], tableHeaders: [], modalTitles: [], activeTabs: [], pageTitles: [], semanticElements: [], semanticBlocks: [], filterStates: [], workflowState: null, currentTarget: null, guidedDraftAvailability: null, foregroundSurface: null };
   }
   const modalRoots = Array.from(document.querySelectorAll('[role="dialog"], [aria-modal="true"], .modal, .dialog'))
     .filter((el) => !isExcluded(el, excludeSelector))
@@ -345,6 +357,17 @@ export function captureCopilotUiSurface({ excludeSelector = '.copilotDrawer,.cop
       role: rawCurrentTarget.role || '',
     }
     : null;
+  const filterStates = Array.from(document.querySelectorAll('[data-copilot-filter-scope]'))
+    .filter((el) => !isExcluded(el, excludeSelector) && isVisibleElement(el))
+    .map((el) => ({
+      scope: String(el.getAttribute('data-copilot-filter-scope') || '').trim(),
+      value: String(el.getAttribute('data-copilot-filter-value') || '').trim(),
+      visibleCount: Number(el.getAttribute('data-copilot-filter-visible-count') || 0) || 0,
+      totalCount: Number(el.getAttribute('data-copilot-filter-total-count') || 0) || 0,
+      clearTargetKey: String(el.getAttribute('data-copilot-filter-clear-target') || '').trim(),
+      source: 'LIVE_UI',
+    }))
+    .filter((row) => row.scope && row.clearTargetKey);
   return {
     visibleButtons: buttons.filter((row) => !row.disabled).slice(0, 48),
     visibleMenus,
@@ -355,6 +378,7 @@ export function captureCopilotUiSurface({ excludeSelector = '.copilotDrawer,.cop
     pageTitles: collectTextRows('main h1, main h2, .page-title, [data-page-title]', excludeSelector, 4),
     semanticElements: collectSemanticElements(excludeSelector),
     semanticBlocks: collectSemanticBlocks(excludeSelector),
+    filterStates,
     workflowState,
     currentTarget,
     guidedDraftAvailability,

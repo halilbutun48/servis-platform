@@ -134,6 +134,16 @@ function normalizeTurkishComposition(value, renderState = null) {
   text = text.replace(/(?:Sözleşme|sözleşme)\s+(?=(?:Sözleşme|sözleşme)(?:\s|$))/gu, "");
   text = text.replace(/tamamlandı\s*•\s*tamamlandı/giu, "tamamlandı");
   text = text.replace(/(?:konum\/)?GPS\/konum(?:\/konum)?/giu, "GPS/konum");
+  // GPS is rendered as the user-facing "GPS/konum" label above.  Preserve
+  // Turkish suffixes instead of leaving the old apostrophe attached to the
+  // expanded label (for example, "GPS/konum'i").
+  text = text
+    .replace(/\bGPS\/konum['’]ini\b/giu, "GPS/konumunu")
+    .replace(/\bGPS\/konum['’]inden\b/giu, "GPS/konumundan")
+    .replace(/\bGPS\/konum['’]ine\b/giu, "GPS/konumuna")
+    .replace(/\bGPS\/konum['’]i\b/giu, "GPS/konumu")
+    .replace(/\bGPS\/konumu\s+bilgisini\b/giu, "GPS/konum bilgisini")
+    .replace(/\bGPS\/konumu\s+tarafını\b/giu, "GPS/konum tarafını");
   text = text.replace(/(?<!\()\bETA\b/giu, "tahmini varış zamanı (ETA)");
   // Known tokens receive precise copy above. Unknown structured tokens must
   // fail closed; heuristic humanization can both leak implementation detail

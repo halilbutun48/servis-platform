@@ -6,6 +6,7 @@ import { createVehicleSchema } from "../validators.js";
 import { sanitizeVehicleDirectoryItem } from "../kvkk/enforcement.js";
 import { resolveRoomOwnership } from "../region/ownership.js";
 import logger from "../lib/logger.js";
+import { gpsStatusFromAt } from "../gps/status.js";
 
 export function vehiclesRouter(io) {
   const r = express.Router();
@@ -29,6 +30,16 @@ export function vehiclesRouter(io) {
 
   // "Silme engeli" sayacağımız shift status'leri
   const BLOCKING_SHIFT_STATUSES = ["APPROVED", "ACTIVE"];
+
+  function sanitizeRoomVehicle(item, role) {
+    const sanitized = sanitizeVehicleDirectoryItem(item, { role });
+    const freshness = gpsStatusFromAt(item?.gpsLast?.at);
+    return {
+      ...sanitized,
+      gpsCanonicalStatus: freshness.status,
+      gpsAgeSec: freshness.ageSec,
+    };
+  }
 
   function emitRoom(roomId, event, payload) {
     try {
@@ -162,7 +173,7 @@ export function vehiclesRouter(io) {
         take,
       });
       return res.json(items.map((x) => ({
-        ...sanitizeVehicleDirectoryItem(x, { role: u.role }),
+        ...sanitizeRoomVehicle(x, u.role),
         regionOwnership: roomOwnership,
       })));
     }

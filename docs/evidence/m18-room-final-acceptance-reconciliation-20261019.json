@@ -1,0 +1,218 @@
+{
+  "evidenceId": "m18-room-final-acceptance-reconciliation-20261019",
+  "kind": "M18_ROOM_FINAL_ACCEPTANCE_RECONCILIATION_V1",
+  "createdAt": "2026-10-19T19:06:19.8030166Z",
+  "scope": "ROOM final functional acceptance evidence reconciliation; no new browser execution",
+  "repository": {
+    "path": "D:\\servis-platform",
+    "branch": "m90d1_web_lint_inventory",
+    "head": "3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+    "dirtyWorktree": true,
+    "statusEntryCountAtCheckpoint": 739
+  },
+  "inputs": [
+    {
+      "path": "docs/evidence/m18-room-final-acceptance-exit-20261019.json",
+      "sha256": "CCD225CE93F6490A358BD14E0EC4E8C8FAB801B3561EEE8DC822E65AD1263825"
+    },
+    {
+      "path": "docs/evidence/m18-room-132-cell-reconciliation-20261019.json",
+      "sha256": "01F8EAF7DB600519E741350180E1FD8C9A83818B40F4495762D91A32BC7F95FB"
+    },
+    {
+      "path": "docs/evidence/m18-room-part5-final-evidence-reconciliation-20261019.json",
+      "sha256": "34E3437A912EB9FE9F53BCD225B7DD2649D4DD1511E58380E86124CD1E7678E8"
+    },
+    {
+      "path": "docs/evidence/m18-room-part4-ctx002-006-public-acceptance-20261019.json",
+      "sha256": "03E290F8D9C153DBD82163E6EA9D2DC3B913ED4B39BB5DECF446C1C4EE3DDE42"
+    },
+    {
+      "path": "docs/evidence/m18-room-part3-remaining-23-acceptance-20261019.json",
+      "sha256": "A272D8CB5A2DF266F45D8A53C43E14A5C76FB63CD48B791A565E72421AFBF698"
+    },
+    {
+      "path": "docs/evidence/m18-room-part2-first-23-acceptance-20261019.json",
+      "sha256": "B0AB7AFDC0A31E226FF6188EE2CF86C212C431BB39DD751487274AEDBB95E8E5"
+    }
+  ],
+  "historical132Boundary": {
+    "requiredCellCount": 132,
+    "historicalFormula": "20 route entries + 46 interactive surface/state cells + 24 context/record/recovery cells + 18 security/tenant/empty cells + 16 responsive cells + 8 displayed-suggestion context cells",
+    "canonicalEvidenceContainsUnique132Manifest": false,
+    "historicalDistributionPreserved": {
+      "PREVIOUSLY_PROVEN": 35,
+      "PRODUCT_PASS": 18,
+      "PRODUCT_FAIL": 9,
+      "PRODUCT_GAP": 1,
+      "NOT_PROVEN": 69,
+      "SECURITY_BLOCK": 0,
+      "ENVIRONMENT_BLOCK": 0
+    },
+    "distributionDecision": "Historical counts are retained as historical evidence only. They are not rewritten into a current 132-cell distribution because unique IDs, criteria and one-to-one evidence links are absent."
+  },
+  "knownTraceableRows": {
+    "individuallyNamedProductPassScenarioRows": 33,
+    "scenarioIds": [
+      "EXH-CTX-017",
+      "EXH-CTX-018",
+      "EXH-CTX-019",
+      "EXH-CTX-020",
+      "EXH-CTX-021",
+      "EXH-CTX-022",
+      "EXH-CTX-023",
+      "EXH-CTX-024",
+      "EXH-REC-013",
+      "EXH-REC-014",
+      "EXH-REC-015",
+      "EXH-REC-016",
+      "EXH-REC-017",
+      "EXH-REC-018",
+      "EXH-REC-019",
+      "EXH-REC-020",
+      "EXH-SUG-001",
+      "EXH-SUG-002",
+      "EXH-SUG-003",
+      "EXH-SUG-004",
+      "EXH-SUG-005",
+      "EXH-SUG-006",
+      "EXH-SUG-007",
+      "EXH-SUG-008",
+      "EXH-SUG-009",
+      "EXH-SUG-010",
+      "EXH-SUG-011",
+      "EXH-SUG-012",
+      "EXH-SUG-013",
+      "EXH-SUG-014",
+      "EXH-SUG-015",
+      "EXH-SUG-016",
+      "EXH-UI-028"
+    ],
+    "status": "PRODUCT_PASS",
+    "boundary": "These are exact scenario rows, not a claim that they are 33 of 132 closure cells. Grouped PART 1-3 and mobile/security evidence cannot be promoted to cell-level rows without a canonical mapping."
+  },
+  "groupReconciliation": {
+    "canonicalRoutes": {
+      "uniqueCount": 19,
+      "livePath": "/room/live",
+      "mapPath": "/room/map",
+      "relation": "alias",
+      "historical20RouteDecision": "MANIFEST_COUNTING_ERROR; no twentieth route is invented"
+    },
+    "part4": {
+      "historicalScope": 24,
+      "mergedHistoricalCells": [
+        {
+          "id": "CTX-001",
+          "mergedInto": ["EXH-CTX-022", "EXH-CTX-023"],
+          "decision": "MERGED_ALREADY_PROVEN",
+          "independentPassCreated": false
+        },
+        {
+          "id": "CTX-007",
+          "mergedInto": ["stale-selection-context-acceptance"],
+          "decision": "MERGED_ALREADY_PROVEN",
+          "independentPassCreated": false
+        },
+        {
+          "id": "CTX-008",
+          "mergedInto": ["Devam-Geri-recovery-acceptance"],
+          "decision": "MERGED_ALREADY_PROVEN",
+          "independentPassCreated": false
+        }
+      ],
+      "uniqueCorrectedScope": 21,
+      "uniqueProductPass": 21
+    },
+    "part5": {
+      "uniqueProductPass": 27,
+      "securityAndEmptyUniquePass": 11,
+      "mobileUniquePass": 16,
+      "historicalSpecGapCount": 6,
+      "historicalSpecGapDecision": "OWNER_APPROVED_DE-SCOPE only where the obligation is confirmed not to represent a unique mandatory ROOM function; historical records remain preserved",
+      "activeProductFail": 0,
+      "activeProductGap": 0,
+      "activeFunctionNotProven": 0
+    },
+    "suggestedQuestions": {
+      "historicalEvidence": "51/51 preserved",
+      "currentAffectedContext": "3/3 passed in the current public Chromium context",
+      "notAdditive": true,
+      "reason": "The historical 51/51 set and current 3/3 regression set are context evidence, not independent 132-cell counts."
+    },
+    "independentNaturalLanguageAcceptance": {
+      "currentEvidence": "10/10 PASS",
+      "defectsCorrected": "3/3 public PRODUCT_PASS",
+      "notAdditive": true
+    }
+  },
+  "cellClassification": {
+    "UNIQUE_PRODUCT_PASS": {
+      "count": 33,
+      "scope": "Exact named scenario rows listed in knownTraceableRows only"
+    },
+    "MERGED_ALREADY_PROVEN": {
+      "count": 3,
+      "scope": ["CTX-001", "CTX-007", "CTX-008"]
+    },
+    "OWNER_APPROVED_DE-SCOPE": {
+      "count": 6,
+      "scope": "Six historical PART 5 SPEC_GAP obligations, retained by historical record; exact canonical IDs are not present in the evidence and are therefore not invented here"
+    },
+    "PRODUCT_FAIL": {
+      "count": 0,
+      "scope": "No current product failure in the accepted targeted scope"
+    },
+    "PRODUCT_GAP": {
+      "count": 0,
+      "scope": "No current product gap in the accepted targeted scope"
+    },
+    "REQUIRED_NOT_PROVEN": {
+      "count": "NOT_COMPUTABLE_WITHOUT_UNIQUE_132_MANIFEST",
+      "scope": [
+        "Historical route, interactive, security/empty and responsive groups are recorded at range/group level rather than as unique closure-cell rows",
+        "The canonical mapping from each of the 132 historical obligations to one criterion and one evidence record is absent",
+        "The historical 20-route and corrected PART 4/5 merge/de-scope decisions create additional reconciliation work that cannot be resolved by arithmetic"
+      ]
+    },
+    "SPEC_GAP": {
+      "activeCount": 0,
+      "historicalCount": 6,
+      "decision": "Historical six remain auditable owner-approved de-scope records, not active PRODUCT_PASS rows."
+    }
+  },
+  "runtimeAndEvidenceFreshness": {
+    "publicOrigin": "https://further-history-universities-hugo.trycloudflare.com",
+    "backendStartedAt": "2026-10-19T18:46:35.573Z",
+    "localHealth": "ok=true, dbOk=true",
+    "publicHealth": "ok=true, dbOk=true",
+    "bindMount": "D:\\servis-platform -> /app",
+    "backendRuntime": "personel_api with npm -> nodemon -> node; maintenance scope DEMO_FIXTURE_ONLY",
+    "publicExactSourceSha": "NOT_SERVED_BY_RUNTIME",
+    "provenanceConclusion": "Mount, process freshness, HMR and public DOM evidence are recorded; an exact source SHA served by the public runtime is not available and is not fabricated."
+  },
+  "socketIo": {
+    "historicalObservation": "Public websocket handshake returned 502 while the client requested websocket-only transport.",
+    "productRootCause": "web/src/live/ws.js configured websocket-only transport, leaving ROOM live consumers without authenticated polling fallback.",
+    "corrective": "Polling-first with websocket upgrade is now configured.",
+    "currentEvidence": [
+      "Authenticated Socket.IO polling GET/POST returned HTTP 200.",
+      "Public Chromium after HMR had zero console errors.",
+      "Map and vehicles DOM showed canonical LIVE/STALE/OFFLINE state; no synthetic LIVE was produced.",
+      "health reported wsClients=3.",
+      "Business-write=0."
+    ],
+    "acceptance": "PRODUCT_PASS for the supported polling-fallback work mode; the historical 502 remains recorded and is not hidden.",
+    "remainingLiveRequirement": "No additional mandatory live-function gap is proven by the existing evidence. Exact source-to-runtime SHA remains a provenance limitation, not a fabricated PASS."
+  },
+  "baselineDecision": {
+    "roomFunctional10of10": "NOT_CLOSED",
+    "immutableFunctionalBaseline": "NOT_READY",
+    "companyHandoff": "BLOCKED",
+    "blocker": "A complete unique, traceable 132-cell manifest with explicit criteria and one-to-one evidence links is still absent. The evidence supports accepted product groups and 33 exact scenario rows, but not an honest 132-row closure manifest.",
+    "agentsMdChanged": false,
+    "historicalEvidenceMutated": false,
+    "nextSingleBoundedTask": "Evidence-owner/governance reconciliation: provide or derive the real 132 unique closure-cell rows from canonical acceptance scope and map each to one explicit criterion and evidence record; do not rerun browser tests or reopen proven functions until that mapping exists.",
+    "m18FormalClosed": "NOT_CLOSED"
+  }
+}

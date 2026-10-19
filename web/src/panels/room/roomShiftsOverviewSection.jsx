@@ -6,6 +6,8 @@ import { RoomDispatchPoolSummary } from "./roomShiftsPanelSections";
 
 export function RoomShiftsOverviewSection({
   err,
+  loadState = "ready",
+  onRetry = null,
   pendingCount = 0,
   contractCount = 0,
   otherCount = 0,
@@ -14,6 +16,23 @@ export function RoomShiftsOverviewSection({
   fallbackPreview = null,
   onOpenFallbackPreview = null,
 }) {
+  if (loadState === "loading") {
+    return <div className="roomInlineNotice" role="status">Vardiyalar yükleniyor...</div>;
+  }
+
+  if (loadState === "error") {
+    return (
+      <div className="roomInlineNotice roomInlineNotice--error" role="alert">
+        <div>{err || "Vardiyalar yüklenemedi. Lütfen Tekrar Dene ile yeniden deneyin."}</div>
+        {onRetry ? (
+          <button type="button" className="btn sm roomActionCTA" onClick={onRetry}>
+            Tekrar Dene
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
   const showDispatchApplyAction = Boolean(
     autoSplitApprove &&
       copilotShift &&
@@ -67,7 +86,7 @@ export function RoomShiftsOverviewSection({
         ) : null}
       </div>
 
-      {err ? <div className="roomInlineNotice roomInlineNotice--error">{err}</div> : null}
+      {err ? <div className="roomInlineNotice roomInlineNotice--error" role="alert">{err}</div> : null}
     </>
   );
 }

@@ -105,7 +105,13 @@ export function RoomShiftsMainSections({
           ariaLabel="Taşımacılık Firması vardiya bölümleri"
           tabs={[
             { key: "pending", label: "Bekleyen Talepler", badge: activeCounts.pending || 0 },
-            { key: "contract", label: "Sözleşmeden Üretilen", badge: activeCounts.contract || 0 },
+            {
+              key: "contract",
+              label: "Sözleşmeden Üretilen",
+              badge: activeCounts.contract || 0,
+              copilotTarget: "room:shifts:tab:contract",
+              copilotSemanticId: "product:room:shifts:tab:contract",
+            },
             { key: "other", label: "Diğer Vardiyalar", badge: activeCounts.other || 0 },
           ]}
           value={activeTab}

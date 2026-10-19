@@ -88,8 +88,6 @@ export default function VehiclesPanel() {
   const [bindSel, setBindSel] = useState({});
   const [focusVehicleId, setFocusVehicleId] = useState(0);
 
-
-
 // Atamalar/Müsaitlik
 const [assignRangeDays, setAssignRangeDays] = useState(7);
 
@@ -346,19 +344,27 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
   const vehicleSummary = useMemo(() => {
     const total = Array.isArray(items) ? items.length : 0;
     const archived = Array.isArray(items) ? items.filter((v) => Boolean(v?.archivedAt)).length : 0;
-    const gpsReady = Array.isArray(items) ? items.filter((v) => hasGpsFix(v)).length : 0;
+    const gpsWithCoordinates = Array.isArray(items) ? items.filter((v) => hasGpsFix(v)).length : 0;
+    const gpsCounts = (Array.isArray(items) ? items : []).reduce((counts, vehicle) => {
+      const status = uiStatusFromVehicle(vehicle);
+      counts[status] = (counts[status] || 0) + 1;
+      return counts;
+    }, { LIVE: 0, STALE: 0, OFFLINE: 0 });
     const telematicsTotal = Object.values(telematicsCounts || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
-    return { total, archived, gpsReady, telematicsTotal };
+    return { total, archived, gpsWithCoordinates, gpsCounts, telematicsTotal };
   }, [items, telematicsCounts]);
 
   useEffect(() => {
     if (!focusVehicle) {
-      clearCopilotSelection("/room/vehicles");
+      // A vehicle refresh can briefly replace the list before the selected
+      // record is rehydrated. Keep the last valid copilot selection during
+      // that transient gap; clear it only when the user has no selected id.
+      if (!focusVehicleId) clearCopilotSelection("/room/vehicles");
       return;
     }
     const ui = uiStatusFromVehicle(focusVehicle) || {};
     setCopilotSelection(buildVehicleCopilotSelection({ focusVehicle, focusDriverLabel, focusHasDriver, ui }));
-  }, [focusVehicle, focusDriverLabel, focusHasDriver]);
+  }, [focusVehicle, focusVehicleId, focusDriverLabel, focusHasDriver]);
 
   const selectedDriverId = Number(bindSel?.[focusVehicleId] || focusDriverId || 0);
   const selectedBound = selectedDriverId ? driverBoundMap.get(selectedDriverId) : null;
@@ -429,6 +435,18 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
         return true;
       });
   }, [items, statusFilter, plateQuery]);
+
+  useEffect(() => {
+    if (!focusVehicleId || !items.length) return;
+    const selectedVisible = statusRows.some(({ v }) => Number(v?.id) === Number(focusVehicleId));
+    if (selectedVisible) return;
+
+    // A filter that hides the selected vehicle must not leave a stale record
+    // available to the copilot or visible as the current user context.
+    setFocusVehicleId(0);
+    clearCopilotSelection("/room/vehicles");
+  }, [focusVehicleId, items, statusRows]);
+
   const assignRows = useMemo(() => {
     const now = new Date();
     const q = String(assignQuery || "").trim().toLowerCase();
@@ -587,7 +605,9 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
         <div className="card">
           <div className="muted">Filo özet</div>
           <div style={{ fontWeight: 800, marginTop: 4 }}>{vehicleSummary.total} araç</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>GPS hazır: {vehicleSummary.gpsReady} • Arşiv: {vehicleSummary.archived}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            GPS durumu: Canlı {vehicleSummary.gpsCounts.LIVE} • Güncel değil {vehicleSummary.gpsCounts.STALE} • Çevrim dışı {vehicleSummary.gpsCounts.OFFLINE} • Konumu bulunan {vehicleSummary.gpsWithCoordinates} • Arşiv: {vehicleSummary.archived}
+          </div>
         </div>
         <div className="card">
           <div className="muted">Konum cihazı</div>

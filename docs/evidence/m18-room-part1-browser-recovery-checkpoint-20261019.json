@@ -1,0 +1,131 @@
+{
+  "schema": "M18-ROOM-PART1-BROWSER-RECOVERY-CHECKPOINT-V2",
+  "capturedAt": "2026-10-19T09:44:23.270Z",
+  "status": "PART1_BROWSER_RECOVERED_PARTIAL",
+  "decision": "A supported Windows headed Chromium path is available and public ROOM login/DOM access is proven. Part 1 remains open because the historical route plan is not a complete 132-cell manifest and HOME-04 still lacks complete target-record acceptance.",
+  "scope": {
+    "part": "PART 1",
+    "plannedFormula": "20 route entries + 8 suggestion-context groups = 28 planned items",
+    "manifestBoundary": "The canonical evidence and prior checkpoint do not contain 132 unique closure-cell IDs. Existing source IDs and grouped suggestion-context IDs are preserved; no synthetic acceptance IDs were created.",
+    "historicalAliasRule": "/room/live renders the same Canlı Takip surface as /room/map and is not counted as a second independent route cell."
+  },
+  "repository": {
+    "path": "D:\\servis-platform",
+    "branch": "m90d1_web_lint_inventory",
+    "head": "3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+    "dirtyWorktreeEntries": 703,
+    "productSourceChangedInThisRecovery": false,
+    "checkerChangedInThisRecovery": false,
+    "restartDatabaseTunnelChanged": false
+  },
+  "browserRecovery": {
+    "historicalRunner": "Playwright headed Chromium",
+    "historicalEvidenceSources": [
+      "docs/evidence/m18-room-dlevel-real-product-acceptance-20261018-part-01-02.json:cloudflareHttp2Recovery20261019.chromium",
+      "docs/evidence/m18-room-dlevel-real-product-acceptance-20261018-part-01-02.json:part6RemainingProductCorrectiveA20261019.publicAcceptance",
+      "docs/evidence/m18-room-dlevel-real-product-acceptance-20261018-part-01-02.json:part7RemainingProductCorrectiveB20261019.publicAcceptance"
+    ],
+    "playwrightSkill": {
+      "path": "C:\\Users\\halil\\.codex\\skills\\playwright\\SKILL.md",
+      "sha256": "C52CC95125B720CDC3C9829B0294C2752D4AE9B85A5282AA153DA8BBA929AF87",
+      "npxAvailable": true,
+      "cliResult": "The skill wrapper was invoked; its Linux Playwright daemon looked for /opt/google/chrome/chrome and failed. Browser installation was not attempted."
+    },
+    "windowsBrowserInventory": {
+      "chrome": {
+        "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "present": true,
+        "version": "155.0.8059.80",
+        "sha256": "36A30716F0994B377F1CE6B47CFE35399B9719E31D597FE0EA0D8F3B62AED532"
+      },
+      "edge": {
+        "path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+        "present": true,
+        "version": "155.0.4283.62",
+        "sha256": "C2451A012FF88E82449834DE5B526EBB42B5A3FC25958D795910D2B172C975B6"
+      },
+      "playwrightCache": "C:\\Users\\halil\\AppData\\Local\\ms-playwright contains chromium-1223 and chromium_headless_shell-1223",
+      "interactiveWindowsSession": true,
+      "cuaInventory": "EMPTY; no browser/app inventory was available and no CUA security bypass was used"
+    },
+    "workingMethod": "Historical repository Playwright headed Chromium method, executed on Windows with @playwright/test chromium.launch({headless:false, executablePath: Windows Chrome}). This is the only browser path used for current evidence; no browser package or application was installed.",
+    "publicBrowserSmoke": {
+      "url": "https://further-history-universities-hugo.trycloudflare.com/#/room",
+      "http": 200,
+      "browserVersion": "155.0.8059.80",
+      "login": "PASS",
+      "role": "ROOM",
+      "tenant": "Turizm/Taşımacılık Firması",
+      "visibleDom": ["Operasyon Merkezi", "Teklifler", "Sözleşmeler", "Vardiyalar", "Operasyon Sağlığı", "Finansal Operasyonlar", "Araçlar", "Sefer Abi’ye Sor"],
+      "browserAcceptance": "PASS"
+    }
+  },
+  "runtimeProvenance": {
+    "publicUrl": "https://further-history-universities-hugo.trycloudflare.com",
+    "localHealth": {"http": 200, "ok": true, "dbOk": true, "startedAt": "2026-10-19T09:00:05.989Z"},
+    "publicHealth": {"http": 200, "ok": true, "dbOk": true, "startedAt": "2026-10-19T09:00:05.989Z"},
+    "exactPublicSourceSha": "NOT_EXPOSED_BY_PUBLIC_RUNTIME",
+    "sourceIdentity": {
+      "backend/src/ai/jobGuide/screenCatalog.roomCompany.js": "5A49E61446B291772E78E76B86B58249DDA1A81E43BB7795FC03D4F391D801E4",
+      "web/src/App.jsx": "1AEEF8F9A4195024E1AB6EA50BF72DDBEA8006226EA4E4E05924739CD8472B52"
+    },
+    "backendRestartInThisRecovery": false
+  },
+  "routeAcceptanceObservation": {
+    "catalogEntries": 19,
+    "sourceIdsObserved": [1100, 1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109, 1110, 1114, 1115, 1116, 1119, 1111, 1112, 1117, 1118],
+    "publicChromiumDomReached": 19,
+    "observedRoutes": [
+      "/room", "/room/map", "/room/offers", "/room/shifts", "/room/vehicles", "/room/drivers", "/room/agreements", "/room/copilot", "/room/hub", "/room/checkin", "/room/financial-operations", "/room/operation-health", "/room/commercial-flow", "/room/reports", "/room/cost-scenarios", "/shared/notifications", "/shared/logs", "/shared/kvkk", "/shared/feedback"
+    ],
+    "routeEvidenceStatus": "DOM_REACHED_PART1_CONTINUATION; complete user-task/target criteria and unique closure-cell mapping still require reconciliation",
+    "aliasObservation": {"path": "/room/live", "renders": "/room/map", "independentCell": false, "status": "MANIFEST_BLOCK"}
+  },
+  "suggestionContextAcceptance": {
+    "groupedSourceId": "EXH-SUG-CONTEXT-001_to_008",
+    "individualClosureCellIdsPresent": false,
+    "contextCount": 8,
+    "eachContextVisibleChipCount": 3,
+    "visibleChipsExpandedThrough": "Real visible ÖNERILER (3) disclosure in the headed Chromium drawer",
+    "allDisplayedChipsClicked": true,
+    "contexts": [
+      {"id": "EXH-SUG-CONTEXT-001", "path": "/room", "chips": ["Bu ekranda neye bakmalıyım?", "Riskleri sırala", "Sıradaki doğru işlem ne?"]},
+      {"id": "EXH-SUG-CONTEXT-002", "path": "/room/offers", "chips": ["Bu ekranda neye bakmalıyım?", "Riskleri sırala", "Sıradaki doğru işlem ne?"]},
+      {"id": "EXH-SUG-CONTEXT-003", "path": "/room/vehicles", "chips": ["Bu aracın GPS durumunu açıkla", "Bağlı sürücüyü göster", "Vardiya bağını göster"]},
+      {"id": "EXH-SUG-CONTEXT-004", "path": "/room/agreements", "chips": ["Mevcut sözleşmelerim neler?", "İnceleme bekleyen sözleşmem var mı?", "Sözleşmeleri nereden inceleyebilirim?"]},
+      {"id": "EXH-SUG-CONTEXT-005", "path": "/room/commercial-flow", "chips": ["Bu hakediş neden hazır değil?", "Ödeme hesabı eksik mi?", "Ödeme hazırlığı hangi aşamada?"]},
+      {"id": "EXH-SUG-CONTEXT-006", "path": "/room/operation-health", "chips": ["Riskli cihazları göster", "GPS güncel değil / çevrim dışı satırını aç", "Açık sorunları sırala"]},
+      {"id": "EXH-SUG-CONTEXT-007", "path": "/room/financial-operations", "chips": ["Bu ekranda neye bakmalıyım?", "Riskleri sırala", "Sıradaki doğru işlem ne?"]},
+      {"id": "EXH-SUG-CONTEXT-008", "path": "/room/cost-scenarios", "chips": ["Bu ekranda neye bakmalıyım?", "Riskleri sırala", "Sıradaki doğru işlem ne?"]}
+    ],
+    "status": "GROUPED_PUBLIC_CHROMIUM_PASS_OBSERVED; individual 132-cell IDs remain absent"
+  },
+  "home04": {
+    "scenarioId": "HOME-04",
+    "classification": "PRODUCT_GAP_PRESERVED_NOT_CLOSED",
+    "userInput": "Hakedişlerimde sorun var mı?",
+    "startRoute": "/room",
+    "observedReply": "Taşımacılık Firması kapsamındaki hakediş/mutabakat özeti: #184: operasyon kanıtı yok; #185: hakediş verisi eksik; #186: sağlıklı/eşleşen; #187: fatura tutarı uyuşmazlığı; #188: hakediş verisi eksik; #189: operasyon kanıtı yok; #190: inceleme gerekli.",
+    "observedAction": "Mutabakat önizlemesini aç",
+    "observedTargetRoute": "/room/commercial-flow?tab=settlement",
+    "security": "Salt-okunur; ödeme, onay, muhasebe veya business-write başlatılmadı",
+    "remainingCriterion": "A complete public visible Hakediş/financial-risk target with loaded record-level detail and selected-record proof was not established in this recovery checkpoint. The existing HOME-04 gap is therefore not closed and no product change was made."
+  },
+  "part1Accounting": {
+    "plannedItems": 28,
+    "routeDomObservations": 19,
+    "suggestionContextsObservedAndInteracted": 8,
+    "aliasIndependentRouteCells": 0,
+    "uniqueClosureCellIdsCreated": 0,
+    "partClosed": false,
+    "roomFunctional10of10": "NOT_CLOSED",
+    "m18FormalClosed": "NOT_CLOSED"
+  },
+  "checkpoint": {
+    "priorCheckpoint": "docs/evidence/m18-room-part1-route-suggestion-checkpoint-20261019.json",
+    "priorCheckpointSha256": "D3746DA60C7E92F0ED02C08B7F82729FBD0EC2C7BB238E72AE61772DD313E30A",
+    "lastCompleted": "Windows headed Chromium recovery; public login/ROOM DOM; 19 catalog route DOM observations; 8 grouped suggestion contexts with all 3 visible chips per context clicked; HOME-04 response/action observed but complete target-record criterion remains open.",
+    "nextExactFrontier": "Resolve the canonical HOME-04 read-only target/record acceptance without assuming the gap is closed; then reconcile the 19 route observations and grouped suggestion evidence into the real 132-cell manifest. Do not count /room/live independently and do not start PART 2 until PART 1 has unique criteria/evidence mapping.",
+    "doNotRepeat": ["Do not rerun BATCH 01, Corrective A or Corrective B without a concrete shared-source regression.", "Do not install another browser or build a second browser stack.", "Do not restart backend, Vite, Docker or tunnel; do not reset DB or add fixtures.", "Do not create synthetic acceptance-cell IDs or declare ROOM 10/10."]
+  }
+}

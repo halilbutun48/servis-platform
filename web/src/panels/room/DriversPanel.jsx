@@ -38,7 +38,7 @@ function roomDriverVisibleLabel(value, fallback = "Sürücü kaydı") {
 const TABS = [
   { key: "status", label: "Durum" },
   { key: "manage", label: "Yönetim" },
-  { key: "shifts", label: "Vardiyalar" },
+  { key: "shifts", label: "Vardiyalar", copilotTarget: "room:drivers:tab:shifts", copilotSemanticId: "product:room:drivers:tab:shifts" },
 ];
 
 function fmtTR(dt) {
@@ -156,6 +156,24 @@ export default function DriversPanel() {
   });
 
   const [focusDriverId, setFocusDriverId] = useState(0);
+
+  // Canonical relation navigation carries the authorized driver identity in
+  // the route. Resolve it before the first driver load so the list's selected
+  // row and detail summary cannot fall back to the first driver or a generic
+  // drivers surface.
+  useEffect(() => {
+    const applyRouteFocus = () => {
+      const hashQuery = String(window.location.hash || '').split('?')[1] || '';
+      const routeDriverId = Number(new URLSearchParams(hashQuery).get('focusDriverId') || 0);
+      if (routeDriverId > 0) setFocusDriverId(routeDriverId);
+    };
+    const timer = setTimeout(applyRouteFocus, 0);
+    window.addEventListener('hashchange', applyRouteFocus);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('hashchange', applyRouteFocus);
+    };
+  }, []);
 
   function clearStatusColumnFilters() {
     setStatusColFilter({
@@ -584,7 +602,11 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>
-        <div className="card">
+        <div
+          className="card"
+          data-copilot-target={focusDriver?.id ? `room:drivers:driver:${focusDriver.id}:details` : undefined}
+          data-copilot-semantic-id={focusDriver?.id ? `product:room:driver:${focusDriver.id}:details` : undefined}
+        >
           <div className="muted">Seçili sürücü</div>
           <div style={{ fontWeight: 800, marginTop: 4 }}>{focusDriverLabel || "-"}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>Araç: {focusVehicle?.plate || "-"}</div>
@@ -798,7 +820,14 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                         : "-";
 
                     return (
-                      <tr key={d.id} data-selected={Number(focusDriverId || 0) === Number(d.id || 0) ? "true" : undefined} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}>
+                      <tr
+                        key={d.id}
+                        data-selected={Number(focusDriverId || 0) === Number(d.id || 0) ? "true" : undefined}
+                        data-copilot-target={`room:drivers:driver:${d.id}:details`}
+                        data-copilot-semantic-id={`product:room:driver:${d.id}:details`}
+                        onClick={() => setFocusDriverId(Number(d.id) || 0)}
+                        style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}
+                      >
                         <td title="Sürücü kaydı">Sürücü kaydı</td>
                         <td><b>{roomDriverVisibleLabel(d.fullName)}</b></td>
                         <td>{d.phone}</td>

@@ -41,6 +41,10 @@ function buildScreenIfStuck(context) {
 
 export function buildQuickActions({ jobType, context, user }) {
   const role = String(user?.role || '');
+  // Screen guides already carry their canonical screen/menu targets. Do not
+  // reuse the ROOM shift fallback here: it can manufacture an unrelated
+  // vehicle action when the user is only asking for the current screen guide.
+  if (['SCREEN_MENU_GUIDE', 'BUTTON_ACTION_GUIDE', 'ROLE_HELP_GUIDE'].includes(String(jobType || ''))) return [];
   if (jobType === 'TELEMATICS_DEVICE_CREATE') {
     if (role === 'ROOM') {
       const out = [action("Araçlar ekranını aç", 'ROOM_VEHICLES', 'PRIMARY', "Cihaz GPS'i kaydını bu araçtan açabilir veya kontrol edebilirsin.")];

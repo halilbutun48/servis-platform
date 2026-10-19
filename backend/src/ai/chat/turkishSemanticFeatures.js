@@ -65,9 +65,6 @@ function isPossessiveExclusionWord(value) {
   return /^dış(?:ım|im|um|üm)(?:da|de|ta|te)$/u.test(value);
 }
 
-function isFunctionalNominal(value) {
-  return /^işlev\p{L}*$/u.test(value);
-}
 
 function isPriorityNominal(value) {
   return /^önceli(?:k|ğ\p{L}*)$/u.test(value) || /^onceli(?:k|g\p{L}*)$/u.test(value);

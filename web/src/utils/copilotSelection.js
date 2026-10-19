@@ -1,5 +1,23 @@
 const KEY = "__psv1CopilotSelection";
 const EVT = "psv1:copilot-selection";
+let inMemorySelection = null;
+let hasInMemorySelection = false;
+
+function currentRoutePath() {
+  if (typeof window === "undefined") return "";
+  const hash = String(window.location?.hash || "").replace(/^#/, "");
+  const rawPath = (hash.split("?", 1)[0] || window.location?.pathname || "").trim();
+  if (!rawPath) return "";
+  return rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
+}
+
+function selectionBelongsToCurrentRoute(selection) {
+  const scope = String(selection?.scopeKey || "").trim();
+  const route = currentRoutePath();
+  // Non-browser consumers and screen-less diagnostics have no route to bind.
+  if (!scope || !route) return true;
+  return scope === route;
+}
 
 // A visible table row is not a user selection. Consumers may publish an
 // entity only after an explicit focus/modal/selection path supplies its id.
@@ -12,9 +30,15 @@ export function resolveExplicitCopilotRecord(items, entityId) {
 }
 
 export function setCopilotSelection(detail) {
+  const next = detail && typeof detail === "object" ? detail : null;
+  if (!selectionBelongsToCurrentRoute(next)) return;
+  inMemorySelection = next;
+  hasInMemorySelection = true;
   try {
-    const next = detail && typeof detail === "object" ? detail : null;
-    window[KEY] = next;
+    // Some real browser hosts freeze the Window object. Keep the canonical
+    // selection envelope available to same-bundle consumers even when the
+    // optional browser-global mirror cannot be assigned.
+    if (typeof window !== "undefined" && Object.isExtensible(window)) window[KEY] = next;
     window.dispatchEvent(new CustomEvent(EVT, { detail: next }));
   } catch {
     // best effort: selection sync is non-critical
@@ -23,9 +47,11 @@ export function setCopilotSelection(detail) {
 
 export function clearCopilotSelection(scopeKey = "") {
   try {
-    const current = window[KEY] || null;
+    const current = readCopilotSelection();
     if (!scopeKey || !current || String(current.scopeKey || "") === String(scopeKey)) {
-      window[KEY] = null;
+      inMemorySelection = null;
+      hasInMemorySelection = true;
+      if (typeof window !== "undefined" && Object.isExtensible(window)) window[KEY] = null;
       window.dispatchEvent(new CustomEvent(EVT, { detail: null }));
     }
   } catch {
@@ -34,11 +60,13 @@ export function clearCopilotSelection(scopeKey = "") {
 }
 
 export function readCopilotSelection() {
+  if (hasInMemorySelection) return inMemorySelection;
   try {
-    return window[KEY] || null;
+    if (typeof window !== "undefined" && Object.prototype.hasOwnProperty.call(window, KEY)) return window[KEY] || null;
   } catch {
-    return null;
+    // Fall through to the same-bundle value below.
   }
+  return inMemorySelection;
 }
 
 export function copilotSelectionEventName() {

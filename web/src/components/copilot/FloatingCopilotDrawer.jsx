@@ -65,7 +65,7 @@ function rectIntersects(a, b) {
 function launcherProtectedRects() {
   if (typeof document === "undefined") return [];
   return [...document.querySelectorAll(
-    '[data-primary-cta="true"], [role="alert"], [role="status"], [role="dialog"], #shell-nav-dock, .shellTop, .roleSignalAction, .roleTaskSummaryCard--next .btn, .shellTopLogout, [data-details="task-workspace"] > summary, [data-details="task-workspace"][open] .roleTaskDetailsBody, [data-map-surface="primary"] [data-map-current-state="true"], [data-map-surface="primary"] [data-map-legacy-state="true"], [data-map-surface="primary"] .mapOperationsDisclosure, [data-map-surface="primary"] .mapViewRouteNotice, [data-map-surface="primary"] .mapViewFooter, [data-map-surface="primary"] .leaflet-marker-icon, [data-map-surface="primary"] .leaflet-control',
+    '[data-primary-cta="true"], [role="alert"], [role="status"], [role="dialog"], #shell-nav-dock, .shellTop, .roleSignalAction, .roleTaskSummaryCard--next .btn, .shellTopLogout, [data-details="task-workspace"] > summary, [data-details="task-workspace"][open] .roleTaskDetailsBody, [data-map-surface="primary"] [data-map-current-state="true"], [data-map-surface="primary"] [data-map-legacy-state="true"], [data-map-surface="primary"] .mapOperationsDisclosure, [data-map-surface="primary"] .mapViewRouteNotice, [data-map-surface="primary"] .mapViewFooter, [data-map-surface="primary"] .leaflet-marker-icon, [data-map-surface="primary"] .leaflet-control, .roomCommercialWorkspaceFull button, .roomCommercialWorkspaceFull a, .roomCommercialWorkspaceFull input, .roomCommercialWorkspaceFull select, .roomCommercialWorkspaceFull summary',
   )].filter((element) => !(element.id === "shell-nav-dock" && window.innerWidth <= 720 && element.classList.contains("navDock--mobileClosed"))).map((element) => element.getBoundingClientRect()).filter((box) => box.width > 0 && box.height > 0);
 }
 
@@ -113,6 +113,10 @@ function resolveSafeDrawerPlacement(left, top, width, height) {
     [inset, maxTop],
     [maxLeft, inset],
     [inset, inset],
+    [Math.round((viewportWidth - width) / 2), inset],
+    [Math.round((viewportWidth - width) / 2), maxTop],
+    [inset, Math.round((viewportHeight - height) / 2)],
+    [maxLeft, Math.round((viewportHeight - height) / 2)],
   ];
   const obstacles = launcherProtectedRects();
   const safe = candidates.find(([candidateLeft, candidateTop]) => {
@@ -199,11 +203,21 @@ function attentionBubbleCopy(selection, hasRequestError) {
 }
 
 function actionText(action) {
-  const kind = String(action?.actionKind || "OPEN_ROUTE");
+  const kind = guideActionKind(action);
   if (kind === "OPEN_GUIDE") return humanizeUserFacingText(action?.label, "Rehberi aç");
   if (kind === "ASK") return humanizeUserFacingText(action?.label, "Sor");
   if (kind === "COPY_TEXT") return humanizeUserFacingText(action?.label, "Kopyala");
   return humanizeUserFacingText(action?.label, "İlgili yere git");
+}
+
+// Guide metadata is the canonical action contract. Older or transformed
+// payloads may lose actionKind while retaining the typed guide job; never
+// turn that structured guide into a free-text clarification request.
+function guideActionKind(action) {
+  const explicitKind = String(action?.actionKind || "").trim().toUpperCase();
+  const guideJobType = String(action?.guide?.jobType || action?.jobType || "").trim();
+  if (guideJobType && explicitKind !== "COPY_TEXT") return "OPEN_GUIDE";
+  return explicitKind || "OPEN_ROUTE";
 }
 
 function withRouteParams(path, params) {
@@ -300,7 +314,7 @@ function filterMessageActions(actions, suggestions, followUpPrompt, me) {
   const rows = Array.isArray(actions) ? actions : [];
   const visible = [];
   for (const action of rows) {
-    const kind = String(action?.actionKind || "OPEN_ROUTE");
+    const kind = guideActionKind(action);
     if (kind === "ASK") {
       const askText = String(action?.askText || action?.label || "").trim();
       if (!askText) continue;
@@ -309,6 +323,8 @@ function filterMessageActions(actions, suggestions, followUpPrompt, me) {
     } else if (kind === "COPY_TEXT") {
       const copyText = String(action?.copyText || "").trim();
       if (!copyText) continue;
+    } else if (kind === "CLEAR_FILTER") {
+      if (!String(action?.targetKey || "").trim()) continue;
     } else if (kind === "OPEN_ROUTE") {
       const rawPath = action?.path || action?.href || resolveGuideRoute(me, action?.routeKey || "");
       if (!String(rawPath || "").trim()) continue;
@@ -393,6 +409,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
   const drawerDragCleanupRef = useRef(null);
   const drawerHeaderRef = useRef(null);
   const suppressLauncherClickRef = useRef(false);
+  const restoringMapSafeTopRef = useRef(false);
   const responseTimerRef = useRef(null);
   const attentionBubbleTimerRef = useRef(null);
   const suggestionsCloseTimerRef = useRef(null);
@@ -424,7 +441,10 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
   const suggestions = useMemo(() => buildSuggestions(currentPath, selection, screenContext, me), [currentPath, selection, screenContext, me]);
   const isCopilotPage = /\/copilot$/.test(currentPath);
   const dims = SIZE_PRESETS[size] || SIZE_PRESETS.M;
-  const drawerDims = customDrawerSize || dims;
+  const compactDesktopDrawer = viewportSize.width > 720 && viewportSize.height <= 760;
+  const drawerDims = customDrawerSize || (compactDesktopDrawer
+    ? { ...dims, height: Math.min(dims.height, Math.max(320, viewportSize.height - 400)) }
+    : dims);
   const [activeOverlayLayer, setActiveOverlayLayer] = useState(() => readPlanCenterOverlayLayer() || "guide");
   const drawerAvatarState = resolveSeferAbiWidgetState({
     busy,
@@ -762,12 +782,32 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
       const shouldStayAboveCta = box && box.top > window.innerHeight * 0.52;
       setMobileDrawerPlacement(shouldStayAboveCta ? "top" : "bottom");
     };
+    const handleMapScroll = () => {
+      placeDrawer();
+      if (window.innerWidth > 720 || !isMapSurface || !open || window.scrollY <= 1) return;
+      if (restoringMapSafeTopRef.current) {
+        restoringMapSafeTopRef.current = false;
+        return;
+      }
+      const drawer = document.querySelector(".copilotDrawer");
+      const mapSurface = document.querySelector('[data-map-surface="primary"]');
+      const drawerBox = drawer?.getBoundingClientRect?.();
+      const mapBox = mapSurface?.getBoundingClientRect?.();
+      if (drawerBox && mapBox && rectIntersects(drawerBox, mapBox)) {
+        // Release the map as soon as scrolling brings it under the open
+        // assistant. Conversation history remains persisted and the launcher
+        // stays available for the next question.
+        setOpen(false);
+        setMobileDrawerPlacement("bottom");
+        setMobileDrawerMaxHeight(null);
+      }
+    };
     placeDrawer();
     window.addEventListener("resize", placeDrawer);
-    window.addEventListener("scroll", placeDrawer, true);
+    window.addEventListener("scroll", handleMapScroll, true);
     return () => {
       window.removeEventListener("resize", placeDrawer);
-      window.removeEventListener("scroll", placeDrawer, true);
+      window.removeEventListener("scroll", handleMapScroll, true);
     };
   }, [currentPath, isMapSurface, isRoleTaskHome, open]);
   const resolveSafeLauncherPlacement = useCallback((preferredSide, preferredRatio) => {
@@ -989,11 +1029,24 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
     setGuidedRecoveryMessage("");
     try {
       const latestSelection = readCopilotSelection();
-      const liveSelection = selectionApplies(latestSelection, currentPath) ? latestSelection : selection;
-      const requestSelection = liveSelection || selection || null;
+      const liveSelection = selectionApplies(latestSelection, currentPath) ? latestSelection : null;
+      const stateSelection = selectionApplies(selection, currentPath) ? selection : null;
+      const requestSelection = liveSelection || stateSelection || null;
       const uiSurface = captureCopilotUiSurface();
       const liveWorkflowState = uiSurface.workflowState || readLiveWorkflowState();
       const recentMessages = messages.slice(-8).map((m) => ({ role: m?.role || '', text: String(m?.text || '').slice(0, 280) }));
+      const structuredFacts = requestSelection?.facts && typeof requestSelection.facts === "object"
+        ? requestSelection.facts
+        : currentPath === "/shared/kvkk" && me?.kvkk && typeof me.kvkk === "object"
+          ? {
+            screenType: "KVKK",
+            kvkkAccess: {
+              requiredCount: Number(me.kvkk.requiredCount || 0),
+              acceptedCount: Number(me.kvkk.acceptedCount || 0),
+              blocking: Boolean(me.kvkk.blocking),
+            },
+          }
+          : null;
       const payload = await api.post("/api/ai/copilot", {
         intent: "CHAT_HELP",
         entityType: "screen",
@@ -1023,6 +1076,9 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
           selectedEntitySet: Array.isArray(requestSelection?.entitySet) ? requestSelection.entitySet : [],
           selectedRelatedEntityType: requestSelection?.relatedEntityType || "",
           selectedRelatedEntityId: Number(requestSelection?.relatedEntityId || 0) || null,
+          selectedFields: Array.isArray(requestSelection?.fields) ? requestSelection.fields : [],
+          selectedBadges: Array.isArray(requestSelection?.badges) ? requestSelection.badges : [],
+          structuredFacts,
           uiHints: {
             visibleSuggestions: buildSuggestions(screenContext.path, requestSelection, screenContext, me),
             ...uiSurface,
@@ -1087,6 +1143,45 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
     setText("");
     setInputFocused(false);
     ask(q);
+  }
+
+  async function clearConversation() {
+    if (!token || busy) return;
+    activeRequestRef.current?.abort?.();
+    activeRequestRef.current = null;
+    requestSequenceRef.current += 1;
+    // Clear only the authenticated Sefer Abi task state. The visible record
+    // selection belongs to the current route and must survive the clear.
+    const liveSelection = readCopilotSelection();
+    const preservedSelection = selectionApplies(liveSelection, currentPath)
+      ? liveSelection
+      : selectionApplies(selection, currentPath)
+        ? selection
+        : null;
+    try {
+      await api.post("/api/ai/conversation/clear", {}, { token });
+      localStorage.removeItem(`${HISTORY_KEY}:${authScopeKey}`);
+      setMessages([]);
+      setErr("");
+      setGuidedRecoveryMessage("");
+      setGuidedTarget(null);
+      setSelection(preservedSelection);
+      writeCopilotSharedState({
+        scopeKey: authScopeKey,
+        messages: [],
+        screenPath: canUseRouteBoundContext ? screenContext.path : null,
+        screenLabel: canUseRouteBoundContext ? screenContext.label : null,
+        role: me?.role || "",
+        companyKind: me?.companyKind || "",
+        selection: canUseRouteBoundContext ? preservedSelection : null,
+        selectedContext: canUseRouteBoundContext ? preservedSelection : null,
+        routeContextStatus: routeContext.status,
+        metadataStatus: screenContext.metadataStatus,
+      });
+      resetResponsePhase();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    }
   }
 
   function openPath(path) { if (!path) return; navigate(path); setOpen(false); }
@@ -1172,7 +1267,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
   }
 
   async function triggerQuickAction(action) {
-    const kind = String(action?.actionKind || "OPEN_ROUTE");
+    const kind = guideActionKind(action);
     if (kind === "ASK") {
       return ask(action?.askText || action?.label || "");
     }
@@ -1181,6 +1276,22 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
     }
     if (kind === "COPY_TEXT") {
       return copyText(action?.copyText || "");
+    }
+    if (kind === "CLEAR_FILTER") {
+      const targetKey = String(action?.targetKey || "").trim();
+      const target = Array.from(document.querySelectorAll('[data-copilot-target]'))
+        .find((node) => String(node.getAttribute('data-copilot-target') || '').trim() === targetKey);
+      if (!target || typeof target.click !== "function") {
+        setErr("Bu ekranda canlı filtre temizleme hedefi bulunamadı.");
+        return;
+      }
+      if (target.disabled || String(target.getAttribute('aria-disabled') || '').toLowerCase() === 'true') {
+        setErr("Filtre temizleme kontrolü şu anda kullanılamıyor.");
+        return;
+      }
+      target.scrollIntoView?.({ block: "center", inline: "nearest" });
+      target.click();
+      return;
     }
     const rawPath = action?.path || action?.href || resolveGuideRoute(me, action?.routeKey || "");
     if (!rawPath) {
@@ -1240,17 +1351,22 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
     launcherPositionStyle.bottom = "auto";
   }
   const activeDrawerPlacement = drawerDragPreview || drawerPlacement;
-  const renderedDrawerPlacement = activeDrawerPlacement && viewportSize.width > 720
+  const desktopDrawerWidth = Math.min(drawerDims.width, Math.max(320, viewportSize.width - 36));
+  const desktopDrawerHeight = Math.min(drawerDims.height, Math.max(320, viewportSize.height - 36));
+  const defaultDrawerLeft = Math.max(18, viewportSize.width - desktopDrawerWidth - 18);
+  const defaultDrawerTop = Math.max(18, viewportSize.height - desktopDrawerHeight - 18);
+  const renderedDrawerPlacement = viewportSize.width > 720
     ? resolveSafeDrawerPlacement(
-      activeDrawerPlacement.left,
-      activeDrawerPlacement.top,
-      Math.min(drawerDims.width, Math.max(320, viewportSize.width - 36)),
-      Math.min(drawerDims.height, Math.max(360, viewportSize.height - 36)),
+      activeDrawerPlacement?.left ?? defaultDrawerLeft,
+      activeDrawerPlacement?.top ?? defaultDrawerTop,
+      desktopDrawerWidth,
+      desktopDrawerHeight,
     )
     : activeDrawerPlacement;
   const drawerPositionStyle = {
     width: drawerDims.width,
     height: drawerDims.height,
+    ...(compactDesktopDrawer ? { minHeight: drawerDims.height } : {}),
     // A live guided target is an active #18 conversation state. Keep the
     // assistant above safe guided modals so the user can continue, recover,
     // or go back without losing the real target context. The modal still
@@ -1262,10 +1378,26 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
   };
 
   function openFromLauncher() {
+    // On a mobile map the assistant is a temporary task aid. If the user has
+    // scrolled into the map, return to the route's safe top before opening so
+    // the panel never opens on top of map controls or markers. The selected
+    // record and conversation state stay in the existing owners.
+    let restoreMapSafeTop = false;
+    if (viewportSize.width <= 720 && isMapSurface && typeof window !== "undefined") {
+      const mapSurface = document.querySelector('[data-map-surface="primary"]');
+      const mapBox = mapSurface?.getBoundingClientRect?.();
+      restoreMapSafeTop = Boolean(mapBox && mapBox.top < window.innerHeight && mapBox.bottom > 0 && window.scrollY > 0);
+    }
     setPanelSide(launcherSide);
     setLauncherInteraction("idle");
     setMobileExpanded(false);
     setMobileExpansionSource("default");
+    if (restoreMapSafeTop && typeof window !== "undefined") {
+      // A map scroll event can otherwise see the newly mounted drawer
+      // intersecting the map and immediately close the panel again.
+      restoringMapSafeTopRef.current = true;
+      window.setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 0);
+    }
     setOpen(true);
   }
 
@@ -1680,7 +1812,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "", routeContex
         <textarea ref={composerTextareaRef} value={text} onChange={(e) => setText(e.target.value)} onInput={(e) => resizeComposerInput(e.currentTarget)} onFocus={() => setInputFocused(true)} onBlur={() => setInputFocused(false)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(e); } }} placeholder="Sorunu yaz. Örnek: burada neden devam edemiyorum, bu ekran ne işe yarar, seçili araç ne durumda, şimdi ne yapacağım" rows={2} />
         <div className="copilotComposerRow">
           <div className="copilotComposerButtons">
-            {(messages.length || err || String(text || "").trim()) ? <button type="button" className="btn sm copilotToolBtn" onClick={() => { setMessages([]); setErr(""); setGuidedRecoveryMessage(""); setGuidedTarget(null); }}>Temizle</button> : null}
+            {(messages.length || err || String(text || "").trim()) ? <button type="button" className="btn sm copilotToolBtn" onClick={clearConversation}>Temizle</button> : null}
             <button type="submit" className="btn sm primary copilotToolBtn" disabled={busy || !String(text || "").trim()}>Sor</button>
           </div>
         </div>

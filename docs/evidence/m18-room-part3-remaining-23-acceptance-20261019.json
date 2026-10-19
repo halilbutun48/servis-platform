@@ -1,0 +1,100 @@
+{
+  "schema": "m18-room-part3-interactive-surface-acceptance-v1",
+  "capturedAt": "2026-10-19T11:36:14.537Z",
+  "part": "PART_3",
+  "scope": "remaining_23_of_46_interactive_surface_states",
+  "decision": "PRODUCT_ACCEPTED_FOR_THIS_FRONTIER",
+  "overallRoomDecision": "NOT_CLOSED",
+  "canonicalSourceKeysFromPart2": 23,
+  "overlapWithPart2": 0,
+  "publicRuntime": {
+    "origin": "https://further-history-universities-hugo.trycloudflare.com",
+    "health": {
+      "ok": true,
+      "dbOk": true,
+      "startedAt": "2026-10-19T10:31:18.787Z",
+      "observedAt": "2026-10-19T11:36:14.537Z"
+    },
+    "exactPublicSourceShaExposed": false,
+    "sourceShaNote": "Public health exposes process freshness, not source SHA. Source identity is recorded separately and no SHA is inferred from health."
+  },
+  "sourceIdentity": {
+    "repository": "D:/servis-platform",
+    "branch": "m90d1_web_lint_inventory",
+    "head": "3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+    "dirtyWorktreePreserved": true,
+    "productSourceChangedInPart3": false
+  },
+  "part2Reference": "docs/evidence/m18-room-part2-first-23-acceptance-20261019.json",
+  "part1Boundary": {
+    "lastEightSuggestions": "8/8 PRODUCT_PASS",
+    "canonicalUniqueRoutes": 19,
+    "liveAliasOf": "/room/map",
+    "historical20RouteStatus": "MANIFEST_COUNTING_ERROR_OPEN_GOVERNANCE_RECONCILIATION",
+    "home04": "PRODUCT_PASS"
+  },
+  "probeCorrection": {
+    "initialMeasurement": "15 PRODUCT_PASS, 8 NOT_PROVEN",
+    "cause": "The open Sefer Abi drawer intercepted pointer events and SPA state persisted across same-route navigation; the map card selector also was broader than the canonical map list owner.",
+    "classification": "PROBE_CONTEXT_LIMITATION",
+    "productFailureInferred": false,
+    "finalMeasurement": "23/23 PRODUCT_PASS"
+  },
+  "results": [
+    {"trackingKey":"MAP_REFRESH","owner":"web/src/panels/room/MapPanel.jsx","route":"/#/room/map","interaction":"Filtreler ve yenileme disclosure → Yenile","criterion":"Read-only map data refresh control is visible and usable.","observed":"Disclosure opened; Yenile clicked; public DOM remained on Harita; no suspicious write.","status":"PRODUCT_PASS"},
+    {"trackingKey":"MAP_LIVE_LIST_DISCLOSURE","owner":"web/src/panels/room/MapPanel.jsx","route":"/#/room/map","interaction":"Canlı araçlar ve vardiyalar disclosure","criterion":"The live vehicle/shift list disclosure opens in the Harita surface.","observed":"Visible disclosure opened; Harita tab remained selected; copilot context remained visible.","status":"PRODUCT_PASS"},
+    {"trackingKey":"MAP_SELECT_VEHICLE","owner":"web/src/panels/room/MapPanel.jsx","route":"/#/room/map","interaction":"First canonical map vehicle card selection","criterion":"An authorized vehicle card can be selected and the selected vehicle/shift summary appears.","observed":"34 ABC 124 card selected; selected vehicle/shift summary became visible in the public DOM.","status":"PRODUCT_PASS"},
+    {"trackingKey":"MAP_FOCUS_SELECTED_VEHICLE","owner":"web/src/panels/room/MapPanel.jsx","route":"/#/room/map","interaction":"Seçili araca odaklan","criterion":"The focus action is enabled only after a real vehicle selection and changes map focus.","observed":"Vehicle selected first; focus control enabled and clicked; no business write.","status":"PRODUCT_PASS"},
+    {"trackingKey":"OFFERS_SELECT_RECORD","owner":"web/src/panels/room/OffersPanel.jsx","route":"/#/room/offers","interaction":"Teklif #36 card selection","criterion":"An authorized offer record can be selected as the active offer context.","observed":"data-copilot-record-type=OFFER, id=36 card selected; public offer surface remained visible.","status":"PRODUCT_PASS"},
+    {"trackingKey":"OFFERS_RECORD_DISCLOSURE","owner":"web/src/panels/room/OffersPanel.jsx","route":"/#/room/offers","interaction":"Teklif ayrıntılarını göster","criterion":"A record-bound offer disclosure opens for a real canonical offer id.","observed":"Record-bound summary opened; canonical offer target remained visible; no write.","status":"PRODUCT_PASS"},
+    {"trackingKey":"AGREEMENTS_TAB_APPLIED","owner":"web/src/panels/room/AgreementsPanel.jsx","route":"/#/room/agreements","interaction":"Uygulanan Rota tab","criterion":"Applied-route agreement state is visible and selectable.","observed":"Tab clicked; aria-selected=true in public DOM.","status":"PRODUCT_PASS"},
+    {"trackingKey":"AGREEMENTS_TAB_EXTENSION","owner":"web/src/panels/room/AgreementsPanel.jsx","route":"/#/room/agreements","interaction":"Uzatma Talepleri tab","criterion":"Agreement extension-request state is visible and selectable.","observed":"Tab clicked; aria-selected=true in public DOM.","status":"PRODUCT_PASS"},
+    {"trackingKey":"AGREEMENTS_OPEN_DETAIL","owner":"web/src/panels/room/AgreementsPanel.jsx","route":"/#/room/agreements","interaction":"Sözleşme detayını aç","criterion":"The authorized agreement detail action opens the existing agreement detail surface.","observed":"Button clicked; public agreement detail target remained visible; no write.","status":"PRODUCT_PASS"},
+    {"trackingKey":"COMMERCIAL_SELECT_RECORD","owner":"web/src/panels/room/CommercialFlowPanel.jsx","route":"/#/room/commercial-flow","interaction":"Commercial-flow table row selection","criterion":"A real commercial record can be selected and its selected-record summary is updated.","observed":"First visible table row clicked; selected-record state/summary became visible; no write.","status":"PRODUCT_PASS"},
+    {"trackingKey":"COMMERCIAL_HISTORY_FILTER","owner":"web/src/panels/room/CommercialFlowPanel.jsx","route":"/#/room/commercial-flow","interaction":"Geçmiş filter: Karşı taraf / durum / not","criterion":"History filter accepts and clears a query without mutating business data.","observed":"Geçmiş tab selected; Demo query entered and cleared; no suspicious write.","status":"PRODUCT_PASS"},
+    {"trackingKey":"COMMERCIAL_SETTLEMENT_PREVIEW","owner":"web/src/panels/room/CommercialFlowPanel.jsx","route":"/#/room/commercial-flow?tab=settlement","interaction":"Önizlemeyi aç","criterion":"After reconciliation rows load, the read-only settlement preview opens for the authorized agreement.","observed":"After wait for real rows, button clicked; final URL was /#/room/commercial-flow?agreementId=190&tab=settlement; public settlement tab visible; no business write.","status":"PRODUCT_PASS"},
+    {"trackingKey":"OPS_TAB_SUMMARY","owner":"web/src/panels/room/OperationHealthPanel.jsx","route":"/#/room/operation-health","interaction":"Taşımacılık Firması Operasyon Özeti tab","criterion":"The ROOM operational summary tab is visible and selectable.","observed":"Tab clicked; aria-selected=true in public DOM.","status":"PRODUCT_PASS"},
+    {"trackingKey":"OPS_FILTER","owner":"web/src/panels/room/OperationHealthPanel.jsx","route":"/#/room/operation-health","interaction":"Sürücü / araç / canlılık / sorun filter","criterion":"Operation-health filter accepts and clears a query without a write.","observed":"GPS query entered and cleared; summary tab remained visible; no suspicious write.","status":"PRODUCT_PASS"},
+    {"trackingKey":"VEHICLES_TAB_STATUS","owner":"web/src/panels/room/VehiclesPanel.jsx","route":"/#/room/vehicles","interaction":"Durum tab","criterion":"Vehicle status surface is visible and selectable.","observed":"Tab clicked; aria-selected=true in public DOM.","status":"PRODUCT_PASS"},
+    {"trackingKey":"VEHICLES_TAB_AVAILABILITY","owner":"web/src/panels/room/VehiclesPanel.jsx","route":"/#/room/vehicles","interaction":"Müsaitlik tab","criterion":"Vehicle availability surface is visible and selectable.","observed":"Tab clicked; aria-selected=true; no business write.","status":"PRODUCT_PASS"},
+    {"trackingKey":"DRIVERS_TAB_STATUS","owner":"web/src/panels/room/DriversPanel.jsx","route":"/#/room/drivers","interaction":"Durum tab","criterion":"Driver status surface is visible and selectable.","observed":"Tab clicked; Driver One row and status data visible; no write.","status":"PRODUCT_PASS"},
+    {"trackingKey":"DRIVERS_GPS_FILTER","owner":"web/src/panels/room/DriversPanel.jsx","route":"/#/room/drivers","interaction":"GPS = Düşük canlılık","criterion":"Driver GPS freshness filter changes the visible read-only list.","observed":"Select changed to STALE / Düşük canlılık; public DOM remained on driver status; no write.","status":"PRODUCT_PASS"},
+    {"trackingKey":"SHIFTS_TAB_CONTRACT","owner":"web/src/panels/room/ShiftsPanel.jsx","route":"/#/room/shifts","interaction":"Sözleşmeden Üretilen tab","criterion":"Contract-generated shifts surface is visible and selectable.","observed":"Tab clicked; aria-selected=true and count 5 visible.","status":"PRODUCT_PASS"},
+    {"trackingKey":"SHIFTS_FILTER","owner":"web/src/panels/room/ShiftsPanel.jsx","route":"/#/room/shifts","interaction":"Ara (id / hizmet alan firma / plaka / sürücü / not)","criterion":"Shift record filter accepts and clears an authorized record query.","observed":"209 query entered and cleared after a fresh page state; no write.","status":"PRODUCT_PASS"},
+    {"trackingKey":"COST_DETAILS_DISCLOSURE","owner":"web/src/panels/shared/CostScenarioWorkspacePanel.jsx","route":"/#/room/cost-scenarios","interaction":"Detaylar · otomatik çözülen değerler ve kaynaklar","criterion":"Cost scenario resolved assumptions/details disclosure opens.","observed":"Disclosure opened in public DOM; no live record mutation.","status":"PRODUCT_PASS"},
+    {"trackingKey":"COST_QUICK_PASSENGER","owner":"web/src/panels/shared/CostScenarioWorkspacePanel.jsx","route":"/#/room/cost-scenarios","interaction":"+10 yolcu","criterion":"Scenario-only quick passenger adjustment changes preview state without writing a live record.","observed":"Control clicked; local scenario state changed; no suspicious business write.","status":"PRODUCT_PASS"},
+    {"trackingKey":"REPORTS_TAB_DRIVERS","owner":"web/src/panels/shared/ReportsPanel.jsx","route":"/#/room/reports","interaction":"Sürücüler report tab","criterion":"Driver report tab is visible, selectable and read-only.","observed":"Reports Sürücüler tab clicked; report surface remained visible; no write.","status":"PRODUCT_PASS"}
+  ],
+  "summary": {
+    "plannedInThisFrontier": 23,
+    "productPass": 23,
+    "productFail": 0,
+    "productGap": 0,
+    "notProven": 0,
+    "securityBlock": 0,
+    "environmentBlock": 0,
+    "suspectedBusinessWrites": 0,
+    "browserOriginVerifiedForEveryResult": true
+  },
+  "security": {
+    "role": "Taşımacılık Firması",
+    "tenant": "ROOM",
+    "businessWrite": 0,
+    "tenantIsolation": "No cross-tenant data or unauthorized action was observed.",
+    "note": "Part3 used read-only tabs, filters, selections, disclosures and scenario-only controls. No DB, fixture, restart or tunnel operation was performed."
+  },
+  "nextFrontier": {
+    "part": "PART_4",
+    "scope": "context_record_relationship_recovery_24_cells",
+    "requiredFocus": ["selected-record DOM", "offer-to-shift", "vehicle-to-driver", "map-to-record", "agreement-preview", "Devam", "Geri", "Bulamadım", "O menü yok", "ambiguous-record clarification", "new-intent precedence"],
+    "status": "READY_TO_CONTINUE",
+    "doNotRerunPreviousParts": true,
+    "manifestBoundary": "MANIFEST_COUNTING_ERROR_OPEN_GOVERNANCE_RECONCILIATION"
+  },
+  "evidenceIntegrity": {
+    "historicalEvidenceMutated": false,
+    "checkpointIsAdditive": true,
+    "probeSource": ".m18-part3-first-23-public-acceptance.js",
+    "domInventorySource": ".m18-part3-dom-inventory.js"
+  }
+}

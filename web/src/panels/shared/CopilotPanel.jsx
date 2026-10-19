@@ -484,6 +484,11 @@ export default function CopilotPanel() {
           selectedLabel: requestSelection?.label || "",
           selectedEntityType: requestSelection?.entityType || "",
           selectedEntityId: Number(requestSelection?.entityId || 0) || null,
+          selectedFields: Array.isArray(requestSelection?.fields) ? requestSelection.fields : [],
+          selectedBadges: Array.isArray(requestSelection?.badges) ? requestSelection.badges : [],
+          structuredFacts: requestSelection?.facts && typeof requestSelection.facts === "object"
+            ? requestSelection.facts
+            : null,
           uiHints: uiSurface,
         },
         format: "json",
@@ -667,6 +672,26 @@ export default function CopilotPanel() {
 
 
   function openGuideAction(action) {
+    if (String(action?.actionKind || '').toUpperCase() === 'CLEAR_FILTER') {
+      const targetKey = String(action?.targetKey || '').trim();
+      const target = typeof document !== 'undefined'
+        ? Array.from(document.querySelectorAll('[data-copilot-target]'))
+          .find((node) => String(node.getAttribute('data-copilot-target') || '').trim() === targetKey)
+        : null;
+      if (!target || typeof target.click !== 'function') {
+        setCopyMsg('Bu ekranda canlı filtre temizleme hedefi bulunamadı.');
+        setTimeout(() => setCopyMsg(''), 1800);
+        return;
+      }
+      if (target.disabled || String(target.getAttribute('aria-disabled') || '').toLowerCase() === 'true') {
+        setCopyMsg('Filtre temizleme kontrolü şu anda kullanılamıyor.');
+        setTimeout(() => setCopyMsg(''), 1800);
+        return;
+      }
+      target.scrollIntoView?.({ block: 'center', inline: 'nearest' });
+      target.click();
+      return;
+    }
     const path = resolveGuideRoute(me, action?.routeKey);
     if (!path) {
       setCopyMsg("Bu bağlantı bu rolde açılamıyor.");

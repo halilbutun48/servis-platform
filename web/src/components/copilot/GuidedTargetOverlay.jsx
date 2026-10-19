@@ -199,7 +199,13 @@ export default function GuidedTargetOverlay() {
   useEffect(() => {
     const clearOnRouteChange = () => {
       const active = getGuidedTarget();
-      if (active?.status === 'FOUND') clearGuidedTarget('STATE_CHANGED');
+      if (active?.status === 'FOUND') {
+        // A canonical NAVIGATE target has already been activated by this
+        // overlay.  Once the destination route is live, clear that transient
+        // pre-navigation target quietly; reporting it as a lost target would
+        // falsely tell the user that a successful navigation failed.
+        clearGuidedTarget(active.safeAction === 'NAVIGATE' ? 'CLEARED' : 'STATE_CHANGED');
+      }
     };
     window.addEventListener('hashchange', clearOnRouteChange);
     return () => window.removeEventListener('hashchange', clearOnRouteChange);

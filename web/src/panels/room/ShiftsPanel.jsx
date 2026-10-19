@@ -56,6 +56,7 @@ export default function RoomShiftsPanel() {
   const [offers, setOffers] = useState([]); // market offers inbox (SHIFT_OFFER)
 
   const [err, setErr] = useState("");
+  const [loadState, setLoadState] = useState("loading");
   const [busy, setBusy] = useState(false);
   const [reassignModal, setReassignModal] = useState({ open: false, shift: null });
   const [opsEventsModal, setOpsEventsModal] = useState({ open: false, shiftId: null });
@@ -69,6 +70,7 @@ export default function RoomShiftsPanel() {
   const userSelectedShiftsTabRef = useRef(false);
 
   const [focusedTrackShiftId, setFocusedTrackShiftId] = useState(null);
+  const [routeFocusShiftId, setRouteFocusShiftId] = useState(null);
   const [pendingPreviewShiftId, setPendingPreviewShiftId] = useState(null);
   const selectShiftsTab = useCallback((tab) => { userSelectedShiftsTabRef.current = true; setShiftsTab(tab); }, []);
 
@@ -81,26 +83,41 @@ export default function RoomShiftsPanel() {
         const sid = String(pendingRaw || "").trim();
         if (sid) {
           userSelectedShiftsTabRef.current = true;
-          setShiftsTab("pending");
-          setPendingStatus("REQUESTED");
-          setPendingQ(sid);
+          setRouteFocusShiftId(Number(sid));
           return;
         }
       }
 
       const previewRaw = localStorage.getItem("room:previewShiftId");
-      const raw = localStorage.getItem("room:focusShiftId");
+      const hashQuery = String(window.location.hash || "").split("?")[1] || "";
+      const queryFocusShiftId = new URLSearchParams(hashQuery).get("focusShiftId");
+      const raw = localStorage.getItem("room:focusShiftId") || queryFocusShiftId;
       if (previewRaw) localStorage.removeItem("room:previewShiftId");
       if (raw) localStorage.removeItem("room:focusShiftId");
       const sid = String(previewRaw || raw || "").trim();
       if (!sid) return;
       userSelectedShiftsTabRef.current = true;
-      setShiftsTab("contract");
-      setContractQ(sid);
-      setOtherQ(sid);
+      setRouteFocusShiftId(Number(sid));
       if (previewRaw) setPendingPreviewShiftId(Number(sid || 0));
     }, 0);
     return () => clearTimeout(timer);
+  }, []);
+
+  // A guided target may point back to the already-mounted Vardiyalar route.
+  // In that case the hash changes without remounting this panel, so the
+  // mount-only focus effect above would otherwise leave the user on the old
+  // tab/filter. Re-apply only the supported focus query on same-route hash
+  // changes; the user can still override it by selecting another tab.
+  useEffect(() => {
+    const applySameRouteFocus = () => {
+      const hashQuery = String(window.location.hash || '').split('?')[1] || '';
+      const sid = String(new URLSearchParams(hashQuery).get('focusShiftId') || '').trim();
+      if (!sid) return;
+      userSelectedShiftsTabRef.current = true;
+      setRouteFocusShiftId(Number(sid));
+    };
+    window.addEventListener('hashchange', applySameRouteFocus);
+    return () => window.removeEventListener('hashchange', applySameRouteFocus);
   }, []);
 
   // Bekleyen satır: seçili araç + seçili driver (approve için)
@@ -319,6 +336,7 @@ async function decideExtend(shiftId, decision) {
       api,
       token,
       force,
+      setLoadState,
       setErr,
       setItems,
       setVehicles,
@@ -336,6 +354,7 @@ async function decideExtend(shiftId, decision) {
       api,
       token,
       force,
+      setLoadState,
       vehicles,
       setErr,
       setItems,
@@ -430,48 +449,35 @@ async function decideExtend(shiftId, decision) {
     return () => clearTimeout(timer);
   }, [defaultShiftsTab]);
 
-  const activeTabFiltered = useMemo(() => {
-    if (shiftsTab === "pending") return pendingFiltered;
-    if (shiftsTab === "contract") return contractFiltered;
-    return otherFiltered;
-  }, [shiftsTab, pendingFiltered, contractFiltered, otherFiltered]);
-
-  const splitEligibleShift = useMemo(() => {
-    const pools = [activeTabFiltered, contractFiltered, otherFiltered, items];
-    for (const pool of pools) {
-      const found = Array.isArray(pool)
-        ? pool.find((shift) => Number(shift?.splitRootId || 0) > 0)
-        : null;
-      if (found) return found;
+  useEffect(() => {
+    const sid = Number(routeFocusShiftId || 0);
+    if (!sid || !items.length) return;
+    const target = items.find((shift) => Number(shift?.id || 0) === sid) || null;
+    if (!target) {
+      setFocusedTrackShiftId(null);
+      return;
     }
-    return null;
-  }, [activeTabFiltered, contractFiltered, otherFiltered, items]);
-
-  const preferredCopilotShift = useMemo(() => {
-    const orderedPools = [
-      activeTabFiltered,
-      ...(shiftsTab === "pending"
-        ? [contractFiltered, otherFiltered]
-        : shiftsTab === "contract"
-          ? [pendingFiltered, otherFiltered]
-          : [pendingFiltered, contractFiltered]),
-    ];
-    const seen = new Set();
-    for (const pool of orderedPools) {
-      for (const shift of pool) {
-        const sid = Number(shift?.id || 0);
-        if (!sid || seen.has(sid)) continue;
-        seen.add(sid);
-        const capacityMeta = buildCapacityMeta({ shift, vehicle: null, roomVehicles: vehiclesForRoom(shift?.roomId) });
-        if (capacityMeta.dispatchRequired) return shift;
-      }
+    userSelectedShiftsTabRef.current = true;
+    setFocusedTrackShiftId(sid);
+    const status = String(target.status || "").toUpperCase();
+    if (["DRAFT", "REQUESTED"].includes(status)) {
+      setShiftsTab("pending");
+      setPendingStatus(status);
+      setPendingQ(String(sid));
+    } else if (Number(target.agreementId || 0) > 0) {
+      setShiftsTab("contract");
+      setContractQ(String(sid));
+      setOtherQ("");
+    } else {
+      setShiftsTab("other");
+      setOtherQ(String(sid));
+      setContractQ("");
     }
-    return splitEligibleShift || activeTabFiltered[0] || pendingFiltered[0] || contractFiltered[0] || otherFiltered[0] || null;
-  }, [activeTabFiltered, shiftsTab, pendingFiltered, contractFiltered, otherFiltered, vehiclesForRoom, splitEligibleShift]);
+  }, [items, routeFocusShiftId]);
 
   const copilotShiftId = useMemo(
-    () => Number(focusedTrackShiftId || 0) || Number(preferredCopilotShift?.id || 0) || null,
-    [focusedTrackShiftId, preferredCopilotShift]
+    () => Number(focusedTrackShiftId || 0) || null,
+    [focusedTrackShiftId]
   );
   const copilotShift = useMemo(
     () => items.find((x) => Number(x?.id || 0) === Number(copilotShiftId || 0))
@@ -729,6 +735,8 @@ async function decideExtend(shiftId, decision) {
     <div className="roomCriticalFixScope roomShiftsDensityScope">
       <RoomShiftsOverviewSection
         err={err}
+        loadState={loadState}
+        onRetry={() => loadAll({ force: true })}
         pendingCount={tabCounts.pending}
         contractCount={tabCounts.contract}
         otherCount={tabCounts.other}
@@ -738,7 +746,7 @@ async function decideExtend(shiftId, decision) {
         onOpenFallbackPreview={(preview) => openRoutePreview(null, preview)}
       />
 
-      <RoomShiftsMainSections
+      {loadState === "ready" || loadState === "empty" ? <RoomShiftsMainSections
         activeTab={shiftsTab}
         onChangeTab={(tab) => selectShiftsTab(tab)}
         tabCounts={tabCounts}
@@ -797,7 +805,7 @@ async function decideExtend(shiftId, decision) {
         decideExtend={decideExtend}
         openOpsEvents={openOpsEvents}
         openReassignModal={openReassignModal}
-      />
+      /> : null}
 
       <RoomShiftsModalSection
         previewOpen={previewOpen}

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 
 export function getPath() {
   const h = (window.location.hash || "").replace(/^#/, "");
-  return h.startsWith("/") ? h : h ? `/${h}` : "/";
+  const routePath = h.split("?", 1)[0];
+  return routePath.startsWith("/") ? routePath : routePath ? `/${routePath}` : "/";
 }
 
 export function navigate(path) {

@@ -1,0 +1,117 @@
+{
+  "evidenceType": "M18_ROOM_PART5_MOBILE_FUNCTIONAL_ACCEPTANCE",
+  "recordedAt": "2026-10-19T17:32:27Z",
+  "parentCheckpoint": "docs/evidence/m18-room-part5-empty-result-recovery-public-acceptance-20261019.json",
+  "publicOrigin": "https://further-history-universities-hugo.trycloudflare.com",
+  "runtime": {
+    "backendStartedAt": "2026-10-19T17:20:09.877Z",
+    "localHealth": "ok=true, dbOk=true",
+    "publicHealth": "ok=true, dbOk=true",
+    "browser": "Windows headed Chrome via @playwright/cli session m18-room-part4",
+    "role": "ROOM / Turizm-Taşımacılık Firması",
+    "businessWrite": 0,
+    "unauthorizedDataAccess": 0
+  },
+  "scope": {
+    "historicalGroupedRange": "EXH-MOB-001..016",
+    "policy": "The grouped historical range is not expanded into synthetic cells.",
+    "observedUniqueMobileFunctions": 8,
+    "unprovenHistoricalCells": "The exact historical 16-cell decomposition is not claimed by this checkpoint."
+  },
+  "observations": [
+    {
+      "id": "M18-MOB-320-COPILOT-OPEN-CLOSE",
+      "viewport": "320x700",
+      "startRoute": "/room/vehicles",
+      "interaction": "Sefer Abi panelini aç, Büyüt/Küçült ve Kapat kontrollerini kullan.",
+      "expected": "Panel gerçek mobil görünümde açılıp kapanmalı; araç listesi erişilebilir kalmalı.",
+      "observed": "Panel açıldı, Küçült sonrası dar görünüm geri geldi, Kapat sonrası gerçek launcher göründü ve araç tablosu erişilebilir kaldı.",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "M18-MOB-320-COPILOT-COMPOSER",
+      "viewport": "320x700",
+      "startRoute": "/room/vehicles",
+      "interaction": "Mesaj alanına doğal Türkçe soru yazıp Sor düğmesine bas.",
+      "expected": "Dar ekranda yazı alanı/focus ve gönderim çalışmalı.",
+      "observed": "Aracımı bulamıyorum, ne yapmalıyım? sorusu yazıldı ve gönderildi; cevap gerçek araç filtresi bağlamını kullandı.",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "M18-MOB-320-SUGGESTION-DRIVER",
+      "viewport": "320x700",
+      "startRoute": "/room/vehicles",
+      "interaction": "Öneriler (3) açıldı; Bağlı sürücüyü göster çipine basıldı.",
+      "expected": "Çip görünür ve seçili araç bağlamından yetkili sürücüye yönlenmeli.",
+      "observed": "Çip gerçek DOM'da göründü; cevap Araç #1 için Driver One dedi; Sürücüler ekranına git aksiyonu gerçek URL ile /room/drivers?focusDriverId=1 açtı ve Driver One detayını gösterdi.",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "M18-MOB-320-EMPTY-VEHICLE-RECOVERY",
+      "viewport": "320x700",
+      "startRoute": "/room/vehicles",
+      "interaction": "999999 filtresi uygulandı; Aracımı bulamıyorum, ne yapmalıyım? soruldu; gerçek Filtreyi temizle aksiyonu tıklandı.",
+      "expected": "0/3 durumu açıklanmalı, eski seçim taşınmamalı, filtre temizlenince liste dönmeli.",
+      "observed": "0 / 3 ve Seçili kayıt yok görüldü; yanıt canlı filtreyi açıkladı; tıklama sonrası 3 / 3 liste döndü ve seçim boş kaldı.",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "M18-MOB-390-MENU-OPEN-CLOSE",
+      "viewport": "390x844",
+      "startRoute": "/room/map",
+      "interaction": "Menü açıldı ve navigation içindeki gerçek Menüyü kapat kontrolü kullanıldı.",
+      "expected": "Drawer menü açılıp kapanmalı; ana içerik ve harita erişilebilir kalmalı.",
+      "observed": "Menü açıldı; nav içindeki close click sonrası header Menüyü aç durumuna döndü ve harita/yardımcı içeriği erişilebilir kaldı.",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "M18-MOB-390-MAP-COPILOT-ZOOM-TARGET",
+      "viewport": "390x844",
+      "startRoute": "/room/map",
+      "interaction": "Temiz sayfa yüklemesinden sonra Sefer Abi açıldı; Bu haritayı büyüt sorusu gönderildi.",
+      "expected": "Gerçek Yakınlaştır hedefi, seçili Vardiya #168/araç bağlamı ve anlaşılır cevap görünmeli.",
+      "observed": "Assistant paneli gerçek tıklamayla açıldı; cevap Ekranda doğrulayabildiğim hedef: Yakınlaştır dedi; seçili Vardiya #168 ve Araç 34 ABC 124 bağlamı korundu.",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "M18-MOB-390-MAP-ZOOM-CONTROL",
+      "viewport": "390x844",
+      "startRoute": "/room/map",
+      "interaction": "Assistant kapatıldıktan sonra gerçek Yakınlaştır düğmesine basıldı.",
+      "expected": "Harita kontrolü dar ekranda görünür ve tıklanabilir olmalı.",
+      "observed": "Yakınlaştır düğmesi gerçek DOM'da bulundu ve click olayı kabul edildi; harita yüzeyi ve 2 araç haritada durumu korundu.",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "M18-MOB-390-MAP-RECORD-CONTEXT",
+      "viewport": "390x844",
+      "startRoute": "/room/map",
+      "interaction": "Harita ekranı ve Sefer Abi paneli birlikte kullanıldı.",
+      "expected": "Seçili Vardiya #168/34 ABC 124 bağlamı ekran değişimiyle kaybolmamalı veya yanlış kayda dönmemeli.",
+      "observed": "Harita başlığında Vardiya #168 • Onaylandı, seçili araç 34 ABC 124, haritada 2 araç ve çevrim dışı durumları görünür kaldı; tenant/role değişmedi.",
+      "result": "PRODUCT_PASS"
+    }
+  ],
+  "preservedEvidence": [
+    "PART 4: 21/21 PRODUCT_PASS",
+    "Empty agreement recovery: PRODUCT_PASS",
+    "Empty vehicle recovery: PRODUCT_PASS",
+    "PART 1-3 prior PASS evidence was not re-run or changed."
+  ],
+  "security": {
+    "roleTenantIsolation": "ROOM role remained active throughout.",
+    "staleSelection": "The mobile empty-filter path kept selection empty after clear; prior selected vehicle was not resurrected.",
+    "businessWrite": 0,
+    "unauthorizedDataAccess": 0
+  },
+  "productChangesThisTurn": [],
+  "result": {
+    "mobileObservedFunctions": "8 PRODUCT_PASS",
+    "productFail": 0,
+    "productGap": 0,
+    "environmentBlock": 0,
+    "part5Status": "PARTIAL_CHECKPOINT_MOBILE_FUNCTIONS_ACCEPTED_WITH_GROUPED_RANGE_RECONCILIATION_OPEN",
+    "roomFunctional10of10": "NOT_CLOSED"
+  },
+  "nextFrontier": "Reconcile the remaining unique PART 5 responsive/security/empty-state criteria without expanding EXH-MOB-001..016 synthetically; then prepare the final ROOM acceptance manifest and immutable baseline only after all mandatory evidence is complete."
+}

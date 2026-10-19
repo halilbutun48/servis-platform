@@ -7,6 +7,7 @@ export default function ListSelectionBanner({
   totalCount = 0,
   filterValue = "",
   onClearFilter = null,
+  clearFilterTargetKey = "",
   helper = "Sefer Abi seçili kaydı kullanır.",
 }) {
   const hasSelection = String(selectedLabel || "").trim();
@@ -32,7 +33,12 @@ export default function ListSelectionBanner({
         </div>
       </div>
       {hasFilter && typeof onClearFilter === "function" ? (
-        <button type="button" className="btn sm ghost" onClick={onClearFilter}>
+        <button
+          type="button"
+          className="btn sm ghost"
+          data-copilot-target={clearFilterTargetKey || undefined}
+          onClick={onClearFilter}
+        >
           Filtreyi Temizle
         </button>
       ) : null}

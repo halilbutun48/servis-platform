@@ -1,0 +1,106 @@
+{
+  "evidenceId": "m18-room-final-functional-scope-resolution-20261019",
+  "kind": "M18_ROOM_FUNCTION_SCOPE_OWNER_RESOLUTION_V1",
+  "createdAt": "2026-10-19T19:12:00.000Z",
+  "scope": "Existing source/UI catalog and existing acceptance evidence only; no new product test",
+  "sources": [
+    "web/src/App.jsx",
+    "backend/src/ai/jobGuide/screenCatalog.roomCompany.js",
+    "docs/evidence/m18-room-final-acceptance-owner-resolution-20261019.json",
+    "docs/evidence/m18-room-final-acceptance-reconciliation-20261019.json"
+  ],
+  "canonicalRouteInventory": {
+    "count": 19,
+    "routes": [
+      "/room",
+      "/room/map",
+      "/room/offers",
+      "/room/shifts",
+      "/room/vehicles",
+      "/room/drivers",
+      "/room/agreements",
+      "/room/copilot",
+      "/room/hub",
+      "/room/checkin",
+      "/room/financial-operations",
+      "/room/operation-health",
+      "/room/commercial-flow",
+      "/room/reports",
+      "/room/cost-scenarios",
+      "/shared/notifications",
+      "/shared/logs",
+      "/shared/kvkk",
+      "/shared/feedback"
+    ],
+    "alias": {
+      "/room/live": "/room/map",
+      "independentRoute": false
+    }
+  },
+  "realFunctionScope": {
+    "routeAndSurfaceEvidence": {
+      "routesReached": 19,
+      "interactiveFrontier": "46/46 PRODUCT_PASS across PART 2 and PART 3",
+      "status": "PRODUCT_EVIDENCE_PASS_BUT_CLOSURE_MAPPING_INCOMPLETE"
+    },
+    "crossSurfaceAndRecovery": {
+      "uniquePart4Pass": 21,
+      "mergedHistorical": ["CTX-001", "CTX-007", "CTX-008"],
+      "status": "PRODUCT_PASS"
+    },
+    "securityEmptyAndResponsive": {
+      "part5UniquePass": 27,
+      "securityEmpty": 11,
+      "responsiveMobile": 16,
+      "historicalSpecGaps": 6,
+      "securityBlock": 0,
+      "businessWrite": 0,
+      "status": "PRODUCT_EVIDENCE_PASS_WITH_HISTORICAL_SCOPE_RECORDS"
+    },
+    "suggestedQuestions": {
+      "historical": "51/51",
+      "currentAffectedContexts": "3/3",
+      "exactNamedRows": "EXH-SUG-001..016",
+      "status": "PASS_EVIDENCE_PRESERVED; grouped context observations are not promoted to synthetic closure rows"
+    },
+    "naturalLanguage": {
+      "independentCurrentAcceptance": "10/10 PASS",
+      "correctedDefects": "3/3 public PRODUCT_PASS",
+      "status": "PASS_EVIDENCE_PRESERVED"
+    }
+  },
+  "traceability": {
+    "exactNamedRows": 33,
+    "exactNamedRowsStatus": "UNIQUE_PRODUCT_PASS",
+    "merged": ["CTX-001", "CTX-007", "CTX-008"],
+    "ownerApprovedDeScope": 6,
+    "productFail": 0,
+    "securityBlock": 0,
+    "legacy69": {
+      "status": "LEGACY_UNRESOLVED",
+      "individualIdsPresent": false,
+      "safeNumericRemainder": false,
+      "decision": "Preserve the historical 69 record without bulk PASS, MERGED or de-scope classification."
+    },
+    "groupEvidenceWarning": "19 routes, 46 interactive surfaces, PART 5 groups, 51/51 suggestions and 10/10 natural-language observations overlap and cannot be summed as a unique total."
+  },
+  "mandatoryCoverageDecision": {
+    "knownProductDefect": false,
+    "knownProductGap": false,
+    "knownSecurityDefect": false,
+    "allMandatoryFunctionsTraceable": false,
+    "requiredNotProven": true,
+    "reason": "Existing grouped frontier evidence does not provide one valid acceptance record for every mandatory behavior. The 33 exact rows are valid, but the remaining grouped evidence lacks unique criteria/IDs and cannot be silently promoted."
+  },
+  "governanceDecision": {
+    "rootAgentsBoundary": "The current root AGENTS.md still requires 132 unique traceable mandatory cells before ROOM FUNCTIONAL 10/10.",
+    "ownerCountCorrection": "Applied to the 19-route alias, PART 4 merges and six historical de-scope records; it does not authorize silent removal of mandatory functions or replacement of the root closure rule.",
+    "agentsModified": false,
+    "acceptanceContractAmendment": "NOT_PREPARED because 100% mandatory-function traceability is not established.",
+    "immutableBaseline": "NOT_READY",
+    "roomFunctional10of10": "NOT_CLOSED",
+    "companyHandoff": "BLOCKED"
+  },
+  "nextSingleDecision": "The canonical owner must either supply the missing one-to-one acceptance criteria/evidence mapping or formally amend root AGENTS.md through its governance owner. No new browser tests are justified until the concrete missing function is identified.",
+  "historicalEvidencePreserved": true
+}

@@ -202,7 +202,12 @@ export async function authorizeSemanticRequest({ user, plan, request } = {}) {
       canonicalPolicy: "CANONICAL_REQUEST_VALIDATION_REQUIRED",
     });
   }
-  const semanticPlan = canonicalRequest ? plan?.plan || {} : plan || {};
+  // `authorizeSemanticRequest` receives either the planner result directly or
+  // an envelope containing it under `plan`.  Do not discard direct planner
+  // metadata when a canonical request is also present: cross-tenant scope is
+  // a canonical pre-retrieval decision and must not degrade into a record
+  // lookup fallback.
+  const semanticPlan = canonicalRequest ? plan?.plan || plan || {} : plan || {};
   const plannerState = plan?.plan || plan || {};
   const collectionRead = Boolean(
     canonicalRequest?.operation === "VIEW_AUTHORIZED_SURFACE"

@@ -1,0 +1,152 @@
+{
+  "schema": "M18-ROOM-132-CELL-EVIDENCE-RECONCILIATION-V1",
+  "capturedAt": "2026-10-19T09:06:41.606Z",
+  "status": "INCOMPLETE_CANONICAL_132_MANIFEST",
+  "decision": "The historical 132-cell formula is traceable, but the canonical evidence does not contain 132 individually named cells with criteria. No synthetic cell IDs or artificial PASS rows were created.",
+  "repository": "D:\\servis-platform",
+  "sourceIdentity": {
+    "branch": "m90d1_web_lint_inventory",
+    "head": "3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+    "dirtyWorktree": true,
+    "porcelainEntryCount": 703,
+    "commitTagPush": "NONE"
+  },
+  "canonicalEvidence": {
+    "path": "docs/evidence/m18-room-dlevel-real-product-acceptance-20261018-part-01-02.json",
+    "sha256AtCapture": "0F24B9BAF66F41582FB84BCACBFE3341AB728C0D5BC5DBA1DB07BFB5CEC8F132",
+    "historicalRecordsPreserved": true
+  },
+  "runtimeProvenance": {
+    "publicUrl": "https://further-history-universities-hugo.trycloudflare.com",
+    "localHealth": "HTTP 200; ok=true; dbOk=true",
+    "publicHealth": "HTTP 200; ok=true; dbOk=true",
+    "startedAt": "2026-10-19T09:00:05.989Z",
+    "localPublicStartedAtMatch": true,
+    "containerMount": "D:\\servis-platform:/app",
+    "backendContainerHashParity": "Previously verified for the current corrective backend files",
+    "viteFrontend": "Public headed Chromium and current Vite route/DOM evidence available",
+    "exactPublicSourceSha": "NOT_EXPOSED_BY_RUNTIME",
+    "sourceRuntimeExactShaParity": "NOT_PROVEN",
+    "restartOrDatabaseMutationInThisReconciliation": false
+  },
+  "historical132Model": {
+    "totalRequiredCells": 132,
+    "formula": "20 route entries + 46 interactive surface/state cells + 24 context/record/recovery cells + 18 security/tenant/empty cells + 16 responsive cells + 8 displayed-suggestion context cells = 132",
+    "historicalDistribution": {
+      "PREVIOUSLY_PROVEN": 35,
+      "PRODUCT_PASS": 18,
+      "PRODUCT_FAIL": 9,
+      "PRODUCT_GAP": 1,
+      "NOT_PROVEN": 69,
+      "SECURITY_BLOCK": 0,
+      "ENVIRONMENT_BLOCK": 0
+    },
+    "plannedScenarioRanges": [
+      "EXH-HOME-001..024",
+      "EXH-CTX-001..024",
+      "EXH-REC-001..020",
+      "EXH-SUG-001..016",
+      "EXH-MOB-001..016",
+      "EXH-SEC-001..012"
+    ],
+    "plannedScenarioCount": 112,
+    "individualCellManifestPresentInCanonicalEvidence": false,
+    "limitation": "The evidence records the formula, ranges, grouped interactive cells and exact scenario-level records, but not the 132 unique cell IDs, surfaces, criteria and one-to-one evidence links required for a complete manifest. The 112 planned scenario IDs do not prove the remaining 20 closure-cell identities."
+  },
+  "exactScenarioRows": [
+    {"scenarioId":"EXH-CTX-017","role":"ROOM","surface":"/room/agreements","task":"Seçili sözleşmenin vardiya bağlantısını göster.","criterion":"Relation exists or is honestly absent; no default shift invented.","evidence":"part5/part2 exact scenario evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-CTX-018","role":"ROOM","surface":"/room/vehicles -> /room/drivers","task":"34ABC123'ün bağlı sürücüsünü göster.","criterion":"Driver One is selected and visible in the real driver detail DOM.","evidence":"part6RemainingProductCorrectiveA20261019; Corrective A public acceptance","sourceRuntime":"Corrective A public runtime","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-CTX-019","role":"ROOM","surface":"/room/operation-health","task":"GPS güncel olmayan satırları aç.","criterion":"Authorized operation-health/GPS issue row is visible without agreement-context contamination.","evidence":"part5/part2 exact scenario evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-CTX-020","role":"ROOM","surface":"/room/financial-operations -> /room/cost-scenarios","task":"Maliyet önizlemesini göster.","criterion":"Read-only cost preview route and real cost DOM are reached.","evidence":"part5/part2 exact scenario evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-CTX-021","role":"ROOM","surface":"/room/map -> /room/shifts","task":"Vardiya #168 ayrıntısını göster.","criterion":"Authorized #168 is selected and its detail is visible after the map-origin transition.","evidence":"part6RemainingProductCorrectiveA20261019; Corrective A public acceptance","sourceRuntime":"Corrective A public runtime","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-CTX-022","role":"ROOM","surface":"/room/offers","task":"Teklif #36'nın bağlı vardiyasını göster.","criterion":"Offer #36 and canonical Vardiya #209 relation are visible.","evidence":"part5/Batch 01 exact mapping","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-CTX-023","role":"ROOM","surface":"/room/shifts -> /room/offers","task":"Vardiya #209 için bağlı teklif ayrıntısını göster.","criterion":"Offer #36 is selected and visible after relation navigation.","evidence":"part5/part2 exact scenario evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-CTX-024","role":"ROOM","surface":"/room/reports -> /room/agreements","task":"Sözleşmeler ekranını göster.","criterion":"Real navigation completes and the Agreements DOM is visible.","evidence":"part5/part2 exact scenario evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-REC-013","role":"ROOM","surface":"current ROOM task context","task":"Bunu göster.","criterion":"Ambiguity is clarified; no first/nearby record is invented.","evidence":"part5 exact recovery evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-REC-014","role":"ROOM","surface":"current ROOM task context","task":"Devam.","criterion":"Without a selected task/record, safe clarification is requested.","evidence":"part5 exact recovery evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-REC-015","role":"ROOM","surface":"current ROOM task context","task":"Geri.","criterion":"Without a selected task/record, no default record is chosen.","evidence":"part5 exact recovery evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-REC-016","role":"ROOM","surface":"recovery conversation","task":"Bulamadım.","criterion":"No null/undefined technical relation; valid target is preserved or safe clarification is given.","evidence":"part6RemainingProductCorrectiveA20261019; Corrective A public acceptance","sourceRuntime":"Corrective A public runtime","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-REC-017","role":"ROOM","surface":"recovery conversation","task":"O menü yok.","criterion":"Current task context is retained and target is not silently replaced.","evidence":"part5 exact recovery evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-REC-018","role":"ROOM","surface":"recovery conversation","task":"Adım adım anlat.","criterion":"Authorized ROOM steps are explained without write or fabricated target.","evidence":"part5 exact recovery evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-REC-019","role":"ROOM","surface":"ambiguous record request","task":"Belirsiz kayıt numarasını göster.","criterion":"Record type/identity is clarified; no Biniş/Vardiya/first-row guess.","evidence":"part6RemainingProductCorrectiveA20261019; Corrective A public acceptance","sourceRuntime":"Corrective A public runtime","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-REC-020","role":"ROOM","surface":"/room/shifts","task":"Vardiya #209'u aç.","criterion":"#209 is selected and visible in the real shift detail DOM.","evidence":"part6RemainingProductCorrectiveA20261019; Corrective A public acceptance","sourceRuntime":"Corrective A public runtime","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-001","role":"ROOM","surface":"/room","task":"Bu ekranda neye bakmalıyım?","criterion":"Home purpose and safe next step are visible in Turkish.","evidence":"part5 exact suggestion evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-002","role":"ROOM","surface":"/room","task":"Riskleri sırala.","criterion":"Home signals are explained without substituting another record.","evidence":"part5/part4 exact suggestion evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-003","role":"ROOM","surface":"/room/offers","task":"Bu ekranda neye bakmalıyım?","criterion":"Offer surface purpose and visible list are explained; no arbitrary selection.","evidence":"part5/part4 exact suggestion evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-004","role":"ROOM","surface":"/room/offers","task":"Riskleri sırala.","criterion":"No selected offer means safe clarification, not another offer or shift risk.","evidence":"part5/part4 exact suggestion evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-005","role":"ROOM","surface":"/room/vehicles","task":"Bu aracın GPS durumunu açıkla.","criterion":"Selected vehicle freshness/offline status matches visible row.","evidence":"part5/part3 exact suggestion evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-006","role":"ROOM","surface":"/room/vehicles","task":"Bağlı sürücüyü göster.","criterion":"Chip intent opens the authorized selected driver detail, not GPS summary.","evidence":"part6RemainingProductCorrectiveA20261019; Corrective A public acceptance","sourceRuntime":"Corrective A public runtime","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-007","role":"ROOM","surface":"/room/agreements","task":"Mevcut sözleşmelerim neler? (visible chip)","criterion":"Exact chip renders, is clickable, and returns the authorized agreement collection without implicit selection.","evidence":"part7RemainingProductCorrectiveB20261019; B public acceptance","sourceRuntime":"2026-10-19T09:00:05.989Z public runtime","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-008","role":"ROOM","surface":"/room/agreements","task":"İnceleme bekleyen sözleşmem var mı?","criterion":"Authorized pending agreement and selected detail remain visible.","evidence":"part5/part3 exact suggestion evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-009","role":"ROOM","surface":"/room/commercial-flow","task":"Bu hakediş neden hazır değil? (visible chip)","criterion":"Read-only #184-#190 reconciliation evidence explains readiness; payment/approval/accounting write is absent.","evidence":"part7RemainingProductCorrectiveB20261019; B public acceptance","sourceRuntime":"2026-10-19T09:00:05.989Z public runtime","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-010","role":"ROOM","surface":"/room/operation-health","task":"Riskli cihazları göster.","criterion":"Authorized risk/device row and status remain visible.","evidence":"part5/part3 exact suggestion evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-011","role":"ROOM","surface":"/room/operation-health","task":"GPS güncel değil / çevrim dışı satırını aç.","criterion":"Visible risk/location row is addressed read-only.","evidence":"part5/part3 exact suggestion evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-012","role":"ROOM","surface":"/room/financial-operations","task":"Bu ekranda neye bakmalıyım?","criterion":"Read-only finance/cost evidence and confidence limitations are visible.","evidence":"part5/part3 exact suggestion evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-013","role":"ROOM","surface":"/room/cost-scenarios","task":"Bu ekranda neye bakmalıyım? (visible chip)","criterion":"Current cost-screen purpose and safe inspection guidance remain visible.","evidence":"part7RemainingProductCorrectiveB20261019; B public acceptance","sourceRuntime":"2026-10-19T09:00:05.989Z public runtime","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-014","role":"ROOM","surface":"/room/cost-scenarios","task":"Riskleri sırala. (visible chip)","criterion":"Cost evidence/risk summary is returned; route-ranking is not substituted.","evidence":"part7RemainingProductCorrectiveB20261019; additional RED then GREEN; costQuestionIntent=RISK_SUMMARY","sourceRuntime":"2026-10-19T09:00:05.989Z public runtime","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-015","role":"ROOM","surface":"/room/cost-scenarios","task":"Sıradaki doğru işlem ne? (visible chip)","criterion":"Safe read-only next inspection step is explained on the current cost screen.","evidence":"part7RemainingProductCorrectiveB20261019; B public acceptance","sourceRuntime":"2026-10-19T09:00:05.989Z public runtime","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-SUG-016","role":"ROOM","surface":"/room/financial-operations","task":"Riskleri sırala.","criterion":"Financial risk remains read-only and is not confused with shift cost or payment execution.","evidence":"part5/part4 exact suggestion evidence","sourceRuntime":"preserved public evidence","status":"PRODUCT_PASS"},
+    {"scenarioId":"EXH-UI-028","role":"ROOM","surface":"/room/vehicles","task":"Güncel değil filtresini seç.","criterion":"Canonical LIVE/STALE/OFFLINE status, timestamps, summary and filter result agree.","evidence":"part7RemainingProductCorrectiveB20261019; B public acceptance","sourceRuntime":"2026-10-19T09:00:05.989Z public runtime","status":"PRODUCT_PASS"}
+  ],
+  "groupedEvidenceNotIndividuallyResolvable": [
+    {"sourceId":"EXH-HOME-001..024","requiredCount":24,"role":"ROOM","surface":"HOME-first route/entity/empty/authorized tasks","mapping":"Grouped range only; individual closure-cell criteria are not present","status":"NOT_PROVEN_AT_132_CELL_LEVEL"},
+    {"sourceId":"EXH-CTX-001..016","requiredCount":16,"role":"ROOM","surface":"cross-surface context transitions","mapping":"Grouped/range evidence only for this subset","status":"NOT_PROVEN_AT_132_CELL_LEVEL"},
+    {"sourceId":"EXH-REC-001..012","requiredCount":12,"role":"ROOM","surface":"continuation/recovery/ambiguity","mapping":"Grouped/range evidence only for this subset","status":"NOT_PROVEN_AT_132_CELL_LEVEL"},
+    {"sourceId":"EXH-MOB-001_to_016","requiredCount":16,"role":"ROOM","surface":"1440/1024/390/320 responsive cells","mapping":"Evidence is grouped into four ranges and does not name 16 unique closure cells","status":"NOT_PROVEN_AT_132_CELL_LEVEL"},
+    {"sourceId":"EXH-SEC-001_to_012","requiredCount":12,"role":"ROOM","surface":"role/tenant/record/stale/offline/empty/no-write negatives","mapping":"Range-level security evidence exists but no 12-row canonical cell manifest exists","status":"NOT_PROVEN_AT_132_CELL_LEVEL"},
+    {"sourceId":"historical interactive surface/state and suggestion dimensions","requiredCount":52,"role":"ROOM","surface":"route entries, interactive surface/state and displayed-suggestion contexts","mapping":"The formula supplies counts but not unique canonical IDs and criteria","status":"NOT_PROVEN_AT_132_CELL_LEVEL"}
+  ],
+  "packageCrosswalk": {
+    "batch01": {
+      "publicResult":"7/7 PRODUCT_PASS preserved",
+      "exactlyMappedEvidence":["PUBLIC-OFFER-36-SHIFT-RELATION -> EXH-CTX-022"],
+      "publicPassWithoutCanonicalCellId":["PUBLIC-OPERATION-HEALTH","PUBLIC-AGREEMENT-190"],
+      "notUsedToPromoteNonEquivalentCells":["PUBLIC-HOME-04-HAKEDIS -> EXH-SUG-009 is not equivalent"]
+    },
+    "correctiveA": {
+      "publicResult":"6/6 PRODUCT_PASS",
+      "scenarioIds":["EXH-CTX-018","EXH-CTX-021","EXH-REC-016","EXH-REC-019","EXH-REC-020","EXH-SUG-006"]
+    },
+    "correctiveB": {
+      "publicResult":"6/6 PRODUCT_PASS",
+      "scenarioIds":["EXH-SUG-007","EXH-SUG-009","EXH-SUG-013","EXH-SUG-014","EXH-SUG-015","EXH-UI-028"]
+    }
+  },
+  "home04Boundary": {
+    "scenarioId":"HOME-04",
+    "status":"PRODUCT_GAP",
+    "originalTask":"Hakedişlerimde sorun var mı?",
+    "requiredCriterion":"From /room, provide an authorized Hakediş issue assessment and a real financial-operations/Hakediş target or an explicitly supported M18 guidance result.",
+    "currentEvidence":"/room/financial-operations opens, but the visible surface is Teklif ve Kârlılık preview without a Hakediş list, payment status or Hakediş risk target.",
+    "whyBatch01DoesNotCloseIt":"The BATCH 01 aggregate #186-#190/HOME Hakediş evidence proves a different aggregate reconciliation/preview task and does not prove the original HOME-origin financial-operations target criterion.",
+    "canonicalOwner":"Hakediş/financial capability owner is not uniquely identified by the canonical evidence; no additional product change was made in this reconciliation.",
+    "m18Boundary":"No payment, approval, accounting or invoice-execution capability is required or added here."
+  },
+  "currentEvidenceCounts": {
+    "individuallyNamedScenarioRows": 33,
+    "individuallyNamedScenarioRowsProductPass": 33,
+    "individuallyNamedScenarioRowsProductFail": 0,
+    "individuallyNamedScenarioRowsProductGap": 0,
+    "individuallyNamedScenarioRowsNotProven": 0,
+    "knownSeparateProductGap": 1,
+    "knownSecurityBlock": 0,
+    "knownEnvironmentBlock": 0,
+    "132CellPassCount":"NOT_COMPUTABLE_WITHOUT_CANONICAL_CELL_IDS",
+    "132CellFailGapNotProvenCounts":"NOT_COMPUTABLE_WITHOUT_CANONICAL_CELL_IDS",
+    "historicalDistributionPreserved":"35 PREVIOUSLY_PROVEN / 18 PRODUCT_PASS / 9 PRODUCT_FAIL / 1 PRODUCT_GAP / 69 NOT_PROVEN; not rewritten as a false current 132-cell distribution"
+  },
+  "security": {
+    "unauthorizedReadObserved": false,
+    "crossTenantLeakObserved": false,
+    "businessWriteObserved": false,
+    "securityBlock": 0,
+    "f01AndCompanyNegativeEvidence":"Preserved PASS",
+    "financialWriteBoundary":"No payment, approval, accounting or invoice write"
+  },
+  "acceptanceDecision": {
+    "roomFunctional10of10":"NOT_CLOSED",
+    "m18FormalClosed":"NOT_CLOSED",
+    "companyHandoff":"BLOCKED until the canonical 132-cell manifest, every required criterion and immutable baseline are supplied",
+    "nextBoundedTask":"Evidence-owner/governance task: supply the real 132 individually named closure-cell manifest and map each row to one canonical criterion and evidence record; do not rerun browser tests or reopen the 33 exact scenario PASS rows until that mapping exists."
+  }
+}

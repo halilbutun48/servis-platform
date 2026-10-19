@@ -3,6 +3,7 @@ import { authRequired, requireStepUp } from "../auth/middleware.js";
 import { audit } from "../audit.js";
 import { normalizeCopilotRequestInput, parseCopilotRequest } from "../ai/schemas.js";
 import { runCopilotFoundation } from "../ai/service.js";
+import { clearCanonicalConversationState } from "../ai/chat/canonicalConversationState.js";
 import { ENV } from "../env.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { httpError } from "../errors/http.js";
@@ -17,8 +18,25 @@ async function buildCopilotUserContext(user) {
   return { ...user, companyKind: company?.kind || null };
 }
 
+function authSessionIdForRequest(req) {
+  return [req.auth?.userId, req.auth?.jti || req.auth?.sid || req.auth?.iat, req.auth?.sv, req.auth?.pwdChangeOnly ? "pwd" : "full"]
+    .filter(Boolean)
+    .join(":");
+}
+
 export function aiRouter() {
   const r = express.Router();
+
+  r.post(
+    "/conversation/clear",
+    authRequired(),
+    requireStepUp("SUPER_ADMIN", "ROOM"),
+    asyncHandler(async (req, res) => {
+      const copilotUser = await buildCopilotUserContext(req.user);
+      clearCanonicalConversationState(copilotUser, authSessionIdForRequest(req));
+      return res.json({ ok: true, cleared: true, scope: "AUTHENTICATED_SESSION" });
+    })
+  );
 
   r.post(
     "/copilot",
@@ -51,7 +69,7 @@ export function aiRouter() {
       const payload = await runCopilotFoundation({
         ...parsed.data,
         user: copilotUser,
-        authSessionId: [req.auth?.userId, req.auth?.jti || req.auth?.sid || req.auth?.iat, req.auth?.sv, req.auth?.pwdChangeOnly ? "pwd" : "full"].filter(Boolean).join(":"),
+        authSessionId: authSessionIdForRequest(req),
       });
 
       await audit(req, {

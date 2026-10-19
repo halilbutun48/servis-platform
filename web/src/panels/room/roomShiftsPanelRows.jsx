@@ -47,7 +47,11 @@ export function RoomPendingShiftRow({ shift, offersByShiftId, effectiveShiftRoom
   const selected = Number(copilotShiftId || 0) === Number(shift?.id || 0);
   return (
     <tr key={shift.id} onClick={() => setFocusedTrackShiftId(Number(shift?.id || 0) || null)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(shift?.id || 0))}>
-      <td>{shift.id}<AgreementBadge agreementId={shift.agreementId} /><CommercialReadonlySummary item={shift.commercialBackbone} compact /></td>
+      <td
+        data-copilot-target={selected ? roomShiftLeafTarget(shift.id, "details") : undefined}
+        data-copilot-semantic-id={selected ? `product:room:shift:${Number(shift.id)}:details` : undefined}
+        data-copilot-label={selected ? `Vardiya #${Number(shift.id)} ayrıntıları` : undefined}
+      >{shift.id}<AgreementBadge agreementId={shift.agreementId} /><CommercialReadonlySummary item={shift.commercialBackbone} compact /></td>
       <td className="muted">
         <div>{shift.company?.name || `Firma ID ${shift.companyId}`}</div>
         {hasRegionOwnership(room) ? <div style={{ fontSize: 12 }}>{formatRegionOwnership(room)}</div> : null}
@@ -71,13 +75,17 @@ export function RoomAllShiftRow({ shift, offersByShiftId, vehiclesById, roomsByI
   const selected = Number(copilotShiftId || 0) === Number(shift?.id || 0);
   return (
     <tr key={shift.id} onClick={() => setFocusedTrackShiftId(Number(shift?.id || 0) || null)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(shift?.id || 0))}>
-      <td>{shift.id}<AgreementBadge agreementId={shift.agreementId} /><CommercialReadonlySummary item={shift.commercialBackbone} compact />{Number(shift.splitRootId || 0) > 0 ? <div className="muted" style={{ marginTop: 4 }}>Paket ID {shift.splitRootId}{Number(shift.splitIndex || 0) > 0 && Number(shift.splitTotal || 0) > 0 ? ` • ${shift.splitIndex}/${shift.splitTotal}` : ""}</div> : null}</td>
+      <td
+        data-copilot-target={selected ? roomShiftLeafTarget(shift.id, "details") : undefined}
+        data-copilot-semantic-id={selected ? `product:room:shift:${Number(shift.id)}:details` : undefined}
+        data-copilot-label={selected ? `Vardiya #${Number(shift.id)} ayrıntıları` : undefined}
+      >{shift.id}<AgreementBadge agreementId={shift.agreementId} /><CommercialReadonlySummary item={shift.commercialBackbone} compact />{Number(shift.splitRootId || 0) > 0 ? <div className="muted" style={{ marginTop: 4 }}>Paket ID {shift.splitRootId}{Number(shift.splitIndex || 0) > 0 && Number(shift.splitTotal || 0) > 0 ? ` • ${shift.splitIndex}/${shift.splitTotal}` : ""}</div> : null}</td>
       <td><span className="pill" data-status={shift.status}>{displayStatusLabel(shift.status)}</span></td>
       <td className="muted">
         <div>{shift.company?.name || `Firma ID ${shift.companyId}`}</div>
         {hasRegionOwnership(room) ? <div style={{ fontSize: 12 }}>{formatRegionOwnership(room)}</div> : null}
       </td>
-       <td>{Number(shift?.agreementId) > 0 ? <div className="card" style={{ marginTop: 0 }}><div style={{ fontWeight: 800 }}>Sözleşmeli vardiya</div><div className="muted" style={{ marginTop: 6 }}>Pazarlık/teklif kapalı (sözleşme kaynaklı).</div></div> : <div style={{ display: "grid", gap: 8 }}>{marketOffer ? <div className="card" style={{ marginTop: 0 }} title="Market teklifi burada teklif özeti ve rota bilgisi olarak görünür."><div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><div style={{ fontWeight: 800 }}>Market Teklifi</div><RoomStatusPill status={marketOffer.status} /></div><div className="muted" style={{ marginTop: 6 }}>Hizmet Alan Firma: <b>{formatTRY(marketOffer.amountCompany)} ₺</b> • Taşımacılık Firması: <b>{formatTRY(marketOffer.amountRoom)} ₺</b></div></div> : null}<div><b>Hizmet Alan Firma → Taşımacılık Firması</b><div style={{ marginTop: 4 }}><RoomCompanyOfferSummary shift={shift} vehiclesById={vehiclesById} /></div></div><div><b>Taşımacılık Firması → Hizmet Alan Firma</b><div style={{ marginTop: 4 }}><RoomOfferSummary shift={shift} vehiclesById={vehiclesById} /></div></div></div>}</td>
+      <td>{Number(shift?.agreementId) > 0 ? <div className="card" style={{ marginTop: 0 }}><div style={{ fontWeight: 800 }}>Sözleşmeli vardiya</div><div className="muted" style={{ marginTop: 6 }}>Pazarlık/teklif kapalı (sözleşme kaynaklı).</div></div> : <div style={{ display: "grid", gap: 8 }}>{marketOffer ? <div className="card" style={{ marginTop: 0 }} title="Market teklifi burada teklif özeti ve rota bilgisi olarak görünür."><div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><div style={{ fontWeight: 800 }}>Market Teklifi</div><RoomStatusPill status={marketOffer.status} /></div><div className="muted" style={{ marginTop: 6 }}>Hizmet Alan Firma: <b>{formatTRY(marketOffer.amountCompany)} ₺</b> • Taşımacılık Firması: <b>{formatTRY(marketOffer.amountRoom)} ₺</b></div></div> : null}<div><b>Hizmet Alan Firma → Taşımacılık Firması</b><div style={{ marginTop: 4 }}><RoomCompanyOfferSummary shift={shift} vehiclesById={vehiclesById} /></div></div><div><b>Taşımacılık Firması → Hizmet Alan Firma</b><div style={{ marginTop: 4 }}><RoomOfferSummary shift={shift} vehiclesById={vehiclesById} /></div></div></div>}</td>
       <td className="muted">
         <div>{vehicle?.plate || (shift.vehicleId ? `Araç ID ${shift.vehicleId}` : "-")}</div>
         {hasRegionOwnership(vehicle) ? <div style={{ fontSize: 12 }}>{formatRegionOwnership(vehicle)}</div> : null}

@@ -5245,6 +5245,37 @@ textarea:focus-visible,
   }
 }
 
+/* Short desktop viewports still need a usable composer.  Keep the bounded
+   drawer compact without allowing its textarea or action row to escape the
+   visible panel and cover the underlying workspace. */
+@media (min-width: 721px) and (max-height: 760px) {
+  .copilotDrawer {
+    overflow: hidden;
+  }
+
+  .copilotDrawerHeader {
+    padding: 8px 10px 6px;
+  }
+
+  .copilotDrawer .copilotChatSurface {
+    padding: 8px;
+  }
+
+  .copilotDrawer .copilotComposer {
+    flex: 0 0 auto;
+    padding: 6px 10px 8px;
+  }
+
+  .copilotDrawer .copilotComposer textarea {
+    min-height: 56px;
+    height: 56px;
+  }
+
+  .copilotDrawer .copilotComposerRow {
+    margin-top: 6px;
+  }
+}
+
 @media (max-width: 720px) {
   .guidedPlanModalContent,
   .guidedPlanModalContent > * {

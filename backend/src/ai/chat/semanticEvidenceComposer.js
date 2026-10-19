@@ -632,15 +632,38 @@ function aspectValue(tokens, features, relation, order, polarity) {
   return { value: "NONE", provenance: [] };
 }
 
+function referentMatchesAuthorizedScope(candidate, context) {
+  if (!candidate || typeof candidate !== "object") return false;
+  if (candidate.authorized === false
+    || candidate.sourceTrusted === false
+    || candidate.scopeMismatch === true
+    || candidate.tenantMismatch === true) return false;
+  const tenantScope = context?.tenantScope || context?.authScope || {};
+  const candidateRoomId = Number(candidate.roomId || candidate.room?.id || 0);
+  const currentRoomId = Number(tenantScope.roomId || 0);
+  if (candidateRoomId > 0 && currentRoomId > 0 && candidateRoomId !== currentRoomId) return false;
+  const candidateCompanyId = Number(candidate.companyId || candidate.company?.id || 0);
+  const currentCompanyId = Number(tenantScope.companyId || 0);
+  if (candidateCompanyId > 0 && currentCompanyId > 0 && candidateCompanyId !== currentCompanyId) return false;
+  const authorizationStatus = String(candidate.authorizationStatus || candidate.scopeStatus || "").toUpperCase();
+  if (["DENIED", "UNAUTHORIZED", "REJECTED", "TENANT_SCOPE_DENIED"].includes(authorizationStatus)) return false;
+  return true;
+}
+
 function validatedReferent(context, conversationState) {
+  const historicalSuppressed = context?.referenceState?.historicalSuppressed === true
+    || context?.freshness?.selectionHistoricalSuppressed === true;
   const candidates = [
     [context?.referenceState?.uniqueReferent, PROVENANCE.reference],
     [context?.referenceState?.selectedEntity, PROVENANCE.surface],
-    [conversationState?.referenceState?.uniqueReferent, PROVENANCE.reference],
-    [conversationState?.uniqueDiscourseReferent, PROVENANCE.reference],
+    ...(!historicalSuppressed ? [
+      [conversationState?.referenceState?.uniqueReferent, PROVENANCE.reference],
+      [conversationState?.uniqueDiscourseReferent, PROVENANCE.reference],
+    ] : []),
   ];
   for (const [candidate, provenance] of candidates) {
     if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) continue;
+    if (!referentMatchesAuthorizedScope(candidate, context)) continue;
     if (candidate.validated === false || candidate.freshness === "STALE" || candidate.stale === true) continue;
     const type = stringValue(candidate.type || candidate.entityType).toUpperCase();
     const id = Number(candidate.id || candidate.entityId);
@@ -680,9 +703,18 @@ function composeSemanticEvidence({ features = {}, context = {}, conversationStat
       && String(context.continuity?.precedence || "").toUpperCase() !== "EXPLICIT_INPUT")
       || activeTaskContinuationFallback
     : Boolean(stateActiveTask || context?.activeTask);
-  const activeTask = continuationIsValid ? (context?.activeTask || stateActiveTask) : null;
+  // A current screen is server-owned context, but it is not by itself an
+  // active task. Expansion wording such as "adım adım anlat" must start a
+  // new analytical request on a fresh surface; CONTINUE remains available
+  // when a settled/active server-owned task is actually present.
+  const serverOwnedTaskContext = Boolean(
+    stateActiveTask
+      || conversationState?.lastSettledResult
+      || conversationState?.productContext?.semanticPlan
+      || conversationState?.lastSemanticPlan,
+  );
   const continuationModeEligible = continuationIsValid
-    || (serverOwnedConversationContext && continuationInputEvidence);
+    || (serverOwnedConversationContext && serverOwnedTaskContext && continuationInputEvidence);
   const matchedLiveSurfaceTarget = liveSurfaceNavigationTarget(features, screenContext);
   const validCurrentSurface = Boolean(context?.currentSurface?.path || context?.currentSurface?.label || screenContext?.path || screenContext?.label);
   const mode = matchedLiveSurfaceTarget

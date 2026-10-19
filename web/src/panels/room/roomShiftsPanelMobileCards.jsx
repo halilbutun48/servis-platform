@@ -206,7 +206,11 @@ export function RoomPendingShiftCard({
         }}
         note={approveReason || null}
       />
-      <ShiftCardDetails>
+      <ShiftCardDetails
+        dataCopilotTarget={selected ? roomShiftLeafTarget(sid, "details") : undefined}
+        dataCopilotSemanticId={selected ? `product:room:shift:${sid}:details` : undefined}
+        dataCopilotLabel={selected ? `Vardiya #${sid} ayrıntıları` : undefined}
+      >
         <ShiftCommercialSummary shift={shift} />
         <CardSection title="Teklif ayrıntıları">
           {isAgreement ? <div className="shiftCardSubtle">Sözleşmeli vardiya. Pazarlık kapalı.</div> : <ShiftOfferDetails shift={offerSummaryShift} />}
@@ -442,7 +446,11 @@ export function RoomAllShiftCard({
         dataCopilotTarget={selected ? roomShiftLeafTarget(shift.id, canReassign ? "reassign" : "route-preview") : undefined}
         onClick={handlePrimaryAction}
       />
-      <ShiftCardDetails>
+      <ShiftCardDetails
+        dataCopilotTarget={selected ? roomShiftLeafTarget(Number(shift?.id || 0), "details") : undefined}
+        dataCopilotSemanticId={selected ? `product:room:shift:${Number(shift?.id || 0)}:details` : undefined}
+        dataCopilotLabel={selected ? `Vardiya #${Number(shift?.id || 0)} ayrıntıları` : undefined}
+      >
         <ShiftCommercialSummary shift={shift} />
         <CardSection title="Teklif ayrıntıları">
           {Number(shift?.agreementId) > 0 ? <div className="shiftCardSubtle">Sözleşmeli vardiya. Pazarlık kapalı.</div> : <ShiftOfferDetails shift={shift} />}

@@ -269,9 +269,11 @@ export default function RoomOffersPanel() {
     const matched = explicitId > 0
       ? filtered.find((o) => Number(o?.id || 0) === explicitId) || null
       : null;
-    // An explicit deep-link must fail closed when the authorized list does
-    // not contain that record; never silently ground Copilot on another card.
-    return explicitId > 0 ? matched : filtered[0] || null;
+    // A visible first card is not a user selection. An explicit deep-link or
+    // card click must be the only way to ground Copilot on an offer; otherwise
+    // the list can say "no selected offer" while the assistant reads another
+    // record from the same collection.
+    return explicitId > 0 ? matched : null;
   }, [filtered, focusedOfferId]);
 
   const focusedPackageIds = useMemo(() => {

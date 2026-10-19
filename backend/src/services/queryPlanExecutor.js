@@ -75,6 +75,7 @@ function fieldValue(fact, key) {
     QUALITY_STATE: ["qualityStateText", "qualityState", "quality"],
     RISK_STATE: ["riskStateText", "riskState", "risk"],
     OPERATION_STATUS: ["operationStatusText", "operationStatus", "readiness", "readinessText"],
+    PLATE: ["plate", "vehiclePlate"],
     // A parent can be authorized to see that a child's live vehicle is not
     // currently assigned. Keep that visible state distinct from a plate so a
     // missing assignment never turns into an invented vehicle.
@@ -101,10 +102,22 @@ function fieldValue(fact, key) {
   const value = values[match];
   if (["SERVICE_BUYER_AMOUNT", "CARRIER_AMOUNT", "AGREEMENT_COMPANY_OFFER_AMOUNT"].includes(key)
     && (value == null || String(value).trim() === "-")) return null;
-  if (["GPS", "ETA"].includes(key) && String(values.freshness || "").toUpperCase() === "STALE") {
+  const freshness = String(values.freshness || "").toUpperCase();
+  if (key === "GPS" && freshness === "STALE") {
+    // A stale provider label (for example "Canlı") is not the current
+    // product state. Never expose it as if the old sample were live.
+    return "Konum sinyali güncel değil • veri tazeliği: eski; güncel kabul edilmemeli";
+  }
+  if (key === "GPS" && freshness === "OFFLINE") {
+    return "Konum sinyali çevrim dışı • veri tazeliği: eski; güncel kabul edilmemeli";
+  }
+  if (key === "GPS" && freshness === "UNKNOWN") {
+    return "Konum bilgisi bilinmiyor • veri tazeliği: bilinmiyor";
+  }
+  if (key === "ETA" && freshness === "STALE") {
     return `${value == null ? "veri yok" : value} • veri tazeliği: eski; güncel kabul edilmemeli`;
   }
-  if (["GPS", "ETA"].includes(key) && String(values.freshness || "").toUpperCase() === "UNKNOWN") {
+  if (key === "ETA" && freshness === "UNKNOWN") {
     return `${value == null ? "veri yok" : value} • veri tazeliği: bilinmiyor`;
   }
   return value;
@@ -127,6 +140,7 @@ function fieldLabel(key) {
     QUALITY_STATE: "kalite durumu",
     RISK_STATE: "risk durumu",
     OPERATION_STATUS: "operasyon durumu",
+    PLATE: "plaka",
     VEHICLE: "araç",
     DRIVER: "sürücü",
     ETA: "ETA",
@@ -211,6 +225,22 @@ function factsForField(items, entity, field) {
   return domainFacts.length ? domainFacts : entityFacts;
 }
 
+function relationDerivedValue(relation, sourceFacts) {
+  if (relation?.fromEntity?.type === "agreement" && relation?.toEntity?.type === "shift") {
+    return sourceFacts
+      .flatMap((fact) => Array.isArray(fact?.generatedShiftIds) ? fact.generatedShiftIds : [])
+      .find((value) => value != null && String(value).trim() !== "") ?? null;
+  }
+  const targetField = relation?.toEntity?.type === "shift" ? "SHIFT"
+    : relation?.toEntity?.type === "vehicle" ? "VEHICLE"
+      : relation?.toEntity?.type === "driver" ? "DRIVER"
+        : relation?.toEntity?.type === "agreement" ? "AGREEMENT"
+          : relation?.toEntity?.type === "offer" ? "OFFER" : "SHIFT";
+  return sourceFacts
+    .map((fact) => fieldValue(fact, targetField))
+    .find((value) => value != null && String(value).trim() !== "") ?? null;
+}
+
 function normalizeContinuationValue(value) {
   return String(value ?? "")
     .normalize("NFKD")
@@ -276,21 +306,50 @@ function continuationState(plan, items) {
 
 function buildRelationReply(plan, items) {
   const relation = plan?.relationshipIntent || plan?.relationSpec;
+  if (relation?.kind === "AGREEMENT_TO_SHIFT_COLLECTION") {
+    const shifts = items
+      .filter((item) => item?.domain === "SHIFTS")
+      .flatMap((item) => item?.facts || [])
+      .filter((fact) => Number(fact?.agreementId) > 0 && Number(fact?.id || fact?.shiftId) > 0);
+    if (!shifts.length) return "Bu ekranda yetkili sözleşme kaynaklı vardiya görünmüyor.";
+    const labels = shifts.slice(0, 5).map((fact) => {
+      const shiftId = Number(fact.id || fact.shiftId);
+      const agreementId = Number(fact.agreementId);
+      return `Vardiya #${shiftId} (Sözleşme #${agreementId})`;
+    });
+    const suffix = shifts.length > labels.length ? ` İlk doğrulanmış kayıtlar: ${labels.join(", ")}.` : `: ${labels.join(", ")}.`;
+    return `Sözleşmeden üretilen yetkili vardiyalar${suffix}`;
+  }
   if (!relation?.fromEntity || !relation?.toEntity) return "İstenen bağlı kayıt yetkili kanıtla doğrulanamadı.";
-  const targetFacts = factsForEntity(items, relation.toEntity);
   const target = relation.toEntity;
+  const targetFacts = Number(target.id) > 0 ? factsForEntity(items, target) : [];
   const relationLabel = target.type === "shift" ? "bağlı vardiya"
     : target.type === "vehicle" ? "bağlı araç"
       : target.type === "driver" ? "bağlı sürücü"
         : target.type === "agreement" ? "bağlı sözleşme"
+          : target.type === "offer" ? "bağlı teklif"
           : "bağlı kayıt";
-  const targetField = target.type === "shift" ? "SHIFT" : target.type === "vehicle" ? "VEHICLE" : target.type === "driver" ? "DRIVER" : target.type === "agreement" ? "AGREEMENT" : "SHIFT";
+  const targetField = target.type === "shift" ? "SHIFT" : target.type === "vehicle" ? "VEHICLE" : target.type === "driver" ? "DRIVER" : target.type === "agreement" ? "AGREEMENT" : target.type === "offer" ? "OFFER" : "SHIFT";
   const sourceFacts = factsForEntity(items, relation.fromEntity);
-  const derivedValue = sourceFacts
-    .map((fact) => fieldValue(fact, targetField))
-    .find((value) => value != null && String(value).trim() !== "");
-  if (!targetFacts.length && derivedValue == null) return `${labelForEntity(relation.fromEntity)} için ${fieldLabel(targetField)} yetkili kayıtta doğrulanamadı.`;
+  const relatedOfferFact = target.type === "offer" && Number(relation.fromEntity?.id) > 0
+    ? items
+      .filter((item) => item?.domain === "OFFERS")
+      .flatMap((item) => item?.facts || [])
+      .find((fact) => Number(fact?.shiftId) === Number(relation.fromEntity.id) && Number(fact?.offerId || fact?.id) > 0)
+    : null;
+  const derivedValue = relatedOfferFact?.offerId ?? relationDerivedValue(relation, sourceFacts);
+  if (!targetFacts.length && derivedValue == null) {
+    const unauthorized = items.some((item) => item?.status === "UNAUTHORIZED");
+    if (!unauthorized && relation.fromEntity?.type === "agreement" && target.type === "shift") {
+      return `${labelForEntity(relation.fromEntity)} için bağlı üretilmiş vardiya bulunmuyor.`;
+    }
+    return `${labelForEntity(relation.fromEntity)} için ${fieldLabel(targetField)} yetkili kayıtta doğrulanamadı.`;
+  }
   if (!target.id && derivedValue != null) {
+    if (relation.fromEntity.type === "shift" && target.type === "offer") {
+      const offerStatus = relatedOfferFact?.statusText || relatedOfferFact?.status;
+      return `${labelForEntity(relation.fromEntity)} için bağlı teklif: Teklif #${displayFieldValue(derivedValue)}${offerStatus ? ` (${offerStatus})` : ""}.`;
+    }
     if (relation.fromEntity.type === "driver" && target.type === "vehicle") {
       const driverName = sourceFacts
         .map((fact) => String(fact?.driverName || fact?.driver || "").trim())
@@ -410,9 +469,8 @@ function outputSlotResults(plan, items, comparison) {
   const relation = plan?.relationshipIntent || plan?.relationSpec;
   if (relation?.fromEntity && relation?.toEntity) {
     const sourceFacts = factsForEntity(items, relation.fromEntity);
-    const targetField = relation.toEntity.type === "shift" ? "SHIFT" : relation.toEntity.type === "vehicle" ? "VEHICLE" : relation.toEntity.type === "driver" ? "DRIVER" : relation.toEntity.type === "agreement" ? "AGREEMENT" : "SHIFT";
-    const related = factsForEntity(items, relation.toEntity).length > 0
-      || sourceFacts.some((fact) => fieldValue(fact, targetField) != null);
+    const related = Number(relation.toEntity.id) > 0 && factsForEntity(items, relation.toEntity).length > 0
+      || relationDerivedValue(relation, sourceFacts) != null;
     slots.push({ category: "RELATION", key: `${relation.fromEntity.type}->${relation.toEntity.type}`, status: terminalFor(related) });
   }
   for (const field of plan?.requestedFields || []) {
@@ -439,6 +497,8 @@ function buildContinuationReply(plan, items, comparison, currentFactsFingerprint
   const fact = factsForEntity(items, entity)[0] || null;
   const depth = Number(plan?.continuationDepth || 1);
   const continuationFamily = String(plan?.continuationOfFamily || "");
+  const relation = plan?.relationshipIntent || plan?.relationSpec;
+  const isCollectionRelation = relation?.kind === "AGREEMENT_TO_SHIFT_COLLECTION";
   const label = entity
     ? labelForEntity(entity)
     : continuationFamily === "RISK_RANKING"
@@ -449,13 +509,38 @@ function buildContinuationReply(plan, items, comparison, currentFactsFingerprint
           ? "Bu önceliklendirme"
           : labelForEntity(entity);
   const reasoningContinuation = ["COMPARISON", "PRIORITY", "RISK_RANKING"].includes(continuationFamily);
-  const requiresRecordEvidence = !reasoningContinuation && continuationFamily !== "SCREEN_CONTEXT";
+  // A collection relation is intentionally not represented by one selected
+  // record.  Its evidence is the authorized relation result (the source and
+  // target collections), so the generic single-record guard must not erase
+  // the relation continuation before its dedicated branch can compose it.
+  const requiresRecordEvidence = !reasoningContinuation
+    && continuationFamily !== "SCREEN_CONTEXT"
+    && !isCollectionRelation;
   if (!entity && requiresRecordEvidence) {
     return "Bu konuşmada tek bir kayıt seçili değil; ilk satırı veya eski bir kaydı varsaymıyorum. İncelemek istediğin kayıt ya da alanı belirtmen gerekir.";
   }
   if (!fact && requiresRecordEvidence) return "Bu konuşmada paylaşılabilecek yeni bir ayrıntı bulunamadı; başka bir kaydı veya ilişkiyi varsaymıyorum.";
   if (plan.continuationOfFamily === "RELATION_LOOKUP") {
-    const relation = plan.relationshipIntent || plan.relationSpec;
+    if (isCollectionRelation) {
+      const relationReply = buildRelationReply(plan, items);
+      const continuationAction = String(plan?.continuationAction || plan?.typedRequest?.continuationAction || "CONTINUE").toUpperCase();
+      if (continuationAction === "BACK") {
+        if (depth <= 1) {
+          return `Bu ilişkinin ilk adımındasın; geri dönülecek önceki bir adım yok. Yetkili vardiya listesini koruyorum. ${relationReply}`;
+        }
+        return `Bir önceki ilişki adımına döndüm; yeni bir kayıt varsaymıyorum. ${relationReply}`;
+      }
+      if (continuationAction === "RECOVER") {
+        return `İlişki görevinde kaybolduysan Vardiyalar ekranındaki Sözleşmeden Üretilen sekmesinden aynı yetkili listeye dönebilirsin. ${relationReply}`;
+      }
+      if (depth === 1) {
+        return `Adım adım ilerleyelim: önce yetkili sözleşme kaynaklı vardiyaları doğruluyorum; ardından Vardiyalar ekranında bu listeyi açıyorum. ${relationReply}`;
+      }
+      if (depth === 2) {
+        return `Aynı ilişki bağlamında ikinci adım: sözleşme kaynaklı vardiya kayıtlarını ve sözleşme bağlantılarını karşılaştırıyorum. ${relationReply}`;
+      }
+      return `Bu ilişkinin doğrulanmış sonucu aynı kaldı; yeni bir kayıt varsaymadan sonraki alanı belirtmen gerekir. ${relationReply}`;
+    }
     const target = relation?.toEntity;
     const targetType = target?.type
       || relation?.requestedRelation
@@ -466,10 +551,8 @@ function buildContinuationReply(plan, items, comparison, currentFactsFingerprint
         : targetType === "driver" ? "DRIVER"
           : targetType === "agreement" ? "AGREEMENT" : null;
     const sourceFacts = relation?.fromEntity ? factsForEntity(items, relation.fromEntity) : [fact];
-    const targetFacts = target ? factsForEntity(items, target) : [];
-    const derivedValue = targetField
-      ? sourceFacts.map((sourceFact) => fieldValue(sourceFact, targetField)).find((value) => value != null && String(value).trim() !== "")
-      : null;
+    const targetFacts = target && Number(target.id) > 0 ? factsForEntity(items, target) : [];
+    const derivedValue = targetField ? relationDerivedValue(relation, sourceFacts) : null;
     const verifiedTarget = Boolean(target && (
       (Number(target.id) > 0 && targetFacts.length > 0)
       || (Number(target.id) <= 0 && derivedValue != null)
@@ -979,6 +1062,25 @@ function buildReply(plan, items, comparison, currentFactsFingerprint = '') {
   // their requested value.
   if (plan?.typedRequest?.taskType === "FIELD_LOOKUP") {
     return "İstenen alanı bu ifadeden güvenle çıkaramadım; başlangıç/bitiş saati, durum veya başka alanı netleştirir misin?";
+  }
+  const countTargetType = String(plan?.typedRequest?.countTarget?.targetEntityType || plan?.semanticEntityType || '').toUpperCase();
+  const temporalMode = String(
+    plan?.temporalMode
+      || plan?.temporalScope?.mode
+      || plan?.typedRequest?.temporalScope?.mode
+      || '',
+  ).toUpperCase();
+  if (countTargetType === 'SHIFT' && temporalMode === 'PENDING') {
+    const resolvedFacts = items
+      .filter((item) => item.status === 'RESOLVED')
+      .flatMap((item) => item.facts || [])
+      .map((fact) => fact?.text || fact?.summary || '')
+      .filter(Boolean)
+      .slice(0, 5);
+    const count = items
+      .filter((item) => item.status === 'RESOLVED')
+      .reduce((sum, item) => sum + Number(item.count || 0), 0);
+    return `${count} yetkili bekleyen vardiya kaydı bulundu. Vardiyalar ekranındaki Bekleyen Talepler sekmesinden inceleyebilirsin.${resolvedFacts.length ? ` ${resolvedFacts.join(' ')}` : ''}`.trim();
   }
   if (plan?.typedRequest?.collectionSummaryIntent) {
     if (plan?.typedRequest?.collectionStatusDistributionIntent || plan?.collectionStatusDistributionIntent) {

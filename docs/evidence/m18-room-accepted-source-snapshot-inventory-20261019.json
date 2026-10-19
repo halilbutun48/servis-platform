@@ -1,0 +1,838 @@
+{
+  "snapshotId": "m18-room-accepted-source-snapshot-20261019",
+  "createdAt": "2026-10-19T19:31:47.3395676Z",
+  "originalWorktree": "D:\\servis-platform",
+  "isolatedWorktree": "C:\\Users\\halil\\.codex\\worktrees\\room-baseline-isolation\\servis-platform",
+  "sourceHead": "3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+  "isolatedHead": "3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+  "includedCount": 90,
+  "included": [
+    {
+      "path": "backend/src/ai/chat/authorizationGate.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "4CC3956C2579094A52A8969B2D49009E656696926E472212BC68D7BBF7BDCB65",
+      "isolatedSha256": "4CC3956C2579094A52A8969B2D49009E656696926E472212BC68D7BBF7BDCB65",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/canonicalConversationState.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "F8BCD985A7E1C424B413CD98FF810D3BE07666B41E9B553903C80949A33BE051",
+      "isolatedSha256": "F8BCD985A7E1C424B413CD98FF810D3BE07666B41E9B553903C80949A33BE051",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/canonicalSemanticContext.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "433E360B149FC197ACE00EEDE4C8E0B39AFE87F01514C4AB06C179E06B330347",
+      "isolatedSha256": "433E360B149FC197ACE00EEDE4C8E0B39AFE87F01514C4AB06C179E06B330347",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/canonicalSemanticRequest.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "76C268DEBF9713AB53267FDF854689D0917F07A6B17EE5DE5C7FB53947CBB728",
+      "isolatedSha256": "76C268DEBF9713AB53267FDF854689D0917F07A6B17EE5DE5C7FB53947CBB728",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/conversationOperationHealthEngine.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "425F6037F2D50F2963D715EBF768D59366A9DF182A21AF416B869B2A4A3CE965",
+      "isolatedSha256": "425F6037F2D50F2963D715EBF768D59366A9DF182A21AF416B869B2A4A3CE965",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/conversationTaskStateRoomReplies.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "82D0DB144DEEAE0284C709A9CF43485CA700E66121ED0696A64B8E2359EC99D5",
+      "isolatedSha256": "82D0DB144DEEAE0284C709A9CF43485CA700E66121ED0696A64B8E2359EC99D5",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/copilotReasoningAnswerComposer.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "0946A4B933F8962ED234E548EBBCF3B8EE64F9C69571AD3AE423BA69626503FF",
+      "isolatedSha256": "0946A4B933F8962ED234E548EBBCF3B8EE64F9C69571AD3AE423BA69626503FF",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/copilotUiElementAnchor.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "22C441D2B9731104F5EBB074A09ED33C7CC3C4EDDCA6125406E64BD607681D5A",
+      "isolatedSha256": "22C441D2B9731104F5EBB074A09ED33C7CC3C4EDDCA6125406E64BD607681D5A",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/helpComposer.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "CC99E79C02ACA55494FB7F366847A286B95C8A3CF6B4D7C74BFC284E06459149",
+      "isolatedSha256": "CC99E79C02ACA55494FB7F366847A286B95C8A3CF6B4D7C74BFC284E06459149",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/helpComposerSafeReplies.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "741072692701761C2A513175444DE433D9D6BCE8329015B326538DCEBF96EAB4",
+      "isolatedSha256": "741072692701761C2A513175444DE433D9D6BCE8329015B326538DCEBF96EAB4",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/intentRouter.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "9AD8E35ED97B9011CFF15B3B9E00157E74377426F265D036390C956F7E178E06",
+      "isolatedSha256": "9AD8E35ED97B9011CFF15B3B9E00157E74377426F265D036390C956F7E178E06",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/intentRouterScreenChips.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "00165FB52CFAD98839DD9CA94472CB997E7282A987CF9733DE3A2F4FF2A1829F",
+      "isolatedSha256": "00165FB52CFAD98839DD9CA94472CB997E7282A987CF9733DE3A2F4FF2A1829F",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/qualityScorer.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "5764E4DD6CAA98618BA57203FD9BADC6E4F798046B4E0A795635CA85CD40F033",
+      "isolatedSha256": "5764E4DD6CAA98618BA57203FD9BADC6E4F798046B4E0A795635CA85CD40F033",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/seferAbiCostAnalysisAssistant.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "5DA8EEAA147FDA9DCF12F0B638DD58B7F75FAC6BFA91AA01186D671C523B6242",
+      "isolatedSha256": "5DA8EEAA147FDA9DCF12F0B638DD58B7F75FAC6BFA91AA01186D671C523B6242",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/seferAbiReasoningAssistant.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "A0108B59C46CC9E9B045940E5F7B643536C81DD89D48102B6E52E75E2E636455",
+      "isolatedSha256": "A0108B59C46CC9E9B045940E5F7B643536C81DD89D48102B6E52E75E2E636455",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/semanticEvidenceComposer.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "A4ACE5DA734BDAD8F512F793D525144514C8BFA1D713814407340E76221270AE",
+      "isolatedSha256": "A4ACE5DA734BDAD8F512F793D525144514C8BFA1D713814407340E76221270AE",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/semanticIntentPlanner.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "64FF46A7952EB8610314DD38954C2D4BB495D4BA97C92584BC12AB281FBDE9EA",
+      "isolatedSha256": "64FF46A7952EB8610314DD38954C2D4BB495D4BA97C92584BC12AB281FBDE9EA",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/semanticSpecificityResolver.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "729332452EA4D28AA3DA77F5813E238B1E31DD761980973659FB66E0C1DEB914",
+      "isolatedSha256": "729332452EA4D28AA3DA77F5813E238B1E31DD761980973659FB66E0C1DEB914",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/turkishSemanticFeatures.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "9717729511D2D74A9FF0150076C82AB04089683D9185C79BD406E1129AC8D22B",
+      "isolatedSha256": "9717729511D2D74A9FF0150076C82AB04089683D9185C79BD406E1129AC8D22B",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/chat/userFacingLanguageNormalizer.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "1F835A4B19C55BBABC07AD1E4F2A0033BF5EC7DB25A3ECAEAFE79AC90F655C9F",
+      "isolatedSha256": "1F835A4B19C55BBABC07AD1E4F2A0033BF5EC7DB25A3ECAEAFE79AC90F655C9F",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/jobGuide/quickActions.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "612634D4EDE1A00B3EC829BE838D97BEA5E45477202A6B182D568158E5DF26C7",
+      "isolatedSha256": "612634D4EDE1A00B3EC829BE838D97BEA5E45477202A6B182D568158E5DF26C7",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/jobGuide/screenCatalog.roomCompany.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "5A49E61446B291772E78E76B86B58249DDA1A81E43BB7795FC03D4F391D801E4",
+      "isolatedSha256": "5A49E61446B291772E78E76B86B58249DDA1A81E43BB7795FC03D4F391D801E4",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ai/service.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "B5F75A05BFF76384FBA641A677840595F1AFE4CC257A6B649402E7F815E88D05",
+      "isolatedSha256": "B5F75A05BFF76384FBA641A677840595F1AFE4CC257A6B649402E7F815E88D05",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/finance/hakedisInvoiceReconciliation.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "6E523CAECAFE76286BC16247489D2D81B0A9FB339695D6051DA844DE6DE2EFCE",
+      "isolatedSha256": "6E523CAECAFE76286BC16247489D2D81B0A9FB339695D6051DA844DE6DE2EFCE",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ops/commercialCoreManifest.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "B73C30B7D2FF47EF5E67A7CC6D9A5EAEF24DB830243C883F5EE2045AF4C03839",
+      "isolatedSha256": "B73C30B7D2FF47EF5E67A7CC6D9A5EAEF24DB830243C883F5EE2045AF4C03839",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/ops/observabilityManifest.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "9A340D8B5AF0A8C9F74691D75D3F11C441293E1264F3962B3AD4CA830CA7B8E9",
+      "isolatedSha256": "9A340D8B5AF0A8C9F74691D75D3F11C441293E1264F3962B3AD4CA830CA7B8E9",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/routes/ai.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "3F4B060C61064A903BB19620D564671601BAE1B02DEE88EF93846AA2637CC849",
+      "isolatedSha256": "3F4B060C61064A903BB19620D564671601BAE1B02DEE88EF93846AA2637CC849",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/routes/vehicles.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "9B7C2D5A8B491CA878F58DD48ED644994AA229DFDE587AAB4A628D576ACABC35",
+      "isolatedSha256": "9B7C2D5A8B491CA878F58DD48ED644994AA229DFDE587AAB4A628D576ACABC35",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/services/authorizedProductAwareness.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "46A5D44C9F59DD8424B7BE47AFB4A02E9CF60513FAA5AA3BF76F38B8252E68DF",
+      "isolatedSha256": "46A5D44C9F59DD8424B7BE47AFB4A02E9CF60513FAA5AA3BF76F38B8252E68DF",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/src/services/queryPlanExecutor.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "81E891B02BEC87196BF5B22DD24C425D8AD6D0A6C60C0827D6CEA47EC4FAD3FA",
+      "isolatedSha256": "81E891B02BEC87196BF5B22DD24C425D8AD6D0A6C60C0827D6CEA47EC4FAD3FA",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/components/copilot/ChatQuickActions.jsx",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "D3E54183E6D3027548178B8B47D2D731E24B04DCD387B15FD1F6FEE26588DA65",
+      "isolatedSha256": "D3E54183E6D3027548178B8B47D2D731E24B04DCD387B15FD1F6FEE26588DA65",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/components/copilot/FloatingCopilotDrawer.jsx",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "30B3D33FD5EEC572C41417B3C7598E6EDC588977A7B96179D20542262E51AA0D",
+      "isolatedSha256": "30B3D33FD5EEC572C41417B3C7598E6EDC588977A7B96179D20542262E51AA0D",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/components/copilot/GuidedTargetOverlay.jsx",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "CC8BAFB2F00A47C1BA07D1435C0F4C441407DD3F68C198CCE0E138B06C10755E",
+      "isolatedSha256": "CC8BAFB2F00A47C1BA07D1435C0F4C441407DD3F68C198CCE0E138B06C10755E",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/components/copilot/uiSurface.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "58DAD71412257EF1FF4126E0DC091B656281F593A4A4F6DAA19C1CEB5D91B92A",
+      "isolatedSha256": "58DAD71412257EF1FF4126E0DC091B656281F593A4A4F6DAA19C1CEB5D91B92A",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/components/ListSelectionBanner.jsx",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "F8EA591468804BE91EE1D9F2CBA62A8035DC67CE9BB584A7928790F2ADA19746",
+      "isolatedSha256": "F8EA591468804BE91EE1D9F2CBA62A8035DC67CE9BB584A7928790F2ADA19746",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/components/map/MapOperationsDisclosure.jsx",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "B71A93E7509E044AE154615F06FBBD8B8BA9C516EA49FD620CF3E1D7E3EC651C",
+      "isolatedSha256": "B71A93E7509E044AE154615F06FBBD8B8BA9C516EA49FD620CF3E1D7E3EC651C",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/components/map/MapView.jsx",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "504A53D88FE33F524AE63FF74D1961949D0B005C607842C57FE9CA6E4E3521A9",
+      "isolatedSha256": "504A53D88FE33F524AE63FF74D1961949D0B005C607842C57FE9CA6E4E3521A9",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/components/ReconciliationPreviewCard.jsx",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "3CB34D828152AEAD72D2155F94DDA4320B9B3B15DE08611A8FDBB51223B12367",
+      "isolatedSha256": "3CB34D828152AEAD72D2155F94DDA4320B9B3B15DE08611A8FDBB51223B12367",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/copilot/screenRegistry.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "0587BB09E4E17061E0ACEF57C0256D007AF9ACB2849CEC0446905E13C6B48DCA",
+      "isolatedSha256": "0587BB09E4E17061E0ACEF57C0256D007AF9ACB2849CEC0446905E13C6B48DCA",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/index.css",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "E82CEC86CAB7A0ED170E69647E985824FED3265FCE000693F57C7BB4856BBC52",
+      "isolatedSha256": "E82CEC86CAB7A0ED170E69647E985824FED3265FCE000693F57C7BB4856BBC52",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/live/ws.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "E94D7DFA1B5B8C33550F675FC9FB3C5ABCA4625AC776EB0652CC53FFB567C19C",
+      "isolatedSha256": "E94D7DFA1B5B8C33550F675FC9FB3C5ABCA4625AC776EB0652CC53FFB567C19C",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/panels/room/AgreementsPanel.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "D8ECD1A60E5D87DD4C20EC1BD16430DC5BD2F04994E166F86056BCC77A6986D1",
+      "isolatedSha256": "D8ECD1A60E5D87DD4C20EC1BD16430DC5BD2F04994E166F86056BCC77A6986D1",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/CheckinPanel.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "A6127772C41E06C113E0667275C99CD4F4AFB85925F77981ECD3642B5EA3F0C7",
+      "isolatedSha256": "A6127772C41E06C113E0667275C99CD4F4AFB85925F77981ECD3642B5EA3F0C7",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/CommercialFlowPanel.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "16A3D75A8B5190AFC5D6BEBCBD8F8F62F06E63A631E45DCE0FCD44A5F9A1EECD",
+      "isolatedSha256": "16A3D75A8B5190AFC5D6BEBCBD8F8F62F06E63A631E45DCE0FCD44A5F9A1EECD",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/DriversPanel.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "729D93F1647DD3B706AB59AC0DB8D9B90EE29A53CF288B8684FD315E129F7A84",
+      "isolatedSha256": "729D93F1647DD3B706AB59AC0DB8D9B90EE29A53CF288B8684FD315E129F7A84",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/MapPanel.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "189DC24DCCBDBFD35CAC8CB995347E8103731DA54FEE7393CA2D7CB65A6E7FAE",
+      "isolatedSha256": "189DC24DCCBDBFD35CAC8CB995347E8103731DA54FEE7393CA2D7CB65A6E7FAE",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/OffersPanel.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "1DE00410BDA52626093C3B8540ED3AFA52A87973C6C2E1F6C7FD000207B5A2E7",
+      "isolatedSha256": "1DE00410BDA52626093C3B8540ED3AFA52A87973C6C2E1F6C7FD000207B5A2E7",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/OperationHealthPanel.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "A1399D1823FF33A96BA65316D7332381CE80FF5FC2B082C9CF70644FFA5834A3",
+      "isolatedSha256": "A1399D1823FF33A96BA65316D7332381CE80FF5FC2B082C9CF70644FFA5834A3",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/RoomDriversShiftsTable.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "96729B2E2F201F74CF2BB9F3C0C0E30AE5DC38F4EF28DA3534382BA15D7FA734",
+      "isolatedSha256": "96729B2E2F201F74CF2BB9F3C0C0E30AE5DC38F4EF28DA3534382BA15D7FA734",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/roomShiftsMainSections.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "8F7AC2B27EAAFC267463186B84AA6E3E4459E08F2A349799DFB2298CA470A39A",
+      "isolatedSha256": "8F7AC2B27EAAFC267463186B84AA6E3E4459E08F2A349799DFB2298CA470A39A",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/roomShiftsOverviewSection.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "FE8862985D0739835A5C6A6295594DC5843EB2EED46E4DCF1FA3BD2889B9F8A4",
+      "isolatedSha256": "FE8862985D0739835A5C6A6295594DC5843EB2EED46E4DCF1FA3BD2889B9F8A4",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/roomShiftsPanelMobileCards.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "21191FF27F4E4B9A8760482CDA2C709AA9B3CE75EF8107DB483BF99355C5C215",
+      "isolatedSha256": "21191FF27F4E4B9A8760482CDA2C709AA9B3CE75EF8107DB483BF99355C5C215",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/roomShiftsPanelRows.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "BFC8AD9696CC99AB311D655DAD123D372026AD2FEEB17C8A492990762DEC0EFF",
+      "isolatedSha256": "BFC8AD9696CC99AB311D655DAD123D372026AD2FEEB17C8A492990762DEC0EFF",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/roomShiftsPanelUtils.js",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "42B3CD952859B63CDB4751C888E6681AE854C00028F7DAAC6E9C47A9E5432345",
+      "isolatedSha256": "42B3CD952859B63CDB4751C888E6681AE854C00028F7DAAC6E9C47A9E5432345",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/roomShiftsPanelWorkflow.js",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "5A6ECE82D943059CE03A95EEC0E08C59FB4C52065BE51DBF52E7A3C1048970A1",
+      "isolatedSha256": "5A6ECE82D943059CE03A95EEC0E08C59FB4C52065BE51DBF52E7A3C1048970A1",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/roomVehiclesPanelSections.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "F7B26A9353F580A1013F8BEE05E39725FA3CFD68E458D5868F4A12B3ABA97712",
+      "isolatedSha256": "F7B26A9353F580A1013F8BEE05E39725FA3CFD68E458D5868F4A12B3ABA97712",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/roomVehiclesPanelUtils.js",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "16F1E76BFEDA225AA0AAE233CA682B6E93AD95EA6BD38552BF775117047A0915",
+      "isolatedSha256": "16F1E76BFEDA225AA0AAE233CA682B6E93AD95EA6BD38552BF775117047A0915",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/ShiftsPanel.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "5747149A7F19E95DACBF22C999CDF46122BBDF03571CFF4683294F14A13C9BA3",
+      "isolatedSha256": "5747149A7F19E95DACBF22C999CDF46122BBDF03571CFF4683294F14A13C9BA3",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/room/VehiclesPanel.jsx",
+      "category": "ROOM_ACCEPTED_SOURCE",
+      "originalSha256": "6D470FA500401BA2C8EDD6D3B8EDF7B28653CB4CE450E9751EF46D28DC0283CA",
+      "isolatedSha256": "6D470FA500401BA2C8EDD6D3B8EDF7B28653CB4CE450E9751EF46D28DC0283CA",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/src/panels/shared/CommercialShiftCardPresentation.jsx",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "0FECEC81ACB17B5D70506AB82D7054CD80481C95C5497B58CB7A67495C9659B6",
+      "isolatedSha256": "0FECEC81ACB17B5D70506AB82D7054CD80481C95C5497B58CB7A67495C9659B6",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/panels/shared/CopilotPanel.jsx",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "DD2425D9B9CFE2FEEC39F2A1652C97B67C59B34A1B90CECC241870D3CEC8A010",
+      "isolatedSha256": "DD2425D9B9CFE2FEEC39F2A1652C97B67C59B34A1B90CECC241870D3CEC8A010",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/router.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "FB9ACAFE66212EE2CBBE05572D9C074679C94C94601094325181C2E7577D196B",
+      "isolatedSha256": "FB9ACAFE66212EE2CBBE05572D9C074679C94C94601094325181C2E7577D196B",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/utils/copilotFacts.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "062C252F124B1EC332B1C43E58C49D68690F87EB1EEF9F99B9E28DD1DAE14DDC",
+      "isolatedSha256": "062C252F124B1EC332B1C43E58C49D68690F87EB1EEF9F99B9E28DD1DAE14DDC",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/utils/copilotPanelHelpers.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "9728087C045D6A453561407D5BCFDED29DBABD34D8CAB36EF4EAB5111433322B",
+      "isolatedSha256": "9728087C045D6A453561407D5BCFDED29DBABD34D8CAB36EF4EAB5111433322B",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/utils/copilotSelection.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "36D196D67E1A3C4A8D37D131F724387D4F27C21F382F48FA163D8C9374D4CEC4",
+      "isolatedSha256": "36D196D67E1A3C4A8D37D131F724387D4F27C21F382F48FA163D8C9374D4CEC4",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "web/src/utils/uiStatus.js",
+      "category": "SHARED_ACCEPTED_DEPENDENCY",
+      "originalSha256": "FA017F0B58BA1E709F75E24B88A4A1FEBFFE4E115A677F04B93230E2DAB56BA7",
+      "isolatedSha256": "FA017F0B58BA1E709F75E24B88A4A1FEBFFE4E115A677F04B93230E2DAB56BA7",
+      "why": "Current accepted ROOM runtime source/dependency; full current content copied because hunk-level ownership is not safely separable.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "AGENTS.md",
+      "category": "REQUIRED_GOVERNANCE",
+      "originalSha256": "3F8A63EDA9BA8997AA5248083965620CE1E8622A01D7EFF37143E19991137303",
+      "isolatedSha256": "3F8A63EDA9BA8997AA5248083965620CE1E8622A01D7EFF37143E19991137303",
+      "why": "Canonical governance required by repository and owner-approved ROOM protection rule.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/AGENTS.md",
+      "category": "REQUIRED_GOVERNANCE",
+      "originalSha256": "B91FB7CF600705786863D789B0032747A1E99CDCADD9A1B45285B67F3CF29925",
+      "isolatedSha256": "B91FB7CF600705786863D789B0032747A1E99CDCADD9A1B45285B67F3CF29925",
+      "why": "Canonical governance required by repository and owner-approved ROOM protection rule.",
+      "mixedWithOtherMilestones": true
+    },
+    {
+      "path": "backend/scripts/m18_room_final_defect_corrective_regression.mjs",
+      "category": "ROOM_ACCEPTED_REGRESSION",
+      "originalSha256": "F7CFD0433BA2F2D170BAEE3A15DB7FD4E29E119F6D3798A00A795BBF9D2FF7F2",
+      "isolatedSha256": "F7CFD0433BA2F2D170BAEE3A15DB7FD4E29E119F6D3798A00A795BBF9D2FF7F2",
+      "why": "Evidence-referenced targeted regression for accepted ROOM behavior.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/scripts/m18_room_hakedis_scope_regression.mjs",
+      "category": "ROOM_ACCEPTED_REGRESSION",
+      "originalSha256": "2434C81294B64F4199A475D5677C61CA9DD7099BE9A274462FF64BAAC9DB3836",
+      "isolatedSha256": "2434C81294B64F4199A475D5677C61CA9DD7099BE9A274462FF64BAAC9DB3836",
+      "why": "Evidence-referenced targeted regression for accepted ROOM behavior.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "web/scripts/m18_room_live_transport_regression.mjs",
+      "category": "ROOM_ACCEPTED_REGRESSION",
+      "originalSha256": "C115624E8F0A3D90FC1BBF23551E9AC9240F546AB2C828836017D67604E49462",
+      "isolatedSha256": "C115624E8F0A3D90FC1BBF23551E9AC9240F546AB2C828836017D67604E49462",
+      "why": "Evidence-referenced targeted regression for accepted ROOM behavior.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "backend/scripts/m18_room_part5_cross_surface_navigation_regression.mjs",
+      "category": "ROOM_ACCEPTED_REGRESSION",
+      "originalSha256": "586480E33E1BA2B3884BAC584EC316FACE4A6654327593548C71AB15D7F90D3E",
+      "isolatedSha256": "586480E33E1BA2B3884BAC584EC316FACE4A6654327593548C71AB15D7F90D3E",
+      "why": "Evidence-referenced targeted regression for accepted ROOM behavior.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "backend/scripts/m18_room_part5_empty_result_recovery_regression.mjs",
+      "category": "ROOM_ACCEPTED_REGRESSION",
+      "originalSha256": "84605E0A70029B8D2CF9E76709BFE222254EAC9B92234258904E33FAF040B4F7",
+      "isolatedSha256": "84605E0A70029B8D2CF9E76709BFE222254EAC9B92234258904E33FAF040B4F7",
+      "why": "Evidence-referenced targeted regression for accepted ROOM behavior.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-132-cell-reconciliation-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "01F8EAF7DB600519E741350180E1FD8C9A83818B40F4495762D91A32BC7F95FB",
+      "isolatedSha256": "01F8EAF7DB600519E741350180E1FD8C9A83818B40F4495762D91A32BC7F95FB",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-checker-loop-stop-part4-acceptance-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "F4F12D84997BD7E977DF2EE8F181C0155F446C77439902181DA715B1C0D4C907",
+      "isolatedSha256": "F4F12D84997BD7E977DF2EE8F181C0155F446C77439902181DA715B1C0D4C907",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-final-acceptance-exit-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "CCD225CE93F6490A358BD14E0EC4E8C8FAB801B3561EEE8DC822E65AD1263825",
+      "isolatedSha256": "CCD225CE93F6490A358BD14E0EC4E8C8FAB801B3561EEE8DC822E65AD1263825",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-final-acceptance-owner-resolution-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "1D2C0DFB118C9A6CB8C08F4B4C56D2315C89BE87D44E44368B4A1021509CFA73",
+      "isolatedSha256": "1D2C0DFB118C9A6CB8C08F4B4C56D2315C89BE87D44E44368B4A1021509CFA73",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-final-acceptance-reconciliation-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "C1508F3257EB57EDB21EFE7C9B523777B42AB01D2FBA8D738A4F8EE90EC7F124",
+      "isolatedSha256": "C1508F3257EB57EDB21EFE7C9B523777B42AB01D2FBA8D738A4F8EE90EC7F124",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-final-functional-acceptance-manifest-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "F3BFA5F363FE2E602722E03470F0B506F2C16BFD9E22198A4C252401D02EA583",
+      "isolatedSha256": "F3BFA5F363FE2E602722E03470F0B506F2C16BFD9E22198A4C252401D02EA583",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-final-functional-scope-resolution-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "22F8C42E384FF8BEBFB7BC6B7FFC12EC6A327FC423767677271C0CB7749B9294",
+      "isolatedSha256": "22F8C42E384FF8BEBFB7BC6B7FFC12EC6A327FC423767677271C0CB7749B9294",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-final-real-user-defect-corrective-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "4998C67DF114BD877FE3167F0843E584F7E1D3FCB6071981B67BC85110A2A0DE",
+      "isolatedSha256": "4998C67DF114BD877FE3167F0843E584F7E1D3FCB6071981B67BC85110A2A0DE",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-part1-browser-recovery-checkpoint-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "B68E66F3BF8B2A070D00D99B3F8D5C221CCE5263F325A5B681B8C698F74B6803",
+      "isolatedSha256": "B68E66F3BF8B2A070D00D99B3F8D5C221CCE5263F325A5B681B8C698F74B6803",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-part2-first-23-acceptance-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "B0AB7AFDC0A31E226FF6188EE2CF86C212C431BB39DD751487274AEDBB95E8E5",
+      "isolatedSha256": "B0AB7AFDC0A31E226FF6188EE2CF86C212C431BB39DD751487274AEDBB95E8E5",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-part3-remaining-23-acceptance-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "A272D8CB5A2DF266F45D8A53C43E14A5C76FB63CD48B791A565E72421AFBF698",
+      "isolatedSha256": "A272D8CB5A2DF266F45D8A53C43E14A5C76FB63CD48B791A565E72421AFBF698",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-part4-ctx002-006-public-acceptance-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "03E290F8D9C153DBD82163E6EA9D2DC3B913ED4B39BB5DECF446C1C4EE3DDE42",
+      "isolatedSha256": "03E290F8D9C153DBD82163E6EA9D2DC3B913ED4B39BB5DECF446C1C4EE3DDE42",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-part4-product-closure-public-acceptance-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "3F42CEE4CBD148B76A569D85431505FDA046659D3883E5D70BE1AC7DCDBE12AF",
+      "isolatedSha256": "3F42CEE4CBD148B76A569D85431505FDA046659D3883E5D70BE1AC7DCDBE12AF",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-part5-empty-result-recovery-public-acceptance-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "0C0F4161A42C5C080EAA5D67B399443CA2B2071231FD42F6771BB250BF2059FF",
+      "isolatedSha256": "0C0F4161A42C5C080EAA5D67B399443CA2B2071231FD42F6771BB250BF2059FF",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-part5-mobile-functional-acceptance-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "7D790C57D95609D9EDAC16A5DA077BD20676FD4F93AA77749D5081F3108EDEEA",
+      "isolatedSha256": "7D790C57D95609D9EDAC16A5DA077BD20676FD4F93AA77749D5081F3108EDEEA",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-part5-remaining-functional-acceptance-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "A5B55C0715FE813554EB0AF1CC6908B6FF7F07E617CBE997FC76559F5F291952",
+      "isolatedSha256": "A5B55C0715FE813554EB0AF1CC6908B6FF7F07E617CBE997FC76559F5F291952",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    },
+    {
+      "path": "docs/evidence/m18-room-part5-security-empty-acceptance-20261019.json",
+      "category": "REQUIRED_ACCEPTANCE_EVIDENCE",
+      "originalSha256": "3A152C27565E67D1228E2ACB7BE0DB185A355F8163BEA649983DF4F25BB5B5D8",
+      "isolatedSha256": "3A152C27565E67D1228E2ACB7BE0DB185A355F8163BEA649983DF4F25BB5B5D8",
+      "why": "Referenced by accepted ROOM manifest/baseline/exit evidence.",
+      "mixedWithOtherMilestones": false
+    }
+  ],
+  "counts": {
+    "roomAcceptedSource": 18,
+    "sharedAcceptedDependency": 48,
+    "requiredGovernance": 2,
+    "requiredAcceptanceEvidence": 17,
+    "roomAcceptedRegression": 5
+  },
+  "excludedTrackedCount": 59,
+  "excludedTrackedPaths": [
+    "backend/artifacts/runtime-data/field-feedback-records.json",
+    "backend/artifacts/runtime-data/password-change-requirements.json",
+    "backend/artifacts/runtime-data/username-directory.json",
+    "backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js",
+    "backend/scripts/boarding_ops_01a_route_impact_preview_check.js",
+    "backend/scripts/canonical_conversation_core_01_check.js",
+    "backend/scripts/change_impact_registry_v1_check.js",
+    "backend/scripts/check_ownership_registry_v1_check.js",
+    "backend/scripts/company_budget_and_service_cost_01_check.js",
+    "backend/scripts/cop_03a_fix_02_visible_reply_chip_polish_check.js",
+    "backend/scripts/cop_04b_fix_05_live_room_selected_vehicle_route_check.js",
+    "backend/scripts/copilot_dynamic_question_engine_01_check.js",
+    "backend/scripts/copilot_operation_health_engine_01_check.js",
+    "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs",
+    "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js",
+    "backend/scripts/copilot_workflow_reasoning_engine_01_check.js",
+    "backend/scripts/cost_scenario_forecast_and_savings_01_check.js",
+    "backend/scripts/guided_7x21_and_agreement_contract_check.js",
+    "backend/scripts/hakedis_invoice_reconciliation_preview_01_check.js",
+    "backend/scripts/lib/changeImpactRegistryV1.js",
+    "backend/scripts/lib/currentHeadScopePolicy.js",
+    "backend/scripts/lib/guardGitScope.js",
+    "backend/scripts/lib/m18CopilotUiElementAnchorOwnershipManifest.json",
+    "backend/scripts/lib/milestoneOwnershipAuthority.js",
+    "backend/scripts/lib/packageOwnershipDeltaManifest.json",
+    "backend/scripts/lib/pre18LifecycleClassification.js",
+    "backend/scripts/lib/pre_18_authenticated_role_context.mjs",
+    "backend/scripts/lib/presentationProvenanceAuthority.js",
+    "backend/scripts/m46_6_c_ai_screen_help_check.js",
+    "backend/scripts/m71_8_copilot_selected_entity_resolve_check.js",
+    "backend/scripts/operational_cost_model_01_check.js",
+    "backend/scripts/operational_cost_model_01_expansion.js",
+    "backend/scripts/osrm_route_draft_from_excel_01_check.js",
+    "backend/scripts/package_ownership_delta_01_check.js",
+    "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
+    "backend/scripts/pre_18_backend_security_context_acceptance_check.mjs",
+    "backend/scripts/pre_18_operation_health_profile_precedence_acceptance_check.mjs",
+    "backend/scripts/pre_18_presentation_provenance_authority_01_check.mjs",
+    "backend/scripts/pre_18_room_authenticated_context_check.mjs",
+    "backend/scripts/pre_18_room_shifts_route_readiness_check.mjs",
+    "backend/scripts/prisma_cross_platform_client_hardening_01.mjs",
+    "backend/scripts/room_profitability_and_quote_floor_01_check.js",
+    "backend/scripts/run_repo_check_chain.js",
+    "backend/scripts/security_kvkk_final_01_check.js",
+    "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
+    "backend/scripts/sefer_abi_cost_analysis_assistant_01_check.js",
+    "backend/scripts/sefer_abi_premium_character_corrective_01_browser.mjs",
+    "backend/scripts/sefer_abi_reasoning_assistant_01_check.js",
+    "backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js",
+    "backend/scripts/ux_copilot_smart_chips_01_check.js",
+    "backend/scripts/ux_room_shifts_tabs_01_check.js",
+    "backend/scripts/ux_room_vehicles_telematics_counts_fix_check.js",
+    "docs/LOCKED_INVARIANT_VIOLATION_LEDGER_V1.json",
+    "docs/LOCKED_INVARIANT_VIOLATION_LEDGER_V1.md",
+    "docs/MILESTONE_REGISTRY_V1.md",
+    "docs/NEXT_BACKLOG_V1.md",
+    "docs/PRIMER_SSOT.md",
+    "docs/SEFER_ABI_TURKISH_USER_FACING_TERMINOLOGY_01.md",
+    "docs/STARTPACK_V1.md"
+  ],
+  "excludedUntrackedPolicy": "Untracked files were not bulk-inspected. Only manifest-referenced evidence, the accepted untracked source dependency, and evidence-referenced regressions were copied; logs, debug output, temporary files, secrets, unrelated scripts and other milestone artifacts were excluded.",
+  "publicExactSourceSha": "NOT_SERVED_BY_RUNTIME",
+  "closureStatus": "SOURCE_SNAPSHOT_REPRODUCIBILITY_VERIFIED",
+  "reproducibility": "VERIFIED: isolated backend syntax passed (263 files), frontend build passed (Vite 438 modules), Prisma client was generated locally without migration/seed/DB writes, and all 5 selected ROOM regressions passed",
+  "verification": {
+    "backendSyntax": {
+      "status": "PASS",
+      "filesChecked": 263,
+      "command": "node --check over isolated backend source/regression files"
+    },
+    "frontendBuild": {
+      "status": "PASS",
+      "command": "npm run build",
+      "tool": "Vite 7.3.1",
+      "modulesTransformed": 438
+    },
+    "prismaClientSetup": {
+      "status": "PASS",
+      "command": "npm run prisma:generate",
+      "integrityVerification": "npm run prisma:verify PASS",
+      "schemaIdentity": "B10517E6F9E8BC48C7EBC0587ACC9A5C884AAB32E80CD2F3D7D5E3F16C4221D5",
+      "clientApiIdentity": "446448705B168745D9F6CC05A4E1A0759314F03C71D701BAD48001169F774C7A",
+      "runtimeModelIdentity": "4CBFA40596EBB219FBC3687E97BD42CA1C2DF03F6D1880729EAEF45C59D49479",
+      "sideEffects": "isolated node_modules/generated client only; no migration, seed, database or business write"
+    },
+    "targetedRegressions": {
+      "status": "PASS",
+      "scripts": [
+        "backend/scripts/m18_room_final_defect_corrective_regression.mjs",
+        "backend/scripts/m18_room_part5_cross_surface_navigation_regression.mjs",
+        "backend/scripts/m18_room_part5_empty_result_recovery_regression.mjs",
+        "web/scripts/m18_room_hakedis_scope_regression.mjs",
+        "web/scripts/m18_room_live_transport_regression.mjs"
+      ],
+      "businessWrites": 0
+    }
+  },
+  "gitCommitTagPush": "NOT_AUTHORIZED_IN_THIS_SNAPSHOT_TASK"
+}

@@ -141,10 +141,16 @@ export function ShiftCardPrimaryAction({ label, onClick, disabled = false, note 
   );
 }
 
-export function ShiftCardDetails({ children }) {
+export function ShiftCardDetails({ children, dataCopilotTarget = undefined, dataCopilotSemanticId = undefined, dataCopilotLabel = undefined }) {
   return (
     <details className="shiftCardDisclosure">
-      <summary>Detayları göster</summary>
+      <summary
+        data-copilot-target={dataCopilotTarget}
+        data-copilot-semantic-id={dataCopilotSemanticId}
+        data-copilot-label={dataCopilotLabel}
+      >
+        Detayları göster
+      </summary>
       <div className="shiftCardDisclosureBody">{children}</div>
     </details>
   );

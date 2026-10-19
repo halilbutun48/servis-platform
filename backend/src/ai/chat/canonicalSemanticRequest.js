@@ -15,6 +15,7 @@ import { hasTurkishDirectionalNavigationPredicate } from './turkishNavigationEvi
 import {
   applySemanticSpecificityEvidence,
   applySemanticSpecificityResolution,
+  hasFinancialReadinessEvidence,
   resolveSemanticSpecificity,
 } from './semanticSpecificityResolver.js';
 import { applyLocalSemanticProposal } from './localSemanticProposal.js';
@@ -51,7 +52,7 @@ const ENTITY_CONCEPTS = [
   { type: "OFFER", domain: "OFFERS", terms: ["teklif", "offer", "rfq"] },
   { type: "SHIFT", domain: "SHIFTS", terms: ["vardiya", "sefer", "shift"] },
   { type: "AGREEMENT", domain: "AGREEMENTS", terms: ["sozlesme", "anlasma", "agreement", "contract", "kontrat"] },
-  { type: "VEHICLE", domain: "VEHICLES", terms: ["arac", "plaka", "vehicle"] },
+  { type: "VEHICLE", domain: "VEHICLES", terms: ["arac", "araba", "plaka", "vehicle"] },
   { type: "DRIVER", domain: "DRIVERS", terms: ["surucu", "sofor", "driver"] },
   { type: "PERSONNEL", domain: "PERSONNEL", terms: ["personel", "calisan"] },
   { type: "STUDENT", domain: "PERSONNEL", terms: ["ogrenci", "cocuk", "student"] },
@@ -93,8 +94,9 @@ export function inferRoleScopedUiTarget(text) {
   // directional UI request. Keep role-scoped target promotion bounded to
   // movement/discovery verbs and the existing structural navigation helper.
   const navigationPredicate = hasTurkishDirectionalNavigationPredicate(value)
-    || /\b(?:ac|goster|bul|nerede|neresi|kontrol|incele)\p{L}*\b/iu.test(value);
-  const navigationCue = surfaceReference && navigationPredicate;
+    || /\b(?:ac(?!ikla)|goster|bul|nerede|neresi|kontrol|incele)\p{L}*\b/iu.test(value);
+  const concreteRecordReference = /\b(?:teklif|sozlesme|sözleşme|anlasma|anlaşma|vardiya|sefer|arac|araç|surucu|sürücü|personel|bildirim|finans|hakediş|hakedis)\p{L}*\b/iu.test(value);
+  const navigationCue = (surfaceReference || concreteRecordReference) && navigationPredicate;
   if (!navigationCue) return null;
   const reference = ROLE_UI_REFERENCES.find(({ terms }) => terms.some((term) => {
     const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -148,6 +150,32 @@ export function explicitShiftReferenceFromText(value) {
   return null;
 }
 
+// A typed vehicle reference owns the turn even when the live screen carries a
+// different selected shift/vehicle.  Bare numbers remain intentionally
+// ambiguous; only an explicit vehicle noun may select a vehicle by id.
+export function explicitVehicleReferenceFromText(value) {
+  const text = normalize(value);
+  const typedBeforeNumber = text.match(/\b(?:arac|vehicle)\s*#?\s*(\d+)(?:['’]?\p{L}+)?\b/iu);
+  if (typedBeforeNumber) return { type: "VEHICLE", id: Number(typedBeforeNumber[1]), source: "EXPLICIT_QUERY" };
+  const numberBeforeTyped = text.match(/\b#?(\d+)\s+(?:numarali|numarasi|no)\s+(?:arac|vehicle)\p{L}*\b/iu);
+  if (numberBeforeTyped) return { type: "VEHICLE", id: Number(numberBeforeTyped[1]), source: "EXPLICIT_QUERY" };
+  return null;
+}
+
+// A typed reconciliation/agreement reference owns the turn even when the
+// current screen carries a different selected record. Bare numbers remain
+// unresolved until the agreement/mutabakat noun is present.
+export function explicitAgreementReferenceFromText(value) {
+  const text = normalize(value);
+  const typedBeforeNumber = text.match(/\b(?:mutabakat|reconciliation|agreement|sozlesme)\s*#?\s*(\d+)(?:['’]?\p{L}+)?\b/iu);
+  if (typedBeforeNumber) return { type: "AGREEMENT", id: Number(typedBeforeNumber[1]), source: "EXPLICIT_QUERY" };
+  const numberBeforeTyped = text.match(/\b#?(\d+)\s+(?:numarali|numarasi|no)\s+(?:mutabakat|reconciliation|agreement|sozlesme)\p{L}*\b/iu);
+  if (numberBeforeTyped) return { type: "AGREEMENT", id: Number(numberBeforeTyped[1]), source: "EXPLICIT_QUERY" };
+  const financialReviewStatus = text.match(/\b#?(\d+)\b.{0,18}\b(?:neden\s+)?inceleme\s+bek(?:liyor|lemede)\b/iu);
+  if (financialReviewStatus) return { type: "AGREEMENT", id: Number(financialReviewStatus[1]), source: "EXPLICIT_QUERY" };
+  return null;
+}
+
 // A number with a Turkish case suffix (for example, "211'e" or "211'in")
 // is not a record type by itself. It may inherit the type of the current
 // authorized selection, but on a surface without a typed selection it must
@@ -156,7 +184,9 @@ function contextualNumericRecordReferenceFromText(value, ui = {}) {
   const text = normalize(value);
   const numericCase = text.match(/\b#?(\d+)(?:['’]?(?:ye|ya|e|a|nin|nın|nun|nün|in|ın|un|ün|den|dan|ten|tan|de|da))\b/iu);
   if (!numericCase) return null;
-  if (explicitShiftReferenceFromText(text) || /\b(?:teklif|offer|rfq)\s*#?\s*\d+\b/iu.test(text)) return null;
+  if (explicitShiftReferenceFromText(text)
+    || explicitAgreementReferenceFromText(text)
+    || /\b(?:teklif|offer|rfq)\s*#?\s*\d+\b/iu.test(text)) return null;
   const recordCue = hasValueLookupCue(text)
     || hasRecordDetailsCue(text)
     || /\b(?:teklif|karsi\s+teklif|kabul\s+edilen|kabul|nihai|son\s+fiyat|ticari|fiyat|tutar|bedel|para|miktar|durum|detay|ayrinti|anlat|acikla)\p{L}*/iu.test(text);
@@ -207,6 +237,23 @@ function hasExplicitProductLevelHelpCue(value) {
   return /\b(?:seferpakt|program|uygulama|platform|sistem)\p{L}*\b/iu.test(text)
     && /\b(?:kullan\p{L}*|ogret\p{L}*|öğret\p{L}*|anlat\p{L}*|acikla\p{L}*|açıkla\p{L}*|ne\s+ise\s+yar\p{L}*|neler\s+yapabil\p{L}*)\b/iu.test(text)
     && !/\b(?:yetki|yapabil\p{L}*|sorumluluk|gorev|işlem|islem|hangi\s+is\p{L}*)\b/iu.test(text);
+}
+
+// An access-boundary question is a semantic family, not a phrase-specific
+// answer override.  On the KVKK surface it must stay grounded in the current
+// authorized visibility state instead of being downgraded to role-global help.
+function hasAccessBoundaryQuestion(value) {
+  const text = normalize(value);
+  const accessTerm = /\b(?:erisim|izin|yetki)\p{L}*\b/iu.test(text);
+  const boundaryTerm = /\b(?:kapali|kisitli|engel\p{L}*|gosterilmiyor|gorunmuyor|neden|kim|hangi)\p{L}*\b/iu.test(text);
+  return accessTerm && boundaryTerm;
+}
+
+function hasKvkkAccessBoundaryQuestion(value) {
+  const text = normalize(value);
+  const visibilityTerm = /\b(?:kvkk|gizlilik|gorunurluk|gorunur)\p{L}*\b/iu.test(text);
+  const boundaryTerm = /\b(?:kapali|kisitli|engel\p{L}*|gosterilmiyor|gorunmuyor|neden|kim|hangi)\p{L}*\b/iu.test(text);
+  return hasAccessBoundaryQuestion(text) || (visibilityTerm && boundaryTerm);
 }
 
 // Role help is a compositional semantic family, not a growing list of speech
@@ -519,7 +566,11 @@ function activeWorkflowPlan(conversationState) {
     conversationState?.lastSettledResult?.semanticPlan,
     conversationState?.authorizedProductContext?.semanticPlan,
   ];
-  return candidates.find((plan) => plan?.workflowIntent === "CREATE_SHIFT" || plan?.workflowModel?.goal === "CREATE_SHIFT") || null;
+  const supportedWorkflowIntents = new Set(["CREATE_SHIFT", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE", "OPEN_MAP_SURFACE", "OPEN_REPORTS_SURFACE"]);
+  return candidates.find((plan) => (
+    supportedWorkflowIntents.has(String(plan?.workflowIntent || "").toUpperCase())
+    || supportedWorkflowIntents.has(String(plan?.workflowModel?.goal || "").toUpperCase())
+  )) || null;
 }
 
 function hasRoomCapabilityBoundaryContinuation({ message, user, screenContext, conversationState } = {}) {
@@ -864,7 +915,7 @@ const SUBJECT_SCOPE_CONCEPTS = [
   { type: "OFFER", pattern: /(?:teklif|offer|rfq)\p{L}*/iu },
   { type: "AGREEMENT", pattern: /(?:sözleşme|sozlesme|anlaşma|anlasma|agreement|contract)\p{L}*/iu },
   { type: "SHIFT", pattern: /(?:vardiya|sefer|shift)\p{L}*/iu },
-  { type: "VEHICLE", pattern: /(?:araç|arac|plaka|vehicle)\p{L}*/iu },
+  { type: "VEHICLE", pattern: /(?:araç|arac|araba|plaka|vehicle)\p{L}*/iu },
   { type: "DRIVER", pattern: /(?:sürücü|surucu|şoför|sofor|driver)\p{L}*/iu },
   { type: "PERSONNEL", pattern: /(?:personel|çalışan|calisan|employee)\p{L}*/iu },
   { type: "STUDENT", pattern: /(?:öğrenci|ogrenci|çocuk|cocuk|student)\p{L}*/iu },
@@ -882,10 +933,11 @@ const SUBJECT_SCOPE_CONCEPTS = [
 // tenant or selected-record fallback is considered.
 const EXTERNAL_OWNER_NOUN = "(?:okul|firma|sirket|kurum|organizasyon|hesa[pb]|tenant|surucu|sofor|arac|personel|ogrenci|veli|cocuk|kisi)";
 const EXTERNAL_POSSESSIVE_OWNER_NOUN = `${EXTERNAL_OWNER_NOUN}(?:in|un|nin|nun)`;
+const EXTERNAL_DATIVE_OWNER_NOUN = "(?:okula|firmaya|sirkete|kuruma|organizasyona|hesaba|tenanta|surucuye|sofore|araca|personele|ogrenciye|veliye|cocuga|kisiye)";
 const OPTIONAL_EXTERNAL_DETERMINER = "(?:(?:bir|birer|herhangi\\s+bir)\\s+)?";
 const CURRENT_OWNER_REFERENCE = "(?:bize|bizim|bu|su|o|benim|bana|kendi|mevcut)";
 const EXTERNAL_SCOPE_MARKER = new RegExp(
-  `(?:\\b(?:baska|oteki|diger|farkli)\\s+${OPTIONAL_EXTERNAL_DETERMINER}${EXTERNAL_POSSESSIVE_OWNER_NOUN}\\b|\\b(?:harici|external|baskasinin)\\b|\\bbaskas\\p{L}*\\s+ait\\b|\\b(?:bizden|sizden)\\s+olmayan\\b|\\b${CURRENT_OWNER_REFERENCE}\\b\\s+(?:${EXTERNAL_OWNER_NOUN}\\p{L}*\\s+){0,2}(?:ait\\s+olmayan|bagli\\s+olmayan|olmayan|dis(?:indaki|inda)?|harici|otesi|otesinde)|\\b(?:bu|bizim|mevcut|kendi)\\s+(?:hesab\\p{L}*\\s+(?:dis(?:indaki|inda)?|harici|otesi|otesinde|bagli\\s+olmayan)|kapsam\\p{L}*\\s+(?:dis(?:indaki|inda)?|harici))|\\b(?:kapsam|hesap|tenant|sirket|firma|kurum)\\b\\s+(?:disi|disindaki|disinda|harici)|\\b(?:bagli|ait)\\s+olmayan)`,
+  `(?:\\b(?:baska|oteki|diger|farkli)\\s+${OPTIONAL_EXTERNAL_DETERMINER}(?:${EXTERNAL_POSSESSIVE_OWNER_NOUN}|${EXTERNAL_DATIVE_OWNER_NOUN}\\s+ait)\\b|\\b(?:harici|external|baskasinin)\\b|\\bbaskas\\p{L}*\\s+ait\\b|\\b(?:bizden|sizden)\\s+olmayan\\b|\\b${CURRENT_OWNER_REFERENCE}\\b\\s+(?:${EXTERNAL_OWNER_NOUN}\\p{L}*\\s+){0,2}(?:ait\\s+olmayan|bagli\\s+olmayan|olmayan|dis(?:indaki|inda)?|harici|otesi|otesinde)|\\b(?:bu|bizim|mevcut|kendi)\\s+(?:hesab\\p{L}*\\s+(?:dis(?:indaki|inda)?|harici|otesi|otesinde|bagli\\s+olmayan)|kapsam\\p{L}*\\s+(?:dis(?:indaki|inda)?|harici))|\\b(?:kapsam|hesap|tenant|sirket|firma|kurum)\\b\\s+(?:disi|disindaki|disinda|harici)|\\b(?:bagli|ait)\\s+olmayan)`,
   "iu",
 );
 
@@ -898,7 +950,17 @@ export function inferRequestedOwnershipScope(value) {
   const ownerType = firstScopeConcept(text, OWNER_SCOPE_CONCEPTS);
   const subjectType = firstScopeConcept(text, SUBJECT_SCOPE_CONCEPTS);
   const externalMarker = EXTERNAL_SCOPE_MARKER.test(text);
-  const explicitExternalScope = Boolean(externalMarker && (ownerType || subjectType));
+  // A named tenant followed by an ownership relation is an explicit external
+  // scope even when the user does not say “başka tenant”.  Without this
+  // canonical signal a named tenant + record request can inherit the live
+  // selection and be answered as the selected record.  Never infer a current
+  // tenant from the name; unknown named ownership is fail-closed.
+  const namedTenantReference = (() => {
+    const match = text.match(/\b([\p{L}\p{N}_-]+)\s+tenant\p{L}*\s+ait\b/iu);
+    const owner = String(match?.[1] || '').trim();
+    return Boolean(match && owner && !/^(?:benim|bizim|mevcut|kendi|bu|su|current)$/iu.test(owner));
+  })();
+  const explicitExternalScope = Boolean((externalMarker || namedTenantReference) && (ownerType || subjectType));
   const tenantOwner = new Set(["SCHOOL", "COMPANY", "ORGANIZATION", "LEGAL_ENTITY", "ACCOUNT", "TENANT"]);
   return {
     requestedOwnerScope: explicitExternalScope ? { relation: "EXTERNAL", ownerType: ownerType || null } : null,
@@ -1013,7 +1075,10 @@ function currentUiContext(screenContext, conversationState, user = null) {
       label: String(item.label || "").trim(),
       targetKey: String(item.targetKey || item.semanticKey || item.copilotTarget || "").trim(),
       semanticType: String(item.semanticType || "button").trim(),
-      identitySource: String(item.identitySource || "LEGACY_LABEL").trim().toUpperCase(),
+      identitySource: String(
+        item.identitySource
+          || (item.targetKey || item.semanticKey || item.copilotTarget || item.semanticId ? "CANONICAL" : "LEGACY_LABEL"),
+      ).trim().toUpperCase(),
       disabled: Boolean(item.disabled),
     }));
   const rawDraftAvailability = screenContext?.uiHints?.guidedDraftAvailability && typeof screenContext.uiHints.guidedDraftAvailability === 'object'
@@ -1038,6 +1103,19 @@ function currentUiContext(screenContext, conversationState, user = null) {
     }
     : null;
   return { path, label, surfaceRole, selectedId: selectedId > 0 ? selectedId : null, selectedType, selectionSource: currentSelection.source || null, selectedEntityPresent, visibleControlCount, visibleTargetLabels, visibleTargets, modalTitles, currentTarget, workflowState, guidedDraftAvailability, foregroundSurface };
+}
+
+function hasSelectedFinancialAgreementSurface(ui) {
+  if (String(ui?.selectedType || '').toUpperCase() !== 'AGREEMENT' || Number(ui?.selectedId || 0) <= 0) return false;
+  if (!/^\/room\/(?:agreements|commercial-flow)$/iu.test(String(ui?.path || ''))) return false;
+  return (Array.isArray(ui?.visibleTargetLabels) ? ui.visibleTargetLabels : []).some((label) =>
+    /(?:fark|hakediş|hakedis|fatura|mutabakat|ödeme|odeme|önizleme|onizleme)/iu.test(String(label || '')),
+  );
+}
+
+function isSelectedFinancialGuidedEntry(text, ui) {
+  return hasSelectedFinancialAgreementSurface(ui)
+    && (hasStepByStepTeachingCue(text) || hasContinuationCue(text));
 }
 
 function isExplicitOrganizationPlanReference(text) {
@@ -1101,7 +1179,7 @@ function currentTargetMatchesSelectedRecord(candidate, ui) {
 function currentScreenCapabilityTarget(text, ui) {
   if (!ui?.path || !Array.isArray(ui.visibleTargetLabels) || !ui.visibleTargetLabels.length) return false;
   const value = normalize(text);
-  const explicitControlVerb = /\b(?:nereden|nerede|nerde|nasil|ac(?!ik)\p{L}*|goster\p{L}*|kullan\p{L}*|bul\p{L}*|ulas\p{L}*|git\p{L}*|gec\p{L}*|gireyim)\b/iu.test(value);
+  const explicitControlVerb = /\b(?:nereden|nerede|nerde|nasil|ac(?!ik)\p{L}*|goster\p{L}*|kullan\p{L}*|bul\p{L}*|ulas\p{L}*|git\p{L}*|gec\p{L}*|gireyim|buyut\p{L}*|yaklastir\p{L}*|genislet\p{L}*|zoom)\b/iu.test(value);
   const explicitControlQuestion = /\bhangi\s+(?:buton|sekme|tab|kart|alan|bolum|bölüm)\p{L}*\b/iu.test(value);
   if (!explicitControlVerb && !explicitControlQuestion) return false;
   const inputTerms = value.split(/\s+/u)
@@ -1111,18 +1189,20 @@ function currentScreenCapabilityTarget(text, ui) {
     ? ui.visibleTargets
     : ui.visibleTargetLabels.map((label) => ({ label }));
   const mapEnlargementRequest = /\b(?:harita|zoom)\p{L}*\b/iu.test(value)
-    && /\b(?:buyut|yaklastir|genislet|zoom)\p{L}*\b/iu.test(value)
-    && /\b(?:adim\s+adim|nasil|goster|ac(?!ikla))\p{L}*\b/iu.test(value);
+    && /\b(?:buyut|yaklastir|yakinlastir|genislet|zoom)\p{L}*\b/iu.test(value);
   if (mapEnlargementRequest) {
     const mapTarget = candidates.find((candidate) => {
       if (!currentTargetMatchesSelectedRecord(candidate, ui)) return false;
       const label = normalize(candidate?.label);
       const semanticType = normalize(candidate?.semanticType);
-      return /\b(?:harita|zoom)\p{L}*\b/iu.test(label)
-        && (/(?:buyuk|buyut|yaklastir|genislet|zoom|isaretle|ac)\p{L}*/iu.test(label)
-          || /map[_-](?:modal[_-])?open|zoom[_-]in/iu.test(semanticType));
+      return /(?:buyuk|buyut|yaklastir|yakinlastir|yakınlastır|genislet|zoom)\p{L}*/iu.test(label)
+        || /map[_-](?:modal[_-])?open|zoom[_-]in/iu.test(semanticType)
+        || /(?:map|zoom)[_-].*(?:open|in)/iu.test(String(candidate?.targetKey || ""));
     });
-    if (mapTarget) return mapTarget;
+    // An explicit enlargement request may not fall through to a generic
+    // presentation control such as “Tümünü göster”.  If the live surface
+    // does not expose a zoom target, the truthful result is NOT_FOUND.
+    return mapTarget || null;
   }
   return candidates.find((candidate) => {
     if (!currentTargetMatchesSelectedRecord(candidate, ui)) return false;
@@ -1132,10 +1212,6 @@ function currentScreenCapabilityTarget(text, ui) {
       .filter((term) => term.length >= 4 && !SCREEN_CAPABILITY_STOP_WORDS.has(term))
       .some((term) => inputTerms.some((inputTerm) => inputTerm.startsWith(term) || term.startsWith(inputTerm)));
   }) || null;
-}
-
-function hasCurrentScreenCapabilityCue(text, ui) {
-  return Boolean(currentScreenCapabilityTarget(text, ui));
 }
 
 function hasCardinalityCue(text) {
@@ -1169,21 +1245,42 @@ function hasCardinalityCue(text) {
   const explicitCountNoun = /(?:^|[^\p{L}])(?:say(?:i|ini|isini|isi|ilar|ilari)|aded(?:i|ini)|toplam(?:i|ini|in|un|ün|u)?)(?=$|[^\p{L}])/iu.test(text)
     || hasAnyTerm(text, ["kac tane", "kac adet", "toplam kac"]);
   const countPredicate = /\b(?:var|bulunuyor|gorunuyor|mevcut|kayitli|listelen|duruyor|bekliyor|kaldi|kalmis)\p{L}*\b/iu.test(text);
-  const collectionPredicate = /\b(?:neler|hangileri|liste|listele|listesi|ozet|ozeti|envanter|bekleyen|bekliyor|inceleme)\p{L}*\b/iu.test(text);
+  const collectionPredicate = /\b(?:neler|hangileri|liste|listele|listesi|ozet|ozeti|envanter|bekleyen|bekliyor|beklemede|inceleme)\p{L}*\b/iu.test(text);
   const quantifiedSet = /(?:^|[^\p{L}])kac\s+(?:\p{L}+\s+){0,2}\p{L}+/iu.test(text) && countPredicate;
   // Collection language can be inflected or possessive (for example
   // "anlaşmaların özeti"). Requiring a bare plural suffix here allowed the
   // canonical transport shape to fall back to FIELD_LOOKUP even though the
   // request clearly asks for an authorized collection summary.
   const collectionSet = explicitEntityTarget && collectionPredicate;
-  const singlePendingExistence = /\b(?:var|bulunuyor|gorunuyor|bekliyor)\b/iu.test(text)
-    && /\b(?:bekleyen|bekliyor|inceleme)\p{L}*\b/iu.test(text)
+  const singlePendingExistence = /\b(?:var|bulunuyor|gorunuyor|bekliyor|beklemede)\b/iu.test(text)
+    && /\b(?:bekleyen|bekliyor|beklemede|inceleme)\p{L}*\b/iu.test(text)
     && explicitEntityTarget;
   return (explicitCountNoun && (hasPluralEntityTarget || !/\btoplam(?:i|ini|in|un|ün|u)\b/iu.test(text)))
     || (typedCountVerb && explicitEntityTarget)
     || quantifiedSet
     || collectionSet
     || singlePendingExistence;
+}
+
+function hasOfferCollectionSummaryRequest(text) {
+  const normalized = normalize(text);
+  const offerMention = /\b(?:teklif|offer|rfq)\p{L}*\b/iu.test(normalized);
+  const collectionCue = /\b(?:neler|hangileri|liste|listele|listesi|ozet|ozeti|envanter)\p{L}*\b/iu.test(normalized);
+  const pluralStatusCue = /\b(?:durum(?:u|unu|lari|larini|leri|lerini)?|sirala|siralar|sir[ae]layalim|siralar\s+misin)\b/iu.test(normalized)
+    && /\b(?:teklif|offer|rfq)\p{L}*(?:ler|ları|leri)\b/iu.test(normalized);
+  return offerMention && (collectionCue || pluralStatusCue);
+}
+
+// A status-qualified plural collection request remains a collection query
+// even when the same sentence asks where the collection is visible.  The
+// selected record carried by the current screen is only shell context; it
+// must not turn "beklemede olan vardiyaları ..." into a selected-record
+// explanation.
+function hasTemporalCollectionCue(text) {
+  const value = normalize(text);
+  const status = /\b(?:bekleyen|bekliyor|beklemede|inceleme)\p{L}*\b/iu.test(value);
+  const pluralEntity = /\b(?:vardiya|sefer|teklif|sozlesme|anlasma|kayit|talep)(?:\p{L})*?(?:lar|ler)\p{L}*\b/iu.test(value);
+  return status && pluralEntity;
 }
 
 // Turkish arithmetic is expressed with both symbols and ordinary language.
@@ -1329,21 +1426,43 @@ function hasRiskCue(text) {
   return /(?:risk|tehlike)\p{L}*/iu.test(text);
 }
 
-function hasCostAnalysisCue(text, conversationState = null) {
+function hasCostAnalysisCue(text, conversationState = null, ui = null) {
   const value = normalize(text);
-  return hasQuoteFloorAnalysisCue(value, conversationState)
-    || /\b(?:maliyet|butce|gider|karlilik|gelir|finans|fatura|hakediş|hakedis|tahsilat|odeme|ödeme)\p{L}*\b.{0,24}\b(?:ne|nedir|neden|nasil|nasıl|art|azal|degis|değiş|hesap|etki|fark|karsilastir|karşılaştır|kayna\p{L}*|dayanak\p{L}*|acikla\p{L}*|anlat\p{L}*|geliyor\p{L}*)\b/iu.test(value)
-    || /\b(?:ne|nedir|neden|nasil|nasıl|hesap|etki|fark|kayna\p{L}*|dayanak\p{L}*|acikla\p{L}*|anlat\p{L}*|geliyor\p{L}*)\b.{0,24}\b(?:maliyet|butce|gider|karlilik|gelir|finans|fatura|hakediş|hakedis|tahsilat|odeme|ödeme)\p{L}*\b/iu.test(value);
+  return hasQuoteFloorAnalysisCue(value, conversationState, ui)
+    || /\b(?:maliyet|butce|gider|karlilik|gelir|finans|fatura|hakediş|hakedis|tahsilat|odeme|ödeme)\p{L}*\b.{0,32}\b(?:ne|nedir|neden|nasil|nasıl|art|azal|degis|değiş|hesap|etki|fark|karsilastir|karşılaştır|kayna\p{L}*|dayanak\p{L}*|acikla\p{L}*|anlat\p{L}*|geliyor\p{L}*|hazır|hazir|eksik|aşama|asama|hangi|durum|var)\b/iu.test(value)
+    || /\b(?:ne|nedir|neden|nasil|nasıl|hesap|etki|fark|kayna\p{L}*|dayanak\p{L}*|acikla\p{L}*|anlat\p{L}*|geliyor\p{L}*|hazır|hazir|eksik|aşama|asama|hangi|durum|var)\b.{0,32}\b(?:maliyet|butce|gider|karlilik|gelir|finans|fatura|hakediş|hakedis|tahsilat|odeme|ödeme)\p{L}*\b/iu.test(value);
 }
 
 // A quote-floor request is a computed financial preview, not a scalar field
 // on an arbitrary offer record. Keep the evidence compositional: a canonical
 // floor concept plus a question/calculation operator is required before the
 // risk/cost route can outrank generic commercial field lookup.
-function hasQuoteFloorContextualFollowUpCue(text, conversationState = null) {
+// A visible financial screen can be asked about its own risks using natural
+// attention grammar (for example "hangi risklere dikkat etmeliyim"). Keep
+// that request with the current FINANCE owner when no record is selected;
+// otherwise the generic NEXT_ACTION/deictic path can erase the screen scope.
+function hasFinancialScreenRiskCue(text) {
   const value = normalize(text);
-  const deicticCalculation = /^(?:bu|bunun|bu\s+(?:tutar|deger|sonuc))\b.*\b(?:nasil|hesap|detay|ayrinti|neden|acikla|anlat)\p{L}*\b/iu.test(value);
+  const financialContext = /\b(?:finans|mali|odeme|hakedis|fatura|karlilik|maliyet|butce)\p{L}*\b/iu.test(value);
+  const riskCue = /\b(?:risk|tehlike)\p{L}*\b/iu.test(value);
+  const attentionCue = /\b(?:dikkat|kontrol|izle|bak)\p{L}*\b/iu.test(value);
+  const questionCue = /\b(?:hangi|ne|nelere|neyi)\b/iu.test(value);
+  return financialContext && riskCue && (attentionCue || questionCue);
+}
+
+function hasQuoteFloorContextualFollowUpCue(text, conversationState = null, ui = null) {
+  const value = normalize(text);
+  const deicticCalculation = /^(?:bu|bunun|bu\s+(?:tutar|deger|sonuc|rakam|bedel|miktar|para)\p{L}*)\b.*\b(?:nasil|hesap|detay|ayrinti|neden|acikla|anlat)\p{L}*\b/iu.test(value);
   if (!deicticCalculation) return false;
+  const currentSurfaceText = [ui?.path, ui?.label, ui?.foregroundSurface?.key]
+    .filter(Boolean)
+    .join(" ");
+  const hasLiveSurface = Boolean(currentSurfaceText);
+  const currentSurfaceIsFinancial = /(?:financial-operations|teklif\s+ve\s+k[âa]rl[ıi]l[ıi]k|maliyet\s+ve\s+teklif)/iu.test(currentSurfaceText);
+  // Historical financial turns cannot override a live non-financial surface.
+  // The current authorized surface owns a deictic request unless it is itself
+  // the financial surface that established the quote-floor context.
+  if (hasLiveSurface && !currentSurfaceIsFinancial) return false;
   const previousRequest = conversationState?.lastSettledResult?.semanticPlan?.canonicalRequest
     || conversationState?.productContext?.semanticPlan?.canonicalRequest
     || conversationState?.lastSemanticPlan?.canonicalRequest
@@ -1354,11 +1473,34 @@ function hasQuoteFloorContextualFollowUpCue(text, conversationState = null) {
   return previousRequestHasQuoteFloor || recentQuoteFloor;
 }
 
-function hasQuoteFloorAnalysisCue(text, conversationState = null) {
+function hasUnresolvedQuoteFloorDeicticCue(text, conversationState = null, ui = null) {
+  const value = normalize(text);
+  const deicticCalculation = /^(?:bu|bunun|bu\s+(?:tutar|deger|sonuc|rakam|bedel|miktar|para)\p{L}*)\b.*\b(?:nasil|hesap|detay|ayrinti|neden|acikla|anlat)\p{L}*\b/iu.test(value);
+  if (!deicticCalculation) return false;
+  const currentSurfaceText = [ui?.path, ui?.label, ui?.foregroundSurface?.key]
+    .filter(Boolean)
+    .join(" ");
+  const currentSurfaceIsFinancial = /(?:financial-operations|teklif\s+ve\s+k[âa]rl[ıi]l[ıi]k|maliyet\s+ve\s+teklif)/iu.test(currentSurfaceText);
+  const hasLiveSelectedRecord = Boolean(
+    (ui?.selectedEntityType && ui?.selectedEntityId)
+      || (ui?.selectedRecordType && ui?.selectedRecordId)
+      || ui?.selectedEntity?.id,
+  );
+  // Quote-floor deictic protection is a financial-surface contract.  A
+  // selected agreement/offer/shift question such as “bu sözleşmenin
+  // detaylarını anlat” must remain record-scoped and must not be rewritten
+  // as financial clarification merely because it starts with “bu”.
+  // Without a live financial surface or selected record, the same deictic
+  // amount has no authorized referent and must remain fail-closed.
+  if (currentSurfaceText && !currentSurfaceIsFinancial && hasLiveSelectedRecord) return false;
+  return deicticCalculation && !hasQuoteFloorContextualFollowUpCue(value, conversationState, ui);
+}
+
+function hasQuoteFloorAnalysisCue(text, conversationState = null, ui = null) {
   const value = normalize(text);
   const floorConcept = /\b(?:teklif\s+taban\p{L}*|guvenli\s+taban\p{L}*|minimum\s+fiyat\p{L}*|quote\s+floor)\b/iu.test(value);
   const calculationQuestion = /\b(?:ne|nedir|toplam|toplami|kisi\s+basi|hesap|hesapla|hesaplandi|deger|degeri|oneri|onerilen|detay|ayrinti|ac|goster|gosterir|karsilastir|karşılaştır|marj|kar)\p{L}*\b/iu.test(value);
-  return (floorConcept && calculationQuestion) || hasQuoteFloorContextualFollowUpCue(value, conversationState);
+  return (floorConcept && calculationQuestion) || hasQuoteFloorContextualFollowUpCue(value, conversationState, ui);
 }
 
 function hasKnownTermDefinitionCue(text) {
@@ -1391,18 +1533,25 @@ function operationHealthMetricMode(text, ui = {}) {
     || (/\/room\/operation-health\b/iu.test(String(ui?.path || '')) && !/\/(?:school|organization)\//iu.test(String(ui?.path || '')));
   if (!roomSurface || !/\/room\/operation-health\b/iu.test(String(ui?.path || ''))) return '';
   const value = normalize(text);
-  const questionCue = /\b(?:ne|neden|hangi|hangileri|ayni|mi|goster|anlam|say|gör|gor|görünüyor|gorunuyor)\p{L}*\b/iu.test(value);
+  const questionCue = /\b(?:ne|neden|hangi|hangileri|ayni|mi|goster|ac|incele|anlam|say|gör|gor|görünüyor|gorunuyor)\p{L}*\b/iu.test(value);
   const metricCue = /\b(?:sayi|sayac|ozet|detay|gunluk|toplam|sifir|rakam|deger|degerleri|iki|uc)\p{L}*\b/iu.test(value);
   const issueCue = /\b(?:sorun|problem|aksaklik|ariza|uyari|operasyon|gps|konum|canlilik|surucu|arac)\p{L}*\b/iu.test(value);
   const projectionCue = /\b(?:ozet|detay|gunluk|rapor|sayi|sayac|toplam|sifir|iki|uc)\p{L}*\b/iu.test(value);
+  const metricTargetCue = /\b(?:satir|kart|bolum|sekme|tab)\p{L}*\b/iu.test(value);
   const gpsSubsetCue = /\b(?:gps|konum|canlilik|eski|guncels+degil|cevrims+disi|offline)\p{L}*\b/iu.test(value)
-    && /\b(?:sorun|surucu|arac|say|hang|ayni)\p{L}*\b/iu.test(value);
+    && (/\b(?:sorun|surucu|arac|say|hang|ayni)\p{L}*\b/iu.test(value) || metricTargetCue);
+  const deviceRiskCue = (
+    /\b(?:riskli\s+cihaz|riskli\s+cihazlar)\p{L}*\b/iu.test(value)
+    || (/\b(?:cihaz|ekipman|donanim|donanım)\p{L}*\b/iu.test(value)
+      && /\brisk\p{L}*\b/iu.test(value))
+  ) && questionCue;
   const agreementClassificationCue = /\b(?:sozlesme|anlasma|inceleme|bekleyen)\p{L}*\b/iu.test(value)
     && /\b(?:operasyon|ariza|sorun|problem|say)\p{L}*\b/iu.test(value);
   const metricDefinitionCue = /\b(?:sayac|sayi|ozet|detay|rakam|deger)\p{L}*\b/iu.test(value)
     && questionCue;
-  if (projectionCue && questionCue && (metricCue || /\b(?:ayni|neden)\b/iu.test(value))) return 'PROJECTION_CONTRACT';
   if (gpsSubsetCue && questionCue) return 'GPS_ISSUE_SUBSET';
+  if (deviceRiskCue) return 'METRIC_DEFINITION';
+  if (projectionCue && questionCue && (metricCue || /\b(?:ayni|neden)\b/iu.test(value))) return 'PROJECTION_CONTRACT';
   if (agreementClassificationCue && questionCue) return 'OPERATIONAL_CLASSIFICATION';
   if (metricDefinitionCue) return 'METRIC_DEFINITION';
   if (issueCue && /\b(?:hang|hangi|neden|say)\p{L}*\b/iu.test(value)) return 'ISSUE_METRIC_SCOPE';
@@ -1410,15 +1559,43 @@ function operationHealthMetricMode(text, ui = {}) {
 }
 
 function hasIssueDiagnosticCue(text) {
-  const disruption = /(?:sorun|problem|sikinti|aksak|aksayan|ters(?:\s+giden|\s+gidiyor)?|ariza)\p{L}*/iu.test(text);
+  const value = normalize(text);
+  const disruption = /(?:sorun|problem|sikinti|aksak|aksayan|ters(?:\s+giden|\s+gidiyor)?|ariza)\p{L}*/iu.test(value)
+    // A stale GPS/position value is itself the reported operational
+    // disruption. Keep this bounded to the telematics vocabulary so generic
+    // "neden güncel değil" questions do not become diagnostics.
+    || (/(?:gps|konum|arac|takip)\p{L}*/iu.test(value)
+      && /(?:guncel\s+degil|guncel\s+olmayan|eski|cevrim\s+disi|offline|calismiyor|calismayan)\p{L}*/iu.test(value));
   if (!disruption) return false;
-  const diagnosticOperation = /\b(?:hangi\p{L}*|hangisi\p{L}*|ne\p{L}*|nerede\p{L}*|var\s+mi|gor(?:uyor|uyor\s+musun)|sirala\p{L}*|listele\p{L}*|olustur\p{L}*|cikar\p{L}*|asil|gercekten|ayir\p{L}*)\b/iu.test(text);
+  const diagnosticOperation = /\b(?:hangi\p{L}*|hangisi\p{L}*|ne\p{L}*|nerede\p{L}*|neden\p{L}*|var\s+mi|gor(?:uyor|uyor\s+musun)|sirala\p{L}*|listele\p{L}*|anlat\p{L}*|acikla\p{L}*|teshis\p{L}*|incele\p{L}*|degerlendir\p{L}*|kontrol\p{L}*|baslik\p{L}*|olustur\p{L}*|cikar\p{L}*|asil|gercekten|ayir\p{L}*)\b/iu.test(value);
   if (!diagnosticOperation) return false;
   // A named record's status remains a field lookup unless the user is asking
   // the diagnostic question itself (for example, "hangi durum sorun?").
   const explicitRecordStatus = /(?:teklif|vardiya|sefer|arac|sozlesme|kayit)\p{L}*.{0,24}(?:durum|statu|status)\p{L}*/iu.test(text)
     && !/(?:hangi\s+durum.*(?:sorun|problem)|(?:sorun|problem).*hangi\s+durum)/iu.test(text);
   return !explicitRecordStatus;
+}
+
+// Issue verbs such as "incele" are also used by the surface-navigation
+// grammar. When they are attached to a concrete GPS/problem subject without
+// naming a screen or tab, the issue itself is the object of the request; do
+// not let the generic vehicle-surface target win first.
+function hasCanonicalIssueDiagnosticRequest(text) {
+  const value = normalize(text);
+  const navigationWithoutInspection = hasTurkishDirectionalNavigationPredicate(value)
+    || /\b(?:nerede|nerde|ac(?!ik)\p{L}*|goster\p{L}*)\b/iu.test(value);
+  return hasIssueDiagnosticCue(value)
+    && !hasScreenSurfaceCue(value)
+    && !navigationWithoutInspection;
+}
+
+function hasOperationHealthIssueViewCue(text, screenContext = null) {
+  if (!/\/room\/operation-health\b/iu.test(String(screenContext?.path || ''))) return false;
+  const value = normalize(text);
+  const issue = /(?:sorun|problem|sikinti|aksak|aksayan|ters(?:\s+giden|\s+gidiyor)?|ariza|gps|konum|canlilik|cevrim\s+disi|offline|eski)\p{L}*/iu.test(value);
+  const view = /\b(?:goster|ac(?!ik)\p{L}*|incele(?!me)\p{L}*)\b/iu.test(value);
+  const explicitNavigation = /\b(?:sekme|tab|ekran|sayfa|panel|merkez|menu|git|gotur|gec)\p{L}*\b/iu.test(value);
+  return issue && view && !explicitNavigation;
 }
 
 function hasDateRangeCue(text) {
@@ -1448,13 +1625,23 @@ function hasExplicitSurfaceNavigationVerb(text) {
 // An agreement's operation bridge is a selected-record surface, not the
 // generic Operations Center. Keep this as a composed semantic relation:
 // agreement + operational process + a safe view/navigation request.
-function hasAgreementOperationBridgeCue(text) {
+function hasAgreementOperationBridgeCue(text, uiContext = null) {
   const value = normalize(text);
-  const agreement = /\b(?:sozlesme|anlasma|agreement|contract|kontrat)\p{L}*\b/iu.test(value);
+  const agreement = /\b(?:sozlesme|anlasma|agreement|contract|kontrat)\p{L}*\b/iu.test(value)
+    || /\boperasyon\s+kopru(?:su|sunun|sunu)?\b/iu.test(value);
   const process = /\b(?:operasyon|vardiya|sefer|kopru|baglant|ilisk|uretilen)\p{L}*\b/iu.test(value);
   const view = hasExplicitSurfaceNavigationVerb(value)
     || /\b(?:var\s+mi|nereden|hangi\s+ekran|ilgili\s+ekran)\b/iu.test(value);
-  return agreement && process && view;
+  // A selected agreement is a valid deictic subject for phrases such as
+  // “Bunun operasyon köprüsünü göster”. Keep the bridge intent bound to the
+  // live selected-record envelope; without that envelope the same wording
+  // must not invent an agreement target or fall back across tenants.
+  const selectedAgreement = String(uiContext?.selectedType || '').toUpperCase() === 'AGREEMENT'
+    && Number(uiContext?.selectedId || 0) > 0;
+  const deicticBridge = selectedAgreement
+    && process
+    && view;
+  return (agreement && process && view) || deicticBridge;
 }
 
 // A short Turkish verb stem must not be allowed to consume a longer noun or
@@ -1491,12 +1678,56 @@ function hasExplicitCurrentScreenPurposeCue(text) {
   // structural so Turkish inflection and word order stay in one semantic
   // class without adding a literal question rule.
   const operationInventory = /(?:\b(?:hangi|ne|neler)\s+(?:\p{L}+\s+){0,4}(?:yap|sun|gerceklestir|kullan|yurut)\p{L}*\b|\b(?:yap|sun|gerceklestir|kullan|yurut)\p{L}*(?:\s+\p{L}+){0,4}\s+\b(?:ne|neler|hangi)\b)/iu;
+  const roleCapabilityScope = /\b(?:bu|su|şu)\s+rol(?:de|deki|un|ün|u|ü|ler(?:de|deki)?)\b/iu.test(value);
+  const currentScreenOperationInventory = operationInventory.test(value) && !roleCapabilityScope;
   const screenDeictic = hasScreenDeicticCue(value);
+  const screenUsage = /(?:^|\b)(?:bu|şu|su)\s+(?:ekran|sayfa|panel)\p{L}*\s+(?:(?:nasıl|nasil)\s+(?:kullan|ilerle|başla|basla)\p{L}*|nereden\s+(?:başla|basla)\p{L}*)\b/iu.test(value);
   const deicticWorkArea = /\b(?:nasıl|nasil)\s+(?:çalış|calis)\p{L}*\s+(?:bu|şu|su)\b/iu.test(value)
     || /\b(?:bu|şu|su)\s+(?:nasıl|nasil)\s+(?:çalış|calis)\p{L}*\b/iu.test(value);
-  return (surface.test(value) && (explain.test(value) || operationInventory.test(value)))
-    || (screenDeictic && operationInventory.test(value))
-    || deicticWorkArea;
+  const currentScreenFocus = /\b(?:neye|nelere|nerelere)\s+bak(?:mam|mal[ıi]y[ıi]m|ay[ıi]m)\b/iu.test(value)
+    || /(?:^|\s)(?:ilk|önce|once|şimdi|simdi)\s+(?:olarak\s+)?neyi\s+kontrol\s+(?:et|ed)(?:meliyim|meliyiz|eyim|elim|eyelim|sem)\b/iu.test(value)
+    || /\bhangi\s+\p{L}+(?:\s+\p{L}+){0,3}\s+(?:önce|once|ilk)\s+(?:incele|bak|kontrol)\p{L}*\b/iu.test(value);
+  return (surface.test(value) && (explain.test(value) || currentScreenOperationInventory || currentScreenFocus || screenUsage))
+    || (screenDeictic && currentScreenOperationInventory)
+    || deicticWorkArea
+    || (hasScreenDeicticCue(value) && currentScreenFocus);
+}
+
+// These are situated help requests even when the user omits the literal
+// screen/page/panel noun. The caller still requires an authorized live path;
+// this helper only supplies the speech-act evidence for that surface.
+function hasSituatedCurrentSurfaceGuidanceCue(text) {
+  const value = normalize(text);
+  return hasExplicitCurrentScreenPurposeCue(value)
+    || /\b(?:neye|nelere|nerelere)\s+bak(?:mam|mal[ıi]y[ıi]m|ay[ıi]m)\b/iu.test(value)
+    || /\b(?:bana\s+)?yard[ıi]m\s+et\b/iu.test(value)
+    || /\b(?:program|uygulama|platform|sistem)\p{L}*\s+kullanmay[ıi]\s+bana\s+(?:öğret|ogret)\p{L}*\b/iu.test(value)
+    || /\b(?:burada|burda)\s+(?:ne\s+yapabilirim|nereden\s+baslamal[ıi]y[ıi]m|sorun|problem|dikkat)\b/iu.test(value)
+    || /\bne\s+yapmam\s+gerekiyor\b/iu.test(value)
+    || /\b(?:bana\s+)?ad[ıi]m\s+ad[ıi]m\s+(?:göster|goster|anlat|açıkla|acikla)\b/iu.test(value);
+}
+
+// A situated “neden gerekli/önemli?” question is a purpose question about
+// the currently authorized surface when no record or role is named. Keep it
+// compositional so the live screen supplies the subject instead of routing
+// the user into role-global help.
+function hasCurrentSurfaceWhyCue(text) {
+  const value = normalize(text);
+  return /\b(?:neden|niye|nicin)\s+(?:gerekli|onemli|kullanil(?:ir|iyor)|var)\b/iu.test(value);
+}
+
+// A user may name the current surface and ask where to start without using a
+// literal "screen/page/panel" noun (for example, "Finansal operasyonlarda
+// önce neye bakılır?"). With an authorized live route and no record target,
+// this is still current-surface guidance. Keep the grammar compositional so
+// the active surface supplies the context instead of adding phrase-specific
+// answers.
+function hasCurrentSurfaceFocusCue(text, ui) {
+  if (!ui?.path) return false;
+  const value = normalize(text);
+  const focusQuestion = /\b(?:once|önce|ilk|simdi|şimdi|sirada|sırada|oncelikle|öncelikle)\s+(?:olarak\s+)?(?:neyi|neye|nelere|hangi\s+\p{L}+)?\s*(?:bak|kontrol|incele|degerlendir|değerlendir|gozden\s+gecir|gözden\s+geçir)\p{L}*\b/iu.test(value)
+    || /\b(?:neyi|neye|nelere)\s+(?:bak|kontrol|incele|degerlendir|değerlendir|gozden\s+gecir|gözden\s+geçir)\p{L}*\b/iu.test(value);
+  return focusQuestion && !hasCardinalityCue(value) && !hasSelectedRecordIdentityCue(value, ui);
 }
 
 function hasNamedSurfaceExplanationCue(text) {
@@ -1538,16 +1769,15 @@ function hasDirectCurrentScreenExplanationCue(text) {
 }
 
 function hasStepByStepTeachingCue(text) {
-  return /\b(?:adım\s+adım|adim\s+adim)\s+(?:anlat|açıkla|acikla|göster|goster)\p{L}*\b/iu.test(String(text || ""));
+  return /\b(?:adım\s+adım|adim\s+adim|aşama\s+aşama|asama\s+asama)\s+(?:anlat|açıkla|acikla|göster|goster|incele|inceleyelim|bak|bakalım|bakalim)\p{L}*\b/iu.test(String(text || ""));
 }
 
 function hasTeachFromZeroCue(text) {
   return /\b(?:buray(?:ı|i)|burada|burda|bu\s+ekran(?:ı|i)|bu\s+sayfa(?:yı|yi)|bunu)\b.{0,42}\b(?:hiç\s+bilmi(?:yorum|yoruz)|bilmiyor(?:um|uz)|tanımıyor(?:um|uz)|kullanmad(?:ım|im)|öğret(?:ir|in)?|ogret(?:ir|in)?|anlat(?:ır|ın)?|basindan\s+anlat|başından\s+anlat)\b/iu.test(text)
     || /\b(?:baştan|başından|bastan|basindan)\s+anlat\b/iu.test(text)
-    // Step-by-step teaching is a workflow explanation when a live guided
-    // task exists.  Keep it as a morphology/structure family so colloquial
-    // variants remain governed by the same active-task precedence.
-    || hasStepByStepTeachingCue(text);
+    // Step-by-step teaching is resolved separately when a live/persisted
+    // workflow exists.  Without that grounding, the phrase alone must not
+    // turn an analytical request into current-screen help.
 }
 
 function hasScreenContextCue(text) {
@@ -1663,10 +1893,13 @@ function hasSelectedRecordReference(text) {
   return new RegExp(`\\b(?:bu|su|secil(?:i|en)?|aktif|baktigim|acik)\\s+${recordNoun}\\b`, "iu").test(text);
 }
 
-function hasSelectedRecordActionReference(text) {
+function hasSelectedRecordActionReference(text, ui = {}) {
   // Generic prioritisation such as "ilk iş ne" belongs to the current screen.
   // A selected record is a target only when the user actually points at it.
-  return /(?:bu|su|secili|baktigim|acik)\s+(?:kayit|kart|teklif|vardiya|sefer|arac|sozlesme)\p{L}*.{0,28}(?:ne\s+yap|once|ilk|bak|incele|coz|hallet|oncelik|adim)/iu.test(text);
+  const directDeicticShow = Boolean(ui?.selectedId && ui?.selectedType)
+    && /^(?:bu|bunu|su|sunu|onu)\s+(?:goster|göster|ac|aç|incele|bak)\p{L}*\s*[.!?]?$/iu.test(String(text || "").trim());
+  return directDeicticShow
+    || /(?:bu|su|secili|baktigim|acik)\s+(?:kayit|kart|teklif|vardiya|sefer|arac|sozlesme)\p{L}*.{0,28}(?:ne\s+yap|once|ilk|bak|incele|coz|hallet|oncelik|adim)/iu.test(text);
 }
 
 function hasSelectedTypedPossessiveReference(text, ui = {}) {
@@ -1813,6 +2046,12 @@ function hasSelectedRecordIdentityCue(text, ui = {}) {
   // well as in inferTask so scope derivation cannot reintroduce stale record
   // authority after the semantic task has been classified as SCREEN_CONTEXT.
   if (hasScreenDeicticCue(text) && /(?:ne\s+ise\s+yar\p{L}*|ne\s+icin|nasil\s+calis\p{L}*|burada\s+ne\s+yap\p{L}*|burda\s+ne\s+yap\p{L}*)/iu.test(text)) return false;
+  // A broad product frame such as “bu platformda hangi işlerden
+  // sorumluyum?” is role/global help. The selected card is only context;
+  // it must not become a record identity without a record/relation cue.
+  if (hasExplicitProductLevelHelpCue(text)
+    && !hasSelectedRecordCue(text)
+    && !hasExplicitRelationCue(text)) return false;
   // An explicit field question about the selected record (status, date,
   // amount, time, etc.) is not an identity request merely because Turkish
   // also uses a deictic and the question word "ne".  Field semantics must
@@ -1978,7 +2217,10 @@ export function isGeneralCreativeOutputVocabularyRequest(value, ui = {}) {
   // Turkish softens the final k in inflected "sözcük" forms
   // ("sözcüğüyle" → "sozcuguyle" after normalization), so keep the stem
   // family morphological rather than treating only one surface spelling.
-  const vocabularyFraming = /\b(?:kelime|sozcuk|sozcug|soz)\p{L}*\b/iu.test(text);
+  // Do not treat the lexical stem in "sözleşmeden" as the standalone
+  // vocabulary marker "söz".  Contract-to-shift requests are product
+  // relations, not creative-output requests.
+  const vocabularyFraming = /\b(?:kelime|sozcuk|sozcug|soz(?!lesme\p{L}*))\p{L}*\b/iu.test(text);
   const vocabularyOutput = vocabularyFraming && /\b(?:yaz|olustur|hazirla|uret|uydur|kur)\p{L}*\b/iu.test(text);
   const containedVocabularyOutput = /\b(?:icinde|icer(?:en|ip))\s+.+?\s+(?:gecen|bulunan|yer\s+alan|iceren)\s+.+?\b(?:yaz|olustur|hazirla|uret|uydur|kur)\p{L}*\b/iu.test(text);
   // Vocabulary framing is a speech act: the user asks for new prose which
@@ -2048,6 +2290,23 @@ function hasRecordDetailsCue(text) {
     ]);
 }
 
+function hasSelectedRecordExplanationCue(text, ui = {}) {
+  if (!(ui.selectedId && ui.selectedType)) return false;
+  const selectedTypeTerms = {
+    AGREEMENT: "(?:sozlesme|anlasma)",
+    OFFER: "(?:teklif|offer)",
+    SHIFT: "(?:vardiya|sefer|shift)",
+    VEHICLE: "(?:arac|vehicle)",
+    DRIVER: "(?:surucu|sofor|driver)",
+  }[String(ui.selectedType || "").toUpperCase()];
+  const namedSelectedRecord = selectedTypeTerms
+    ? new RegExp(`\\b(?:bu|su|şu)\\s+${selectedTypeTerms}\\p{L}*\\b`, "iu").test(text)
+    : false;
+  if (!hasSelectedRecordCue(text) && !hasSelectedRecordIdentityCue(text, ui) && !namedSelectedRecord) return false;
+  if (hasDirectFieldLookupCue(text) || hasCardinalityCue(text) || hasExplicitRelationCue(text)) return false;
+  return /\b(?:anlat|acikla|ozetle|bilgi\s+ver|bakabilir\s+m[ıi]y[ıi]z|incele)\p{L}*\b/iu.test(text);
+}
+
 function hasDirectFieldLookupCue(text) {
   const decisionProcessLanguage = /\bkarar\p{L}*\s+(?:ver|al)\p{L}*\b/iu.test(text);
   // A state question is a STATUS lookup even when it does not repeat the
@@ -2077,6 +2336,27 @@ function hasCurrentAssignmentCue(text) {
     "bagli arac", "hangi araca bagli", "aracim hangisi", "aktif aracim", "mevcut aracim", "plakam", "servis aracim",
     "rotam", "duraklarim", "simdi hangi arac", "bugun hangi arac",
   ]);
+}
+
+// A selected vehicle/driver relationship request is a traversal task, even
+// when the user phrases it as an assignment or connection status question.
+// Keep this at the canonical task boundary so screen-help and field fallback
+// cannot replace the requested relation before authorization/execution.
+function selectedRelationshipTraversalTarget(text, ui = {}) {
+  const selectedType = String(ui?.selectedType || "").toUpperCase();
+  if (!ui?.selectedId || !selectedType) return null;
+  const relationCue = /\b(?:bagl\p{L}*|ilisk\p{L}*|atam\p{L}*|atanan\p{L}*|vardiya\p{L}*|sefer\p{L}*|shift\p{L}*|arac\p{L}*|vehicle|surucu\p{L}*|sofor\p{L}*)\b/iu.test(text);
+  if (!relationCue) return null;
+  if (selectedType === "VEHICLE" && /\b(?:vardiya\p{L}*|sefer\p{L}*|shift|atam\p{L}*|baglanti\p{L}*)\b/iu.test(text)) return "SHIFT";
+  if (selectedType === "DRIVER") {
+    if (/\b(?:arac\p{L}*|vehicle|plaka\p{L}*)\b/iu.test(text)) return "VEHICLE";
+    if (/\b(?:vardiya\p{L}*|sefer\p{L}*|shift|atam\p{L}*|baglanti\p{L}*)\b/iu.test(text)) return "SHIFT";
+  }
+  if (selectedType === "SHIFT") {
+    if (/\b(?:arac\p{L}*|vehicle|plaka\p{L}*)\b/iu.test(text)) return "VEHICLE";
+    if (/\b(?:surucu\p{L}*|sürücü\p{L}*|sofor\p{L}*|şoför\p{L}*)\b/iu.test(text)) return "DRIVER";
+  }
+  return null;
 }
 
 function isShiftSurfaceContext(ui = {}) {
@@ -2162,7 +2442,10 @@ function hasCanonicalContinuationTask(conversationState = null) {
   ];
   return plans.some((plan) => Boolean(plan && (
     plan.continuationIntent === true
-    || ['RISK_RANKING', 'COMPARISON', 'PRIORITY', 'CAUSE_WHY', 'CONTINUE_CURRENT_REASONING', 'UI_GUIDANCE', 'GENERIC_PRODUCT_HELP', 'ROLE_EXPLANATION_HELP'].includes(String(plan.family || '').toUpperCase())
+    || (Array.isArray(plan.requestedDomains) && plan.requestedDomains.length > 0)
+    || (Array.isArray(plan.entities) && plan.entities.length > 0)
+    || Boolean(plan.relationshipIntent)
+    || ['RISK_RANKING', 'COMPARISON', 'PRIORITY', 'CAUSE_WHY', 'CONTINUE_CURRENT_REASONING', 'UI_GUIDANCE', 'GENERIC_PRODUCT_HELP', 'ROLE_EXPLANATION_HELP', 'RELATION_LOOKUP', 'FIELD_LOOKUP', 'RECORD_DETAILS', 'SCREEN_CONTEXT', 'EXPLAIN_CURRENT_TARGET'].includes(String(plan.family || '').toUpperCase())
   )));
 }
 
@@ -2323,13 +2606,16 @@ function currentScreenKnowledgeKind(text, ui) {
   const situatedSurfaceFocus = /\b(?:burada|burda)\s+(?:ne\s+yap\p{L}*|nereden\s+basla\p{L}*)\b/iu.test(text);
   const situatedSurfaceRisk = /\b(?:burada|burda)\s+(?:sorun|problem|aksakl\p{L}*)\s+var\s+m[ıi]\b/iu.test(text);
   if (hasDirectFieldLookupCue(text) || hasAssessmentSummaryCue(text)) return "";
+  if (hasExplicitCurrentScreenPurposeCue(text)) return "SCREEN_FOCUS";
   if (hasNextActionOperationCue(text)) return ui?.selectedId || ui?.selectedType ? "" : "NEXT_ACTION";
   if (hasRiskCue(text) || situatedSurfaceRisk) {
     return ui?.selectedId || ui?.selectedType ? "" : "SCREEN_RISK";
   }
   if (hasCardinalityCue(text)) return "";
   if (situatedSurfaceFocus) return "SCREEN_FOCUS";
-  if (/(?:nerelere|nelere|neye)\s+bak(?:mam|mal[ıi]y[ıi]m|ay[ıi]m)?\s+(?:gerek|gerekiyor|laz[ıi]m)\b/iu.test(text)) return "SCREEN_FOCUS";
+  if (/(?:nerelere|nelere|neye)\s+bak(?:mam|mal[ıi]y[ıi]m|ay[ıi]m)?(?:\s+(?:gerek|gerekiyor|laz[ıi]m))?\b/iu.test(text)
+    || /(?:^|\s)(?:ilk|önce|once|şimdi|simdi)\s+(?:olarak\s+)?neyi\s+kontrol\s+(?:et|ed)(?:meliyim|meliyiz|eyim|elim|eyelim|sem)\b/iu.test(text)
+    || /\bhangi\s+\p{L}+(?:\s+\p{L}+){0,3}\s+(?:önce|once|ilk)\s+(?:incele|bak|kontrol)\p{L}*\b/iu.test(text)) return "SCREEN_FOCUS";
   if (/\b(?:bana\s+)?yardim\s+et\b/iu.test(text)) return "SCREEN_FOCUS";
   if (isGenericProductHelpIntent(text, { roleContext: ui?.surfaceRole })) return "SCREEN_FOCUS";
   if (/(?:neden\s+(?:gerekli|onemli)|niye\s+(?:gerekli|onemli)|amac\p{L}*|ne\s+ise\s+yar\p{L}*)/iu.test(text)) return "SCREEN_PURPOSE";
@@ -2516,7 +2802,13 @@ function hasNextActionOperationCue(text) {
     || /(?:sonraki|siradaki|bir\s+sonraki|ilk)\s+(?:dogru\s+|guvenli\s+)?(?:adim|islem|aksiyon)\p{L}*/iu.test(text)
     || /(?:bundan\s+sonra|hemen)\s+ne\s+yap\p{L}*/iu.test(text)
     || /sirada\s+ne\s+var/iu.test(text)
-    || /\b(?:simdi|hemen|bundan\s+sonra)?\s*(?:en\s+)?mantikli\s+(?:adim|is|islem|aksiyon)\p{L}*\b/iu.test(text);
+    || /\b(?:simdi|hemen|bundan\s+sonra)?\s*(?:en\s+)?mantikli\s+(?:adim|is|islem|aksiyon)\p{L}*\b/iu.test(text)
+    || /\b(?:hangi|ne)\s+(?:dogru\s+|guvenli\s+|mantikli\s+)?(?:adim|islem|aksiyon|kontrol)\p{L}*\s+(?:yap|gec|git|uygula|izle)\p{L}*\b/iu.test(text)
+    || /\bhangi\s+(?:dogru\s+|guvenli\s+|mantikli\s+)?adim\p{L}*\s+(?:ile\s+)?ilerle\p{L}*\b/iu.test(text)
+    // Keep natural first-person safety questions on the actionable path.
+    // Without this, "Bu sayfada şimdi ne yapmam güvenli?" is reduced to
+    // selected-record screen context and loses the next-step contract.
+    || /\bne\s+yap(?:maliyim|mam\s+(?:guvenli|mantikli))\b/iu.test(text);
   const bareNow = /^(?:peki\s+)?simdi\s+ne(?:\s+yapayim|\s+yapalim)?\??$/iu.test(text);
   return directAction || hasAttentionAssessmentCue(text) || (bareNow && !hasDirectFieldLookupCue(text));
 }
@@ -2528,13 +2820,34 @@ function hasRelationLookupCue(text) {
   ]);
   const explicitRelationCue = hasExplicitRelationCue(text);
   if (directFieldCue && !explicitRelationCue) return false;
-  const relationGrammar = /(?:bagl\p{L}*|ait\p{L}*|ilisk\p{L}*|baglanti\p{L}*|esles\p{L}*|kayn\p{L}*)/iu.test(text)
+  const relationGrammar = hasContractShiftGenerationLookupCue(text)
+    || /(?:bagl\p{L}*|ait\p{L}*|ilisk\p{L}*|baglanti\p{L}*|esles\p{L}*|kayn\p{L}*)/iu.test(text)
     || hasTypedEntityRelationQuestion(text)
     || /(?:vardiya|sefer|shift|arac\p{L}*|surucu\p{L}*|sofor\p{L}*|sozlesme\p{L}*|kayit\p{L}*).{0,24}(?:bagli|ait|iliskili|araci|vardiyasi|surucusu|soforu)/iu.test(text);
   return relationGrammar || hasAnyTerm(text, [
     "bagli", "ait", "iliskili", "hangi vardiyaya bagli", "hangi araca bagli", "hangi sofore bagli",
     "surucusu kim", "soforu kim", "bagli kayit", "bagli kaydi", "sozlesmesi var mi",
   ]);
+}
+
+// A contract-produced-shift request is a relationship lookup even when the
+// user asks to show/open the related collection instead of asking "bağlı mı".
+// Keep this structural: the contract, generated-shift relation, and visible
+// action/question must all be present. Authorization and evidence remain
+// downstream responsibilities.
+export function hasContractShiftGenerationLookupCue(text) {
+  const value = normalize(text);
+  const contract = /\b(?:sozlesme|anlasma|agreement|contract|kontrat)\p{L}*\b/iu.test(value);
+  // Keep common spoken/typed Turkish inflections in the same canonical
+  // relation family.  `vardılar` is a frequent misspelling of `vardiyalar`
+  // in this user task; it is still a shift-collection reference, not an
+  // agreement-surface navigation request.
+  const shift = /\b(?:vardiya|vardilar|sefer|shift)\p{L}*\b/iu.test(value);
+  const generated = /\b(?:uretil|uret|cik|olustur|olusturul)\p{L}*\b/iu.test(value);
+  const bound = /\b(?:bagl|ait|ilisk|baglanti|esles)\p{L}*\b/iu.test(value);
+  const visibleOrQuestion = hasExplicitSurfaceNavigationVerb(value)
+    || /\b(?:var|mi|mı|mu|mü|oldu|edildi|edilmis|edilmiş|nerede|nereye|hangi|hangileri|liste|listele)\p{L}*\b/iu.test(value);
+  return contract && shift && (generated || bound) && visibleOrQuestion;
 }
 
 function hasPreparationOnlyCue(text) {
@@ -2553,13 +2866,22 @@ function hasWorkflowGuidanceCue(text) {
   // enter a real workflow lane.  It has no canonical screen identity to
   // resolve, so downstream guidance must remain target-less and truthful.
   if (/\b(?:hayali|olmayan|var\s+olmayan|mevcut\s+olmayan|uydurma|sahte)\b/iu.test(text)) return false;
+  if (hasContractShiftGenerationLookupCue(text)) return false;
+  // An explicit shift identity plus a detail cue is an existing-record
+  // lookup.  Do not let the polite verb form "açar mısın" promote it into
+  // ROOM's create/workflow guidance lane.
+  if (explicitShiftReferenceFromText(text) && hasRecordDetailsCue(text)) return false;
   // Past-tense resume language refers to an already active task and belongs
   // to continuation/recovery, even when it contains the shift creation verb.
   if (/\b(?:olusturacaktik|oluşturacaktık|olusturuyorduk|oluşturuyorduk|ne\s+oldu|nerede\s+kaldik|nerede\s+kaldık)\b/iu.test(text)) return false;
   const hasShiftSubject = /\b(?:vardiya|sefer|shift)\p{L}*\b/iu.test(text);
   if (!hasShiftSubject) return false;
   if (hasPreparationOnlyCue(text)) return false;
-  const guidanceVerb = /\b(?:olustur|oluştur|ac(?!ikla)|aç(?!ıkla)|ekle|goster|göster|got|göt|gotur|götür|bulamad|bulamiyor|bulamıyo|nereden)\p{L}*\b/iu.test(text);
+  // The normalized adjective "acik" in phrases such as "açık olan vardiya
+  // teklifleri" must not be consumed as the imperative "aç". Keep the
+  // workflow lane for real open/create guidance while leaving current-screen
+  // offer explanations in their own read-only semantic lane.
+  const guidanceVerb = /\b(?:olustur|oluştur|ac(?!ik(?:\b|la))|aç(?!ık(?:\b|la))|ekle|goster|göster|got|göt|gotur|götür|bulamad|bulamiyor|bulamıyo|nereden)\p{L}*\b/iu.test(text);
   if (!guidanceVerb) return false;
   // Existing-record questions remain data lookups.  Creation/location verbs
   // without a concrete record/status keep the request in the UI workflow lane.
@@ -2573,6 +2895,7 @@ function hasWorkflowGuidanceCue(text) {
 // screen/location, not an existing record or one of its properties.
 function hasShiftSurfaceNavigationCue(text) {
   if (/\b(?:hayali|olmayan|var\s+olmayan|mevcut\s+olmayan|uydurma|sahte)\b/iu.test(text)) return false;
+  if (hasContractShiftGenerationLookupCue(text)) return false;
   const hasShiftSubject = /\b(?:vardiya|sefer|shift)\p{L}*\b/iu.test(text);
   if (!hasShiftSubject) return false;
   const creationCue = /\b(?:olustur|oluştur|ac(?!ikla)|aç(?!ıkla)|ekle)\p{L}*\b/iu.test(text);
@@ -2599,7 +2922,7 @@ function hasOfferSurfaceNavigationCue(text) {
   // needs the exact record identity before retrieval.
   if (/\b(?:teklif|offer|rfq)\s*#?\s*\d+\b/iu.test(text)) return false;
   const navigationVerb = hasExplicitSurfaceNavigationVerb(text)
-    || /\b(?:bakalim|kontrol\s+edelim|inceleyelim)\b/iu.test(normalize(text));
+    || /\b(?:bak\p{L}*|kontrol\s+edelim|inceleyelim)\b/iu.test(normalize(text));
   if (!navigationVerb) return false;
   // Questions about a concrete offer's fields, comparison, decision or
   // business action remain read-only commercial reasoning/action guidance.
@@ -2614,10 +2937,46 @@ function hasOfferSurfaceNavigationCue(text) {
 function hasAgreementSurfaceNavigationCue(text) {
   const value = normalize(text);
   if (!/\b(?:sozlesme|anlasma|agreement|contract)\p{L}*\b/iu.test(value)) return false;
+  if (hasContractShiftGenerationLookupCue(value)) return false;
   const navigationCue = hasExplicitSurfaceNavigationVerb(value);
   if (!navigationCue) return false;
   const recordActionCue = /\b(?:onay|iptal|uzat|durum|tarih|saat|tutar|bedel|bagli|etki|neden|kapsam)\p{L}*\b/iu.test(value);
   return !recordActionCue;
+}
+
+// These are named role-owned surfaces, not generic product-help topics. Keep
+// their entry semantics in the canonical request so a home-screen question
+// can reach the real route without borrowing the current screen or a selected
+// record as its target.
+function hasReportsSurfaceNavigationCue(text) {
+  const value = normalize(text);
+  if (!/\b(?:rapor|report)\p{L}*\b/iu.test(value)) return false;
+  return hasExplicitSurfaceNavigationVerb(value);
+}
+
+function hasLiveMapSurfaceNavigationCue(text) {
+  const value = normalize(text);
+  // Keep entry language separate from an already-open map instruction such
+  // as “Bu haritayı büyüt”. The latter belongs to the live control/target
+  // owner and must not be reclassified as a request to open the map surface.
+  if (!/\b(?:canli\s+(?:takip|izleme)|takip\s+harita)\p{L}*\b/iu.test(value)) return false;
+  return hasExplicitSurfaceNavigationVerb(value);
+}
+
+// Biniş kayıtları is a ROOM-owned read-only surface. Resolve it before
+// selected shift/vehicle field lookup can inherit a stale record.
+function hasCheckinSurfaceNavigationCue(text) {
+  const value = normalize(text);
+  if (!/\b(?:binis|inis|check[- ]?in)\p{L}*\b/iu.test(value)) return false;
+  return hasExplicitSurfaceNavigationVerb(value)
+    || /\b(?:olay|kayit|kayıt|takip)\p{L}*\b/iu.test(value);
+}
+
+// Uygulanan Rota is a read-only agreement tab, not a route-write operation.
+function hasAppliedRouteSurfaceNavigationCue(text) {
+  const value = normalize(text);
+  if (!/\buygulanan\s+rota\p{L}*\b/iu.test(value)) return false;
+  return hasExplicitSurfaceNavigationVerb(value);
 }
 
 // A collection-display request is more specific than opening the Agreements
@@ -2656,14 +3015,14 @@ function hasUnresolvedUiTargetCue(text) {
 // it is not itself a request to identify that target.  Keep operation
 // detection separate so that explicit work such as risk, next action, field,
 // detail, or relation lookup cannot collapse into SELECTED_RECORD_CONTEXT.
-function inferExplicitOperations(text, conversationState = null) {
+function inferExplicitOperations(text, conversationState = null, ui = null) {
   const tasks = [];
   if (hasComparisonCue(text)) tasks.push("COMPARISON");
   if (hasFreshnessCheckCue(text)) tasks.push("FRESHNESS_CHECK");
   if (hasUncertaintyCheckCue(text)) tasks.push("UNCERTAINTY_CHECK");
   if (hasEvidenceSufficiencyCue(text)) tasks.push("EVIDENCE_SUFFICIENCY");
   if (hasIssueDiagnosticCue(text)) tasks.push("ISSUE");
-  if (hasQuoteFloorAnalysisCue(text, conversationState)) tasks.push("RISK");
+  if (hasQuoteFloorAnalysisCue(text, conversationState, ui)) tasks.push("RISK");
   if (hasCardinalityCue(text) && !hasValueLookupCue(text)) tasks.push("COUNT");
   if (hasRelationLookupCue(text)) tasks.push("RELATION_LOOKUP");
   if (hasRecordDetailsCue(text)) tasks.push("RECORD_DETAILS");
@@ -2684,11 +3043,11 @@ function inferExplicitOperations(text, conversationState = null) {
 }
 
 function explicitTaskShape(text, ui, conversationState = null) {
-  const requestedTasks = inferExplicitOperations(text, conversationState);
+  const requestedTasks = inferExplicitOperations(text, conversationState, ui);
   if (!requestedTasks.length) return null;
   const target = inferTarget(text, { forCount: requestedTasks.includes("COUNT") });
   const mayUseSelectedTarget = Boolean(ui.selectedId && ui.selectedType)
-    && (hasSelectedRecordCue(text) || hasSelectedRecordReference(text) || hasSelectedRecordActionReference(text) || hasSelectedRecordIdentityCue(text, ui));
+    && (hasSelectedRecordCue(text) || hasSelectedRecordReference(text) || hasSelectedRecordActionReference(text, ui) || hasSelectedRecordIdentityCue(text, ui));
   const selectedCommercialField = requestedTasks.includes("FIELD_LOOKUP") && hasValueLookupCue(text) && ui.selectedType;
   const selectedType = selectedCommercialField ? ui.selectedType : target?.type || (mayUseSelectedTarget ? ui.selectedType : null);
   const selectedDomain = target?.domain
@@ -2770,6 +3129,13 @@ function directFieldLookupShape(text, ui) {
   };
 }
 
+function hasSelectedShiftCheckinFactCue(text, ui) {
+  if (String(ui?.selectedType || "").toUpperCase() !== "SHIFT") return false;
+  const checkinFieldCue = /\b(?:binis|bindi|inis|indi)\p{L}*\b/iu.test(text);
+  const explanationCue = /\b(?:durum|say|sayi|kac|acikla|anlat|goster)\p{L}*\b/iu.test(text);
+  return checkinFieldCue && explanationCue;
+}
+
 function inferTask({ text, rawText = text, ui, conversationState = null }) {
   if (isGeneralArithmeticRequest(text)) {
     return { taskType: null, confidence: 0.99, domain: null, targetEntityType: null, generalArithmetic: true };
@@ -2787,10 +3153,49 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
     };
   }
   const explicitShiftReference = explicitShiftReferenceFromText(text);
-  const explicitRecordReference = explicitShiftReference || contextualNumericReference?.reference || null;
+  const explicitVehicleReference = explicitVehicleReferenceFromText(text);
+  const explicitAgreementReference = explicitAgreementReferenceFromText(text);
+  const explicitRecordReference = explicitShiftReference || explicitVehicleReference || explicitAgreementReference || contextualNumericReference?.reference || null;
   const explicitCommercialRecordCue = /\b(?:teklif|karsi\s+teklif|kabul\s+edilen|kabul|nihai|son\s+fiyat|ticari|fiyat|tutar|bedel|para|miktar)\p{L}*/iu.test(text);
+  const explicitAgreementRecordCue = Boolean(explicitAgreementReference)
+    && /\b(?:mutabakat|reconciliation|agreement|sozlesme|inceleme|incele|goster|göster|ac|aç|detay|ayrinti|ayrıntı|neden|eksik|odeme|ödeme|hakediş|hakedis)\p{L}*/iu.test(text);
+  // An explicit shift identity plus a detail request is a read-only record
+  // opening operation. Resolve it before surface-capability and ROOM create
+  // policy cues; otherwise the polite "açar mısın" form can be interpreted
+  // as a new-shift request and leave the real card unselected.
+  if (explicitShiftReference && hasRecordDetailsCue(text) && !hasCardinalityCue(text)) {
+    return {
+      taskType: "RECORD_DETAILS",
+      confidence: 0.99,
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      requestedTasks: ["RECORD_DETAILS"],
+      recordDetailsIntent: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      explicitEntityReference: explicitShiftReference,
+      scopeTarget: "CURRENT_SCREEN",
+    };
+  }
   const liveGuidedTargetExplanation = hasCurrentGuidedTargetExplanationCue(text, conversationState);
-  if (explicitRecordReference && explicitCommercialRecordCue) {
+  const explicitVehicleIdentityCue = /\b(?:plaka|hangi|kim|numara|id|durum|konum|gps|goster|göster|detay|anlat|acikla|açıkla)\p{L}*/iu.test(text);
+  if (explicitVehicleReference && explicitVehicleIdentityCue) {
+    const vehicleIdentityField = /\bplaka\p{L}*\b/iu.test(text)
+      ? { key: "PLATE", domain: "VEHICLES" }
+      : { key: "VEHICLE", domain: "VEHICLES" };
+    return {
+      taskType: "FIELD_LOOKUP",
+      confidence: 0.97,
+      domain: "VEHICLES",
+      targetEntityType: "VEHICLE",
+      requestedFields: [vehicleIdentityField],
+      requestedFieldsAuthoritative: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      explicitEntityReference: explicitVehicleReference,
+    };
+  }
+  if (explicitRecordReference && (explicitCommercialRecordCue || explicitAgreementRecordCue)) {
     const domainByType = { SHIFT: "SHIFTS", OFFER: "OFFERS", AGREEMENT: "AGREEMENTS", VEHICLE: "VEHICLES", DRIVER: "DRIVERS", PERSONNEL: "PERSONNEL", STUDENT: "PERSONNEL", PARENT: "PERSONNEL" };
     return {
       taskType: "FIELD_LOOKUP",
@@ -2829,6 +3234,23 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       },
     };
   }
+  const operationHealthSurfaceNavigation = /\boperasyon\s+sagligi\p{L}*\b/iu.test(text)
+    && hasExplicitSurfaceNavigationVerb(text);
+  if (operationHealthSurfaceNavigation) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: "OPERATIONS",
+      targetEntityType: "SURFACE",
+      requestedTasks: ["SCREEN_CONTEXT"],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      explicitUiGuidance: true,
+      screenContextIntent: true,
+      workflowIntent: "OPEN_OPERATION_HEALTH_SURFACE",
+      scopeTarget: "CURRENT_SCREEN",
+    };
+  }
   if (healthMetricMode) {
     return {
       taskType: "ISSUE",
@@ -2841,6 +3263,146 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       explicitTaskIntent: true,
       operationHealthMetricIntent: true,
       operationHealthMetricMode: healthMetricMode,
+    };
+  }
+  if (hasLiveMapSurfaceNavigationCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.98,
+      domain: "OPERATIONS",
+      targetEntityType: "SURFACE",
+      requestedTasks: ["SCREEN_CONTEXT"],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      explicitUiGuidance: true,
+      screenContextIntent: true,
+      workflowIntent: "OPEN_MAP_SURFACE",
+      scopeTarget: "CURRENT_SCREEN",
+    };
+  }
+  if (hasCheckinSurfaceNavigationCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: "OPERATIONS",
+      targetEntityType: "SURFACE",
+      requestedTasks: ["SCREEN_CONTEXT"],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      explicitUiGuidance: true,
+      screenContextIntent: true,
+      workflowIntent: "OPEN_CHECKIN_SURFACE",
+      scopeTarget: "CURRENT_SCREEN",
+      selectedRecordIntent: false,
+    };
+  }
+  if (hasAppliedRouteSurfaceNavigationCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.99,
+      domain: "AGREEMENTS",
+      targetEntityType: "SURFACE",
+      requestedTasks: ["SCREEN_CONTEXT"],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      explicitUiGuidance: true,
+      screenContextIntent: true,
+      workflowIntent: "OPEN_APPLIED_ROUTE_SURFACE",
+      scopeTarget: "CURRENT_SCREEN",
+      selectedRecordIntent: false,
+    };
+  }
+  if (hasReportsSurfaceNavigationCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.98,
+      domain: "OPERATIONS",
+      targetEntityType: "SURFACE",
+      requestedTasks: ["SCREEN_CONTEXT"],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      explicitUiGuidance: true,
+      screenContextIntent: true,
+      workflowIntent: "OPEN_REPORTS_SURFACE",
+      scopeTarget: "CURRENT_SCREEN",
+    };
+  }
+  if (hasCanonicalIssueDiagnosticRequest(text)) {
+    return {
+      taskType: "ISSUE",
+      confidence: 0.96,
+      domain: "OPERATIONS",
+      targetEntityType: null,
+      requestedTasks: ["ISSUE"],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: ui.selectedId && ui.selectedType ? "SELECTED_RECORD" : "CURRENT_SCREEN",
+      roleHelpIntent: false,
+      generalProductHelpIntent: false,
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: false,
+    };
+  }
+  // A vehicle GPS/status question is a typed vehicle field lookup even when
+  // the user says "araba" rather than "araç" and even when the UI selection
+  // is supplied separately by the live screen.  Keep this in the shared
+  // semantic boundary so downstream authorization and data resolution own the
+  // selected vehicle; do not let generic off-topic/product-help fallback win.
+  const gpsStatusSignal = /\b(?:gps|konum|takip|guncel|güncel|calis|çalış|cevrim\s+disi|çevrim\s+dışı|offline)\p{L}*\b/iu.test(text);
+  const vehicleGpsQuestion = (
+    /\b(?:arac|araba|plaka|vehicle)\p{L}*\b/iu.test(text)
+    || (ui?.selectedType === "VEHICLE" && gpsStatusSignal)
+  )
+    && gpsStatusSignal
+    && /\b(?:mi|mı|mu|mü|ne|nasil|nasıl|durum|goster|göster|calis|çalış|guncel|güncel)\p{L}*\b/iu.test(text);
+  if (vehicleGpsQuestion) {
+    return {
+      taskType: "FIELD_LOOKUP",
+      confidence: 0.97,
+      domain: "VEHICLES",
+      targetEntityType: "VEHICLE",
+      requestedFields: [{ key: "GPS", domain: "OPERATIONS" }],
+      requestedFieldsAuthoritative: true,
+      explicitTaskIntent: true,
+      selectedRecordIntent: Boolean(ui?.selectedId && ui?.selectedType === "VEHICLE"),
+    };
+  }
+  const financialScreenRisk = hasFinancialScreenRiskCue(text)
+    && /\/(?:room|company|school|organization)\/financial-operations\b/iu.test(String(ui?.path || ''))
+    && !ui?.selectedId
+    && !ui?.selectedType;
+  if (financialScreenRisk) {
+    return {
+      taskType: 'RISK',
+      confidence: 0.97,
+      domain: 'FINANCE',
+      targetEntityType: null,
+      requestedTasks: ['RISK'],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: 'CURRENT_SCREEN',
+    };
+  }
+  // A financial readiness/process question owns the turn before the
+  // selected-record fallback.  The ROOM commercial shell may carry a
+  // selected shift or agreement, but that record is not a hakediş/payment
+  // record.  Keep the request in the authorized financial read-only owner so
+  // the downstream assistant can return evidence or an honest capability
+  // boundary instead of asking for unrelated shift fields.
+  const quoteFloorAnalysis = hasQuoteFloorAnalysisCue(text, conversationState, ui);
+  if ((quoteFloorAnalysis || hasFinancialReadinessEvidence(text) || hasCostAnalysisCue(text, conversationState, ui))
+    && !hasNextActionOperationCue(text)) {
+    return {
+      taskType: "RISK",
+      confidence: 0.95,
+      domain: quoteFloorAnalysis ? "BUDGET" : "FINANCE",
+      targetEntityType: null,
+      requestedTasks: ["RISK"],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: "CURRENT_SCREEN",
     };
   }
   // Resolve an active-task previous-step request before referential and role
@@ -2949,7 +3511,7 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   // A short teaching follow-up is grounded by the current authorized surface
   // (and by the active workflow when one exists). It must not ask the user to
   // name the area again merely because the follow-up omits the noun.
-  if (ui?.path && hasStandaloneTeachRequest(text) && hasExplicitProductLevelHelpCue(text)) {
+  if (ui?.path && hasStandaloneTeachRequest(text) && hasExplicitProductLevelHelpCue(text) && !hasCanonicalContinuationTask(conversationState)) {
     return {
       taskType: "OFF_TOPIC",
       confidence: 0.96,
@@ -2967,7 +3529,9 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   // Collection/domain guidance is not a request for one arbitrary record.
   // Keep the current authorized surface as the grounding object until a
   // concrete collection target is resolved downstream.
-  if (hasDomainCollectionGuidanceRequest(text)) {
+  if (hasDomainCollectionGuidanceRequest(text)
+    && !hasCardinalityCue(text)
+    && !hasSelectedShiftCheckinFactCue(text, ui)) {
     return {
       taskType: "SCREEN_CONTEXT",
       confidence: 0.95,
@@ -2986,8 +3550,24 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   // "var mı".  The typed relationship must win over collection COUNT so an
   // offer-to-agreement/counteroffer question is resolved as a traversal, not
   // as a generic offer count.
-  if (hasOfferCollectionCountRequest(text) && !hasRelationLookupCue(text)) {
+  if ((hasOfferCollectionCountRequest(text) || hasOfferCollectionSummaryRequest(text)) && !hasRelationLookupCue(text)) {
     const target = ENTITY_CONCEPTS.find((concept) => concept.type === "OFFER");
+    if (hasOfferCollectionSummaryRequest(text)) {
+      return {
+        taskType: "SCREEN_CONTEXT",
+        confidence: 0.98,
+        domain: target.domain,
+        targetEntityType: target.type,
+        requestedTasks: ["SCREEN_CONTEXT"],
+        explicitTaskIntent: true,
+        explicitUserTarget: true,
+        explicitUiGuidance: true,
+        screenContextIntent: true,
+        workflowIntent: "OPEN_OFFER_SURFACE",
+        collectionSummaryIntent: true,
+        scopeTarget: "CURRENT_SCREEN",
+      };
+    }
     return {
       taskType: "COUNT",
       confidence: 0.98,
@@ -3043,6 +3623,21 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       requestedRoleTarget: roleScopedUiTarget,
     };
   }
+  if (ui?.path && hasCurrentSurfaceWhyCue(text) && !hasExplicitProductLevelHelpCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.98,
+      domain: null,
+      targetEntityType: "SURFACE",
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      screenKnowledgeIntent: true,
+      screenKnowledgeKind: "SCREEN_PURPOSE",
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      scopeTarget: "CURRENT_SCREEN",
+    };
+  }
   // A situated surface-purpose question must win before the role-capability
   // fallback.  This keeps wording such as “bu konum ve harita ekranında ne
   // yapabilirim?” grounded in the active Hub surface instead of role-global
@@ -3056,7 +3651,7 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       screenContextIntent: true,
       screenDetailIntent: true,
       screenKnowledgeIntent: true,
-      screenKnowledgeKind: "SCREEN_PURPOSE",
+      screenKnowledgeKind: currentScreenKnowledgeKind(text, ui) || "SCREEN_PURPOSE",
       explicitTaskIntent: true,
       explicitUiGuidance: true,
       scopeTarget: "CURRENT_SCREEN",
@@ -3067,7 +3662,8 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   // project a process-responsibility answer over the product overview.
   if (hasExplicitProductLevelHelpCue(text)
     && !(activeWorkflowPlan(conversationState) && workflowStepReferenceFromText(text))
-    && !(ui?.path && hasExplicitCurrentScreenPurposeCue(text))) {
+    && !hasCanonicalContinuationTask(conversationState)
+    && !(ui?.path && hasSituatedCurrentSurfaceGuidanceCue(text))) {
     return {
       taskType: "OFF_TOPIC",
       confidence: 0.97,
@@ -3124,7 +3720,22 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   const preFieldCapabilityObject = semanticObjectClass(null, text);
   const preFieldConcreteCapability = Boolean(preFieldCapabilityTarget)
     && ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER"].includes(preFieldCapabilityObject);
-  const directFieldLookup = liveWorkflowCapability || hasQuoteFloorAnalysisCue(text, conversationState)
+  const selectedRelationTargetType = selectedRelationshipTraversalTarget(text, ui);
+  if (selectedRelationTargetType) {
+    return {
+      taskType: "RELATION_LOOKUP",
+      confidence: 0.96,
+      domain: selectedRelationTargetType === "VEHICLE"
+        ? "VEHICLES"
+        : selectedRelationTargetType === "DRIVER" ? "DRIVERS" : "SHIFTS",
+      targetEntityType: selectedRelationTargetType,
+      relationIntent: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: "SELECTED_RECORD",
+    };
+  }
+  const directFieldLookup = liveWorkflowCapability || hasQuoteFloorAnalysisCue(text, conversationState, ui)
     || globalProductHelpIntent
     // A visible record control must not outrank an authorized product-field
     // read merely because the Turkish request uses an imperative such as
@@ -3151,7 +3762,10 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
     // task, even when its wording also contains a broad help cue.  Let the
     // live-target recovery rule below own that turn instead of converting it
     // into role-global generic help.
-    && !hasActiveGuidanceFailureCue(text)) {
+    && !hasActiveGuidanceFailureCue(text)
+    // A local deictic with no resolvable target is a clarification request,
+    // not a role-global capability question.
+    && !hasScreenDeicticCue(text)) {
     return {
       taskType: "OFF_TOPIC",
       confidence: 0.97,
@@ -3169,15 +3783,21 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   // compatible UI context cannot narrow a global help request into a record
   // or screen clarification.
   if (globalProductHelpIntent
+    // A concrete collection request such as "bekleyen vardiyaları açıkla"
+    // names an authorized product set.  Do not let the broad teaching
+    // speech-act classifier move it to ROLE_GLOBAL before temporal/domain
+    // planning can resolve the requested collection.
+    && !hasCardinalityCue(text)
     && !(activeWorkflowPlan(conversationState) && workflowStepReferenceFromText(text))
     // A named product capability question is global help even when the
     // screen-knowledge helper can ground the same words in the current UI.
     // Keep explicit screen-purpose and concrete target cues authoritative;
     // do not let the selected record manufacture a FIELD_LOOKUP target.
-    && !(ui?.path && (hasExplicitCurrentScreenPurposeCue(text) || currentScreenCapabilityTarget(text, ui)) && !hasExplicitProductLevelHelpCue(text))
+    && !(ui?.path && (hasSituatedCurrentSurfaceGuidanceCue(text) || currentScreenCapabilityTarget(text, ui)))
     && !(activeWorkflowPlan(conversationState) && hasLiveWorkflowGroundingCue(text))
     && !(liveWorkflowStepReference(ui) && hasLiveWorkflowGroundingCue(text))
-    && !hasActiveGuidanceFailureCue(text)) {
+    && !hasActiveGuidanceFailureCue(text)
+    && !hasScreenDeicticCue(text)) {
     return {
       taskType: "OFF_TOPIC",
       confidence: 0.97,
@@ -3199,6 +3819,22 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   const workflowEntry = guidedWorkflowEntryState(ui);
   const foregroundGuidedDraftChooser = liveGuidedDraftChooserState(ui);
   const liveStepReference = liveWorkflowStepReference(ui);
+  // A contract-to-generated-shift request is a relationship lookup even when
+  // the live surface exposes a Vardiyalar control. Preserve the relation
+  // before visible-control matching can reinterpret the related collection as
+  // a generic FIELD_LOOKUP/UI_GUIDANCE request.
+  if (hasContractShiftGenerationLookupCue(text)) {
+    return {
+      taskType: "RELATION_LOOKUP",
+      confidence: 0.96,
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      relationIntent: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: "CURRENT_SCREEN",
+    };
+  }
   // A live guided step owns capability/how-to questions for that step.  Some
   // step nouns (notably "durak") are also valid record fields elsewhere, so
   // defer the broad field classifier until the workflow capability contract
@@ -3231,7 +3867,7 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   const earlyConcreteCurrentCapability = Boolean(earlyCurrentCapabilityTarget)
     && ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER"].includes(earlyCurrentCapabilityObject);
   const earlyDirectFieldLookup = liveWorkflowCapability
-    || hasQuoteFloorAnalysisCue(text, conversationState)
+    || hasQuoteFloorAnalysisCue(text, conversationState, ui)
     || earlyConcreteCurrentCapability
     ? null
     : directFieldLookupShape(text, ui);
@@ -3239,7 +3875,7 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   // Known glossary definitions are explicit product-knowledge requests. They
   // outrank broader current-screen/domain classifiers while preserving the
   // live surface as grounding context.
-  if (!hasQuoteFloorAnalysisCue(text, conversationState) && hasKnownTermDefinitionCue(text)) {
+  if (!hasQuoteFloorAnalysisCue(text, conversationState, ui) && hasKnownTermDefinitionCue(text)) {
     return {
       taskType: "SCREEN_CONTEXT",
       confidence: 0.98,
@@ -3327,20 +3963,24 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   // persisted workflow explanation. A real live step remains authoritative
   // above, where the request is a current-target explanation.
   if (activeWorkflow
-    && conversationState?.activeGuidedTask?.semanticPlan
     && hasStepByStepTeachingCue(text)
     && !liveStepReference) {
-    const workflowModel = activeWorkflow.workflowModel || COMPANY_GUIDED_NEW_PLAN_WORKFLOW;
-    const workflowStepReference = activeWorkflow.workflowStepReference || workflowModel.steps[0];
+    const workflowIntent = String(activeWorkflow.workflowIntent || "").toUpperCase();
+    const isOfferSurfaceWorkflow = workflowIntent === "OPEN_OFFER_SURFACE";
+    const workflowModel = activeWorkflow.workflowModel
+      || (workflowIntent === "CREATE_SHIFT" ? COMPANY_GUIDED_NEW_PLAN_WORKFLOW : null);
+    const workflowStepReference = activeWorkflow.workflowStepReference
+      || workflowModel?.steps?.[0]
+      || null;
     return {
       taskType: "CONTINUE_CURRENT_REASONING",
       confidence: 0.99,
-      domain: "SHIFTS",
-      targetEntityType: "SHIFT",
+      domain: isOfferSurfaceWorkflow ? "OFFERS" : "SHIFTS",
+      targetEntityType: isOfferSurfaceWorkflow ? "OFFER" : "SHIFT",
       continuationIntent: true,
       continuationAction: "EXPAND",
       explicitTaskIntent: true,
-      workflowIntent: "CREATE_SHIFT",
+      workflowIntent: activeWorkflow.workflowIntent || "CREATE_SHIFT",
       workflowModel,
       workflowStepReference,
       workflowStepIntent: Boolean(workflowStepReference),
@@ -3435,6 +4075,30 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       explicitTaskIntent: true,
       explicitUiGuidance: true,
       workflowIntent: "UNRESOLVED_SHIFT_SURFACE",
+    };
+  }
+  if (hasLiveMapSurfaceNavigationCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.98,
+      domain: "OPERATIONS",
+      targetEntityType: "SURFACE",
+      screenContextIntent: true,
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      workflowIntent: "OPEN_MAP_SURFACE",
+    };
+  }
+  if (hasReportsSurfaceNavigationCue(text)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.98,
+      domain: "OPERATIONS",
+      targetEntityType: "SURFACE",
+      screenContextIntent: true,
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      workflowIntent: "OPEN_REPORTS_SURFACE",
     };
   }
   if (hasShiftSurfaceNavigationCue(text)) {
@@ -3711,7 +4375,10 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
     };
   }
   const screenKnowledgeKind = currentScreenKnowledgeKind(text, ui);
-  if (screenKnowledgeKind && !hasCardinalityCue(text) && inferExplicitOperations(text, conversationState).length === 0) {
+  if (screenKnowledgeKind
+    && !hasCardinalityCue(text)
+    && !hasSelectedShiftCheckinFactCue(text, ui)
+    && inferExplicitOperations(text, conversationState).length === 0) {
     return {
       taskType: "SCREEN_CONTEXT",
       confidence: 0.96,
@@ -3795,9 +4462,7 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   // read-only facts before the generic "kaç kişi" cardinality branch below;
   // otherwise a selected shift is reduced to PASSENGER_COUNT and the
   // check-in evidence never reaches the planner/composer.
-  const selectedShiftCheckinFacts = String(ui?.selectedType || "").toUpperCase() === "SHIFT"
-    && hasCardinalityCue(text)
-    && (/\b(?:binis|bindi)\p{L}*\b/iu.test(text) || /\b(?:inis|indi)\p{L}*\b/iu.test(text));
+  const selectedShiftCheckinFacts = hasSelectedShiftCheckinFactCue(text, ui);
   if (selectedShiftCheckinFacts) {
     const requestedFields = [];
     if (/\bdurum\p{L}*\b/iu.test(text)) requestedFields.push({ key: "STATUS", domain: null });
@@ -3834,6 +4499,20 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       requestedFieldsAuthoritative: true,
       explicitCardinalityTarget: true,
       selectedRecordIntent: true,
+      explicitTaskIntent: true,
+    };
+  }
+  const selectedScreenCollectionRequest = Boolean(ui.selectedId && ui.selectedType)
+    && hasTemporalCollectionCue(text);
+  if (selectedScreenCollectionRequest) {
+    const selectedConcept = ENTITY_CONCEPTS.find((concept) => concept.type === ui.selectedType);
+    return {
+      taskType: "COUNT",
+      confidence: 0.98,
+      domain: selectedConcept?.domain || null,
+      targetEntityType: ui.selectedType,
+      countTarget: { targetEntityType: ui.selectedType, domain: selectedConcept?.domain || null },
+      explicitCardinalityTarget: true,
       explicitTaskIntent: true,
     };
   }
@@ -3923,6 +4602,21 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   // (for example, “burada hangi vardiya seçili?”). The active record is the
   // user's referent; do not let the surrounding screen-context classifier
   // erase that identity request before the selected-record branch runs.
+  // An explicit next-step question remains an action request even when it
+  // names the current surface (for example, “bu kârlılık ekranında hangi
+  // güvenli adıma geçmeliyim?”). Resolve it before the broad screen-context
+  // branch; the active selected record only grounds the safe answer.
+  if (hasNextActionOperationCue(text) && !hasCardinalityCue(text)) {
+    return {
+      taskType: "NEXT_ACTION",
+      confidence: 0.95,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      explicitTaskIntent: true,
+      scopeTarget: "CURRENT_SCREEN",
+    };
+  }
   if ((hasScreenContextCue(text) || (ui.path && hasCurrentScreenReferentCue(text)))
     && !hasCardinalityCue(text)
     && !hasSelectedRecordIdentityCue(text, ui)) {
@@ -3933,6 +4627,17 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       targetEntityType: null,
       screenContextIntent: true,
       screenDetailIntent: hasScreenDetailCue(text) || hasTeachFromZeroCue(text),
+      explicitTaskIntent: true,
+    };
+  }
+  if (hasCurrentSurfaceFocusCue(text, ui)) {
+    return {
+      taskType: "SCREEN_CONTEXT",
+      confidence: 0.95,
+      domain: null,
+      targetEntityType: null,
+      screenContextIntent: true,
+      screenDetailIntent: false,
       explicitTaskIntent: true,
     };
   }
@@ -4014,6 +4719,22 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
       selectedRecordIntent: true,
     };
   }
+  if (hasSelectedRecordExplanationCue(text, ui)) {
+    const selectedType = ui.selectedType || null;
+    const selectedDomain = selectedType
+      ? ENTITY_CONCEPTS.find((concept) => concept.type === selectedType)?.domain || null
+      : null;
+    return {
+      taskType: "RECORD_DETAILS",
+      confidence: 0.96,
+      domain: selectedDomain,
+      targetEntityType: selectedType,
+      requestedTasks: ["RECORD_DETAILS"],
+      selectedRecordIntent: true,
+      recordDetailsIntent: true,
+      explicitTaskIntent: true,
+    };
+  }
   if (hasRecordDetailsCue(text) && !hasCardinalityCue(text)) {
     const target = inferTarget(text, { forCount: true });
     const selectedType = target?.type || ui.selectedType || null;
@@ -4042,8 +4763,8 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   // relation cue. Resolve the domain-specific cost contract before generic
   // relation traversal so a financial follow-up reaches the authorized cost
   // evidence reader instead of the relation-missing fallback.
-  if (hasCostAnalysisCue(text, conversationState)) return { taskType: "RISK", confidence: 0.9, domain: "BUDGET", requestedTasks: ["RISK"], explicitTaskIntent: true };
-  if (!hasQuoteFloorAnalysisCue(text, conversationState) && hasDirectFieldLookupCue(text) && !hasCardinalityCue(text)) {
+  if (hasCostAnalysisCue(text, conversationState, ui)) return { taskType: "RISK", confidence: 0.9, domain: "BUDGET", requestedTasks: ["RISK"], explicitTaskIntent: true };
+  if (!hasQuoteFloorAnalysisCue(text, conversationState, ui) && hasDirectFieldLookupCue(text) && !hasCardinalityCue(text)) {
     return directFieldLookupShape(text, ui);
   }
   // Relation grammar is more specific than a bare cardinality predicate
@@ -4096,6 +4817,7 @@ export function inferCanonicalSemanticRequest({ message, user, screenContext, co
     && /\b(?:operasyon|ariza|sorun|problem|aksaklik)\p{L}*\b/iu.test(text);
   const agreementCollectionCue = hasCardinalityCue(text)
     && !agreementOperationalClassificationCue
+    && !hasContractShiftGenerationLookupCue(text)
     && /\b(?:sozlesme|anlasma|agreement|contract|kontrat)\p{L}*\b/iu.test(text);
   const agreementCollectionSummaryIntent = agreementCollectionCue
     && /\b(?:neler|hangi|hangileri|liste|listele|listesi|ozet|ozeti|envanter)\p{L}*\b/iu.test(text);
@@ -4184,11 +4906,12 @@ export function inferCanonicalSemanticRequest({ message, user, screenContext, co
       }
     : inferred;
   const effectiveInferred = contextualInference;
+  const selectedFinancialGuidedEntry = isSelectedFinancialGuidedEntry(text, ui);
   const countTargetCandidates = targetCandidates.filter((concept) => !countTargetIsExplicitlyExcluded(text, concept));
   const ambiguousTarget = !schoolOperationalPlanningQuestion && hasCardinalityCue(text) && !hasValueLookupCue(text) && countTargetCandidates.length > 1;
   const task = ambiguousTarget ? "CLARIFY" : effectiveInferred.taskType;
   const selectedScopeRequested = Boolean(ui.selectedId && ui.selectedType)
-    && (hasSelectedRecordCue(text) || hasSelectedRecordReference(text) || hasSelectedRecordActionReference(text) || hasSelectedTypedPossessiveReference(text, ui) || hasSelectedRecordIdentityCue(text, ui) || inferred.productGroundedWritingIntent);
+    && (hasSelectedRecordCue(text) || hasSelectedRecordReference(text) || hasSelectedRecordActionReference(text, ui) || hasSelectedTypedPossessiveReference(text, ui) || hasSelectedRecordIdentityCue(text, ui) || inferred.productGroundedWritingIntent);
   const inheritedSelectedAssessmentScope = hasInheritedSelectedAssessmentScope({ text, ui, inferred: effectiveInferred });
   const scopeTarget = (effectiveInferred.roleHelpIntent || effectiveInferred.generalProductHelpIntent)
     ? "ROLE_GLOBAL"
@@ -4196,6 +4919,12 @@ export function inferCanonicalSemanticRequest({ message, user, screenContext, co
     ? "NONE"
     : hasRoleGlobalScopeCue(text)
     ? "ROLE_GLOBAL"
+    // Operation-health metric/row requests are owned by the visible
+    // operation-health projection.  A stale selected shift or agreement may
+    // still be present in the conversation envelope, but it must not turn a
+    // screen-level GPS/offline row request into a record diagnosis.
+    : effectiveInferred.operationHealthMetricIntent
+    ? "CURRENT_SCREEN"
     : selectedScopeRequested || inheritedSelectedAssessmentScope || task === "PLAN_REVIEW" || (["FIELD_LOOKUP", "RELATION_LOOKUP", "RECORD_DETAILS", "STYLE"].includes(task) && Boolean(ui.selectedId))
       ? "SELECTED_RECORD"
       : "CURRENT_SCREEN";
@@ -4218,15 +4947,39 @@ export function inferCanonicalSemanticRequest({ message, user, screenContext, co
   })();
   return {
     ...effectiveInferred,
-    taskType: task,
+    ...(selectedFinancialGuidedEntry
+      ? {
+        taskType: "CONTINUE_CURRENT_REASONING",
+        domain: "FINANCE",
+        targetEntityType: "AGREEMENT",
+        requestedTasks: ["CONTINUE_CURRENT_REASONING"],
+        explicitTaskIntent: false,
+        explicitUserTarget: true,
+        continuationIntent: true,
+        continuationAction: continuationActionFor(text),
+        generalProductHelpIntent: false,
+        roleHelpIntent: false,
+        productTeachingIntent: false,
+        screenContextIntent: false,
+        screenDetailIntent: false,
+        screenKnowledgeIntent: false,
+        explicitUiGuidance: false,
+        primaryTask: "CONTINUE_CURRENT_REASONING",
+        scopeTarget: "SELECTED_RECORD",
+        selectedRecordIntent: true,
+        ambiguity: null,
+      }
+      : {
+        taskType: task,
+      }),
     ambiguity: ambiguousTarget ? "MULTIPLE_EXPLICIT_ENTITY_TARGETS" : (inferred.ambiguity || null),
     targetCandidates: targetCandidates.map((concept) => concept.type),
     normalizedText: text,
     uiContext: ui,
     requestedOwnershipScope,
-    scopeTarget,
+    scopeTarget: selectedFinancialGuidedEntry ? "SELECTED_RECORD" : scopeTarget,
     requiredOutputSlots,
-    explicitUserTarget: Boolean(effectiveInferred.targetEntityType || effectiveInferred.countTarget || effectiveInferred.requestedTasks?.length || task === "SCREEN_CONTEXT" || task === "SELECTED_RECORD_CONTEXT" || task === "RELATION_LOOKUP" || task === "RECORD_DETAILS" || task === "CONTINUE_CURRENT_REASONING" || task === "RETURN_TO_PRODUCT" || task === "FRESHNESS_CHECK" || task === "UNCERTAINTY_CHECK" || task === "EVIDENCE_SUFFICIENCY" || task === "COMPARISON" || (task === "FIELD_LOOKUP" && ui.selectedId)),
+    explicitUserTarget: selectedFinancialGuidedEntry || Boolean(effectiveInferred.targetEntityType || effectiveInferred.countTarget || effectiveInferred.requestedTasks?.length || task === "SCREEN_CONTEXT" || task === "SELECTED_RECORD_CONTEXT" || task === "RELATION_LOOKUP" || task === "RECORD_DETAILS" || task === "CONTINUE_CURRENT_REASONING" || task === "RETURN_TO_PRODUCT" || task === "FRESHNESS_CHECK" || task === "UNCERTAINTY_CHECK" || task === "EVIDENCE_SUFFICIENCY" || task === "COMPARISON" || (task === "FIELD_LOOKUP" && ui.selectedId)),
   };
 }
 
@@ -4423,6 +5176,7 @@ const CANONICAL_SEMANTIC_OBJECT_CLASSES = new Set([
   "PERSONNEL",
   "VEHICLE",
   "DRIVER",
+  "FINANCIAL",
   "SURFACE",
   "RECORD",
 ]);
@@ -4756,9 +5510,19 @@ function inferCanonicalSemanticAction({ text, shape, conversationState, semantic
   const typedReferenceNeedsClarification = ["AMBIGUOUS", "UNRESOLVED", "REJECTED_STALE", "STALE"].includes(typedReference);
   const typedObjectEvidence = String(typedEvidence?.object?.value || "").toUpperCase();
   const typedReferenceRequiresConcreteTarget = typedReferenceNeedsClarification && typedObjectEvidence !== "SURFACE";
+  // A quote-floor explanation is a screen-scoped financial follow-up when the
+  // current authorized surface and the settled financial evidence both agree.
+  // It does not require a selected record; unlike a generic deictic request,
+  // the metric identity is carried by the current financial surface and the
+  // prior typed quote-floor evidence. Non-financial surfaces and absent prior
+  // evidence remain fail-closed below.
+  const referenceLessQuoteFloorFollowUp = shape?.taskType === "RISK"
+    && typedEvidence?.specificity?.quoteFloorAnalysisEvidence === true
+    && hasQuoteFloorContextualFollowUpCue(normalizedText, conversationState, semanticContext?.currentSurface);
 
   if (shape?.taskType === "ISSUE"
     && shape?.operationHealthMetricIntent
+    && !hasExplicitSurfaceNavigationVerb(normalizedText)
     && !shape?.ambiguity) {
     return resolvedSemanticAction({
       actionClass: "EXPLAIN",
@@ -4804,8 +5568,46 @@ function inferCanonicalSemanticAction({ text, shape, conversationState, semantic
     });
   }
 
+  // An explicit current-screen knowledge request is grounded by the
+  // authenticated surface itself. Resolve it as a read-only explanation
+  // before lexical deictic validation can mistake the screen reference for
+  // an unresolved record. This preserves fail-closed record handling while
+  // allowing questions such as “Bu finans ekranında önce neyi kontrol
+  // edeyim?” to reach the current-surface answer owner.
+  if (shape?.taskType === "SCREEN_CONTEXT"
+    && shape?.screenKnowledgeIntent === true
+    && !shape?.ambiguity
+    // Explicit surface-opening language is navigation, even though the
+    // same sentence also carries screen-knowledge evidence. Let the VIEW
+    // owner activate the authorized route instead of explaining the current
+    // screen.
+    && !(["VIEW", "NAVIGATE"].includes(String(typedEvidence?.requestMode?.value || "").toUpperCase())
+      && (hasShiftSurfaceNavigationCue(normalizedText)
+        || hasOfferSurfaceNavigationCue(normalizedText)
+        || hasAgreementSurfaceNavigationCue(normalizedText)
+        || hasCheckinSurfaceNavigationCue(normalizedText)
+        || hasAppliedRouteSurfaceNavigationCue(normalizedText)
+        || hasLiveMapSurfaceNavigationCue(normalizedText)
+        || hasReportsSurfaceNavigationCue(normalizedText)))) {
+    return resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      objectClass: "SURFACE",
+      targetCandidate: { objectClass: "SURFACE" },
+      evidence: ["CANONICAL_CURRENT_SCREEN_CONTEXT"],
+      explicitness: shape?.explicitTaskIntent ? "EXPLICIT" : "CONTEXTUAL",
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: true },
+    });
+  }
+
   const currentTargetGrounded = Boolean(shape?.currentTargetRecoveryIntent || shape?.currentTargetExplanationIntent);
-  if (typedReferenceRequiresConcreteTarget && !currentTargetGrounded) {
+  const referenceLessFinancialReadiness = shape?.taskType === "RISK"
+    && typedEvidence?.specificity?.financialReadinessEvidence === true;
+  if (typedReferenceRequiresConcreteTarget
+    && !currentTargetGrounded
+    && !referenceLessFinancialReadiness
+    && !referenceLessQuoteFloorFollowUp
+    && !(shape?.taskType === "COUNT" && shape?.countTarget?.targetEntityType)) {
     return resolvedSemanticAction({
       actionClass: "NONE",
       objectClass: null,
@@ -4884,11 +5686,14 @@ function inferCanonicalSemanticAction({ text, shape, conversationState, semantic
     return resolvedSemanticAction({ actionClass: "RESUME", objectClass: contextualObjectClass === "UNKNOWN" ? "RECORD" : contextualObjectClass, evidence: ["ACTIVE_TASK_RESUME_CUE"], explicitness: "CONTEXTUAL" });
   }
   if (shape?.continuationIntent || shape?.taskType === "CONTINUE_CURRENT_REASONING") {
+    const continuationObjectClass = activeWorkflowIntent.includes("SHIFT")
+      ? "SHIFT"
+      : contextualObjectClass === "UNKNOWN"
+        ? (helpContinuationBase ? "SURFACE" : "RECORD")
+        : contextualObjectClass;
     return resolvedSemanticAction({
       actionClass: "CONTINUE",
-      objectClass: contextualObjectClass === "UNKNOWN"
-        ? (helpContinuationBase ? "SURFACE" : "RECORD")
-        : contextualObjectClass,
+      objectClass: continuationObjectClass,
       evidence: ["SETTLED_TASK_CONTINUATION", ...(helpContinuationBase ? ["GENERIC_HELP_CONTINUATION"] : [])],
       explicitness: "CONTEXTUAL",
     });
@@ -4949,14 +5754,65 @@ function inferCanonicalSemanticAction({ text, shape, conversationState, semantic
   }
   // The central specificity resolver identifies movement plus a concrete
   // target before legacy COUNT/VIEW projection can consume the same noun.
+  // A contract-to-generated-shift request is a relationship lookup even when
+  // the wording uses an opening verb. Preserve the relation before typed
+  // navigation specificity can reinterpret the related collection as a
+  // generic surface destination.
+  if (hasContractShiftGenerationLookupCue(normalizedText)) {
+    return resolvedSemanticAction({
+      actionClass: "VIEW",
+      objectClass: "SHIFT",
+      targetCandidate: { objectClass: "SHIFT" },
+      evidence: ["CONTRACT_SHIFT_RELATION_LOOKUP"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+      modifiers: { current: true, new: false, next: false, explicitTarget: true },
+    });
+  }
+  // An explicit surface-opening request is a visible navigation task even
+  // when the specificity layer also carries screen-context evidence. Keep
+  // the workflow destination on the VIEW lane so the authorized surface
+  // owner can activate the real route instead of replying with a description
+  // of the screen the user is already on.
+  const openSurfaceWorkflow = [
+    "OPEN_SURFACE",
+    "OPEN_SHIFT_SURFACE",
+    "OPEN_OFFER_SURFACE",
+    "OPEN_AGREEMENTS_SURFACE",
+    "OPEN_MAP_SURFACE",
+    "OPEN_REPORTS_SURFACE",
+    "OPEN_CHECKIN_SURFACE",
+    "OPEN_APPLIED_ROUTE_SURFACE",
+  ].includes(String(shape?.workflowIntent || "").toUpperCase());
+  if (openSurfaceWorkflow
+    && typedRequestMode === "VIEW"
+    && typedEvidence?.quality?.authorizationEffect === "NONE"
+    && !typedReferenceRequiresConcreteTarget) {
+    const surfaceObject = ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "SURFACE"].includes(contextualObjectClass)
+      && contextualObjectClass !== "SURFACE"
+      ? contextualObjectClass
+       : (semanticObjectClass(shape, normalizedText) || "SURFACE");
+    return resolvedSemanticAction({
+      actionClass: "VIEW",
+      objectClass: surfaceObject,
+      targetCandidate: { objectClass: surfaceObject },
+      evidence: ["CANONICAL_OPEN_SURFACE_VIEW"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+      modifiers: { current: false, new: false, next: false, explicitTarget: true },
+    });
+  }
   if (typedEvidence?.specificity?.selectedTask === "NAVIGATION"
     && !typedReferenceRequiresConcreteTarget
     && typedEvidence?.quality?.authorizationEffect === "NONE") {
-    const navigationObject = ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER", "RECORD", "SURFACE"].includes(typedEvidence?.specificity?.navigationTargetClass)
+    const textualNavigationObject = semanticObjectClass(null, normalizedText);
+    const navigationObject = ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER", "RECORD"].includes(typedEvidence?.specificity?.navigationTargetClass)
       ? typedEvidence.specificity.navigationTargetClass
-      : ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER", "RECORD", "SURFACE"].includes(typedObjectClass)
+      : ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER", "RECORD"].includes(typedObjectClass)
         ? typedObjectClass
-      : (contextualObjectClass === "UNKNOWN" ? null : contextualObjectClass);
+      : (textualNavigationObject !== "UNKNOWN"
+        ? textualNavigationObject
+        : (contextualObjectClass === "UNKNOWN" ? null : contextualObjectClass));
     return resolvedSemanticAction({
       actionClass: "NAVIGATE",
       objectClass: navigationObject,
@@ -4964,6 +5820,47 @@ function inferCanonicalSemanticAction({ text, shape, conversationState, semantic
       evidence: ["CENTRAL_SPECIFICITY_NAVIGATION", ...(navigationObject ? ["TYPED_OBJECT_EVIDENCE"] : [])],
       explicitness: "EXPLICIT",
       resolutionStatus: navigationObject ? "RESOLVED" : "UNRESOLVED",
+    });
+  }
+  const explicitSurfaceViewCue = hasShiftSurfaceNavigationCue(normalizedText)
+    || hasOfferSurfaceNavigationCue(normalizedText)
+    || hasAgreementSurfaceNavigationCue(normalizedText)
+    || hasCheckinSurfaceNavigationCue(normalizedText)
+    || hasAppliedRouteSurfaceNavigationCue(normalizedText)
+    || hasLiveMapSurfaceNavigationCue(normalizedText)
+    || hasReportsSurfaceNavigationCue(normalizedText);
+  if (typedRequestMode === "VIEW"
+    && explicitSurfaceViewCue
+    && !typedReferenceRequiresConcreteTarget
+    && typedEvidence?.quality?.authorizationEffect === "NONE") {
+    const surfaceObject = ["SHIFT", "AGREEMENT", "OFFER"].includes(typedObjectClass)
+      ? typedObjectClass
+       : (semanticObjectClass(shape, normalizedText) || "SURFACE");
+    return resolvedSemanticAction({
+      actionClass: "VIEW",
+      objectClass: surfaceObject,
+      targetCandidate: { objectClass: surfaceObject },
+      evidence: ["CANONICAL_SURFACE_NAVIGATION_VIEW"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+      modifiers: { current: false, new: false, next: false, explicitTarget: true },
+    });
+  }
+  if (typedRequestMode === "NAVIGATE"
+    && explicitSurfaceViewCue
+    && !typedReferenceRequiresConcreteTarget
+    && typedEvidence?.quality?.authorizationEffect === "NONE") {
+    const surfaceObject = ["SHIFT", "AGREEMENT", "OFFER"].includes(typedObjectClass)
+      ? typedObjectClass
+       : (semanticObjectClass(shape, normalizedText) || "SURFACE");
+    return resolvedSemanticAction({
+      actionClass: "NAVIGATE",
+      objectClass: surfaceObject,
+      targetCandidate: { objectClass: surfaceObject },
+      evidence: ["CANONICAL_SURFACE_NAVIGATION"],
+      explicitness: "EXPLICIT",
+      resolutionStatus: "RESOLVED",
+      modifiers: { current: false, new: false, next: false, explicitTarget: true },
     });
   }
   if (typedEvidence?.specificity?.selectedTask === "SCREEN_CONTEXT"
@@ -5019,7 +5916,8 @@ function inferCanonicalSemanticAction({ text, shape, conversationState, semantic
   // become creation guidance accidentally.
   if (shape?.workflowIntent === "CREATE_SHIFT"
     && typedRequestMode === "EXPLAIN"
-    && typedObjectClass === "SHIFT") {
+    && typedObjectClass === "SHIFT"
+    && !/\b(?:yetki|izin|iznim|izni|yapabil|sorumluluk|gorev|görev)\p{L}*\b/iu.test(normalizedText)) {
     return resolvedSemanticAction({
       actionClass: "CREATE",
       objectClass: "SHIFT",
@@ -5080,7 +5978,7 @@ function inferCanonicalSemanticAction({ text, shape, conversationState, semantic
     && !typedReferenceRequiresConcreteTarget
     && !shape?.ambiguity
     && typedEvidence?.quality?.authorizationEffect === "NONE") {
-    const candidateObject = ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER", "RECORD", "SURFACE"].includes(typedObjectClass)
+    const candidateObject = ["SHIFT", "AGREEMENT", "OFFER", "ROUTE", "PERSONNEL", "VEHICLE", "DRIVER", "FINANCIAL", "RECORD", "SURFACE"].includes(typedObjectClass)
       ? typedObjectClass
       : (contextualObjectClass === "UNKNOWN" ? null : contextualObjectClass);
     const typedActionObject = CANONICAL_SEMANTIC_OBJECT_CLASSES.has(candidateObject) ? candidateObject : null;
@@ -5089,8 +5987,12 @@ function inferCanonicalSemanticAction({ text, shape, conversationState, semantic
       objectClass: typedActionObject,
       targetCandidate: typedActionObject ? { objectClass: typedActionObject } : null,
       evidence: [`TYPED_REQUEST_MODE_${typedRequestMode}`, ...(typedActionObject ? ["TYPED_OBJECT_EVIDENCE"] : [])],
-      explicitness: "EXPLICIT",
-      resolutionStatus: "RESOLVED",
+      // A bare navigation imperative such as “oraya git” carries an action
+      // mode but no authorized surface/record. Keep it unresolved so the
+      // canonical scope routes to clarification instead of manufacturing a
+      // target or silently choosing the current screen.
+      explicitness: typedActionObject ? "EXPLICIT" : "UNRESOLVED",
+      resolutionStatus: typedActionObject ? "RESOLVED" : "UNRESOLVED",
     });
   }
   if (shape?.generalProductHelpIntent) {
@@ -5171,7 +6073,9 @@ function inferCanonicalSemanticAction({ text, shape, conversationState, semantic
     });
   }
 
-  if (hinted?.actionClass === "CREATE" && hinted?.objectClass === "SHIFT") {
+  if (hinted?.actionClass === "CREATE"
+    && hinted?.objectClass === "SHIFT"
+    && !/\b(?:yetki|izin|iznim|izni|yapabil|sorumluluk|gorev|görev)\p{L}*\b/iu.test(normalizedText)) {
     return resolvedSemanticAction({ actionClass: "CREATE", objectClass: "SHIFT", evidence: [...hintEvidence, "EXPLICIT_SHIFT_CREATE_GOAL"] });
   }
 
@@ -5185,10 +6089,15 @@ function inferCanonicalSemanticAction({ text, shape, conversationState, semantic
     return resolvedSemanticAction({ actionClass: "NAVIGATE", objectClass, evidence: ["CANONICAL_SURFACE_NAVIGATION"] });
   }
 
+  const capabilityBoundaryQuestion = /\b(?:yetki|izin|iznim|izni|yapabil|sorumluluk|gorev|görev)\p{L}*\b/iu.test(normalizedText);
+  // Explicit record-detail requests are resolved above, so the generic
+  // "aç" creation spelling remains available for the existing ROOM create
+  // policy (for example, “yeni vardiya açma talebim var”).
   const explicitShiftCreate = objectClass === "SHIFT"
     && !hasPreparationOnlyCue(normalizedText)
+    && !capabilityBoundaryQuestion
     && /\b(?:yeni|sifirdan|sıfırdan)?\s*(?:vardiya|sefer|shift)\p{L}*(?:\s+(?:plani|planı))?.{0,36}\b(?:olustur|oluştur|baslat|başlat|ac(?!ikla)|aç(?!ıkla))\p{L}*\b/iu.test(normalizedText);
-  if (shape?.workflowIntent === "CREATE_SHIFT" || explicitShiftCreate) {
+  if ((shape?.workflowIntent === "CREATE_SHIFT" && !capabilityBoundaryQuestion) || explicitShiftCreate) {
     return resolvedSemanticAction({ actionClass: "CREATE", objectClass: "SHIFT", evidence: [...hintEvidence, "EXPLICIT_SHIFT_CREATE_GOAL"] });
   }
 
@@ -5313,11 +6222,88 @@ function mapSemanticActionToCanonicalMeaning({ semanticAction, shape } = {}) {
       capability: objectClass === "SHIFT" ? "UPDATE_SHIFT" : `UPDATE_${objectClass || "RECORD"}`,
     };
   }
+  // A named offer collection is a surface-scoped summary request, not a
+  // scalar cardinality query. Keep the collection envelope on the view
+  // operation so authorized offer facts reach the visible answer.
+  if (shape?.collectionSummaryIntent === true
+    && String(shape?.targetEntityType || objectClass || "").toUpperCase() === "OFFER") {
+    Object.assign(nextShape, {
+      taskType: "SCREEN_CONTEXT",
+      domain: "OFFERS",
+      targetEntityType: "OFFER",
+      requestedTasks: ["SCREEN_CONTEXT"],
+      requestedFields: [],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      explicitUiGuidance: true,
+      screenContextIntent: true,
+      workflowIntent: "OPEN_OFFER_SURFACE",
+      ambiguity: null,
+    });
+    return {
+      shape: nextShape,
+      operation: "VIEW_AUTHORIZED_SURFACE",
+      capability: "VIEW_OFFER_SURFACE",
+    };
+  }
   if (shape?.taskType === "COUNT") {
     return { shape: nextShape, operation: "COUNT_AUTHORIZED_RECORDS", capability: "COUNT_AUTHORIZED_RECORDS" };
   }
+  // A relation lookup may use a visible verb such as "göster" or "aç".
+  // Preserve the already-resolved relationship task instead of remapping the
+  // related SHIFT object to generic surface navigation.
+  if (actionClass === "VIEW"
+    && shape?.taskType === "RELATION_LOOKUP"
+    // An explicit record-view sentence such as “başka kuruma ait vardiya
+    // kaydını görüntüle” must reach the normal record/surface authorization
+    // path. Relation traversal remains authoritative for generated/related
+    // collections, which do not carry this record-view construction.
+    && !/\b(?:kay[ıi]t|kay[ıi]d|record)\p{L}*\b/iu.test(normalize(shape?.normalizedText || ""))) {
+    Object.assign(nextShape, {
+      taskType: "RELATION_LOOKUP",
+      domain: nextShape.domain || "SHIFTS",
+      targetEntityType: nextShape.targetEntityType || "SHIFT",
+      requestedTasks: ["RELATION_LOOKUP"],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      ambiguity: null,
+    });
+    return { shape: nextShape, operation: "LOOK_UP_RELATION", capability: "VIEW_SHIFTS" };
+  }
   if (actionClass === "VIEW") {
+    if (objectClass === "FINANCIAL") {
+      Object.assign(nextShape, {
+        domain: "FINANCE",
+        explicitTaskIntent: true,
+        explicitUserTarget: true,
+      });
+      return {
+        shape: nextShape,
+        operation: "VIEW_AUTHORIZED_SURFACE",
+        capability: "VIEW_FINANCIAL_SURFACE",
+      };
+    }
     if (objectClass === "OFFER" && semanticAction?.evidence?.includes("EXPLICIT_OFFER_RECORD_VIEW")) {
+      return {
+        shape: nextShape,
+        operation: "VIEW_AUTHORIZED_SURFACE",
+        capability: "VIEW_OFFER_SURFACE",
+      };
+    }
+    if (objectClass === "OFFER") {
+      Object.assign(nextShape, {
+        taskType: "SCREEN_CONTEXT",
+        domain: "OFFERS",
+        targetEntityType: "OFFER",
+        requestedTasks: ["SCREEN_CONTEXT"],
+        requestedFields: [],
+        explicitTaskIntent: true,
+        explicitUserTarget: true,
+        explicitUiGuidance: true,
+        screenContextIntent: true,
+        workflowIntent: "OPEN_OFFER_SURFACE",
+        ambiguity: null,
+      });
       return {
         shape: nextShape,
         operation: "VIEW_AUTHORIZED_SURFACE",
@@ -5337,6 +6323,18 @@ function mapSemanticActionToCanonicalMeaning({ semanticAction, shape } = {}) {
       });
     }
     return { shape: nextShape, operation: "VIEW_AUTHORIZED_SURFACE", capability: objectClass === "SHIFT" ? "VIEW_SHIFTS" : String(nextShape.workflowIntent || `VIEW_${objectClass}_SURFACE`).toUpperCase() };
+  }
+  // A natural-language request may use an explanatory politeness form
+  // ("Teklifleri açar mısın?", "Tekliflere bakabilir miyiz?") while its
+  // canonical workflow is still an explicit offer-surface destination. Keep
+  // that destination as the operation owner; otherwise the later role-help
+  // seam can label a real navigation request as generic explanation.
+  if (actionClass === "EXPLAIN" && shape?.workflowIntent === "OPEN_OFFER_SURFACE") {
+    return {
+      shape: nextShape,
+      operation: "VIEW_AUTHORIZED_SURFACE",
+      capability: "VIEW_OFFER_SURFACE",
+    };
   }
   if (actionClass === "EXPLAIN"
     && (shape?.currentTargetRecoveryIntent || shape?.currentTargetExplanationIntent)) {
@@ -5434,10 +6432,20 @@ function candidateEntityRefsFromCanonicalShape(shape, selectedEntity, { operatio
   // lexical candidate into the canonical reference envelope after the
   // higher-level help composition has already settled that distinction.
   if (shape?.roleHelpIntent === true || shape?.generalProductHelpIntent === true) return refs;
+  // An explicit external owner/tenant is a deny-before-retrieval request.
+  // Never carry the live selected record into the canonical candidate
+  // envelope, where a later relation adapter could silently reuse it.
+  if (shape?.requestedOwnershipScope?.explicitExternalScope === true) return refs;
+  // Role-scoped financial summaries intentionally clear the visible record;
+  // do not let a selected vehicle or shift become a hidden retrieval target.
+  if (shape?.suppressSelectedEntityContext === true) return refs;
   const targetEntityType = String(shape?.targetEntityType || "").trim().toUpperCase();
   const workflowIntent = String(shape?.workflowIntent || "").trim().toUpperCase();
   const ui = shape?.uiContext || {};
-  const normalizedText = String(shape?.normalizedText || shape?.currentRequest?.normalizedMeaning || "").trim();
+  // The candidate envelope is built before `currentRequest.normalizedMeaning`
+  // is attached to the frozen request. Fall back to the raw turn so an
+  // explicit offer/record id can suppress a stale selected-card candidate.
+  const normalizedText = String(shape?.normalizedText || shape?.currentRequest?.normalizedMeaning || message || "").trim();
   const previousRecordReference = resolvePreviousRecordReference({
     message: message || normalizedText,
     conversationState,
@@ -5450,17 +6458,19 @@ function candidateEntityRefsFromCanonicalShape(shape, selectedEntity, { operatio
   const explicitOfferReference = explicitOfferMatch
     ? { type: "OFFER", id: Number(explicitOfferMatch[1]), source: "EXPLICIT_QUERY" }
     : null;
-  const explicitRecordReference = shape?.explicitEntityReference || explicitShiftReferenceFromText(normalizedText);
+  const explicitRecordReference = shape?.explicitEntityReference
+    || explicitShiftReferenceFromText(normalizedText)
+    || explicitVehicleReferenceFromText(normalizedText)
+    || explicitAgreementReferenceFromText(normalizedText);
+  const explicitSelectedRecordReference = hasSelectedRecordCue(normalizedText)
+    || hasSelectedRecordReference(normalizedText)
+    || hasSelectedRecordActionReference(normalizedText, ui)
+    || hasSelectedTypedPossessiveReference(normalizedText, ui);
   const collectionScope = shape?.collectionSummaryIntent === true
     || shape?.agreementCollectionViewIntent === true
-    || (shape?.taskType === "COUNT" && shape?.scopeTarget === "CURRENT_SCREEN");
-  const hasResolvedRecord = Boolean(
-    Number(selectedEntity?.id || selectedEntity?.entityId || 0) > 0
-      || Number(ui.selectedId || 0) > 0
-      || shape?.currentTargetReference?.targetKey
-      || shape?.targetResolutionState === "RESOLVED_RECORD",
-  );
-  const surfaceWorkflow = ["OPEN_SURFACE", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE", "OPEN_AGREEMENTS_SURFACE"].includes(workflowIntent);
+    || (shape?.taskType === "COUNT" && shape?.scopeTarget === "CURRENT_SCREEN")
+    || hasContractShiftGenerationLookupCue(normalizedText);
+  const surfaceWorkflow = ["OPEN_SURFACE", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE", "OPEN_AGREEMENTS_SURFACE", "OPEN_MAP_SURFACE", "OPEN_REPORTS_SURFACE", "OPEN_CHECKIN_SURFACE", "OPEN_APPLIED_ROUTE_SURFACE"].includes(workflowIntent);
   const surfaceTarget = Boolean(
     (targetEntityType === "SURFACE" && (
       shape?.explicitUserTarget
@@ -5470,7 +6480,8 @@ function candidateEntityRefsFromCanonicalShape(shape, selectedEntity, { operatio
       || (
         surfaceWorkflow
         && !explicitOfferReference
-        && !hasResolvedRecord
+        && !explicitRecordReference
+        && !explicitSelectedRecordReference
         && ["NAVIGATE_AUTHORIZED_SURFACE", "VIEW_AUTHORIZED_SURFACE", "OPEN_EXISTING_SHIFT_OPERATIONS"].includes(String(operation || "").toUpperCase())
         && ["NAVIGATE", "VIEW", "CREATE", "EXPLAIN"].includes(String(semanticAction?.actionClass || "").toUpperCase())
       ),
@@ -5487,7 +6498,21 @@ function candidateEntityRefsFromCanonicalShape(shape, selectedEntity, { operatio
   if (previousRecordReference) add(previousRecordReference, "PREVIOUS_RECORD_CONTEXT");
   if (explicitOfferReference) add(explicitOfferReference, "EXPLICIT_QUERY");
   if (explicitRecordReference) add(explicitRecordReference, "EXPLICIT_QUERY");
-  if (!surfaceTarget && !explicitRecordReference && !collectionScope && !previousRecordReference) add(selectedEntity, "SELECTED_ENTITY_CANDIDATE");
+  // A contract-produced-shift relation is scoped by the selected agreement
+  // when the conversation is on an agreement surface.  The collection-scope
+  // branch below must not erase that relation source; without it the query
+  // executor cannot distinguish “this contract's shifts” from an ungrounded
+  // collection request and the user receives a false evidence-missing reply.
+  const selectedAgreementSource = !explicitRecordReference && !explicitOfferReference
+    && String(shape?.taskType || "").toUpperCase() === "RELATION_LOOKUP"
+    && String(selectedEntity?.type || selectedEntity?.entityType || ui.selectedType || "").toUpperCase() === "AGREEMENT"
+    && Number(selectedEntity?.id || selectedEntity?.entityId || ui.selectedId || 0) > 0
+    ? (selectedEntity?.type || selectedEntity?.entityType
+      ? selectedEntity
+      : { type: ui.selectedType, id: ui.selectedId })
+    : null;
+  if (selectedAgreementSource) add(selectedAgreementSource, "SELECTED_RELATION_SOURCE");
+  if (!surfaceTarget && !explicitOfferReference && !explicitRecordReference && !collectionScope && !previousRecordReference) add(selectedEntity, "SELECTED_ENTITY_CANDIDATE");
   if (!surfaceTarget) {
     for (const type of Array.isArray(shape?.targetCandidates) ? shape.targetCandidates : []) {
       if (explicitOfferReference && String(type || "").toUpperCase() === "OFFER") continue;
@@ -5498,7 +6523,7 @@ function candidateEntityRefsFromCanonicalShape(shape, selectedEntity, { operatio
   // An explicit record identity owns the turn.  The live selected card is
   // still useful evidence for deictic requests, but must not be appended as a
   // second candidate when the user explicitly named another offer.
-  if (!surfaceTarget && !explicitRecordReference && !collectionScope && !previousRecordReference && (ui.selectedType || ui.selectedId)) add({ type: ui.selectedType, id: ui.selectedId }, "LIVE_CONTEXT_CANDIDATE");
+  if (!surfaceTarget && !explicitOfferReference && !explicitRecordReference && !collectionScope && !previousRecordReference && (ui.selectedType || ui.selectedId)) add({ type: ui.selectedType, id: ui.selectedId }, "LIVE_CONTEXT_CANDIDATE");
   return refs;
 }
 
@@ -5544,6 +6569,7 @@ function validateCanonicalConversationRequest(request) {
     if (request?.operation === "EXPLAIN_CURRENT_SURFACE") errors.push("CREATE_SHIFT_SURFACE_EXPLANATION_CONTRADICTION");
   }
   if (action?.actionClass === "NAVIGATE" && request?.operation === "CREATE_SHIFT") errors.push("NAVIGATE_CREATE_CONTRADICTION");
+  if (action?.actionClass === "VIEW" && request?.operation === "CREATE_SHIFT") errors.push("VIEW_CREATE_CONTRADICTION");
   if (action?.actionClass === "COMPARE" && request?.operation !== "COMPARE_AUTHORIZED_RECORDS") errors.push("COMPARE_OPERATION_REQUIRED");
   if (request?.operation === "COMPARE_AUTHORIZED_RECORDS" && action?.actionClass !== "COMPARE") errors.push("COMPARE_ACTION_REQUIRED");
   if (request?.semanticScope?.class === "OFF_TOPIC_GENUINE") {
@@ -5702,8 +6728,33 @@ function resolveOldCanonicalConversationRequest({
   if (authorityTrace) authorityTrace.events.push({ path: "OLD_CANONICAL", role: "AUTHORITY" });
   const canonicalContext = semanticContext || buildCanonicalSemanticContext({ message, user, screenContext, conversationState });
   const inferredShape = inferCanonicalSemanticRequest({ message, user, screenContext, conversationState, localSemanticProposal });
-  const inferredSemanticAction = inferCanonicalSemanticAction({ text: message, shape: inferredShape, conversationState, semanticContext: canonicalContext });
-  const preliminaryMapping = mapSemanticActionToCanonicalMeaning({ semanticAction: inferredSemanticAction, shape: inferredShape });
+  const normalizedMessage = normalize(message);
+  const operationHealthIssueCue = /(?:riskli\s+cihaz|gps|konum\s+sinyali|cevrim\s+disi|çevrim\s+dışı|acik\s+sorun|açık\s+sorun)/iu.test(normalizedMessage);
+  const crossSurfaceOperationHealthIssue = String(user?.role || "").toUpperCase() === "ROOM"
+    && /(?:satir|sıra|sorun|problem|riskli\s+cihaz|acik\s+sorun|açık\s+sorun)/iu.test(normalizedMessage);
+  const operationHealthSurfaceIssue = (
+    /\/room\/operation-health\b/iu.test(String(screenContext?.path || ""))
+    || crossSurfaceOperationHealthIssue
+  )
+    && operationHealthIssueCue
+    && !hasOperationHealthIssueViewCue(message, screenContext);
+  const scopedInferredShape = operationHealthSurfaceIssue
+    ? {
+      ...inferredShape,
+      targetEntityType: null,
+      scopeTarget: "CURRENT_SCREEN",
+      domain: "OPERATIONS",
+      taskType: "ISSUE",
+      operationHealthMetricIntent: true,
+      operationHealthMetricMode: "GPS_ISSUE_SUBSET",
+      requestedTasks: ["ISSUE"],
+      requestedFields: [{ key: "OPERATION_HEALTH_METRIC", domain: "OPERATIONS" }],
+      explicitUserTarget: true,
+      requestedDomains: ["OPERATIONS"],
+    }
+    : inferredShape;
+  const inferredSemanticAction = inferCanonicalSemanticAction({ text: message, shape: scopedInferredShape, conversationState, semanticContext: canonicalContext });
+  const preliminaryMapping = mapSemanticActionToCanonicalMeaning({ semanticAction: inferredSemanticAction, shape: scopedInferredShape });
   const preliminaryShape = preliminaryMapping.shape;
   const preliminaryScope = resolveSemanticScope({ text: message, shape: preliminaryShape, semanticAction: inferredSemanticAction });
   const semanticAction = preliminaryScope.class === "OFF_TOPIC_GENUINE"
@@ -5716,7 +6767,7 @@ function resolveOldCanonicalConversationRequest({
       modifiers: { new: false, current: false, next: false, explicitTarget: false },
     })
     : inferredSemanticAction;
-  const mapping = mapSemanticActionToCanonicalMeaning({ semanticAction, shape: inferredShape });
+  const mapping = mapSemanticActionToCanonicalMeaning({ semanticAction, shape: scopedInferredShape });
   const shape = mapping.shape;
   const semanticScope = preliminaryScope.class === "OFF_TOPIC_GENUINE"
     ? preliminaryScope
@@ -5731,7 +6782,9 @@ function resolveOldCanonicalConversationRequest({
   const capability = semanticScope.class === "OFF_TOPIC_GENUINE"
     ? "GENERAL_INFORMATION"
     : mapping.capability;
-  const candidateEntityRefs = candidateEntityRefsFromCanonicalShape(shape, selectedEntity, { operation, semanticAction, message, conversationState, screenContext });
+  const candidateEntityRefs = operationHealthSurfaceIssue
+    ? []
+    : candidateEntityRefsFromCanonicalShape(shape, selectedEntity, { operation, semanticAction, message, conversationState, screenContext });
   const request = deepFreeze({
     version: SEFER_ABI_CANONICAL_REQUEST_VERSION,
     operation,
@@ -5925,14 +6978,26 @@ function newAuthorityShape({ message, screenContext, evidence, failure = false, 
 
 function buildTypedCanonicalShape({ message, user, screenContext, conversationState, evidence, context, inferred: providedInferred = null, specificity = null } = {}) {
   const inferred = providedInferred || inferCanonicalSemanticRequest({ message, user, screenContext, conversationState });
+  const financialScreenRiskRequest = hasFinancialScreenRiskCue(message)
+    && /\/(?:room|company|school|organization)\/financial-operations\b/iu.test(String(screenContext?.path || ''))
+    && !currentUiContext(screenContext, conversationState).selectedEntityPresent;
   const mode = String(evidence?.requestMode?.value || "UNRESOLVED").toUpperCase();
-  const explicitRecordReference = inferred?.explicitEntityReference || explicitShiftReferenceFromText(message);
+  const selectedRecordReference = inferred?.scopeTarget === "SELECTED_RECORD"
+    && inferred?.uiContext?.selectedEntityPresent === true
+    && Boolean(inferred?.uiContext?.selectedId && inferred?.uiContext?.selectedType);
+  const explicitRecordReference = inferred?.explicitEntityReference
+    || explicitShiftReferenceFromText(message)
+    || explicitVehicleReferenceFromText(message)
+    || explicitAgreementReferenceFromText(message)
+    || selectedRecordReference;
   const reference = explicitRecordReference
     ? "EXPLICIT"
     : String(evidence?.reference?.value || "ABSENT").toUpperCase();
   const typedObjectValue = String(evidence?.object?.value || "NONE").toUpperCase();
-  const agreementOperationBridgeIntent = hasAgreementOperationBridgeCue(message)
-    && (typedObjectValue === "AGREEMENT" || inferred?.targetEntityType === "AGREEMENT");
+  const agreementOperationBridgeIntent = hasAgreementOperationBridgeCue(
+    message,
+    currentUiContext(screenContext, conversationState, user),
+  );
   const explicitSurfaceExplanation = hasExplicitCurrentScreenPurposeCue(normalize(message))
     || hasNamedSurfaceExplanationCue(message);
   const productHelpSignal = Boolean(
@@ -5960,16 +7025,26 @@ function buildTypedCanonicalShape({ message, user, screenContext, conversationSt
     && evidence.domainEvidence.some((entry) => entry?.kind === "EXTERNAL_DOMAIN" && String(entry?.value || "").trim() && entry?.value !== "NONE");
   const continuationValid = String(context?.continuity?.continuation?.status || "").toUpperCase() === "VALID"
     && String(context?.continuity?.precedence || "").toUpperCase() !== "EXPLICIT_INPUT";
+  const kvkkVisibilitySurfaceRequest = /\/shared\/kvkk\b/iu.test(String(screenContext?.path || ""))
+    && (
+      /\b(?:kvkk|gizlilik|görünürlük|gorunurluk|görünür|gorunur|yetki|rol)\p{L}*\b/iu.test(normalize(message))
+      || hasKvkkAccessBoundaryQuestion(message)
+    );
   const roleHelpCandidate = evidence?.quality?.roleHelpCandidate === true
     && mode === "EXPLAIN"
-    && !hasIssueDiagnosticCue(normalize(message))
+    && (!hasIssueDiagnosticCue(normalize(message))
+      || hasUnresolvedQuoteFloorDeicticCue(message, conversationState, screenContext))
     && !inferred?.operationHealthMetricIntent
     // A concrete typed object is stronger than broad role-orientation
     // evidence for operation-bearing requests.  A reference-less role
     // orientation/capability question may still name a product area (for
     // example, “servis işlerini nasıl öğrenebilirim?”) without asking for a
     // business record.
-    && (!typedObjectValue || allowsConcreteRoleHelpAspect(evidence, reference))
+    && (!typedObjectValue
+      || allowsConcreteRoleHelpAspect(evidence, reference)
+      // A selected card inherited from the current screen is context, not an
+      // explicit target, for a structural role-capability question.
+      || (specificity?.roleCapabilityExplanationEvidence === true && !explicitRecordReference))
     && !externalDomain
     && reference !== "AMBIGUOUS"
     && !inferred?.generalCreativeIntent
@@ -5982,8 +7057,17 @@ function buildTypedCanonicalShape({ message, user, screenContext, conversationSt
     // typed target into role-global product help before action composition.
     && !inferred?.continuationIntent
     && !inferred?.currentTargetRecoveryIntent
-    && !inferred?.currentTargetExplanationIntent
+    && (!inferred?.currentTargetExplanationIntent
+      || hasUnresolvedQuoteFloorDeicticCue(message, conversationState, screenContext))
     && !inferred?.workflowIntent
+    // KVKK visibility questions are screen-scoped when the authorized user is
+    // already on the KVKK surface. Do not let role-global capability evidence
+    // replace the screen's own visibility-boundary answer.
+    && !kvkkVisibilitySurfaceRequest
+    // A deictic local reference without a resolvable record or explicit
+    // screen-purpose cue is ambiguous, not role-global help. Keep it on the
+    // safe clarification path instead of answering an unrelated domain.
+    && !hasScreenDeicticCue(normalize(message))
     && !hasProductNoteLookupCue(message)
     && !explicitRecordReference
     && (!explicitSurfaceEvidence || (
@@ -6010,7 +7094,61 @@ function buildTypedCanonicalShape({ message, user, screenContext, conversationSt
       reference,
     },
   };
-  if (roleHelpCandidate) {
+  if (inferred?.schoolOperationalPlanIntent && inferred?.screenContextIntent) {
+    shape = {
+      ...shape,
+      taskType: "EVIDENCE_SUFFICIENCY",
+      domain: "OPERATIONS",
+      targetEntityType: null,
+      requestedTasks: ["EVIDENCE_SUFFICIENCY"],
+      requestedFields: [],
+      requestedFieldsAuthoritative: true,
+      requiredOutputSlots: ["EVIDENCE", "SAFE_NEXT_STEP"],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: "CURRENT_SCREEN",
+      ambiguity: null,
+    };
+  }
+  if (kvkkVisibilitySurfaceRequest) {
+    shape = {
+      ...shape,
+      taskType: "SCREEN_CONTEXT",
+      domain: null,
+      targetEntityType: "SURFACE",
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      screenKnowledgeIntent: true,
+      screenKnowledgeKind: hasKvkkAccessBoundaryQuestion(message) ? "KVKK_VISIBILITY" : "SCREEN_PURPOSE",
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      primaryTask: "SCREEN_CONTEXT",
+      scopeTarget: "CURRENT_SCREEN",
+      ambiguity: null,
+    };
+  }
+  if (hasContractShiftGenerationLookupCue(message)) {
+    shape = {
+      ...shape,
+      taskType: "RELATION_LOOKUP",
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      requestedTasks: ["RELATION_LOOKUP"],
+      relationIntent: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: false,
+      workflowIntent: null,
+      scopeTarget: "CURRENT_SCREEN",
+      ambiguity: null,
+    };
+  }
+  if (roleHelpCandidate && !kvkkVisibilitySurfaceRequest) {
     shape = {
       ...shape,
       taskType: "OFF_TOPIC",
@@ -6022,6 +7160,11 @@ function buildTypedCanonicalShape({ message, user, screenContext, conversationSt
       ambiguity: null,
     };
   } else if (explicitSurfaceEvidence && mode === "EXPLAIN"
+    // A concrete collection request may also ask where that collection is
+    // visible.  The collection/count owner remains authoritative; the
+    // surface evidence supplies presentation context and must not rewrite a
+    // COUNT request into generic screen help.
+    && !hasCardinalityCue(message)
     && (typedObjectValue === "SURFACE" || inferred?.targetEntityType === "SURFACE" || !liveSurfaceTargetEvidence)) {
     shape = {
       ...shape,
@@ -6050,11 +7193,24 @@ function buildTypedCanonicalShape({ message, user, screenContext, conversationSt
       scopeTarget: "NONE",
       ambiguity: null,
     };
-  } else if (["AMBIGUOUS", "UNRESOLVED", "REJECTED_STALE", "STALE"].includes(reference)
+  } else if ((["AMBIGUOUS", "UNRESOLVED", "REJECTED_STALE", "STALE"].includes(reference)
+      || hasUnresolvedQuoteFloorDeicticCue(message, conversationState, screenContext))
     && !hasIssueDiagnosticCue(normalize(message))
     && inferred?.taskType !== "SELECTED_RECORD_CONTEXT"
+    // An explicit collection/count request already identifies its authorized
+    // entity set.  A temporal/deictic word such as "şu anda" must not erase
+    // that set and turn "hangi vardiyalar bekliyor?" into a record
+    // clarification when the request carries a typed count target.
+    && !(inferred?.taskType === "COUNT" && inferred?.countTarget?.targetEntityType)
     && !inferred?.currentTargetRecoveryIntent
     && !inferred?.currentTargetExplanationIntent
+    && !specificity?.financialReadinessEvidence
+    && !financialScreenRiskRequest
+    && !hasQuoteFloorContextualFollowUpCue(normalize(message), conversationState, screenContext)
+    && !hasExplicitCurrentScreenPurposeCue(normalize(message))
+    && !shape?.schoolOperationalPlanIntent
+    && !liveSurfaceTargetEvidence
+    && !shape?.currentTargetReference?.targetKey
     && String(evidence?.object?.value || "").toUpperCase() !== "SURFACE") {
     shape = {
       ...shape,
@@ -6090,7 +7246,7 @@ function buildTypedCanonicalShape({ message, user, screenContext, conversationSt
     // SELECTED_RECORD_CONTEXT is likewise an explicit identity question
     // about the live selected record; it must reach the selected-record
     // response owner rather than becoming an empty FIELD_LOOKUP.
-    && !["COUNT", "RISK", "RECORD_DETAILS", "RELATION_LOOKUP", "SELECTED_RECORD_CONTEXT"].includes(String(inferred?.taskType || "").toUpperCase())
+    && !["COUNT", "RISK", "ISSUE", "EVIDENCE_SUFFICIENCY", "RECORD_DETAILS", "RELATION_LOOKUP", "SELECTED_RECORD_CONTEXT", "NEXT_ACTION"].includes(String(inferred?.taskType || "").toUpperCase())
     && !explicitSurfaceEvidence
     // A current-screen purpose request remains SCREEN_CONTEXT even when the
     // live surface carries a selected record. The record grounds the answer;
@@ -6118,8 +7274,74 @@ function buildTypedCanonicalShape({ message, user, screenContext, conversationSt
     };
   }
   const resolvedShape = applySemanticSpecificityResolution(shape, specificity);
+  const explicitAgreementDetailsRequest = Boolean(explicitAgreementReferenceFromText(message))
+    && hasRecordDetailsCue(normalize(message))
+    && String(resolvedShape?.taskType || "").toUpperCase() === "FIELD_LOOKUP";
+  if (explicitAgreementDetailsRequest) {
+    return {
+      ...resolvedShape,
+      taskType: "RECORD_DETAILS",
+      requestedTasks: ["RECORD_DETAILS"],
+      requestedFields: [],
+      primaryTask: "RECORD_DETAILS",
+      domain: "AGREEMENTS",
+      targetEntityType: "AGREEMENT",
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: resolvedShape.scopeTarget === "SELECTED_RECORD" ? "SELECTED_RECORD" : resolvedShape.scopeTarget,
+      ambiguity: null,
+    };
+  }
+  const unresolvedAmountDeictic = hasUnresolvedQuoteFloorDeicticCue(message, conversationState, screenContext);
+  // A later operation-health metric classifier may recognise "hesaplandı"
+  // as an issue explanation.  An unbound amount reference is more specific:
+  // without a live financial surface or selected record it must remain
+  // fail-closed rather than inherit a stale product entity.
+  if (unresolvedAmountDeictic) {
+    return {
+      ...resolvedShape,
+      taskType: "CLARIFY",
+      requestedTasks: [],
+      requestedFields: [],
+      domain: null,
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      explicitTaskIntent: false,
+      explicitUserTarget: false,
+      targetEntityType: null,
+      targetCandidates: [],
+      scopeTarget: "NONE",
+      ambiguity: "REFERENT_NOT_UNIQUELY_JUSTIFIED",
+    };
+  }
+  // Keep the contract-to-generated-shift relation authoritative through the
+  // final typed-specificity pass. Surface/action evidence may describe the
+  // visible Vardiyalar control, but it must not erase the user's related-data
+  // request or downgrade it to generic screen context.
+  if (hasContractShiftGenerationLookupCue(message)) {
+    return {
+      ...resolvedShape,
+      taskType: "RELATION_LOOKUP",
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      requestedTasks: ["RELATION_LOOKUP"],
+      relationIntent: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: false,
+      workflowIntent: null,
+      scopeTarget: "CURRENT_SCREEN",
+      ambiguity: null,
+    };
+  }
+  const explicitOperationHealthMetricTarget = inferred?.operationHealthMetricIntent
+    && ['GPS_ISSUE_SUBSET', 'METRIC_DEFINITION'].includes(String(inferred?.operationHealthMetricMode || '').trim().toUpperCase());
   if (inferred?.operationHealthMetricIntent
     && !hasExplicitSurfaceNavigationVerb(message)
+    && (explicitOperationHealthMetricTarget || !hasExplicitSurfaceNavigationVerb(message))
     && String(resolvedShape?.taskType || '').toUpperCase() !== 'ISSUE') {
     return {
       ...resolvedShape,
@@ -6143,8 +7365,9 @@ function buildTypedCanonicalShape({ message, user, screenContext, conversationSt
   // composition has produced a provisional CLARIFY/OFF_TOPIC shape. The
   // existing issue cue remains the sole structural authority; this only
   // prevents a later generic fallback from discarding it.
-  const resolvedIssueDiagnostic = hasIssueDiagnosticCue(normalize(message))
-    && !hasExplicitSurfaceNavigationVerb(message);
+  const resolvedIssueDiagnostic = (hasIssueDiagnosticCue(normalize(message))
+    && !hasExplicitSurfaceNavigationVerb(message))
+    || hasOperationHealthIssueViewCue(message, screenContext);
   if (resolvedIssueDiagnostic && ["CLARIFY", "OFF_TOPIC"].includes(String(resolvedShape?.taskType || "").toUpperCase())) {
     return {
       ...resolvedShape,
@@ -6198,31 +7421,46 @@ function buildNewCanonicalResult({
     : null;
   const inferred = typed?.inferred || inferCanonicalSemanticRequest({ message, user, screenContext, conversationState });
   const specificity = typed?.specificity || evidence?.specificity || null;
-  const explicitRecordReference = inferred?.explicitEntityReference || explicitShiftReferenceFromText(message);
+  const contractShiftRelationRequest = hasContractShiftGenerationLookupCue(message);
+  const selectedRecordReference = inferred?.scopeTarget === "SELECTED_RECORD"
+    && inferred?.uiContext?.selectedEntityPresent === true
+    && Boolean(inferred?.uiContext?.selectedId && inferred?.uiContext?.selectedType);
+  const explicitRecordReference = inferred?.explicitEntityReference
+    || explicitShiftReferenceFromText(message)
+    || explicitVehicleReferenceFromText(message)
+    || explicitAgreementReferenceFromText(message)
+    || selectedRecordReference;
   const roomCapabilityBoundaryContinuation = hasRoomCapabilityBoundaryContinuation({
     message,
     user,
     screenContext,
     conversationState,
   });
-  const roleHelpEvidenceCandidate = evidence?.quality?.roleHelpCandidate === true
+  const roleHelpEvidenceCandidate = (evidence?.quality?.roleHelpCandidate === true
+    || specificity?.roleCapabilityExplanationEvidence === true)
     && mode === "EXPLAIN"
     && !hasIssueDiagnosticCue(normalize(message))
     && !inferred?.operationHealthMetricIntent
+    && !hasContractShiftGenerationLookupCue(message)
     && evidence.subject?.value === "ROLE"
     // Concrete object evidence owns operation-bearing requests; bounded
     // reference-less role-help aspects are allowed to name a product area.
-    && (!objectClass || allowsConcreteRoleHelpAspect(evidence, String(evidence?.reference?.value || "ABSENT").toUpperCase()))
+    && (!objectClass
+      || allowsConcreteRoleHelpAspect(evidence, String(evidence?.reference?.value || "ABSENT").toUpperCase())
+      || (specificity?.roleCapabilityExplanationEvidence === true && !explicitRecordReference))
     && evidence.roleAspect?.value
     && evidence.roleAspect.value !== "NONE"
     && evidence.productHelp?.value
     && evidence.productHelp.value !== "NONE"
     && evidence.targetRequest?.value === "PRODUCT_AREA"
     && !explicitRecordReference
+    && !hasScreenDeicticCue(normalize(message))
     && !hasProductNoteLookupCue(message)
     && !roomCapabilityBoundaryContinuation;
-  const explicitSurfacePurpose = hasExplicitCurrentScreenPurposeCue(normalize(message))
+  const explicitSurfacePurpose = hasSituatedCurrentSurfaceGuidanceCue(normalize(message))
     || hasNamedSurfaceExplanationCue(message);
+  const explicitSurfaceFocusAssessment = explicitSurfacePurpose
+    && hasAttentionAssessmentCue(normalize(message));
   const liveSurfaceTargetEvidence = Boolean(inferred?.currentTargetReference?.targetKey);
   const productHelpSignal = Boolean(
     hasExplicitProductLevelHelpCue(message)
@@ -6232,10 +7470,51 @@ function buildNewCanonicalResult({
       || (isGenericProductHelpIntent(message, { roleContext: screenContext?.role })
         && !isExplicitRoleHelpIntent(message, { roleContext: screenContext?.role })),
   );
-  const productHelpComposition = Boolean(productHelpSignal && !explicitSurfacePurpose && !explicitRecordReference && !liveSurfaceTargetEvidence);
+  const previousSemanticPlan = conversationState?.lastSettledResult?.semanticPlan
+    || conversationState?.authorizedProductContext?.semanticPlan
+    || conversationState?.lastProductSemanticPlan
+    || conversationState?.lastSemanticPlan
+    || null;
+  const settledProductTask = Boolean(previousSemanticPlan && (
+    (Array.isArray(previousSemanticPlan.requestedDomains) && previousSemanticPlan.requestedDomains.length > 0)
+      || (Array.isArray(previousSemanticPlan.entities) && previousSemanticPlan.entities.length > 0)
+      || previousSemanticPlan.relationshipIntent
+      || ['RELATION_LOOKUP', 'FIELD_LOOKUP', 'RECORD_DETAILS', 'SCREEN_CONTEXT', 'UI_GUIDANCE', 'CONTINUE_CURRENT_REASONING'].includes(String(previousSemanticPlan.family || '').toUpperCase())
+  ));
+  const settledProductContinuation = settledProductTask && (
+    hasStepByStepTeachingCue(message)
+      || hasNaturalContinuationCue(message)
+      || hasNaturalBackCue(message)
+      || /\b(?:geri|bulamadım|bulamadim|burada\s+göremiyorum|burada\s+goremiyorum)\b/iu.test(String(message || ''))
+  );
+  const productHelpComposition = Boolean(productHelpSignal && !settledProductContinuation && !explicitSurfacePurpose && !explicitRecordReference && !liveSurfaceTargetEvidence && !contractShiftRelationRequest);
   const explicitSurfaceSemanticOperation = hasExplicitSurfaceSemanticOperation(message);
   const roleCapabilityHelpSupported = specificity?.roleCapabilityExplanationEvidence === true;
-  const roleHelpSupported = roleHelpEvidenceCandidate
+  const contextOnlyRoleCapabilityHelp = roleCapabilityHelpSupported && !explicitRecordReference;
+  const financialScreenRiskRequest = hasFinancialScreenRiskCue(message)
+    && /\/(?:room|company|school|organization)\/financial-operations\b/iu.test(String(screenContext?.path || ''))
+    && !currentUiContext(screenContext, conversationState).selectedEntityPresent;
+  const currentNextActionRequest = !roleCapabilityHelpSupported && Boolean(
+    inferred?.taskType === "NEXT_ACTION"
+      || inferred?.routeOrderIntent === true
+      || inferred?.requestedTasks?.includes?.("NEXT_ACTION")
+      // A named current surface plus an explicit "önce neyi kontrol
+      // edeyim?" question is screen-focused guidance, not a record-level
+      // next-action request. Let the authorized surface owner answer it;
+      // generic next-action wording without this surface cue keeps its
+      // existing behavior.
+      || (hasNextActionOperationCue(normalize(message))
+        && !financialScreenRiskRequest
+        && !explicitSurfaceFocusAssessment),
+  );
+  const kvkkVisibilitySurfaceRequest = /\/shared\/kvkk\b/iu.test(String(screenContext?.path || ""))
+    && (
+      /\b(?:kvkk|gizlilik|görünürlük|gorunurluk|görünür|gorunur|yetki|rol)\p{L}*\b/iu.test(normalize(message))
+      || hasKvkkAccessBoundaryQuestion(message)
+    );
+  const roleHelpSupported = !kvkkVisibilitySurfaceRequest && roleHelpEvidenceCandidate
+    && !contractShiftRelationRequest
+    && !settledProductContinuation
     // Situated help is owned by the current authorized surface. Do not let
     // broad role-help evidence reclassify it as ROLE_GLOBAL merely because
     // the utterance also contains a capability/orientation cue.
@@ -6254,8 +7533,10 @@ function buildNewCanonicalResult({
     && !inferred?.continuationIntent
     && !inferred?.currentTargetRecoveryIntent
     && !inferred?.currentTargetExplanationIntent
-    && !roomCapabilityBoundaryContinuation;
-  const typedShape = buildTypedCanonicalShape({
+    && !roomCapabilityBoundaryContinuation
+    && inferred?.taskType !== "NEXT_ACTION"
+    && !currentNextActionRequest;
+  let typedShape = buildTypedCanonicalShape({
     message,
     user,
     screenContext,
@@ -6265,17 +7546,134 @@ function buildNewCanonicalResult({
     inferred,
     specificity,
   });
+  const explicitShiftDetailRequest = Boolean(
+    explicitShiftReferenceFromText(message)
+      && hasRecordDetailsCue(normalize(message))
+      && !hasCardinalityCue(normalize(message)),
+  );
+  if (explicitShiftDetailRequest) {
+    // The NEW typed authority must preserve a concrete shift-detail request
+    // before visible-shift capability or ROOM create-policy projection can
+    // claim the same "aç" verb.  Retrieval/selection remains downstream and
+    // still requires the authorized entity reference.
+    typedShape = {
+      ...typedShape,
+      taskType: "RECORD_DETAILS",
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      requestedTasks: ["RECORD_DETAILS"],
+      recordDetailsIntent: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      explicitUiGuidance: false,
+      workflowIntent: null,
+      scopeTarget: "CURRENT_SCREEN",
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      ambiguity: null,
+    };
+  }
+  // An active guided workflow owns ordinal step questions such as
+  // “ilk adım ne?”.  The typed evidence composer may still carry the broad
+  // product-help task type from the same words; normalize that envelope here
+  // before planner/response composition can discard the live task context.
+  // This is intentionally guarded by both server-owned workflow state and an
+  // explicit ordinal reference, so context-free questions keep their normal
+  // general-help behavior.
+  const activeOrdinalWorkflowReference = workflowStepReferenceFromText(message);
+  const activeOrdinalWorkflow = activeWorkflowPlan(conversationState);
+  const liveWorkflowReference = liveWorkflowStepReference(currentUiContext(screenContext, conversationState, user));
+  const activeWorkflowStepContext = Boolean(
+    (activeOrdinalWorkflowReference && activeOrdinalWorkflow)
+      || (liveWorkflowReference
+        && hasLiveWorkflowGroundingCue(message)
+        && !isLiveWorkflowContinuationCue(message)),
+  );
+  if (activeWorkflowStepContext && (
+    activeOrdinalWorkflowReference
+      || liveWorkflowReference
+  )) {
+    const resolvedWorkflow = activeOrdinalWorkflow || {
+      workflowIntent: "CREATE_SHIFT",
+      workflowModel: COMPANY_GUIDED_NEW_PLAN_WORKFLOW,
+    };
+    const resolvedWorkflowStep = activeOrdinalWorkflowReference || liveWorkflowReference;
+    typedShape = {
+      ...typedShape,
+      taskType: "EXPLAIN_CURRENT_TARGET",
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      requestedTasks: ["EXPLAIN_CURRENT_TARGET"],
+      explicitTaskIntent: true,
+      explicitUiGuidance: true,
+      currentTargetExplanationIntent: true,
+      workflowStepIntent: true,
+      workflowIntent: resolvedWorkflow.workflowIntent || "CREATE_SHIFT",
+      workflowModel: resolvedWorkflow.workflowModel || COMPANY_GUIDED_NEW_PLAN_WORKFLOW,
+      workflowStepReference: resolvedWorkflowStep,
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      scopeTarget: "CURRENT_SCREEN",
+    };
+  }
+  if (settledProductContinuation) {
+    const priorEntity = Array.isArray(previousSemanticPlan?.entities) ? previousSemanticPlan.entities.find(Boolean) : null;
+    const priorDomains = Array.isArray(previousSemanticPlan?.requestedDomains) ? previousSemanticPlan.requestedDomains.filter(Boolean) : [];
+    typedShape = {
+      ...typedShape,
+      taskType: "CONTINUE_CURRENT_REASONING",
+      confidence: Math.max(Number(typedShape?.confidence || 0), 0.99),
+      domain: priorDomains[0] || typedShape?.domain || null,
+      targetEntityType: priorEntity?.type ? String(priorEntity.type).toUpperCase() : typedShape?.targetEntityType || null,
+      requestedTasks: ["CONTINUE_CURRENT_REASONING"],
+      explicitTaskIntent: false,
+      continuationIntent: true,
+      continuationAction: continuationActionFor(message),
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      productTeachingIntent: false,
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: false,
+      primaryTask: "CONTINUE_CURRENT_REASONING",
+      scopeTarget: previousSemanticPlan?.scopeTarget || "CURRENT_SCREEN",
+      ambiguity: null,
+    };
+  }
   // A finance-process question is a concrete, read-only product request even
   // when Turkish capability grammar also emits a broad role/process aspect
   // (for example, asking where invoice reconciliation is followed). Keep the
   // typed financial object and process relation authoritative; otherwise the
   // inherited role-help inference sends the request to generic product help
   // before the authorized financial owner can report its real capability.
+  const financialReadinessRequest = hasFinancialReadinessEvidence(message);
+  const isFinancialOperationsSurface = /\/(?:room|company|school|organization)\/financial-operations\b/iu.test(String(screenContext?.path || ''));
+  const currentSurfaceFocusWithoutSelection = Boolean(
+    inferred?.screenContextIntent
+      && !inferred?.selectedRecordIntent
+      && !explicitRecordReference
+      && !selectedEntity
+      && !currentUiContext(screenContext, conversationState).selectedEntityPresent
+      && (isFinancialOperationsSurface || explicitSurfacePurpose),
+  );
   const financialProcessRequest = mode === "EXPLAIN"
     && String(evidence?.object?.value || "").toUpperCase() === "FINANCIAL"
     && String(evidence?.relation?.value || "").toUpperCase() === "PROCESS"
     && String(evidence?.targetRequest?.value || "").toUpperCase() === "RECORD"
-    && String(evidence?.reference?.value || "ABSENT").toUpperCase() === "ABSENT";
+    && String(evidence?.reference?.value || "ABSENT").toUpperCase() === "ABSENT"
+    && !financialReadinessRequest
+    && !hasCostAnalysisCue(message, conversationState, screenContext)
+    // A current-surface focus question is about the visible financial screen,
+    // not a record-level process lookup. Preserve the screen contract when
+    // no authorized record is selected; record-specific finance questions
+    // continue through the typed financial-process owner.
+    && !currentSurfaceFocusWithoutSelection;
   const recentFinancialUserMessages = (Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages : [])
     .filter((item) => item?.role === "user");
   const latestFinancialUserText = normalize(recentFinancialUserMessages.at(-1)?.text);
@@ -6300,9 +7698,18 @@ function buildNewCanonicalResult({
     && financialSourceFollowUp
     && !activeFinancialMetricSelection
     && financialReferenceValue === "ABSENT";
+  const quoteFloorContextualFollowUp = hasQuoteFloorContextualFollowUpCue(
+    normalize(message),
+    conversationState,
+    screenContext,
+  );
   const financialDeicticClarification = mode === "EXPLAIN"
     && ["RECORD", "PRODUCT_AREA"].includes(String(evidence?.targetRequest?.value || "").toUpperCase())
-    && (financialObjectAmbiguity || selectedOfferFinancialAmbiguity);
+    && (financialObjectAmbiguity || selectedOfferFinancialAmbiguity)
+    && !financialReadinessRequest
+    && !financialScreenRiskRequest
+    && !quoteFloorContextualFollowUp
+    && !hasExplicitCurrentScreenPurposeCue(normalize(message));
   const financialProcessShape = financialProcessRequest
     ? {
       ...typedShape,
@@ -6344,6 +7751,29 @@ function buildNewCanonicalResult({
         ambiguity: "REFERENT_NOT_UNIQUELY_JUSTIFIED",
       }
     : typedShape;
+  const financialSurfaceFocusShape = currentSurfaceFocusWithoutSelection
+    ? {
+      ...typedShape,
+      taskType: "SCREEN_CONTEXT",
+      confidence: Math.max(Number(typedShape?.confidence || 0), 0.99),
+      domain: null,
+      targetEntityType: "SURFACE",
+      requestedTasks: ["SCREEN_CONTEXT"],
+      requestedFields: [],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: "CURRENT_SCREEN",
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      screenKnowledgeIntent: true,
+      screenKnowledgeKind: "SCREEN_FOCUS",
+      explicitUiGuidance: true,
+      primaryTask: "SCREEN_CONTEXT",
+      ambiguity: null,
+    }
+    : financialProcessShape;
   const roomBoundaryShape = roomCapabilityBoundaryContinuation
     ? {
       ...financialProcessShape,
@@ -6382,6 +7812,7 @@ function buildNewCanonicalResult({
   )
     && (!roleHelpEvidenceCandidate || explicitSurfacePurpose || liveSurfaceTargetEvidence)
     && !productHelpComposition;
+  const canonicalIssueDiagnosticRequest = hasCanonicalIssueDiagnosticRequest(message);
   const supportedTypedRequest = roomCapabilityBoundaryContinuation
     || roleHelpSupported
     || Boolean(inferred?.currentTargetRecoveryIntent || inferred?.currentTargetExplanationIntent)
@@ -6402,12 +7833,111 @@ function buildNewCanonicalResult({
       && inferred?.explicitTaskIntent
       && String(inferred?.domain || "").toUpperCase() === "BUDGET",
     )
+    || Boolean(
+      canonicalIssueDiagnosticRequest
+      && inferred?.taskType === "ISSUE"
+      && inferred?.explicitTaskIntent
+      && inferred?.explicitUserTarget,
+    )
     || Boolean(inferred?.explicitTaskIntent && inferred?.explicitUserTarget && inferred?.targetEntityType === "SHIFT" && inferred?.taskType === "FIELD_LOOKUP")
     || ["EXPLAIN", "VIEW", "NAVIGATE", "CREATE", "UPDATE", "DELETE", "SEND", "COMPARE", "OTHER_PRODUCT_REQUEST", "GENUINE_OOS", "CONTINUE", "RESUME"].includes(mode);
   const failure = !supportedTypedRequest;
+  const financialIssueRequest = /\b(?:hakediş|hakedis)\p{L}*\b.{0,32}\b(?:sorun|durum|var)\b/iu.test(normalize(message))
+    || hasFinancialReadinessEvidence(message)
+    || (String(evidence?.object?.value || "").toUpperCase() === "FINANCIAL" && canonicalIssueDiagnosticRequest);
+  const financialIssueShape = financialIssueRequest
+    ? {
+      ...typedShape,
+      taskType: "RISK",
+      confidence: Math.max(Number(typedShape?.confidence || 0), 0.96),
+      domain: "FINANCE",
+      targetEntityType: null,
+      requestedTasks: ["RISK"],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      // “Hakedişlerimde…” is a role-scoped financial summary. A selected
+      // vehicle/shift is not an implicit financial target for this turn.
+      scopeTarget: "CURRENT_SCREEN",
+      selectedRecordIntent: false,
+      suppressSelectedEntityContext: true,
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: false,
+      ambiguity: null,
+    }
+    : null;
+  const issueDiagnosticShape = canonicalIssueDiagnosticRequest && !financialIssueRequest
+    ? {
+      ...typedShape,
+      taskType: "ISSUE",
+      confidence: Math.max(Number(typedShape?.confidence || 0), 0.96),
+      domain: "OPERATIONS",
+      targetEntityType: null,
+      requestedTasks: ["ISSUE"],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: inferred?.scopeTarget || "CURRENT_SCREEN",
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: false,
+      ambiguity: null,
+    }
+    : null;
   let shape = failure
     ? newAuthorityShape({ message, screenContext, evidence, failure: true, roleHelp: false })
-    : (roomBoundaryShape || financialProcessShape);
+    : (roomBoundaryShape || financialIssueShape || financialSurfaceFocusShape || issueDiagnosticShape || typedShape);
+  if (!failure && explicitShiftDetailRequest) {
+    // Apply the concrete-record precedence at the final NEW-authority shape
+    // seam as well. A ROOM capability-boundary projection must not replace a
+    // user-named, authorized read-only shift detail request.
+    shape = {
+      ...shape,
+      taskType: "RECORD_DETAILS",
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      requestedTasks: ["RECORD_DETAILS"],
+      recordDetailsIntent: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      explicitUiGuidance: false,
+      workflowIntent: null,
+      scopeTarget: "CURRENT_SCREEN",
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      ambiguity: null,
+    };
+  }
+  if (currentNextActionRequest) {
+    shape = {
+      ...shape,
+      taskType: "NEXT_ACTION",
+      domain: null,
+      targetEntityType: null,
+      requestedTasks: ["NEXT_ACTION"],
+      requestedFields: [],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: "CURRENT_SCREEN",
+      routeOrderIntent: true,
+      routeOrderState: "MISSING_OR_UNVERIFIED",
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      screenContextIntent: true,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: true,
+      primaryTask: "NEXT_ACTION",
+      ambiguity: null,
+    };
+  }
   let semanticAction = inferCanonicalSemanticAction({
     text: message,
     shape,
@@ -6415,8 +7945,178 @@ function buildNewCanonicalResult({
     semanticContext: context,
     typedEvidence: evidence,
   });
+  if (!failure && explicitShiftDetailRequest) {
+    semanticAction = resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      objectClass: "SHIFT",
+      targetCandidate: { objectClass: "SHIFT" },
+      explicitness: "EXPLICIT",
+      evidence: ["EXPLICIT_SHIFT_RECORD_DETAILS"],
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: true },
+    });
+  }
+  if (canonicalIssueDiagnosticRequest && !financialIssueRequest) {
+    semanticAction = resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      objectClass: null,
+      targetCandidate: null,
+      explicitness: "EXPLICIT",
+      evidence: ["CANONICAL_ISSUE_DIAGNOSTIC_TASK"],
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: true },
+    });
+  }
+  if (financialIssueRequest) {
+    semanticAction = resolvedSemanticAction({
+      actionClass: "ANALYZE",
+      objectClass: "FINANCIAL",
+      targetCandidate: { objectClass: "FINANCIAL" },
+      explicitness: "EXPLICIT",
+      evidence: ["CANONICAL_FINANCIAL_ISSUE_TASK"],
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: true },
+    });
+  }
+  const normalizedOperationHealthMessage = normalize(message);
+  const currentScreenPath = String(screenContext?.path || "");
+  const explicitNonOperationHealthSelection = currentScreenPath !== "/room/operation-health"
+    && Boolean(screenContext?.selectedEntity || screenContext?.selectedEntityId || screenContext?.selectedEntityType);
+  const operationHealthSurfaceIssue = (
+    /\/room\/operation-health\b/iu.test(currentScreenPath)
+    || (String(user?.role || "").toUpperCase() === "ROOM"
+      && /(?:satir|sıra|sorun|problem|riskli\s+cihaz|acik\s+sorun|açık\s+sorun)/iu.test(normalizedOperationHealthMessage))
+  )
+    && /(?:riskli\s+cihaz|gps|konum\s+sinyali|cevrim\s+disi|çevrim\s+dışı|acik\s+sorun|açık\s+sorun|problem)/iu.test(normalizedOperationHealthMessage)
+    && !hasOperationHealthIssueViewCue(message, screenContext)
+    && !explicitNonOperationHealthSelection;
+  if (operationHealthSurfaceIssue) {
+    const keepMetricContract = shape?.operationHealthMetricIntent === true;
+    shape = {
+      ...shape,
+      taskType: "ISSUE",
+      domain: "OPERATIONS",
+      targetEntityType: null,
+      requestedTasks: ["ISSUE"],
+      requestedFields: keepMetricContract ? shape.requestedFields : [],
+      requestedFieldsAuthoritative: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: "CURRENT_SCREEN",
+      screenContextIntent: true,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      roleHelpIntent: false,
+      generalProductHelpIntent: false,
+      requestedDomains: ["OPERATIONS"],
+    };
+    semanticAction = resolvedSemanticAction({
+      actionClass: "ANALYZE",
+      objectClass: "SURFACE",
+      targetCandidate: { objectClass: "SURFACE" },
+      explicitness: "EXPLICIT",
+      evidence: ["CURRENT_OPERATION_HEALTH_SCREEN_SCOPE"],
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: false },
+    });
+  }
+  if (financialScreenRiskRequest && shape?.taskType === "RISK" && shape?.scopeTarget === "CURRENT_SCREEN") {
+    semanticAction = resolvedSemanticAction({
+      actionClass: "ANALYZE",
+      objectClass: "SURFACE",
+      targetCandidate: { objectClass: "SURFACE" },
+      explicitness: "EXPLICIT",
+      evidence: ["CURRENT_FINANCIAL_SCREEN_RISK"],
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: false },
+    });
+  }
+  // A generic record request without a record type, id, selected record or
+  // unique discourse referent is not a request for the nearest product
+  // surface. Keep the ambiguity at the canonical semantic owner so downstream
+  // screen guidance cannot silently choose Biniş, Vardiyalar, Teklifler or
+  // another unrelated collection.
+  const unresolvedGenericRecordReferent = !failure
+    && !explicitRecordReference
+    && !currentUiContext(screenContext, conversationState, user).selectedEntityPresent
+    && (String(shape?.typedEvidence?.object || semanticAction?.objectClass || "").toUpperCase() === "RECORD"
+      || String(evidence?.targetRequest?.value || "").toUpperCase() === "RECORD")
+    && /\b(?:kay(?:ı|i)t|record)\p{L}*\b/iu.test(normalize(message))
+    && /\b(?:g[oö]ster|a[cç]|incele|bul|g[oö]r[uü]nt[uü]le)\p{L}*\b/iu.test(normalize(message))
+    && !(
+      String(inferred?.workflowIntent || "").toUpperCase() === "OPEN_SHIFT_SURFACE"
+      && String(evidence?.requestMode?.value || "").toUpperCase() === "VIEW"
+    )
+    && !inferred?.currentTargetReference?.targetKey
+    && !conversationState?.uniqueDiscourseReferent
+    && !conversationState?.activeTask;
+  if (unresolvedGenericRecordReferent) {
+    shape = {
+      ...shape,
+      taskType: "CLARIFY",
+      domain: null,
+      targetEntityType: null,
+      targetCandidates: [],
+      requestedTasks: [],
+      requestedFields: [],
+      requestedFieldsAuthoritative: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: false,
+      scopeTarget: "NONE",
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: false,
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      primaryTask: "CLARIFY_RECORD_TARGET",
+      ambiguity: "RECORD_TYPE_OR_ID_REQUIRED",
+    };
+    semanticAction = resolvedSemanticAction({
+      actionClass: "NONE",
+      objectClass: "RECORD",
+      targetCandidate: { objectClass: "RECORD" },
+      explicitness: "EXPLICIT",
+      evidence: ["GENERIC_RECORD_TARGET_UNRESOLVED"],
+      resolutionStatus: "AMBIGUOUS",
+      modifiers: { new: false, current: false, next: false, explicitTarget: false },
+    });
+  }
   const mapped = mapSemanticActionToCanonicalMeaning({ semanticAction, shape });
   shape = mapped.shape || shape;
+  // KVKK access-boundary questions are a screen-scoped explanation family.
+  // Preserve that semantic decision after generic action mapping as well;
+  // otherwise visibility wording such as “Bu KVKK görünürlüğü neden
+  // kısıtlı?” can lose its EXPLAIN/SURFACE action and fall into clarification.
+  if (kvkkVisibilitySurfaceRequest && hasKvkkAccessBoundaryQuestion(message)) {
+    shape = {
+      ...shape,
+      taskType: "SCREEN_CONTEXT",
+      targetEntityType: "SURFACE",
+      requestedTasks: ["SCREEN_CONTEXT"],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      explicitUiGuidance: true,
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      screenKnowledgeIntent: true,
+      screenKnowledgeKind: "KVKK_VISIBILITY",
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      primaryTask: "SCREEN_CONTEXT",
+      scopeTarget: "CURRENT_SCREEN",
+      ambiguity: null,
+    };
+    semanticAction = resolvedSemanticAction({
+      actionClass: "EXPLAIN",
+      objectClass: "SURFACE",
+      targetCandidate: { objectClass: "SURFACE" },
+      explicitness: "EXPLICIT",
+      evidence: ["CURRENT_KVKK_ACCESS_BOUNDARY"],
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: true },
+    });
+  }
   if (roomBoundaryShape) {
     shape = {
       ...shape,
@@ -6447,7 +8147,11 @@ function buildNewCanonicalResult({
       ambiguity: null,
     };
   }
-  if (roleHelpSupported && !specificity?.blocksGenericFallback && !explicitSurfaceEvidence && !explicitSurfacePurpose && !roomCapabilityBoundaryContinuation) {
+  if (roleHelpSupported
+    && (!specificity?.blocksGenericFallback || contextOnlyRoleCapabilityHelp)
+    && !explicitSurfaceEvidence
+    && !explicitSurfacePurpose
+    && !roomCapabilityBoundaryContinuation) {
     shape = {
       ...shape,
       taskType: "OFF_TOPIC",
@@ -6459,20 +8163,68 @@ function buildNewCanonicalResult({
       ambiguity: null,
     };
   }
+  // A contract-produced-shift relation is a concrete read-only product task.
+  // Keep it ahead of the broad role/process explanation fallback so spoken
+  // variants such as “sözleşmeden çıkan vardiyaları açar mısın?” reach the
+  // same collection executor as the established “üretilen vardiyalar” form.
+  if (contractShiftRelationRequest) {
+    shape = {
+      ...shape,
+      taskType: "RELATION_LOOKUP",
+      domain: "SHIFTS",
+      targetEntityType: "SHIFT",
+      requestedTasks: ["RELATION_LOOKUP"],
+      relationIntent: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      generalInformationIntent: false,
+      generalProductHelpIntent: false,
+      roleHelpIntent: false,
+      primaryTask: "TYPED_SEMANTIC_REQUEST",
+      screenContextIntent: false,
+      screenDetailIntent: false,
+      screenKnowledgeIntent: false,
+      explicitUiGuidance: false,
+      workflowIntent: null,
+      scopeTarget: "CURRENT_SCREEN",
+      ambiguity: null,
+    };
+    semanticAction = resolvedSemanticAction({
+      actionClass: "VIEW",
+      objectClass: "SHIFT",
+      targetCandidate: { objectClass: "SHIFT" },
+      explicitness: "EXPLICIT",
+      evidence: ["CONTRACT_SHIFT_RELATION_LOOKUP"],
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: true },
+    });
+  }
   const externalDomain = Array.isArray(evidence.domainEvidence)
     && evidence.domainEvidence.some((entry) => entry?.kind === "EXTERNAL_DOMAIN" && String(entry?.value || "").toUpperCase() !== "NONE");
   const positiveNonProductEvidence = specificity?.positiveNonProductEvidence === true;
+  const unresolvedCurrentSurfaceReferent = (inferred?.taskType === "CLARIFY" || shape?.taskType === "CLARIFY")
+    && (inferred?.ambiguity === "REFERENT_NOT_UNIQUELY_JUSTIFIED" || shape?.ambiguity === "REFERENT_NOT_UNIQUELY_JUSTIFIED")
+    && Boolean(screenContext?.path);
+  const explicitGenuineOffTopic = hasGenuineOffTopicSignal(normalize(message), inferred)
+    && !unresolvedCurrentSurfaceReferent
+    && !hasProductSignal(normalize(message), inferred);
   const genuineOos = !failure
-    && mode === "GENUINE_OOS"
-    && evidence?.quality?.genuineOosEvidence === true
-    && positiveNonProductEvidence;
+    && (
+      (mode === "GENUINE_OOS"
+        && evidence?.quality?.genuineOosEvidence === true
+        && positiveNonProductEvidence)
+      || explicitGenuineOffTopic
+    );
   const coherentRoleHelp = !failure
     && !roomCapabilityBoundaryContinuation
-    && !specificity?.blocksGenericFallback
+    && !contractShiftRelationRequest
+    && (!specificity?.blocksGenericFallback || contextOnlyRoleCapabilityHelp)
+    && !currentNextActionRequest
     && (roleHelpSupported
       || (
         evidence?.quality?.roleHelpCandidate === true
         && inferred?.screenContextIntent
+        && inferred?.taskType !== "NEXT_ACTION"
         && !inferred?.screenKnowledgeIntent
         && !inferred?.screenDetailIntent
         && !explicitSurfacePurpose
@@ -6493,6 +8245,10 @@ function buildNewCanonicalResult({
     // evidence. Without this guard, necessity wording such as “kurmam
     // gerekiyor” can be rewritten as role-global EXPLAIN at the final seam.
     && semanticAction?.actionClass !== "CREATE"
+    // A canonical workflow destination owns the turn even when the typed
+    // evidence also contains broad role/process language. Do not collapse a
+    // concrete surface request such as opening Offers into ROLE_GLOBAL help.
+    && !inferred?.workflowIntent
     && !(shape?.workflowIntent && explicitSurfaceSemanticOperation);
   if (coherentRoleHelp) {
     // Incidental product nouns may leave a weak screen-context task on the
@@ -6522,6 +8278,37 @@ function buildNewCanonicalResult({
       currentTargetExplanationIntent: false,
       ambiguity: null,
     };
+  }
+  // An explicit view/open request for the current Operation Health problems
+  // surface is a guided surface request, not an issue-diagnostic question.
+  // Keep the canonical target and the semantic family aligned: the user is
+  // asking to see the authorized problems surface, while issue records are
+  // read only by the executor when that surface is rendered.
+  if (hasOperationHealthIssueViewCue(message, screenContext)) {
+    shape = {
+      ...shape,
+      taskType: "SCREEN_CONTEXT",
+      domain: "OPERATIONS",
+      targetEntityType: "SURFACE",
+      requestedTasks: ["SCREEN_CONTEXT"],
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      explicitUiGuidance: true,
+      screenContextIntent: true,
+      screenDetailIntent: true,
+      screenKnowledgeIntent: true,
+      scopeTarget: "CURRENT_SCREEN",
+      ambiguity: null,
+    };
+    semanticAction = resolvedSemanticAction({
+      actionClass: "VIEW",
+      objectClass: "SURFACE",
+      targetCandidate: { objectClass: "SURFACE" },
+      explicitness: "EXPLICIT",
+      evidence: ["CURRENT_OPERATION_HEALTH_PROBLEMS_VIEW"],
+      resolutionStatus: "RESOLVED",
+      modifiers: { new: false, current: true, next: false, explicitTarget: true },
+    });
   }
   const unresolvedNumericReferent = inferred?.ambiguity === "NUMERIC_REFERENT_TYPE_UNRESOLVED";
   if (unresolvedNumericReferent) {
@@ -6558,6 +8345,7 @@ function buildNewCanonicalResult({
   }
   const genericProductHelp = !failure
     && Boolean(shape?.generalProductHelpIntent)
+    && !contractShiftRelationRequest
     && !shape?.generalCreativeIntent
     && !shape?.generalArithmetic
     && !shape?.currentTargetRecoveryIntent
@@ -6611,21 +8399,27 @@ function buildNewCanonicalResult({
         : genericProductHelp
           ? { class: "PRODUCT_EXPLICIT", evidence: "TYPED_SEMANTIC_PRODUCT_HELP", explicit: true, confidence: 0.9 }
           : resolveSemanticScope({ text: message, shape, semanticAction });
-  const operation = failure
+  const operation = operationHealthSurfaceIssue
+    ? "DIAGNOSE_CURRENT_ISSUE"
+    : failure
     ? "GENERAL_INFORMATION"
     : genuineOos
       ? "GENERAL_INFORMATION"
-      : unresolvedNumericReferent
+      : (kvkkVisibilitySurfaceRequest && hasKvkkAccessBoundaryQuestion(message))
+        ? "EXPLAIN_CURRENT_SURFACE"
+    : unresolvedNumericReferent || unresolvedGenericRecordReferent
         ? "CLARIFY_SEMANTIC_REQUEST"
       : roomCapabilityBoundaryContinuation
         ? "OPEN_EXISTING_SHIFT_OPERATIONS"
       : coherentRoleHelp || genericProductHelp
         ? "GENERAL_INFORMATION"
         : mapped.operation;
-  const domain = failure || genuineOos || unresolvedNumericReferent ? "GENERAL" : String(shape?.domain || "PRODUCT").toUpperCase();
-  const capability = failure || genuineOos || coherentRoleHelp || genericProductHelp
+  const domain = failure || genuineOos || unresolvedNumericReferent || unresolvedGenericRecordReferent ? "GENERAL" : String(shape?.domain || "PRODUCT").toUpperCase();
+  const capability = operationHealthSurfaceIssue
+    ? "DIAGNOSE_OPERATION_HEALTH"
+    : failure || genuineOos || coherentRoleHelp || genericProductHelp
     ? "GENERAL_INFORMATION"
-    : unresolvedNumericReferent
+    : unresolvedNumericReferent || unresolvedGenericRecordReferent
       ? "GENERAL_INFORMATION"
     : roomCapabilityBoundaryContinuation
       ? "OPEN_SHIFT_SURFACE"
@@ -6635,13 +8429,15 @@ function buildNewCanonicalResult({
     operation,
     domain,
     capability,
-    candidateEntityRefs: candidateEntityRefsFromCanonicalShape(shape, selectedEntity, { operation, semanticAction, message, conversationState, screenContext }),
+    candidateEntityRefs: operationHealthSurfaceIssue
+      ? []
+      : candidateEntityRefsFromCanonicalShape(shape, selectedEntity, { operation, semanticAction, message, conversationState, screenContext }),
     requestedFields: canonicalRequestedFields(shape),
     safety: canonicalSafetyForShape(shape),
     semanticScope,
     semanticAction,
     currentRequest: {
-      explicitness: failure || unresolvedNumericReferent ? "UNRESOLVED" : "EXPLICIT",
+      explicitness: failure || unresolvedNumericReferent || unresolvedGenericRecordReferent ? "UNRESOLVED" : "EXPLICIT",
       operation,
       normalizedMeaning: String(shape.normalizedText || normalize(message)).trim(),
       rawTextHash: null,

@@ -1,0 +1,146 @@
+{
+  "evidenceType": "M18_ROOM_PART4_OWNER_APPROVED_CROSS_SURFACE_ACCEPTANCE",
+  "recordedAt": "2026-10-19T15:56:05.758Z",
+  "publicOrigin": "https://further-history-universities-hugo.trycloudflare.com",
+  "browser": {
+    "method": "Windows headed Google Chrome via @playwright/cli",
+    "session": "m18-room-part4",
+    "originVerified": true,
+    "role": "ROOM",
+    "tenant": "ROOM demo tenant / Turizm-Tasimacilik Firmasi",
+    "writeScope": "read-only; no business write, payment, approval, accounting, seed, migration or fixture operation"
+  },
+  "runtime": {
+    "container": "personel_api",
+    "startedAt": "2026-10-19T15:56:05.758Z",
+    "localHealth": { "ok": true, "dbOk": true },
+    "publicHealth": { "ok": true, "dbOk": true },
+    "sourceBranch": "m90d1_web_lint_inventory",
+    "sourceHead": "3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+    "exactPublicSourceSha": null,
+    "provenanceNote": "Public runtime exposes health/process freshness but no exact source SHA; no SHA was inferred."
+  },
+  "ownerDecision": {
+    "historicalScope": 24,
+    "mergedCells": [
+      { "id": "CTX-001", "mergedInto": ["EXH-CTX-022", "EXH-CTX-023"], "independentPassCreated": false },
+      { "id": "CTX-007", "mergedInto": ["stale-selection-context-acceptance"], "independentPassCreated": false },
+      { "id": "CTX-008", "mergedInto": ["Devam-Geri-recovery-acceptance"], "independentPassCreated": false }
+    ],
+    "newUniqueCriteria": ["CTX-002", "CTX-003", "CTX-004", "CTX-005", "CTX-006"],
+    "correctedUniquePart4Scope": 21,
+    "historical24CellRecordPreserved": true,
+    "routeCounting": { "canonicalRoutes": 19, "liveAliasOfMap": true, "historical20RouteStatus": "MANIFEST_COUNTING_ERROR" }
+  },
+  "scenarios": [
+    {
+      "id": "CTX-002",
+      "criterion": "Araç/harita bağlamındaki açık finansal soru araç/harita bağlamına yanlışça indirgenmez; yetkili salt-okunur finansal risk yüzeyine gider.",
+      "start": { "route": "/room/vehicles", "selectedRecord": "Araç 34ABC123 / Driver One" },
+      "userMessage": "Hakedişlerimde sorun var mı?",
+      "backend": {
+        "providerSummary": "current-financial-screen-risk-boundary",
+        "semanticFamily": "RISK_RANKING",
+        "operation": "ASSESS_CURRENT_RISK",
+        "requestedDomains": ["FINANCE"],
+        "guidedTarget": null,
+        "quickAction": { "label": "Hakediş ve mutabakat görünümünü aç", "path": "/room/commercial-flow?tab=settlement" },
+        "replyEvidence": "Finansal risk yalnız yetkili finans bağlamında değerlendirildi; araç rota maliyeti finansal risk yerine konmadı; ödeme/fatura/muhasebe başlatılmadı."
+      },
+      "browserResult": { "route": "/room/commercial-flow?tab=settlement", "dom": "Ticari Çalışma Alanı > Hakediş sorun özeti; kayıt seçilmediği ve salt-okunur mutabakat önizlemelerinin toplu gösterileceği görünür.", "userReachedTarget": true },
+      "security": "ROOM tenant preserved; no write",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "CTX-003",
+      "criterion": "Seçili vardiyadan yetkili ilişkili araca ve harita ekranına geçiş, seçili kayıt kimliğini korur.",
+      "start": { "route": "/room/shifts", "selectedRecord": "Vardiya #209" },
+      "userMessage": "Bu vardiyanın aracını ve haritadaki konumunu göster.",
+      "backend": {
+        "providerSummary": "authorized-room-relation-v1",
+        "relationship": "SHIFT_TO_VEHICLE / shift 209 -> vehicle 1 / 34ABC123",
+        "guidedTarget": null,
+        "quickAction": { "label": "Canlı Takip ekranına git", "path": "/room/map", "routeParams": { "focusVehicleId": 1 } },
+        "replyEvidence": "Vardiya #209 için bağlı yetkili araç 34ABC123; konum sinyali çevrim dışı."
+      },
+      "browserResult": { "route": "/room/map?focusVehicleId=1", "dom": "Canlı Takip > Harita; seçili araç 34ABC123, Vardiya yok, Çevrim dışı; fresh snapshot'ta yanlış Tüm iş akışını göster overlay'i yok.", "userReachedTarget": true },
+      "security": "Authorized relation only; no stale generic source-screen target; no write",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "CTX-004",
+      "criterion": "Haritada seçili araç için yetkili operasyon bağı yoksa yanlış vardiya/operasyon kaydı üretmeden güvenli fail-closed cevap verilir.",
+      "start": { "route": "/room/map?focusVehicleId=1", "selectedRecord": "Araç 34ABC123" },
+      "userMessage": "Bu aracın ilgili operasyon kaydını göster.",
+      "backend": {
+        "providerSummary": "authorized-room-relation-v1",
+        "relationship": "VEHICLE_TO_SHIFT / vehicle 1 -> no authorized shift",
+        "guidedTarget": null,
+        "quickActions": [],
+        "replyEvidence": "Araç 34ABC123 için yetkili ilişkili operasyon veya vardiya kaydı görünmüyor; başka vardiya bu araca aitmiş gibi gösterilmiyor."
+      },
+      "browserResult": { "route": "/room/map?focusVehicleId=1", "dom": "Harita Önizleme 34ABC123 / Vardiya yok; yanlış Operasyon Merkezi hedefi veya overlay yok.", "userReachedTarget": true },
+      "security": "Fail-closed; no unauthorized relation retrieval; no write",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "CTX-005",
+      "criterion": "Seçili yetkili sözleşmeden aynı sözleşmeye bağlı Ticari Akış salt-okunur görünümüne geçilir.",
+      "start": { "route": "/room/agreements", "selectedRecord": "Sözleşme #184" },
+      "userMessage": "Bu sözleşmenin ticari akışını göster.",
+      "backend": {
+        "providerSummary": "authorized-room-agreement-context-navigation-v1",
+        "entity": "agreement 184",
+        "guidedTarget": null,
+        "quickAction": { "label": "Ticari Çalışma Alanı ekranına git", "path": "/room/commercial-flow", "routeParams": { "agreementId": 184, "tab": "settlement" } },
+        "replyEvidence": "Seçili Sözleşme #184 için Ticari Çalışma Alanı ekranını açıyorum."
+      },
+      "browserResult": { "route": "/room/commercial-flow?agreementId=184&tab=settlement", "dom": "Hakediş ve fatura mutabakat önizlemesi; Sözleşme #184, operasyon kanıtı yok, ödeme/fatura/muhasebe başlatılmaz.", "userReachedTarget": true },
+      "security": "ROOM tenant preserved; read-only preview; no write",
+      "result": "PRODUCT_PASS"
+    },
+    {
+      "id": "CTX-006",
+      "criterion": "Ticari Akıştaki seçili sözleşme bağlamından aynı ilişkili sözleşmeye geri dönülür.",
+      "start": { "route": "/room/commercial-flow?agreementId=184&tab=settlement", "selectedRecord": "Sözleşme #184 / DemoCompany commercial record" },
+      "userMessage": "Bu kaydın sözleşmesini göster.",
+      "backend": {
+        "providerSummary": "authorized-room-agreement-context-navigation-v1",
+        "entity": "agreement 184",
+        "guidedTarget": null,
+        "quickAction": { "label": "Sözleşmeler ekranına git", "path": "/room/agreements", "routeParams": { "focusAgreementId": 184 } },
+        "replyEvidence": "Seçili Sözleşme #184 için Sözleşmeler ekranını açıyorum."
+      },
+      "browserResult": { "route": "/room/agreements?focusAgreementId=184", "dom": "Sözleşmeler ekranı; Hakediş ve fatura mutabakat önizlemesi içinde Sözleşme #184 görünür.", "userReachedTarget": true },
+      "security": "Authorized relation only; no write",
+      "result": "PRODUCT_PASS"
+    }
+  ],
+  "regression": {
+    "priorPart4Passes": { "preserved": true, "fullRetest": false, "note": "No broad retest; directly overlapping relation, route, stale-target and financial-boundary paths were exercised by CTX-002..006." },
+    "syntax": { "backendService": "PASS", "authorizedProductAwareness": "PASS", "semanticIntentPlanner": "PASS", "copilotUiElementAnchor": "PASS" },
+    "frontendBuild": "PASS (web npm run build, 438 modules)",
+    "security": { "tenant": "PASS", "role": "PASS", "businessWrite": 0, "paymentApprovalAccountingWrite": 0 }
+  },
+  "status": {
+    "CTX002_006": "5/5 PRODUCT_PASS",
+    "part4CorrectedScope": "21/21 PRODUCT_PASS",
+    "part4Status": "PRODUCT_ACCEPTED",
+    "part5": "NEXT_BOUNDED_FRONTIER_PERMITTED",
+    "roomFunctional10of10": "NOT_CLOSED",
+    "m18FormalClosed": "NOT_CLOSED"
+  },
+  "changedCanonicalFiles": [
+    "backend/src/services/authorizedProductAwareness.js",
+    "backend/src/ai/chat/semanticIntentPlanner.js",
+    "backend/src/ai/chat/copilotUiElementAnchor.js",
+    "backend/src/ai/service.js",
+    "web/src/panels/room/MapPanel.jsx",
+    "web/src/panels/room/AgreementsPanel.jsx"
+  ],
+  "historicalEvidencePreserved": [
+    "docs/evidence/m18-room-part4-product-closure-public-acceptance-20261019.json",
+    "docs/evidence/m18-room-part4-ctx001-008-manifest-boundary-20261019.json",
+    "docs/evidence/m18-room-part4-ctx001-008-proposed-criteria-20261019.json"
+  ]
+}

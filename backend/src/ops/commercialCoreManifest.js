@@ -179,6 +179,7 @@ export async function buildRoomCommercialItems(user) {
         : "Sozlesme kaydini incele";
     return {
       id: `agreement-${a.id}`,
+      agreementId: a.id,
       updatedAt: a.updatedAt,
       counterparty: a.company?.name || `Company #${a.companyId}`,
       flowLabel: "Sozlesme (ayri akis)",

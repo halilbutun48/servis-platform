@@ -1,0 +1,138 @@
+{
+  "checkpointId": "M18-ROOM-PART4-PUBLIC-ACCEPTANCE-20261019",
+  "status": "PARTIAL_CHECKPOINT_PRODUCT_ACCEPTANCE",
+  "scope": [
+    "EXH-CTX-009",
+    "EXH-CTX-013",
+    "EXH-REC-005",
+    "EXH-REC-006",
+    "CTX-001..008 boundary review"
+  ],
+  "previousCheckpoint": {
+    "path": "docs/evidence/m18-room-part4-product-closure-20261019.json",
+    "sha256": "2E87CE86B05FD9DF36CD9EE50C1CE46F7613EB5DAEB3F6F25E607429B9551EFB"
+  },
+  "publicRuntime": {
+    "origin": "https://further-history-universities-hugo.trycloudflare.com",
+    "health": {
+      "http": 200,
+      "ok": true,
+      "dbOk": true,
+      "startedAt": "2026-10-19T15:17:19.666Z",
+      "startedAtSource": "user-provided backend restoration evidence; public /health did not expose startedAt"
+    },
+    "browser": "Windows headed Google Chrome through @playwright/test/playwright-cli",
+    "sourceShaExposedByPublicRuntime": false,
+    "sourceShaNote": "No exact public source SHA was claimed. Browser origin, route and visible DOM were recorded separately.",
+    "businessWrite": 0
+  },
+  "productChangesUsed": [
+    {
+      "file": "backend/src/ai/chat/copilotUiElementAnchor.js",
+      "effect": "Screen-context guidance resolves the canonical current-surface target for offers and the live map; explicit map enlargement remains higher priority."
+    },
+    {
+      "file": "web/src/components/map/MapOperationsDisclosure.jsx",
+      "effect": "The live map disclosure exposes an optional canonical copilot target."
+    },
+    {
+      "file": "web/src/panels/room/MapPanel.jsx",
+      "effect": "The live vehicle/shift disclosure is bound to room-map:vehicle-list."
+    }
+  ],
+  "targetedRegression": {
+    "status": "GREEN",
+    "scope": [
+      "REC-005 current offers surface guidance",
+      "REC-006 live map vehicle-list disclosure guidance"
+    ],
+    "syntax": "node --check backend/src/ai/chat/copilotUiElementAnchor.js: PASS",
+    "frontendBuild": "web npm run build: PASS"
+  },
+  "publicAcceptance": {
+    "EXH-CTX-009": {
+      "status": "PRODUCT_PASS",
+      "startRoute": "/room#/room/offers",
+      "userInput": "Teklif #36 ayrıntısını göster.",
+      "authorizedContext": "ROOM; selected offer #36; linked shift #209",
+      "observedResponse": "Teklif #36 ayrıntıları: Firma: DemoCompany. Durum: Açık. Bağlı vardiya: Vardiya #209. Tarih aralığı: 2.10.2030 11:00 – 2.10.2030 12:00. Hizmet alan firma tutarı: 12.000.000. Taşımacılık Firması tutarı: henüz girilmemiş. Kalite: Eksik veri. Risk: Orta.",
+      "observedTarget": "Buraya bak: Teklif #36",
+      "visibleDom": [
+        "Seçili kayıt: Teklif #36",
+        "Hizmet Alan Firma: 12.000.000",
+        "Vardiyaya Git",
+        "Harita Önizle"
+      ],
+      "result": "Offer #36 detail panel was visibly open on the public offers route; no write occurred."
+    },
+    "EXH-CTX-013": {
+      "status": "PRODUCT_PASS",
+      "startRoute": "/room#/room/agreements",
+      "userInput": "Operasyon Köprüsünün ayrıntısını aç.",
+      "authorizedContext": "ROOM; selected authorized agreement #184 Operation Bridge",
+      "noSelectionSafety": "Before selecting agreement #184, the same request produced no record target/overlay and did not expose a contract; fail-closed behavior was preserved.",
+      "observedResponse": "Sözleşme #184 için Operasyon Köprüsü hedefi doğrulandı: Detayı aç. Bu hedefi açarak sözleşmeye bağlı vardiya ve rota ayrıntılarını inceleyebilirsin; yalnızca salt-okunur görünürlük sağlıyorum, işlem başlatmıyorum.",
+      "observedTarget": "Buraya bak: Detayı aç",
+      "visibleDom": [
+        "Seçili kayıt: Sözleşme ID 184",
+        "Operasyon Köprüsü",
+        "Bekliyor • Dönüş / Tek yön",
+        "Üretilen vardiya: 0",
+        "Bu sözleşmeye bağlı üretilmiş vardiya henüz yok.",
+        "Sadece önizleme — ödeme başlatılmaz",
+        "tahsilat/fatura oluşturulmaz"
+      ],
+      "result": "Authorized agreement #184 Operation Bridge details were visibly open; no payment, approval, accounting or other business write occurred."
+    },
+    "EXH-REC-005": {
+      "status": "PRODUCT_PASS",
+      "startRoute": "/room#/room/offers",
+      "userInput": "Adım adım göster.",
+      "authorizedContext": "ROOM offers surface; no selected offer",
+      "observedResponse": "Teklifler ekranı. Bu ekran, gelen teklifleri görmek, karşılaştırmak ve karar vermek için kullanılır. İlk bakılacak yer: hangi teklifin hangi işe ait olduğunu kontrol et. Sonra: Karar vermeden önce araç, sürücü ve saat bilgisini karşılaştır.",
+      "observedTarget": "Buraya bak: Teklifler",
+      "visibleDom": [
+        "Seçili kayıt yok",
+        "Teklifler surface is visible",
+        "No random offer was selected"
+      ],
+      "result": "Screen-specific recovery remained on the offers surface, explained the next steps in Turkish and did not invent a selected record."
+    },
+    "EXH-REC-006": {
+      "status": "PRODUCT_PASS",
+      "startRoute": "/room#/room/map",
+      "userInput": "Adım adım göster.",
+      "authorizedContext": "ROOM map; selected shift #168; vehicle 34 ABC 124",
+      "observedResponse": "Vardiya #168 için ek doğrulanmış bilgi: tarih aralığı: 4.09.2026 07:00 – 4.09.2026 09:00 • durak sayısı: 18 • yolcu sayısı: 18 • biniş sayısı: 0 • iniş sayısı: 0.",
+      "observedTarget": "Buraya bak: Canlı araçlar ve vardiyalar1",
+      "visibleDom": [
+        "summary text: Canlı araçlar ve vardiyalar1",
+        "summary data-copilot-target: room-map:vehicle-list",
+        "disclosure open: true",
+        "Canlı Liste",
+        "1 kayıt",
+        "Satıra tıkla → sağda timeline + harita.",
+        "34 ABC 124 Çevrim dışı Onaylandı ...",
+        "Vardiya #168"
+      ],
+      "result": "The canonical live vehicle/shift disclosure opened visibly on the public map route and the correct room-map:vehicle-list overlay was shown; no legacy field target or business write occurred."
+    }
+  },
+  "priorAcceptance": {
+    "previousProductPass": 12,
+    "preserved": true,
+    "regressionObservation": "No regression was observed in the four directly targeted flows. The prior twelve were not redundantly re-run."
+  },
+  "manifestBoundary": {
+    "CTX-001..008": "NOT_PROVEN: no distinct canonical acceptance criteria were established; no synthetic PASS was created.",
+    "historical20RouteCount": "MANIFEST_COUNTING_ERROR remains open; /room/live is the /room/map alias and was not counted twice."
+  },
+  "counts": {
+    "productPass": 16,
+    "productFail": 0,
+    "productGap": 0,
+    "notProven": 8,
+    "securityBlock": 0
+  },
+  "nextFrontier": "Resolve the canonical acceptance criteria/owner for CTX-001..008 without duplicating prior scenarios. Do not start PART 5 or declare ROOM 10/10 until the remaining mandatory evidence is real and traceable."
+}

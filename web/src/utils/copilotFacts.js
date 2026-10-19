@@ -1686,7 +1686,7 @@ export function buildParentLiveNoVehicleFacts({
   };
 }
 
-export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, acceptedCount = 0, listCount = 0 }) {
+export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, acceptedCount = 0, listCount = 0, activeTab = "contractShift" }) {
   const status = String(selectedItem?.statusLabel || '-').toUpperCase();
   const section = String(selectedItem?.section || 'market');
   const isMarket = section === 'market';
@@ -1779,6 +1779,7 @@ export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, accept
   return {
     missing: [],
     blockers,
+    activeTab: String(activeTab || "contractShift"),
     ...readonlyFacts,
     reasoningLead: isMarket
       ? 'Bu kayıt hâlâ ticari pazarlık tarafında görünüyor.'
@@ -1976,6 +1977,7 @@ export function buildCopilotStarterChips({
 } = {}) {
   const path = compactText(screenPath, '').split('?')[0];
   const isRoomAgreementPath = path.includes('/room/agreements');
+  const isSharedKvkkPath = path === '/shared/kvkk';
   const selectionText = selectionStarterText(selection);
   const fallback = ['Bu ekranda neye bakmalıyım?', 'Riskleri sırala', 'Sıradaki doğru işlem ne?'];
   const surfaceRole = compactText(role, '').toUpperCase();
@@ -2066,6 +2068,14 @@ export function buildCopilotStarterChips({
   );
   const isDriverToday = path.includes('/driver/today');
   const isDriverRouteOrMap = path.includes('/driver/route') || path.includes('/driver/map');
+  if (isSharedKvkkPath) {
+    return finalizeStarterChips([
+      'KVKK sınırını açıkla',
+      'Bu rolde ne görünür?',
+      'Erişim neden kapalı?',
+      'Yetkili ekrana yönlendir',
+    ], fallback);
+  }
   if (isDynamicSavingsPreview && !isRoomAgreementPath) {
     return finalizeStarterChips([
       'Tasarruf hesabını göster',

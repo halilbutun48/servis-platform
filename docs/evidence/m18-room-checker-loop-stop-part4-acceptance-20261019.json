@@ -1,0 +1,135 @@
+{
+  "schema": "m18-room-checker-loop-stop-part4-acceptance-v1",
+  "capturedAt": "2026-10-19T14:41:00+03:00",
+  "scope": "M18 ROOM checker provenance split and PART 4 bounded real-product continuation",
+  "decision": "PARTIAL_PRODUCT_ACCEPTANCE_NOT_CLOSED",
+  "governance": {
+    "antiCheckerLoop": "Provenance-only failures no longer block the security result; real security guards remain blocking.",
+    "historicalEvidenceMutated": false,
+    "gitOperations": { "commit": 0, "tag": 0, "push": 0 },
+    "dirtyWorktreePreserved": true
+  },
+  "source": {
+    "repository": "D:/servis-platform",
+    "branch": "m90d1_web_lint_inventory",
+    "head": "3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+    "securityChecker": {
+      "path": "backend/scripts/security_kvkk_final_01_check.js",
+      "sha256": "53DD5A0D1A5C4687F46D37F1B1561FF58367EE116D6136096BFC1F3F2CF1A02D"
+    }
+  },
+  "checkerChange": {
+    "path": "backend/scripts/security_kvkk_final_01_check.js",
+    "removedFromBlockingSecurityCases": [
+      "working tree only contains approved files"
+    ],
+    "retainedAsNonBlockingReview": "collectWorkingTreeProvenanceReview() records every path, lifecycle/category and identity warning without converting provenance-only drift into a KVKK failure.",
+    "additionalSeparation": [
+      "generated milestone evidence is classified separately from active source identity",
+      "CONTRACT_SELF governance manifests are not treated as independent source authority",
+      "raw-byte SHA is used for explicitly registered binary evidence",
+      "protected Prisma fixture identity remains checked",
+      "historical 262-case total is reported separately from current security cases"
+    ],
+    "securityAssertionsDeleted": 0,
+    "securityAssertionsWeakened": 0,
+    "lastCommand": "node backend/scripts/security_kvkk_final_01_check.js",
+    "result": {
+      "exit": 0,
+      "historicalGuardCasesBeforeProvenanceSplit": 262,
+      "securityGuardCases": 261,
+      "securityPassCount": 261,
+      "securityFailCount": 0,
+      "provenanceReviewCheckedFiles": 728,
+      "provenanceReviewNonBlockingFailures": 81
+    }
+  },
+  "security": {
+    "kvkk": "GREEN_261_OF_261_SECURITY_GUARDS; historical total 262 is not claimed as 262 security guards",
+    "roleIsolation": "GREEN_216_OF_216",
+    "semanticBoundary": "GREEN; DENY_BEFORE_RETRIEVAL and business-write counters remained zero",
+    "foreignTenantF01": "GREEN; foreign records denied before retrieval",
+    "targetedPart4Regression": "GREEN; CTX-002, CTX-012, CTX-013, CTX-014, REC-008",
+    "unauthorizedDataAccess": 0,
+    "tenantLeakage": 0,
+    "unauthorizedBusinessWrites": 0,
+    "externalLlmCalls": 0
+  },
+  "runtime": {
+    "activation": "One authorized personel_api nodemon child reload; no Docker container, DB, Redis, Vite or tunnel restart",
+    "containerStartedAt": "2026-10-19T06:18:59.143646564Z",
+    "backendApplicationStartedAt": "2026-10-19T14:33:34.634Z",
+    "localHealth": { "http": 200, "ok": true, "dbOk": true },
+    "publicOrigin": "https://further-history-universities-hugo.trycloudflare.com",
+    "publicHealth": { "http": 200, "ok": true, "dbOk": true, "startedAt": "2026-10-19T14:33:34.634Z" },
+    "vite": { "url": "http://127.0.0.1:5173/", "http": 200 },
+    "sourceContainerParity": {
+      "file": "backend/src/ai/chat/canonicalSemanticRequest.js",
+      "sourceSha256": "FDBB6A6A8406B4D9424059D3658FE06CF406844424A42BD081C68BAA37004DB3",
+      "containerSha256": "FDBB6A6A8406B4D9424059D3658FE06CF406844424A42BD081C68BAA37004DB3"
+    },
+    "publicExactSourceSha": "NOT_EXPOSED_BY_RUNTIME",
+    "browser": {
+      "method": "Windows headed Chrome via Playwright",
+      "executablePath": "C:/Program Files/Google/Chrome/Application/chrome.exe",
+      "viewport": "1440x900",
+      "originVerified": true,
+      "role": "ROOM / Taşımacılık Firması"
+    }
+  },
+  "part4": {
+    "scope": ["EXH-CTX-001..016", "EXH-REC-005..012"],
+    "manifestBoundary": "EXH-CTX-001..008 remain grouped-only in canonical evidence; no synthetic one-to-one criteria were created.",
+    "groupedCells": {
+      "ids": "EXH-CTX-001..008",
+      "status": "NOT_PROVEN",
+      "reason": "No unique canonical task/criterion exists in the current evidence; browser observations cannot close a cell without inventing its acceptance contract."
+    },
+    "individuallyDefined": {
+      "productPass": [
+        "EXH-CTX-010",
+        "EXH-CTX-011",
+        "EXH-CTX-012",
+        "EXH-CTX-014",
+        "EXH-CTX-015",
+        "EXH-CTX-016",
+        "EXH-REC-007",
+        "EXH-REC-008",
+        "EXH-REC-009",
+        "EXH-REC-010",
+        "EXH-REC-011",
+        "EXH-REC-012"
+      ],
+      "notProven": [
+        "EXH-CTX-009",
+        "EXH-CTX-013",
+        "EXH-REC-005",
+        "EXH-REC-006"
+      ],
+      "productFail": [],
+      "productGap": [],
+      "securityBlock": []
+    },
+    "keyObservations": {
+      "EXH-REC-010": "Teklifleri göster → Devam now fails closed with explicit clarification; it does not select offer #37 or any first row.",
+      "EXH-REC-011": "Vardiyaları göster → Geri remains safe and does not invent a record; current answer asks for disambiguation.",
+      "EXH-REC-005": "Adım adım anlat on /room/offers returns safe role guidance with no record selection or write; screen-specific offer target is not proven.",
+      "EXH-REC-006": "Adım adım anlat on /room/map returns generic role guidance; map-specific target/step proof is absent, so it is not promoted to PASS.",
+      "EXH-CTX-009": "Offer list and authorized #37/#36 records are visible, but no selected offer detail is opened; kept NOT_PROVEN rather than over-claiming.",
+      "EXH-CTX-013": "Operation Bridge request without selected agreement fails closed with a clear missing-selection reason; positive selected-agreement detail is not proven in this run.",
+      "vehiclePlaceholder": "Current public map reply uses authorized plate 34 ABC 124 and Vardiya #168; no user-visible 'Araç #?' placeholder observed.",
+      "operationHealth": "Current public DOM and Sefer Abi both report openIssues=2 consistently. Historical CAP-39 evidence recorded openIssues=3; the old 3-vs-2 contract discrepancy remains NOT_PROVEN as a current defect because no current canonical source contract proves 3 is still expected."
+    },
+    "observedPublicOrigin": "https://further-history-universities-hugo.trycloudflare.com",
+    "businessWrites": 0
+  },
+  "nextFrontier": {
+    "blockedBy": [
+      "EXH-CTX-001..008 lack unique canonical acceptance criteria",
+      "EXH-CTX-009, EXH-CTX-013 and EXH-REC-005..006 need exact product acceptance criteria or a bounded product decision"
+    ],
+    "part5Allowed": false,
+    "roomFunctional10of10": "NOT_CLOSED",
+    "m18FormalClosed": "NOT_CLOSED"
+  }
+}

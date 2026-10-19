@@ -11,7 +11,7 @@ export const GUIDED_TARGET_STATUSES = Object.freeze({
   STATE_CHANGED: 'STATE_CHANGED',
 });
 
-const CRITICAL_ACTION_RE = /(?:onayla|onay|kabul et|kaydet|uygula|sil|dağıt|dagit|dispatch|sözleşmeyi yürürlüğe al|sozlesmeyi yururluge al|gönder|gonder|teklif ver|teklifi gönder|teklifi gonder|ödemeyi başlat|odemeyi baslat|yetki ver|yetkiyi değiştir|yetkiyi degistir)/iu;
+const CRITICAL_ACTION_RE = /(?:onayla|onay|kabul et|kaydet|\buygula(?:\s|$)|uygulamaya\s+(?:al|gecir|geçir)|sil|dağıt|dagit|dispatch|sözleşmeyi yürürlüğe al|sozlesmeyi yururluge al|gönder|gonder|teklif ver|teklifi gönder|teklifi gonder|ödemeyi başlat|odemeyi baslat|yetki ver|yetkiyi değiştir|yetkiyi degistir)/iu;
 const GUIDANCE_RE = /(?:nerede|neresi|burası ne|burasi ne|hangi (?:buton|sekme|alan|kart|bölüm|bolum)|ilk ne|önce ne|once ne|şimdi ne|simdi ne|devam(?: et)?|girdim|yaptım|yaptim|bulamadım|bulamadim|geri|yanlış ekrandayım|yanlis ekrandayim|burada göremiyorum|burada goremiyorum)/iu;
 
 function text(value) {
@@ -174,15 +174,78 @@ function isQuoteFloorDetailRequest({ semanticPlan, message } = {}) {
 function isOperationHealthProblemsShowRequest({ currentPath, semanticPlan } = {}) {
   if (!/(?:^|\/)operation-health$/.test(String(currentPath || '').trim())) return false;
   const operation = String(semanticPlan?.canonicalRequest?.operation || '').trim();
-  if (!['VIEW_AUTHORIZED_SURFACE', 'NAVIGATE_AUTHORIZED_SURFACE'].includes(operation)) return false;
+  const metricMode = String(
+    semanticPlan?.operationHealthMetricMode
+      || semanticPlan?.typedRequest?.operationHealthMetricMode
+      || semanticPlan?.canonicalRequest?.operationHealthMetricMode
+      || '',
+  ).trim().toUpperCase();
+  if (!['VIEW_AUTHORIZED_SURFACE', 'NAVIGATE_AUTHORIZED_SURFACE'].includes(operation)
+    && !(operation === 'DIAGNOSE_CURRENT_ISSUE' && ['GPS_ISSUE_SUBSET', 'METRIC_DEFINITION'].includes(metricMode))) return false;
   const taskType = String(
     semanticPlan?.typedRequest?.taskType
       || semanticPlan?.canonicalRequest?.typedEvidence?.taskType
       || '',
   ).trim().toUpperCase();
+  const normalizedMeaning = text(semanticPlan?.canonicalRequest?.currentRequest?.normalizedMeaning).toLocaleLowerCase('tr-TR');
+  const explicitProblemSurfaceGuidance = semanticPlan?.family === 'UI_GUIDANCE'
+    && semanticPlan?.explicitUiGuidance === true
+    && String(semanticPlan?.canonicalRequest?.request?.domain || semanticPlan?.canonicalRequest?.domain || '').toUpperCase() === 'OPERATIONS'
+    && /(?:sorun|problem|sıkıntı|sikinti|aksak|arıza|ariza)/iu.test(normalizedMeaning)
+    && /(?:göster|goster|aç|ac|incele|götür|gotur)/iu.test(normalizedMeaning);
+  const canonicalOperationHealthMetricIssue = operation === 'DIAGNOSE_CURRENT_ISSUE'
+    && ['GPS_ISSUE_SUBSET', 'METRIC_DEFINITION'].includes(metricMode);
   return taskType === 'ISSUE'
     || String(semanticPlan?.family || '').trim().toUpperCase() === 'ISSUE_DIAGNOSTIC'
-    || semanticPlan?.canonicalRequest?.typedEvidence?.specificity?.issueSurfaceViewEvidence === true;
+    || semanticPlan?.canonicalRequest?.typedEvidence?.specificity?.issueSurfaceViewEvidence === true
+    || explicitProblemSurfaceGuidance
+    || canonicalOperationHealthMetricIssue;
+}
+
+function selectedShiftMissingDataTarget({ currentPath, semanticPlan, screenContext } = {}) {
+  if (currentPath !== '/room/shifts') return null;
+  const screenRecordId = Number(screenContext?.selectedEntityId || screenContext?.selectedRecordId || 0) || 0;
+  if (screenRecordId <= 0) return null;
+  const screenEntityType = text(screenContext?.selectedEntityType).toLowerCase();
+  if (screenEntityType && screenEntityType !== 'shift') return null;
+  const questionType = text(
+    semanticPlan?.publicQuestionType
+      || semanticPlan?.typedRequest?.publicQuestionType
+      || semanticPlan?.canonicalRequest?.typedEvidence?.publicQuestionType
+      || semanticPlan?.canonicalRequest?.typedEvidence?.questionType,
+  ).toUpperCase();
+  const entityType = text(
+    semanticPlan?.entity?.type
+      || semanticPlan?.entities?.[0]?.type
+      || semanticPlan?.typedRequest?.entityType
+      || semanticPlan?.canonicalRequest?.typedEvidence?.entityType
+      || screenContext?.selectedEntityType,
+  ).toLowerCase();
+  const recordId = Number(
+    screenRecordId
+      || semanticPlan?.entity?.id
+      || semanticPlan?.entities?.[0]?.id
+      || 0,
+  ) || 0;
+  if (questionType !== 'MISSING_DATA_HELP' || entityType !== 'shift' || recordId <= 0) return null;
+  return { targetKey: `room-shifts:shift:${recordId}:details`, recordId };
+}
+
+function selectedShiftTaskTarget({ currentPath, semanticPlan, screenContext } = {}) {
+  if (currentPath !== '/room/shifts') return null;
+  const recordId = Number(screenContext?.selectedEntityId || screenContext?.selectedRecordId || 0) || 0;
+  if (recordId <= 0) return null;
+  const entityType = text(screenContext?.selectedEntityType || semanticPlan?.entity?.type).toLowerCase();
+  if (entityType && entityType !== 'shift') return null;
+  const taskType = text(semanticPlan?.typedRequest?.taskType).toUpperCase();
+  const continuationOfGuidance = text(semanticPlan?.family).toUpperCase() === 'CONTINUE_CURRENT_REASONING'
+    && text(semanticPlan?.continuationBasePlan?.family).toUpperCase() === 'UI_GUIDANCE';
+  const roomCapabilityBoundaryContinuation = text(semanticPlan?.family).toUpperCase() === 'UI_GUIDANCE'
+    && text(semanticPlan?.roleCapabilityBoundary).toUpperCase() === 'ROOM_CREATE_UNSUPPORTED'
+    && semanticPlan?.typedRequest?.continuationIntent === true
+    && text(semanticPlan?.typedRequest?.continuationAction).toUpperCase() === 'CONTINUE';
+  if (taskType !== 'NEXT_ACTION' && !continuationOfGuidance && !roomCapabilityBoundaryContinuation) return null;
+  return { targetKey: `room-shifts:shift:${recordId}:details`, recordId };
 }
 
 function explicitOfferRecordId(semanticPlan) {
@@ -191,6 +254,19 @@ function explicitOfferRecordId(semanticPlan) {
     : [])
     .find((candidate) => String(candidate?.type || '').toUpperCase() === 'OFFER' && Number(candidate?.id) > 0);
   return Number(ref?.id) > 0 ? Math.trunc(Number(ref.id)) : 0;
+}
+
+function isMapEnlargementRequest(message) {
+  const value = normalized(message);
+  return /\b(?:harita|zoom)\p{L}*\b/iu.test(value)
+    && /\b(?:buyut|yaklastir|yakinlastir|genislet|zoom)\p{L}*\b/iu.test(value);
+}
+
+function mapEnlargementTarget(available) {
+  return (Array.isArray(available) ? available : []).find((row) => !row.disabled
+    && (/(?:buyuk|buyut|yaklastir|yakinlastir|yakınlastır|genislet|zoom)\p{L}*/iu.test(normalized(row.label))
+      || /map[_-](?:modal[_-])?open|zoom[_-]in/iu.test(normalized(row.semanticType))
+      || /(?:map|zoom)[_-].*(?:open|in)/iu.test(String(row.targetKey || "")))) || null;
 }
 
 function capabilityTargetForRows(available, capabilityIntent, message = '') {
@@ -222,6 +298,24 @@ function capabilityTargetForRows(available, capabilityIntent, message = '') {
   return null;
 }
 
+function screenContextGuidanceTarget({ currentPath, semanticPlan, available } = {}) {
+  const family = text(semanticPlan?.family).toUpperCase();
+  const typedTask = text(semanticPlan?.typedRequest?.taskType || semanticPlan?.taskType).toUpperCase();
+  const screenContextGuidance = (family === 'SCREEN_CONTEXT' && typedTask === 'SCREEN_CONTEXT')
+    || (family === 'CONTINUE_CURRENT_REASONING'
+      && text(semanticPlan?.continuationBasePlan?.family).toUpperCase() === 'SCREEN_CONTEXT');
+  if (!screenContextGuidance) return null;
+
+  const targetKey = currentPath === '/room/offers'
+    ? 'room:offers'
+    : currentPath === '/room/map'
+      ? 'room-map:vehicle-list'
+      : '';
+  if (!targetKey) return null;
+  return (Array.isArray(available) ? available : [])
+    .find((row) => row.identitySource === 'CANONICAL' && row.targetKey === targetKey) || null;
+}
+
 export function isCopilotGuidanceMessage(message) {
   return GUIDANCE_RE.test(text(message)) || isWorkflowGuidanceMessage(message);
 }
@@ -236,23 +330,36 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
     : null;
   const currentPath = text(screenContext?.path);
   const hasCanonicalDecision = Boolean(semanticPlan?.family);
-  const canonicalWorkflow = ["CREATE_SHIFT", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE"].includes(workflowIntentForPlan(
+  const canonicalWorkflow = ["CREATE_SHIFT", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE", "OPEN_CHECKIN_SURFACE", "OPEN_APPLIED_ROUTE_SURFACE"].includes(workflowIntentForPlan(
     semanticPlan,
     text(semanticPlan?.family) === 'CONTINUE_CURRENT_REASONING' ? conversationState : null,
   ));
   const compatibilityWorkflow = !hasCanonicalDecision
-    && ["CREATE_SHIFT", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE"].includes(workflowIntentForPlan(null, conversationState));
+    && ["CREATE_SHIFT", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE", "OPEN_CHECKIN_SURFACE", "OPEN_APPLIED_ROUTE_SURFACE"].includes(workflowIntentForPlan(null, conversationState));
   const workflowRequest = canonicalWorkflow || compatibilityWorkflow || (!hasCanonicalDecision && isWorkflowGuidanceMessage(message));
   const continuation = text(semanticPlan?.family) === 'CONTINUE_CURRENT_REASONING'
     || text(semanticPlan?.family) === 'EXPLAIN_CURRENT_TARGET'
     || (!hasCanonicalDecision && isContinuationMessage(message));
   const quoteFloorDetailRequest = isQuoteFloorDetailRequest({ semanticPlan, message });
   const operationHealthProblemsShowRequest = isOperationHealthProblemsShowRequest({ currentPath, semanticPlan });
+  const operationHealthGuidanceMeaning = text(semanticPlan?.canonicalRequest?.currentRequest?.normalizedMeaning).toLocaleLowerCase('tr-TR');
+  const operationHealthGuidanceOnWrongScreen = semanticPlan?.family === 'UI_GUIDANCE'
+    && semanticPlan?.explicitUiGuidance === true
+    && String(semanticPlan?.canonicalRequest?.domain || '').toUpperCase() === 'OPERATIONS'
+    && ['VIEW_AUTHORIZED_SURFACE', 'NAVIGATE_AUTHORIZED_SURFACE'].includes(String(semanticPlan?.canonicalRequest?.operation || '').toUpperCase())
+    && /(?:sorun|problem|sıkıntı|sikinti|aksak|arıza|ariza)/iu.test(operationHealthGuidanceMeaning)
+    && currentPath !== '/room/operation-health';
+  if (operationHealthGuidanceOnWrongScreen) return null;
+  const selectedShiftMissingData = selectedShiftMissingDataTarget({ currentPath, semanticPlan, screenContext });
+  const selectedShiftTask = selectedShiftTaskTarget({ currentPath, semanticPlan, screenContext });
   const requestedOfferId = explicitOfferRecordId(semanticPlan);
   const guidanceRequest = canonicalGuidancePlan(semanticPlan)
     || (!hasCanonicalDecision && isCopilotGuidanceMessage(message));
   const agreementCollectionViewRequest = semanticPlan?.agreementCollectionViewIntent === true
     || semanticPlan?.typedRequest?.agreementCollectionViewIntent === true;
+  const relationshipIntent = semanticPlan?.relationshipIntent
+    || semanticPlan?.typedRequest?.relationshipIntent
+    || null;
   // A target saved for a previous route must not linger.  A *new canonical*
   // guidance decision is different: it describes the current turn and must
   // be resolved against this current screen, even when an earlier workflow
@@ -270,14 +377,20 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
     return { status: GUIDED_TARGET_STATUSES.NOT_FOUND, targetKey: null, screenPath: currentPath || null, reason: 'Bu hedef mevcut yetkili arayüzde doğrulanamadı.' };
   }
   const workflowIntent = semanticWorkflowIntent;
-  if (['CREATE_SHIFT', 'OPEN_SHIFT_SURFACE', 'OPEN_OFFER_SURFACE'].includes(workflowIntent)) {
+  if (['CREATE_SHIFT', 'OPEN_SHIFT_SURFACE', 'OPEN_OFFER_SURFACE', 'OPEN_CHECKIN_SURFACE', 'OPEN_APPLIED_ROUTE_SURFACE'].includes(workflowIntent)) {
     const roleScreens = buildRoleHelpSummary(user).screens || [];
     const requiredLabels = workflowIntent === 'OPEN_OFFER_SURFACE'
       ? ['Teklifler', 'Ticari Akışım']
       : workflowIntent === 'OPEN_SHIFT_SURFACE'
         ? ['Vardiyalar']
-        : ['Planlama Merkezi', 'Gezi / Planlama Merkezi', 'Taşımacılık Firması Merkezi', 'Okul Merkezi', 'Genel Bakış'];
-    if (!roleScreens.some((screen) => requiredLabels.includes(String(screen?.label || '').trim()))) {
+        : workflowIntent === 'OPEN_CHECKIN_SURFACE'
+          ? ['Biniş kayıtları']
+          : workflowIntent === 'OPEN_APPLIED_ROUTE_SURFACE'
+            ? ['Sözleşmeler']
+            : ['Planlama Merkezi', 'Gezi / Planlama Merkezi', 'Taşımacılık Firması Merkezi', 'Okul Merkezi', 'Genel Bakış'];
+    const roleOwnsRoomReadOnlySurface = ['OPEN_CHECKIN_SURFACE', 'OPEN_APPLIED_ROUTE_SURFACE'].includes(workflowIntent)
+      && String(user?.role || '').toUpperCase() === 'ROOM';
+    if (!roleOwnsRoomReadOnlySurface && !roleScreens.some((screen) => requiredLabels.includes(String(screen?.label || '').trim()))) {
       return { status: GUIDED_TARGET_STATUSES.UNAUTHORIZED, targetKey: null, screenPath: currentPath || null, reason: 'Bu görev için mevcut rolde yetkili bir hedef ekran bulunmuyor.' };
     }
   }
@@ -292,10 +405,126 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
       || screenContext?.selectedEntity?.id
       || 0,
   ) || 0;
-  if (!guidanceRequest && !agreementOperationBridgeIntent && !prior?.targetKey && !quoteFloorDetailRequest && !requestedOfferId && !operationHealthProblemsShowRequest && !agreementCollectionViewRequest) return null;
+  const canonicalRelationOperation = text(
+    semanticPlan?.canonicalRequest?.operation
+      || semanticPlan?.typedRequest?.operation,
+  ).toUpperCase();
+  const selectedRelationSourceType = text(
+    screenContext?.selectedEntityType
+      || semanticPlan?.canonicalRequest?.typedEvidence?.entityType,
+  ).toLowerCase();
+  const hasCanonicalRelationGuidance = canonicalRelationOperation === 'LOOK_UP_RELATION'
+    && ['vehicle', 'driver'].includes(selectedRelationSourceType);
+  if (!guidanceRequest && !agreementOperationBridgeIntent && !prior?.targetKey && !quoteFloorDetailRequest && !requestedOfferId && !operationHealthProblemsShowRequest && !agreementCollectionViewRequest && !selectedShiftMissingData && !selectedShiftTask && !relationshipIntent && !hasCanonicalRelationGuidance) return null;
   const available = rows(screenContext);
   const availableBlocks = blockRows(screenContext);
   const modalOpen = uiSurfaceFor(screenContext).modalTitles.length > 0;
+  const explicitMapEnlargement = isMapEnlargementRequest(message);
+  const liveMapEnlargementTarget = explicitMapEnlargement ? mapEnlargementTarget(available) : null;
+  if (explicitMapEnlargement && !liveMapEnlargementTarget) {
+    return {
+      status: GUIDED_TARGET_STATUSES.NOT_FOUND,
+      targetKey: null,
+      screenPath: currentPath || null,
+      expectedTargetLabel: 'Yakınlaştır',
+      reason: 'Harita büyütme isteği için canlı Yakınlaştır kontrolü doğrulanamadı; başka bir kontrol hedeflenmedi.',
+    };
+  }
+  const canonicalTypedRelationKind = text(
+    semanticPlan?.canonicalRequest?.typedRequest?.relationType
+      || semanticPlan?.canonicalRequest?.relationType,
+  ).toUpperCase();
+  const relationOperation = text(
+    semanticPlan?.canonicalRequest?.operation
+      || semanticPlan?.typedRequest?.operation,
+  ).toUpperCase();
+  const selectedEntityType = text(
+    screenContext?.selectedEntityType
+      || semanticPlan?.canonicalRequest?.typedEvidence?.entityType,
+  ).toLowerCase();
+  const inferredRelationKind = !relationshipIntent
+    && relationOperation === 'LOOK_UP_RELATION'
+    && ['vehicle', 'driver'].includes(selectedEntityType)
+    ? selectedEntityType === 'vehicle'
+      ? 'VEHICLE_TO_SHIFT'
+      : /(?:araç|arac|vehicle|plaka)/iu.test(text(message))
+        ? 'DRIVER_TO_VEHICLE'
+        : 'DRIVER_TO_SHIFT'
+    : '';
+  const relationKind = text(
+    relationshipIntent?.kind
+      || semanticPlan?.typedRequest?.relationType
+      || canonicalTypedRelationKind
+      || inferredRelationKind,
+  ).toUpperCase();
+  const selectedRelationId = Number(
+    screenContext?.selectedRelatedEntityId
+      || semanticPlan?.relationshipIntent?.toEntity?.id
+      || 0,
+  ) || 0;
+  if (relationKind === 'VEHICLE_TO_SHIFT'
+    && currentPath === '/room/map'
+    && selectedRelationId <= 0
+    && /vardiya\s+yok|surucu\s+yok|sürücü\s+yok|operasyon\s+bag\p{L}*\s+yok/iu.test(JSON.stringify(screenContext || {}))) {
+    return {
+      status: GUIDED_TARGET_STATUSES.NOT_FOUND,
+      targetKey: null,
+      screenPath: currentPath || null,
+      reason: 'Seçili araç için yetkili ilişkili vardiya doğrulanamadı; başka bir operasyon hedeflenmedi.',
+    };
+  }
+  const relationTargetSpec = relationKind === 'AGREEMENT_TO_SHIFT_COLLECTION'
+    ? { path: '/room/shifts', targetKey: 'room:shifts:tab:contract', semanticId: 'product:room:shifts:tab:contract', label: 'Sözleşmeden Üretilen' }
+    : ['VEHICLE_TO_SHIFT', 'VEHICLE_TO_DRIVER'].includes(relationKind)
+      ? { path: '/room/vehicles', targetKey: 'room:vehicles:tab:assignments', semanticId: 'product:room:vehicles:tab:assignments', label: 'Atamalar' }
+      : ['DRIVER_TO_SHIFT', 'DRIVER_TO_VEHICLE'].includes(relationKind)
+        ? { path: '/room/drivers', targetKey: 'room:drivers:tab:shifts', semanticId: 'product:room:drivers:tab:shifts', label: 'Vardiyalar' }
+        : null;
+  if (relationTargetSpec) {
+    if (currentPath !== relationTargetSpec.path) {
+      return {
+        status: GUIDED_TARGET_STATUSES.WRONG_SCREEN,
+        targetKey: null,
+        screenPath: currentPath || null,
+        expectedScreenPath: relationTargetSpec.path,
+        reason: `Bu ilişki hedefi yalnızca yetkili ${relationTargetSpec.label} yüzeyinde gösterilebilir.`,
+      };
+    }
+    // Relation targets are canonical controls declared by the current product
+    // surface. Some clients only send the active tab in uiHints, so an
+    // inactive but authorized relation tab can be omitted from `available`
+    // even though the control is present in the current DOM and is safely
+    // navigable. Keep the live hint authoritative when present; otherwise use
+    // the already-registered canonical target for this exact path/relation.
+    const chosenRelationTarget = available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === relationTargetSpec.targetKey)
+      || {
+        targetKey: relationTargetSpec.targetKey,
+        semanticId: relationTargetSpec.semanticId,
+        label: relationTargetSpec.label,
+        semanticType: 'tab',
+        identitySource: 'CANONICAL',
+      };
+    const semanticId = text(chosenRelationTarget.semanticId) || relationTargetSpec.semanticId;
+    return {
+      status: GUIDED_TARGET_STATUSES.FOUND,
+      targetKind: 'CONTROL',
+      targetKey: relationTargetSpec.targetKey,
+      identitySource: 'CANONICAL',
+      legacyLabelFallbackUsed: false,
+      semanticId,
+      label: chosenRelationTarget.label || relationTargetSpec.label,
+      semanticType: chosenRelationTarget.semanticType || 'tab',
+      screenPath: currentPath || null,
+      role: text(user?.role).toUpperCase(),
+      authorizedContext: { role: text(user?.role).toUpperCase(), screenPath: currentPath || null, screenId: Number(screenContext?.id || 0) || null },
+      safeAction: 'NAVIGATE',
+      anchor: { targetKind: 'CONTROL', targetKey: relationTargetSpec.targetKey, semanticId },
+      locator: { targetKind: 'CONTROL', targetKey: relationTargetSpec.targetKey, semanticId, label: chosenRelationTarget.label || relationTargetSpec.label, semanticType: chosenRelationTarget.semanticType || 'tab' },
+      callout: { targetKind: 'CONTROL', targetKey: relationTargetSpec.targetKey, semanticId, label: chosenRelationTarget.label || relationTargetSpec.label, identitySource: 'CANONICAL' },
+      criticalActionExecution: false,
+      reason: `Yetkili ilişki görünümü için ${relationTargetSpec.label} sekmesi açılmalıdır; salt-okunur hedef doğrulandı.`,
+    };
+  }
   if (agreementCollectionViewRequest) {
     const onAgreementSurface = currentPath === '/room/agreements';
     const targetKey = onAgreementSurface ? 'room:agreements:list' : 'room:agreements';
@@ -393,11 +622,62 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
     ? screenContext.uiHints.workflowState
     : null;
   const capabilityIntent = text(semanticPlan?.capabilityIntent);
+  if (selectedShiftMissingData || selectedShiftTask) {
+    const selectedShiftTarget = selectedShiftMissingData || selectedShiftTask;
+    const chosenDetails = available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === selectedShiftTarget.targetKey);
+    if (!chosenDetails) {
+      return {
+        status: GUIDED_TARGET_STATUSES.NOT_FOUND,
+        targetKey: null,
+        screenPath: currentPath || null,
+        expectedTargetKey: selectedShiftTarget.targetKey,
+        reason: `Seçili Vardiya #${selectedShiftTarget.recordId} ayrıntı hedefi mevcut yetkili yüzeyde doğrulanamadı.`,
+      };
+    }
+    const semanticId = text(chosenDetails.semanticId) || `product:room:shift:${selectedShiftTarget.recordId}:details`;
+    return {
+      status: GUIDED_TARGET_STATUSES.FOUND,
+      targetKind: 'CONTROL',
+      targetKey: selectedShiftTarget.targetKey,
+      identitySource: 'CANONICAL',
+      legacyLabelFallbackUsed: false,
+      semanticId,
+      label: chosenDetails.label,
+      semanticType: chosenDetails.semanticType || 'disclosure',
+      screenPath: currentPath || null,
+      role: text(user?.role).toUpperCase(),
+      authorizedContext: {
+        role: text(user?.role).toUpperCase(),
+        screenPath: currentPath || null,
+        screenId: Number(screenContext?.id || 0) || null,
+        shiftId: selectedShiftTarget.recordId,
+      },
+      safeAction: 'HIGHLIGHT',
+      anchor: { targetKind: 'CONTROL', targetKey: selectedShiftTarget.targetKey, semanticId, recordType: 'SHIFT', recordId: selectedShiftTarget.recordId },
+      locator: { targetKind: 'CONTROL', targetKey: selectedShiftTarget.targetKey, semanticId, label: chosenDetails.label, semanticType: chosenDetails.semanticType || 'disclosure' },
+      callout: { targetKind: 'CONTROL', targetKey: selectedShiftTarget.targetKey, semanticId, label: chosenDetails.label, identitySource: 'CANONICAL' },
+      criticalActionExecution: false,
+      reason: `Yalnızca seçili ve yetkili Vardiya #${selectedShiftTarget.recordId} ayrıntıları salt-okunur görünürlük için gösterildi.`,
+    };
+  }
+  const currentTurnTargetReference = semanticPlan?.currentTargetReference
+    || semanticPlan?.canonicalRequestEnvelope?.canonicalShape?.currentTargetReference
+    || semanticPlan?.canonicalRequest?.currentTargetReference
+    || null;
+  const liveCurrentTargetKey = text(currentTurnTargetReference?.targetKey);
+  const liveCanonicalControlTarget = liveCurrentTargetKey
+    ? available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === liveCurrentTargetKey)
+    : null;
   const requestedTargetKind = text(semanticPlan?.targetKind).toUpperCase();
   const requestedBlockKey = text(semanticPlan?.blockKey || semanticPlan?.semanticId);
   if (requestedOfferId) {
     const targetKey = `room:offers:offer:${requestedOfferId}`;
-    const chosenOffer = available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === targetKey);
+    // The current browser surface is the authority for this turn. The
+    // canonical conversation-state sanitizer may label a target as
+    // LEGACY_LABEL while preserving its exact data-copilot-target identity;
+    // requiring a second identitySource pin here would hide a live #36 card
+    // and incorrectly fall back to a stale target explanation.
+    const chosenOffer = available.find((row) => row.targetKey === targetKey);
     if (!chosenOffer) {
       return {
         status: GUIDED_TARGET_STATUSES.NOT_FOUND,
@@ -466,7 +746,10 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
       reason: 'Mevcut finans ayrıntı disclosure hedefi yalnızca salt-okunur görünürlük için gösterildi.',
     };
   }
-  if (requestedTargetKind === 'BLOCK' || requestedBlockKey) {
+  // A live canonical control is authoritative for the current turn. A
+  // role-labelled semantic/block id carried by recovery must not shadow the
+  // verified DOM control for the same selected record.
+  if ((requestedTargetKind === 'BLOCK' || requestedBlockKey) && !liveCanonicalControlTarget) {
     const chosenBlock = availableBlocks.find((row) =>
       (requestedBlockKey && (row.blockKey === requestedBlockKey || row.semanticId === requestedBlockKey))
       || (!requestedBlockKey && row.label === text(semanticPlan?.targetLabel)),
@@ -521,14 +804,14 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
   // turn. A target reconstructed from the previous conversation/task state
   // remains context and must still be allowed to resolve through the normal
   // workflow path (including legacy compatibility fixtures).
-  const currentTurnTargetReference = semanticPlan?.currentTargetReference
-    || semanticPlan?.canonicalRequestEnvelope?.canonicalShape?.currentTargetReference
-    || semanticPlan?.canonicalRequest?.currentTargetReference
-    || null;
   const strictCurrentTurnTargetKey = text(currentTurnTargetReference?.targetKey);
   if (strictCurrentTurnTargetKey) {
     const exactRequested = available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === strictCurrentTurnTargetKey);
-    if (!exactRequested) {
+    const liveMapReferenceMatches = Boolean(
+      liveMapEnlargementTarget
+        && liveMapEnlargementTarget.targetKey === strictCurrentTurnTargetKey,
+    );
+    if (!exactRequested && !liveMapReferenceMatches) {
       return {
         status: GUIDED_TARGET_STATUSES.NOT_FOUND,
         targetKey: null,
@@ -554,6 +837,12 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
     ? available.find((row) => normalized(row.label) === normalized(liveWorkflowState.currentTargetLabel))
       || available.find((row) => normalized(row.label).includes(normalized(liveWorkflowState.currentTargetLabel)))
     : null;
+  const offerContinuationTarget = workflowRequest
+    && continuation
+    && workflowIntent === 'OPEN_OFFER_SURFACE'
+    && currentPath === '/room/offers'
+    ? available.find((row) => row.identitySource === 'CANONICAL' && /^room:offers:offer:\d+$/u.test(String(row.targetKey || '')))
+    : null;
   if (workflowRequest
     && workflowIntentForPlan(semanticPlan, text(semanticPlan?.family) === 'CONTINUE_CURRENT_REASONING' ? conversationState : null) === 'CREATE_SHIFT'
     && liveWorkflowState?.currentTargetLabel
@@ -568,17 +857,31 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
   }
   const canonicalSurfaceNavigation = semanticPlan?.typedRequest?.targetEntityType === 'SURFACE'
     && semanticPlan?.typedRequest?.taskType === 'SCREEN_CONTEXT'
-    && semanticPlan?.explicitUiGuidance === true;
+    && semanticPlan?.explicitUiGuidance === true
+    // A typed surface envelope can describe either a generic current-surface
+    // explanation or a concrete canonical workflow.  The workflow owner must
+    // win for offer/shift navigation; otherwise the generic room:home fallback
+    // steals the first visible canonical target.
+    && !['CREATE_SHIFT', 'OPEN_SHIFT_SURFACE', 'OPEN_OFFER_SURFACE', 'OPEN_CHECKIN_SURFACE', 'OPEN_APPLIED_ROUTE_SURFACE'].includes(workflowIntent);
   const openSurfaceTarget = (workflowIntent === 'OPEN_SURFACE' || canonicalSurfaceNavigation)
     ? available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === 'room:home')
       || available.find((row) => normalized(row.label) === 'menü' || normalized(row.label) === 'menu')
     : null;
+  const dedicatedSurfaceTarget = workflowIntent === 'OPEN_CHECKIN_SURFACE'
+    ? available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === 'room:checkin')
+      || available.find((row) => normalized(row.label) === 'biniş kayıtları')
+    : workflowIntent === 'OPEN_APPLIED_ROUTE_SURFACE'
+      ? available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === 'room:agreements:tab:applied')
+        || available.find((row) => normalized(row.label) === 'uygulanan rota')
+      : null;
   const workflowTarget = workflowRequest
     ? capabilityTarget
       || liveWorkflowTarget
+      || dedicatedSurfaceTarget
       || openSurfaceTarget
       || (continuation
       ? modalTarget
+        || offerContinuationTarget
         || available.find((row) => /rehberi başlat|rehberi baslat/i.test(row.label))
         || available.find((row) => /ayrıntılı çalışma alanını göster|ayrintili calisma alanini goster/i.test(row.label))
         || available.find((row) => /detayları göster|detaylari goster/i.test(row.label))
@@ -597,6 +900,7 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
   const exactCanonicalTarget = strictCurrentTurnTargetKey
     ? available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === strictCurrentTurnTargetKey)
     : null;
+  const screenContextTarget = screenContextGuidanceTarget({ currentPath, semanticPlan, available });
   const operationHealthProblemsTarget = operationHealthProblemsShowRequest
     ? available.find((row) => row.identitySource === 'CANONICAL' && row.targetKey === 'room-operation-health:tab:problems')
     : null;
@@ -611,6 +915,8 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
   }
   const chosen = operationHealthProblemsTarget
     || exactCanonicalTarget
+    || liveMapEnlargementTarget
+    || screenContextTarget
     || (workflowRequest
       ? workflowTarget
       : (scored[0]?.score > 0
@@ -622,6 +928,9 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
   if (isCriticalCopilotTarget(chosen)) {
     return { status: GUIDED_TARGET_STATUSES.NOT_FOUND, targetKey: null, screenPath: currentPath || null, blockedTargetLabel: chosen.label, reason: 'Bu alan iş yazımı veya onay gerektirebilir; Sefer Abi yalnızca güvenli rehberlik yapar.' };
   }
+  const offerSurfaceNavigationRequest = workflowIntent === 'OPEN_OFFER_SURFACE'
+    && currentPath !== '/room/offers'
+    && String(chosen.targetKey || '').trim() === 'room:offers';
   return {
     status: GUIDED_TARGET_STATUSES.FOUND,
     targetKind: 'CONTROL',
@@ -637,6 +946,8 @@ export function resolveCopilotGuidedTarget({ user, screenContext = {}, conversat
     safeAction: operationHealthProblemsShowRequest
       && String(semanticPlan?.canonicalRequest?.operation || '').trim() === 'NAVIGATE_AUTHORIZED_SURFACE'
       ? 'NAVIGATE'
+      : offerSurfaceNavigationRequest
+        ? 'NAVIGATE'
       : 'HIGHLIGHT',
     anchor: { targetKind: 'CONTROL', targetKey: chosen.targetKey, semanticId: text(chosen.semanticId) || null },
     locator: { targetKind: 'CONTROL', targetKey: chosen.targetKey, semanticId: text(chosen.semanticId) || null, label: chosen.label, semanticType: chosen.semanticType || 'button' },

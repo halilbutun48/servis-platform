@@ -903,21 +903,129 @@ export function applyPlainLanguage(text) {
     .replace(/Dikkat isteyen konu:/g, 'Dikkat et:');
 }
 
-export function polishReply({ reply, questionType, screenDefinition, roleMode }) {
+export function polishReply({ reply, questionType, screenDefinition, roleMode, maxLength = 560 }) {
   const text = String(reply || '');
+  const boundedMaxLength = Number.isFinite(Number(maxLength)) && Number(maxLength) > 0
+    ? Number(maxLength)
+    : 560;
+  const visibleMaxLength = roleMode === 'SIMPLE' ? Math.min(260, boundedMaxLength) : boundedMaxLength;
   if (/^\s*Netleştirelim\s*:/i.test(text)) {
-    return trimReplyLength(applyPlainLanguage(normalizeReplySurface(text)), roleMode === 'SIMPLE' ? 260 : 560);
+    return trimReplyLength(applyPlainLanguage(normalizeReplySurface(text)), visibleMaxLength);
   }
   if (looksLikeClarifyingQuestionRequest(text)) {
-    return trimReplyLength(applyPlainLanguage(normalizeReplySurface(text)), roleMode === 'SIMPLE' ? 260 : 560);
+    return trimReplyLength(applyPlainLanguage(normalizeReplySurface(text)), visibleMaxLength);
   }
   if (/(Stratejik özet:|Plan açısından:|Plan ve kanıt açısından:|Operasyon açısından:|Sade cevap:|Kısa cevap:|Kısaca:)/.test(text)) {
     const normalized = normalizeReplySurface(text);
     const withLead = ensureActionLead(normalized, questionType, screenDefinition, roleMode);
-    return trimReplyLength(applyPlainLanguage(withLead), roleMode === 'SIMPLE' ? 260 : 560);
+    return trimReplyLength(applyPlainLanguage(withLead), visibleMaxLength);
   }
   const withLead = collapseDuplicateVisibleActionPair(ensureActionLead(reply, questionType, screenDefinition, roleMode));
-  return trimReplyLength(applyPlainLanguage(withLead), roleMode === 'SIMPLE' ? 260 : 560);
+  return trimReplyLength(applyPlainLanguage(withLead), visibleMaxLength);
+}
+
+export function buildVisibleReplyOverrides({
+  roomShiftSurface = false,
+  responseQuestionType = '',
+  questionType = '',
+  semanticOverrideReply = '',
+  reasoningProgressFamily = '',
+  reasoningAssistant = null,
+  visibleReplyWithLead = '',
+  effectiveScreenDefinition = null,
+  screenDefinition = null,
+  effectiveScreenContext = null,
+  screenContext = null,
+  sourceScreenContext = null,
+  screenPath = '',
+  responseQuestionTypeKey = '',
+  companyShiftMessage = '',
+  rawMessage = '',
+  effectiveMessage = '',
+  message = '',
+  userRole = '',
+  delegateSafeMessage = false,
+}) {
+  const roomShiftNextStepVisibleReply = roomShiftSurface
+    && responseQuestionTypeKey === 'NEXT_STEP'
+    && !semanticOverrideReply
+    && !/(\bvardiyalar ekranı\b|\bilk kontrol\b|\bvardiya engeli\b)/i.test(normalizeText(visibleReplyWithLead))
+    ? `İlk kontrol: ${ensureVisibleSentence(firstNonEmpty(
+      effectiveScreenDefinition?.firstStep,
+      screenDefinition?.firstStep,
+      effectiveScreenContext?.firstStep,
+      screenContext?.firstStep,
+      'Doğru vardiya kaydını seç.',
+    ))} ${ensureVisibleSentence(firstNonEmpty(
+      effectiveScreenDefinition?.nextStep,
+      screenDefinition?.nextStep,
+      effectiveScreenContext?.nextStep,
+      screenContext?.nextStep,
+      'Sonra durum, araç/sürücü, durak/rota ve canlı başlatma sinyalini kontrol et.',
+    ))}`.trim()
+    : '';
+  const companyShiftPlanningVisibleReply = String(firstNonEmpty(
+    screenDefinition?.path,
+    screenContext?.path,
+    '',
+  )).includes('/company/shifts')
+    && ['DETAIL_FLOW', 'SCREEN_PURPOSE'].includes(String(responseQuestionType || questionType || ''))
+    && /(teklif isi(?:ni)? nas[ıi]l yapar[ıi]m|servis planlamak istiyorum)/.test(normalizeText(firstNonEmpty(
+      companyShiftMessage,
+      rawMessage,
+      effectiveMessage,
+      message,
+      '',
+    )))
+    ? 'Plan açısından: Planlama Merkezi yeni işi kurma ve planlama akışını yönetmek için kullanılır. Vardiyalar ekranında yapılır.'
+    : '';
+  const roomShiftProgressVisibleReply = roomShiftSurface
+    && ['CONTINUE_FLOW', 'ALTERNATIVE_PATH'].includes(String(reasoningProgressFamily || ''))
+    ? firstNonEmpty(reasoningAssistant?.rawReply, reasoningAssistant?.reply, visibleReplyWithLead)
+    : '';
+  const companyShiftWhyBlockedVisibleReply = String(screenPath || '').includes('/company/shifts')
+    && responseQuestionTypeKey === 'WHY_BLOCKED'
+    ? (() => {
+      const selectedFieldSummary = uniqueStrings((Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields : [])
+        .map((row) => {
+          const label = normalizeVisibleReplyFragment(firstNonEmpty(row?.label, row?.key, ''));
+          const value = normalizeVisibleReplyFragment(firstNonEmpty(row?.value, row?.text, ''));
+          return label && value ? `${label}: ${value}` : firstNonEmpty(label, value, '');
+        })
+        .filter(Boolean));
+      if (!selectedFieldSummary.length && !firstNonEmpty(screenContext?.selectedLabel, sourceScreenContext?.selectedLabel, '', visibleReplyWithLead)) return '';
+      return [
+        firstNonEmpty(screenContext?.selectedLabel, sourceScreenContext?.selectedLabel, '') ? `Seçili vardiya: ${normalizeVisibleReplyFragment(firstNonEmpty(screenContext?.selectedLabel, sourceScreenContext?.selectedLabel, ''))}.` : '',
+        selectedFieldSummary.length ? `Seçili kayıt: ${selectedFieldSummary.join(' • ')}.` : '',
+        roomShiftProgressVisibleReply || roomShiftNextStepVisibleReply || visibleReplyWithLead,
+      ].filter(Boolean).join(' ').trim();
+    })()
+    : '';
+  const companyDelegateSafeVisibleReply = String(userRole || '').trim().toUpperCase() === 'COMPANY'
+    && delegateSafeMessage
+    && normalizeText(firstNonEmpty(rawMessage, effectiveMessage, message, '')).includes(normalizeText('teklifi kabul et'))
+    ? 'Teklifi senin yerine kabul edemem. Kabul öncesi fiyat, kapasite, kalite, araç / sürücü uygunluğu ve sözleşme hazırlığı kontrollerini adım adım gösterebilirim. Son onay yetkili kullanıcı tarafından verilmelidir.'
+    : '';
+  return {
+    roomShiftNextStepVisibleReply,
+    companyShiftPlanningVisibleReply,
+    roomShiftProgressVisibleReply,
+    companyShiftWhyBlockedVisibleReply,
+    companyDelegateSafeVisibleReply,
+  };
+}
+
+export function buildVisibleReplyWithLead({ visibleReply = '', responseQuestionTypeKey = '', actionLeadVisibleReplyTypes = new Set() } = {}) {
+  const startsWithClarifier = /^(\s*Şimdi:\s*)?Netleştirelim:/i.test(visibleReply);
+  if (startsWithClarifier) {
+    return actionLeadVisibleReplyTypes.has(responseQuestionTypeKey)
+      ? (String(visibleReply).trim().startsWith('Şimdi:') ? String(visibleReply).trim() : `Şimdi: ${String(visibleReply).trim()}`)
+      : String(visibleReply).replace(/^\s*Şimdi:\s*/i, '').trim();
+  }
+  return actionLeadVisibleReplyTypes.has(responseQuestionTypeKey)
+    && !/^(Şimdi:|Şimdi yap:|Önce:)/i.test(visibleReply)
+    ? `Şimdi: ${visibleReply}`.trim()
+    : visibleReply;
 }
 
 export function termComparisonReplyV2(message) {

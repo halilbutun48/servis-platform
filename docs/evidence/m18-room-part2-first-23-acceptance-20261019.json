@@ -1,0 +1,311 @@
+{
+  "schema": "m18-room-part2-interactive-surface-acceptance-v1",
+  "capturedAt": "2026-10-19T10:44:41.833Z",
+  "part": "PART_2",
+  "scope": "first_23_of_46_source_derived_interactive_surface_states",
+  "canonical132CellIdsAssigned": false,
+  "rowKeysAre": "checkpoint row labels only; trackingKey values are the source-derived surface keys and are not presented as final 132-cell manifest IDs",
+  "decision": "PRODUCT_PASS_FOR_FIRST_23",
+  "overallRoomDecision": "NOT_CLOSED",
+  "publicRuntime": {
+    "origin": "https://further-history-universities-hugo.trycloudflare.com",
+    "health": {
+      "ok": true,
+      "dbOk": true,
+      "startedAt": "2026-10-19T10:31:18.787Z",
+      "observedAt": "2026-10-19T10:44:41.833Z"
+    },
+    "exactPublicSourceShaExposed": false,
+    "publicSourceShaNote": "Public /health exposes runtime freshness but not an exact source SHA; source hashes and public DOM provenance are recorded separately."
+  },
+  "sourceIdentity": {
+    "repository": "D:/servis-platform",
+    "branch": "m90d1_web_lint_inventory",
+    "head": "3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+    "dirtyWorktreePreserved": true,
+    "hashes": {
+      "backend/src/services/authorizedProductAwareness.js": "DAE50259E1C11F15DA17C2B13F7E626711DCFCE91EF64C46695B79464B4E3B07",
+      "backend/src/ai/chat/seferAbiCostAnalysisAssistant.js": "5DA8EEAA147FDA9DCF12F0B638DD58B7F75FAC6BFA91AA01186D671C523B6242",
+      "backend/src/ai/service.js": "084244DAA32A9FC36020644FDDD8E5AC5A9F67D099CAB615496010AA6E3E306F",
+      "web/src/panels/room/MapPanel.jsx": "2E648B305ADF684D58AA59B59A465BE961FC37BE43E07F3186EECBB549723D30",
+      "web/src/components/map/MapView.jsx": "504A53D88FE33F524AE63FF74D1961949D0B005C607842C57FE9CA6E4E3521A9"
+    }
+  },
+  "part1Boundary": {
+    "lastEightSuggestionObservations": "8/8 PRODUCT_PASS",
+    "canonicalUniqueRoutes": 19,
+    "liveAliasOf": "/room/map",
+    "historicalRouteCount": 20,
+    "routeCountingStatus": "MANIFEST_COUNTING_ERROR_OPEN_GOVERNANCE_RECONCILIATION",
+    "home04": "PRODUCT_PASS",
+    "checkpoint": "docs/evidence/m18-room-part1-last-8-suggestion-acceptance-20261019.json"
+  },
+  "instrumentationCorrection": {
+    "initialProbeResult": "19 PRODUCT_PASS, 4 NOT_PROVEN",
+    "reason": "The first probe used short labels that do not match the canonical MapPanel labels and left the map filter disclosure closed. Badge counts also make some tab accessible names non-exact.",
+    "classification": "PROBE_CONTEXT_OR_LOCATOR_LIMITATION",
+    "productFailureInferred": false,
+    "correctedResult": "23/23 PRODUCT_PASS"
+  },
+  "results": [
+    {
+      "id": "PART2-001",
+      "trackingKey": "MAP_PANEL_TAB_HARITA",
+      "owner": "web/src/panels/room/MapPanel.jsx",
+      "route": "/#/room/map",
+      "control": "Harita tab",
+      "criterion": "Harita tab is visible, selectable and becomes selected.",
+      "observed": "Visible; clicked; aria-selected=true.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-002",
+      "trackingKey": "MAP_PANEL_TAB_ARACLAR",
+      "owner": "web/src/panels/room/MapPanel.jsx",
+      "route": "/#/room/map",
+      "control": "Araçlar tab",
+      "criterion": "Araçlar tab is visible, selectable and becomes selected.",
+      "observed": "Visible; clicked; aria-selected=true.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-003",
+      "trackingKey": "MAP_FILTER_ONLY_ACTIVE",
+      "owner": "web/src/panels/room/MapPanel.jsx",
+      "route": "/#/room/map",
+      "control": "Yalnızca aktif",
+      "criterion": "After opening Filtreler ve yenileme, the active-only checkbox is visible and interactive.",
+      "observed": "Disclosure opened; label and checkbox visible; clicked.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-004",
+      "trackingKey": "MAP_FILTER_NO_GPS",
+      "owner": "web/src/panels/room/MapPanel.jsx",
+      "route": "/#/room/map",
+      "control": "Konum sinyali olmayanları göster",
+      "criterion": "The no-GPS visibility checkbox is visible and interactive inside the filter disclosure.",
+      "observed": "Disclosure opened; label and checkbox visible; clicked.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-005",
+      "trackingKey": "MAP_FILTER_STOPS",
+      "owner": "web/src/panels/room/MapPanel.jsx",
+      "route": "/#/room/map",
+      "control": "Durakları göster",
+      "criterion": "The stops visibility checkbox is visible and interactive inside the filter disclosure.",
+      "observed": "Disclosure opened; label and checkbox visible; clicked.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-006",
+      "trackingKey": "MAP_FILTER_SEARCH",
+      "owner": "web/src/panels/room/MapPanel.jsx",
+      "route": "/#/room/map",
+      "control": "Plaka / sürücü / hizmet alan firma / kayıt no",
+      "criterion": "The map search input is visible and accepts a query within the filter disclosure.",
+      "observed": "Visible; filled with 34 and cleared without error.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-007",
+      "trackingKey": "MAP_ZOOM_IN",
+      "owner": "web/src/components/map/MapView.jsx",
+      "route": "/#/room/map",
+      "control": "Yakınlaştır",
+      "criterion": "The real zoom-in button is visible and interactive.",
+      "observed": "Visible; clicked in the Harita tab.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-008",
+      "trackingKey": "MAP_ZOOM_OUT",
+      "owner": "web/src/components/map/MapView.jsx",
+      "route": "/#/room/map",
+      "control": "Uzaklaştır",
+      "criterion": "The real zoom-out button is visible and interactive.",
+      "observed": "Visible; clicked in the Harita tab.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-009",
+      "trackingKey": "OFFERS_STATUS_FILTER",
+      "owner": "web/src/panels/room/OffersPanel.jsx",
+      "route": "/#/room/offers",
+      "control": "Teklif status select",
+      "criterion": "The status filter is visible and can be changed without a business write.",
+      "observed": "First select visible; selected; no suspected business write.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-010",
+      "trackingKey": "OFFERS_SEARCH",
+      "owner": "web/src/panels/room/OffersPanel.jsx",
+      "route": "/#/room/offers",
+      "control": "Ara (firma / vardiya no / vardiya durumu / not...)",
+      "criterion": "Offer search input is visible and accepts a query without a business write.",
+      "observed": "Visible; filled and cleared without error.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-011",
+      "trackingKey": "OFFERS_DISCLOSURE",
+      "owner": "web/src/panels/room/OffersPanel.jsx",
+      "route": "/#/room/offers",
+      "control": "Teklif ayrıntılarını göster",
+      "criterion": "Offer details disclosure is visible and opens.",
+      "observed": "Visible; clicked; disclosure action completed.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-012",
+      "trackingKey": "AGREEMENTS_SEARCH",
+      "owner": "web/src/panels/room/AgreementsPanel.jsx",
+      "route": "/#/room/agreements",
+      "control": "Kayıt no / durum / teklif / tarih / not",
+      "criterion": "Agreement search input is visible and accepts a query without a business write.",
+      "observed": "Visible; filled and cleared without error.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-013",
+      "trackingKey": "AGREEMENTS_TAB_BRIDGE",
+      "owner": "web/src/panels/room/AgreementsPanel.jsx",
+      "route": "/#/room/agreements",
+      "control": "Operasyon Köprüsü tab",
+      "criterion": "Agreement operations bridge tab is visible and selectable.",
+      "observed": "Badge-bearing tab located by canonical prefix; clicked; selected.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-014",
+      "trackingKey": "AGREEMENTS_TAB_ROUTE",
+      "owner": "web/src/panels/room/AgreementsPanel.jsx",
+      "route": "/#/room/agreements",
+      "control": "Rota Talepleri tab",
+      "criterion": "Agreement route requests tab is visible and selectable.",
+      "observed": "Visible; clicked; aria-selected=true.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-015",
+      "trackingKey": "COMMERCIAL_TAB_SETTLEMENT",
+      "owner": "web/src/panels/room/CommercialFlowPanel.jsx",
+      "route": "/#/room/commercial-flow",
+      "control": "Hakediş önizleme tab",
+      "criterion": "Settlement preview tab is visible and selectable.",
+      "observed": "Badge-bearing tab located by canonical prefix; clicked; selected.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-016",
+      "trackingKey": "COMMERCIAL_TAB_CONTRACT_SHIFT",
+      "owner": "web/src/panels/room/CommercialFlowPanel.jsx",
+      "route": "/#/room/commercial-flow",
+      "control": "Sözleşme & Vardiya tab",
+      "criterion": "Contract and shift tab is visible and selectable.",
+      "observed": "Badge-bearing tab located by canonical prefix; clicked; selected.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-017",
+      "trackingKey": "COMMERCIAL_TAB_OFFERS",
+      "owner": "web/src/panels/room/CommercialFlowPanel.jsx",
+      "route": "/#/room/commercial-flow",
+      "control": "Teklifler tab",
+      "criterion": "Commercial offers tab is visible and selectable.",
+      "observed": "Badge-bearing tab located by canonical prefix; clicked; selected.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-018",
+      "trackingKey": "COMMERCIAL_TAB_QUALITY",
+      "owner": "web/src/panels/room/CommercialFlowPanel.jsx",
+      "route": "/#/room/commercial-flow",
+      "control": "Kalite / Kanıt tab",
+      "criterion": "Quality and evidence tab is visible and selectable.",
+      "observed": "Badge-bearing tab located by canonical prefix; clicked; selected.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-019",
+      "trackingKey": "COMMERCIAL_TAB_PAYMENT",
+      "owner": "web/src/panels/room/CommercialFlowPanel.jsx",
+      "route": "/#/room/commercial-flow",
+      "control": "Hakediş hazırlık özeti tab",
+      "criterion": "Payment-readiness summary tab is visible and selectable.",
+      "observed": "Badge-bearing tab located by canonical prefix; clicked; selected.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-020",
+      "trackingKey": "COMMERCIAL_TAB_HISTORY",
+      "owner": "web/src/panels/room/CommercialFlowPanel.jsx",
+      "route": "/#/room/commercial-flow",
+      "control": "Geçmiş tab",
+      "criterion": "Commercial history tab is visible and selectable.",
+      "observed": "Badge-bearing tab located by canonical prefix; clicked; selected.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-021",
+      "trackingKey": "OPS_TAB_PROOF",
+      "owner": "web/src/panels/room/OperationHealthPanel.jsx",
+      "route": "/#/room/operation-health",
+      "control": "Şartlı Küme · Kanıt / Rehber tab",
+      "criterion": "Operation evidence/guidance tab is visible and selectable.",
+      "observed": "Badge-bearing tab located by canonical prefix; clicked; selected.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-022",
+      "trackingKey": "OPS_TAB_PROBLEMS",
+      "owner": "web/src/panels/room/OperationHealthPanel.jsx",
+      "route": "/#/room/operation-health",
+      "control": "Sürücü & Sorunlar tab",
+      "criterion": "Driver and problems tab is visible and selectable.",
+      "observed": "Badge-bearing tab located by canonical prefix; clicked; selected.",
+      "status": "PRODUCT_PASS"
+    },
+    {
+      "id": "PART2-023",
+      "trackingKey": "VEHICLES_TAB_ASSIGNMENTS",
+      "owner": "web/src/panels/room/VehiclesPanel.jsx",
+      "route": "/#/room/vehicles",
+      "control": "Atamalar tab",
+      "criterion": "Vehicle assignments tab is visible and selectable.",
+      "observed": "Visible; clicked; aria-selected=true.",
+      "status": "PRODUCT_PASS"
+    }
+  ],
+  "summary": {
+    "plannedInThisFrontier": 23,
+    "productPass": 23,
+    "productFail": 0,
+    "productGap": 0,
+    "notProven": 0,
+    "securityBlock": 0,
+    "suspectedBusinessWrites": 0,
+    "browserOriginVerifiedForEveryResult": true
+  },
+  "security": {
+    "tenant": "ROOM",
+    "role": "Taşımacılık Firması",
+    "businessWrite": 0,
+    "note": "Only read-only UI interactions were exercised; known read-only preview POSTs were excluded from suspected-write classification. No database or fixture mutation was performed."
+  },
+  "nextFrontier": {
+    "part": "PART_2",
+    "exactScope": "remaining_23_of_46_interactive_surface_states",
+    "status": "READY_TO_CONTINUE",
+    "doNotRestartFromPart1": true,
+    "manifestBoundary": "MANIFEST_COUNTING_ERROR_OPEN_GOVERNANCE_RECONCILIATION"
+  },
+  "evidenceIntegrity": {
+    "historicalEvidenceMutated": false,
+    "checkpointIsAdditive": true,
+    "probeSource": ".m18-part2-first-23-public-acceptance.js",
+    "probeSourceSha256": "472D26CD9B90370FCD47B95DD49C998A553542EBE3DFD11E243BCBFDFBC2DDB7"
+  }
+}

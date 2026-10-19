@@ -222,18 +222,18 @@ export const ROOM = [
     ],
     simpleTerms: pickTerms(["sozlesme", "telefonGps", "cihazGps"]),
   }),
-  screen(1108, "/room/hub", "Hub", {
-    menuPurpose: "Personelin toplandığı veya bırakıldığı ana noktayı görmek ve yönetmek için kullanılır.",
+  screen(1108, "/room/hub", "Taşımacılık Firması Konumu", {
+    menuPurpose: "Taşımacılık firmasının konumunu ve bağlı operasyon bilgisini görmek için kullanılır.",
     forWhom: "Oda operasyonunu yöneten kullanıcı içindir.",
-    firstStep: "Önce bu hub'ın hangi iş veya rota için kullanıldığını kontrol et.",
+    firstStep: "Önce taşımacılık firması konumunun hangi iş veya rota için kullanıldığını kontrol et.",
     nextStep: "Gerekirse vardiya veya teklif ekranına geç.",
-    doNotDo: "Hub noktasını görmeden yön bilgisini kesin sanma.",
-    stepByStep: ["Hub bilgisini oku.", "Konum doğru mu kontrol et.", "Gerekirse bağlı iş ekranına geç."],
-    commonMistakes: ["Hub ile durakları karıştırmak.", "Inbound ve outbound yönünü karıştırmak."],
-    doneChecklist: ["Hub anlamı netleşti.", "Bağlı iş veya yön kontrol edildi."],
+    doNotDo: "Konum noktasını doğrulamadan yön bilgisini kesin sanma.",
+    stepByStep: ["Konum bilgisini oku.", "Konum doğru mu kontrol et.", "Gerekirse bağlı iş ekranına geç."],
+    commonMistakes: ["Firma konumu ile durağı karıştırmak.", "Inbound ve outbound yönünü karıştırmak."],
+    doneChecklist: ["Firma konumu netleşti.", "Bağlı iş veya yön kontrol edildi."],
     buttonGuides: [
-      button("Hub'ı aç", "Seçili hub bilgisini detaylı görmek için kullanılır.", "Konumu veya bağlı işi görmek istediğinde kullan.", "Hub bilgisi detaylı görünür."),
-      button("Haritada göster", "Hub noktasını haritada gösterir.", "Konumun doğru yerde olup olmadığını kontrol edeceğinde kullan.", "Hub haritada açılır."),
+      button("Konumu aç", "Taşımacılık firması konumunu detaylı görmek için kullanılır.", "Konumu veya bağlı işi görmek istediğinde kullan.", "Konum bilgisi detaylı görünür."),
+      button("Haritada göster", "Firma konumunu haritada gösterir.", "Konumun doğru yerde olup olmadığını kontrol edeceğinde kullan.", "Firma konumu haritada açılır."),
     ],
     screenMenus: [
       { label: "Vardiyalar", path: "/room/shifts", purpose: "Hub'ın bağlı olduğu işi görmek için açılır." },
@@ -345,6 +345,25 @@ export const ROOM = [
     ],
     chatQuestions: ['Bu bilgi neden görünmüyor?', 'Bu kayıt kimde?', 'Bildirim kaynağı ne?', 'Filtreleri nasıl kullanırım?'],
     simpleTerms: pickTerms(["rapor"]),
+  }),
+  screen(1119, "/room/cost-scenarios", "Maliyet Senaryoları", {
+    menuPurpose: "Oda tarafında yetkili maliyet senaryosu ve kârlılık önizlemesini salt okunur incelemek için kullanılır.",
+    forWhom: "Taşımacılık Firması maliyet, bütçe ve teklif tabanı önizlemesini takip eden kullanıcı içindir.",
+    firstStep: "Önce mevcut maliyet girdilerini ve veri güvenini oku.",
+    nextStep: "Sonra riskleri ve bir sonraki güvenli inceleme adımını değerlendir.",
+    doNotDo: "Bu ekranı ödeme, muhasebe, hakediş veya canlı operasyon yazma ekranı sanma.",
+    stepByStep: ["Mevcut maliyet ve güven alanlarını oku.", "Eksik veri ile risk sinyallerini ayır.", "Yalnızca salt okunur sonraki inceleme adımını seç."],
+    commonMistakes: ["Maliyet önizlemesini muhasebe sonucu sanmak.", "Eksik maliyet girdisini uydurma kesinlik gibi yorumlamak."],
+    doneChecklist: ["Maliyet önizlemesi görüldü.", "Risk ve veri güveni ayrıldı.", "Yazma işlemi başlatılmadı."],
+    buttonGuides: [
+      button("Maliyet önizlemesini oku", "Mevcut maliyet senaryosu verisini salt okunur gösterir.", "Maliyet ve riskleri anlamak istediğinde kullan.", "Maliyet senaryosu önizlemesi açılır."),
+    ],
+    screenMenus: [
+      { label: "Finansal Operasyonlar", path: "/room/financial-operations", purpose: "Bütçe ve maliyet önizlemesinin finansal görünümünü okumak için açılır." },
+      { label: "Raporlar", path: "/room/reports", purpose: "Maliyetle ilişkili rapor özetlerini okumak için açılır." },
+    ],
+    chatQuestions: ["Bu ekranda neye bakmalıyım?", "Riskleri sırala", "Sıradaki doğru işlem ne?"],
+    simpleTerms: pickTerms(["maliyet", "butce", "karlilik"]),
   }),
   screen(1111, "/shared/notifications", "Bildirimler", {
     menuPurpose: "Kullanıcılara giden uyarı ve haberleri görmek için kullanılır.",

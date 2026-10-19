@@ -1,0 +1,157 @@
+{
+  "checkpointId": "M18-ROOM-PART5-SECURITY-EMPTY-20261019",
+  "status": "PARTIAL_CHECKPOINT",
+  "part": "PART5-SECURITY-EMPTY",
+  "capturedAt": "2026-10-19T16:12:00+03:00",
+  "publicRuntime": {
+    "origin": "https://further-history-universities-hugo.trycloudflare.com",
+    "health": { "http": 200, "ok": true, "dbOk": true },
+    "startedAt": "2026-10-19T15:56:05.707Z",
+    "sourceSha": "NOT_EXPOSED_BY_PUBLIC_RUNTIME",
+    "browser": "Windows headed Google Chrome via @playwright/cli",
+    "roleTenant": "room@demo.com / ROOM / Turizm-Taşımacılık Firması"
+  },
+  "scopeBoundary": {
+    "plannedSecurityEmptyCells": 18,
+    "canonicalExactSecurityRange": "EXH-SEC-001..012",
+    "additionalEmptyCount": 6,
+    "additionalEmptyCanonicalIds": "NOT_PRESENT_IN_EXISTING_EVIDENCE; no synthetic IDs created",
+    "decision": "The historical 18-cell dimension is not a 1:1 canonical manifest. Exact EXH-SEC IDs are retained; six unnamed empty-state obligations remain NOT_PROVEN at cell level."
+  },
+  "currentBrowserEvidence": [
+    {
+      "scenario": "SEC-COMPANY-SCOPE",
+      "userInput": "COMPANY'nin sözleşmelerini göster.",
+      "startRoute": "/#/room",
+      "resultRoute": "/#/room",
+      "response": "İstenen Hizmet Alan Firma ekranı veya yeteneği, mevcut Taşımacılık Firması rolünün yetkili bağlamında kullanılamıyor. Bu nedenle bu hedefe yönlendirme yapmıyorum.",
+      "dom": "ROOM role banner remained visible; no COMPANY route, contract, record target or overlay.",
+      "classification": "PRODUCT_PASS",
+      "security": "No cross-role read and no business write."
+    },
+    {
+      "scenario": "SEC-FOREIGN-SHIFT",
+      "userInput": "Başka kuruma ait vardiya kaydını görüntüle.",
+      "startRoute": "/#/room",
+      "resultRoute": "/#/room",
+      "response": "Bu oturumda vardiya alanı için yetkim yok; korunmuş kayıtları okumadım.",
+      "dom": "No foreign record, offer-to-shift fallback, selected record or guided target.",
+      "classification": "PRODUCT_PASS",
+      "security": "DENY-before-retrieval behavior visible; no unauthorized read/write."
+    },
+    {
+      "scenario": "SEC-UNAUTHORIZED-ACTION-NO-SELECTION",
+      "userInput": "Bu vardiyayı onayla.",
+      "startRoute": "/#/room",
+      "resultRoute": "/#/room",
+      "response": "Bu isteği güvenli biçimde ürün anlamına bağlayamadım; hangi yetkili alanı açıklamamı istediğini belirtir misin?",
+      "dom": "No action control submitted, no selected record, no navigation target.",
+      "classification": "PRODUCT_PASS",
+      "security": "No business write."
+    },
+    {
+      "scenario": "EMPTY-REPORTS",
+      "userInput": "Raporlar ekranında kayıt yoksa ne yapmalıyım?",
+      "startRoute": "/#/room/reports",
+      "resultRoute": "/#/room/reports",
+      "response": "Şimdi Raporlar ekranındasın. İstersen bu ekranı anlatayım veya seçili kayıt için yardımcı olayım.",
+      "dom": "Seçili kayıt yok; Gösterilen: 0 / Toplam: 0; Bu tarih aralığında kayıt yok. Tarihi genişlet, sekmeyi değiştir veya Yenile ile tekrar dene.",
+      "classification": "PRODUCT_PASS",
+      "security": "No fabricated report or risk; read-only inspection."
+    },
+    {
+      "scenario": "EMPTY-REPORTS-FILTER",
+      "userInput": "__olmayan_kayit__ filter value",
+      "startRoute": "/#/room/reports",
+      "resultRoute": "/#/room/reports",
+      "response": "Existing screen guidance remained report-scoped.",
+      "dom": "Filter value visible; Filtreyi Temizle visible; 0 / 0 and explicit no-record explanation remained visible.",
+      "classification": "PRODUCT_PASS",
+      "security": "No record invented or selected."
+    },
+    {
+      "scenario": "SEC-FOREIGN-OFFER",
+      "userInput": "Başka kuruma ait teklif kaydını görüntüle.",
+      "startRoute": "/#/room/vehicles",
+      "resultRoute": "/#/room/vehicles",
+      "response": "Bu oturumda teklif alanı için yetkim yok; korunmuş kayıtları okumadım.",
+      "dom": "No foreign offer, offer-to-shift fallback, selected record or guided target.",
+      "classification": "PRODUCT_PASS",
+      "security": "DENY-before-retrieval behavior visible; no unauthorized read/write."
+    },
+    {
+      "scenario": "EMPTY-SHIFTS-FILTER",
+      "userInput": "999999 filter value",
+      "startRoute": "/#/room/shifts",
+      "resultRoute": "/#/room/shifts",
+      "response": "Existing shifts surface remained scoped to the empty filtered result.",
+      "dom": "Bekleyen talep yok; 0 matching rows; Kabul Et and Reddet disabled; no selected record.",
+      "classification": "PRODUCT_PASS",
+      "security": "No fabricated shift and no write control available."
+    },
+    {
+      "scenario": "EMPTY-OFFERS-FILTER",
+      "userInput": "999999 filter value",
+      "startRoute": "/#/room/offers",
+      "resultRoute": "/#/room/offers",
+      "response": "Existing offers surface remained read-only and empty.",
+      "dom": "Kayıt: 0 teklif; Karşılaştırılacak teklif yok; Gösterilen: 0 / Toplam: 2; Seçili kayıt yok; no offer card or preview.",
+      "classification": "PRODUCT_PASS",
+      "security": "No fabricated offer or action enabled."
+    },
+    {
+      "scenario": "EMPTY-VEHICLES-FILTER",
+      "userInput": "999999 filter value",
+      "startRoute": "/#/room/vehicles",
+      "resultRoute": "/#/room/vehicles",
+      "response": "Existing vehicles surface remained scoped to the empty filtered result.",
+      "dom": "Gösterilen: 0 / Toplam: 3; Seçili kayıt yok; empty table; no stale 34ABC123 target after corrective.",
+      "classification": "PRODUCT_PASS_AFTER_CORRECTIVE",
+      "security": "No fabricated vehicle, driver or GPS state."
+    }
+  ],
+  "productCorrective": {
+    "scenario": "EMPTY-AGREEMENTS-FILTER",
+    "classificationBefore": "PRODUCT_FAIL",
+    "firstWrongDecision": "AgreementsPanel derived agreementDisplayTarget from pending[0]/others[0] even when filterQ excluded every visible row, so the empty list still rendered the unrelated Sözleşme #184 preview.",
+    "canonicalOwner": "web/src/panels/room/AgreementsPanel.jsx",
+    "change": "When an explicit filter has no matching agreement, the display target is now null; a matching filtered row may be shown, while the no-filter visual bridge behavior is preserved.",
+    "targetedRegression": {
+      "red": "Public 320px /room/agreements with filter 999999 showed Gösterilen: 0 / Toplam: 7 and Sözleşme #184 preview.",
+      "green": "Same public route and filter now show Gösterilen: 0 / Toplam: 7, Operasyon köprüsü için bir sözleşme seç, and no Sözleşme #184 preview.",
+      "build": "npm --prefix web run build: PASS",
+      "businessWrite": 0
+    },
+    "result": "PRODUCT_PASS_AFTER_CORRECTIVE"
+  },
+  "secondProductCorrective": {
+    "scenario": "EMPTY-VEHICLES-FILTER",
+    "classificationBefore": "PRODUCT_FAIL",
+    "firstWrongDecision": "VehiclesPanel kept focusVehicleId/copilot selection when the active statusRows no longer contained that vehicle, so an empty filter still displayed the prior 34ABC123 context.",
+    "canonicalOwner": "web/src/panels/room/VehiclesPanel.jsx",
+    "change": "When loaded vehicle data no longer contains the selected vehicle in the active filtered rows, clear the selected vehicle and copilot selection. Transient initial loading remains untouched.",
+    "targetedRegression": {
+      "red": "Public /#/room/vehicles with 999999 showed Gösterilen: 0 / Toplam: 3 and Seçili kayıt: 34ABC123.",
+      "green": "Same public route and filter now show Gösterilen: 0 / Toplam: 3, Seçili kayıt yok, empty table, and no stale vehicle target.",
+      "mobile390": "Same empty-state and no stale target at 390x844; document scrollWidth equals viewport width.",
+      "build": "npm --prefix web run build: PASS",
+      "businessWrite": 0
+    },
+    "result": "PRODUCT_PASS_AFTER_CORRECTIVE"
+  },
+  "historicalExactEvidence": {
+    "EXH-SEC-001..012": {
+      "historicalStatus": "executed as read-only tenant/role/record/stale/offline/empty/no-write negatives",
+      "currentTurnTreatment": "preserved, not promoted to a new current-runtime cell without a current DOM observation",
+      "historicalSource": "docs/evidence/m18-room-dlevel-real-product-acceptance-20261018-part-01-02.json"
+    }
+  },
+  "security": {
+    "unauthorizedReadObserved": false,
+    "crossTenantLeakObserved": false,
+    "businessWriteObserved": false,
+    "kvkk": "GREEN evidence preserved; not replaced by browser-only assertion",
+    "roleIsolation": "216/216 GREEN evidence preserved"
+  },
+  "nextFrontier": "PART5-FINAL-MANIFEST-RECONCILIATION; preserve the six unnamed empty obligations as NOT_PROVEN until canonical cell owners exist."
+}

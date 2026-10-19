@@ -35,6 +35,7 @@ const REASON_LABELS = {
   DUPLICATE_INVOICE: "Aynı dönem için birden fazla fatura kaydı bulundu.",
   CURRENCY_MISMATCH: "Hakediş ve fatura para birimleri aynı değil.",
   NON_AUTHORITATIVE_DATA: "Demo veya test kaydı gerçek mutabakat kanıtı olarak kullanılamaz.",
+  REVIEW_REQUIRED: "Karşılaştırma için finansal kanıtların ayrıca incelenmesi gerekiyor.",
   UNDER_INVOICED: "Fatura tutarı hakediş tutarının altında.",
   OVER_INVOICED: "Fatura tutarı hakediş tutarının üzerinde.",
 };
@@ -141,10 +142,15 @@ export function buildReconciliationPreview(input = {}) {
   const differenceMinor = canCompare ? invoiceAmountMinor - expectedAmountMinor : null;
   const completedCount = operations.filter((item) => item.completed).length;
   const shiftIds = uniqueValues(operations.map((item) => item.id));
+  const nonAuthoritativeEvidence = Boolean(
+    (hakedis && !isAuthoritativeSource(hakedis.source))
+    || (invoice && !isAuthoritativeSource(invoice.source)),
+  );
   const reasons = [];
   if (status !== "MATCHED" && REASON_LABELS[status] && !["UNDER_INVOICED", "OVER_INVOICED"].includes(status)) reasons.push(reason(status));
   if (status === "MATCHED") reasons.push({ code: "MATCHED", label: "Hakediş ve fatura aynı tutarı gösteriyor." });
   if (status === "UNDER_INVOICED" || status === "OVER_INVOICED") reasons.push(reason(status));
+  if (status === "REVIEW_REQUIRED" && nonAuthoritativeEvidence) reasons.unshift(reason("NON_AUTHORITATIVE_DATA"));
   const missingData = [];
   if (status === "NO_AGREEMENT") missingData.push(missing("NO_AGREEMENT"));
   if (status === "NO_OPERATION") missingData.push(missing("NO_OPERATION"));
@@ -153,7 +159,7 @@ export function buildReconciliationPreview(input = {}) {
   if (status === "PARTIAL_OPERATION_EVIDENCE") missingData.push(missing("PARTIAL_OPERATION_EVIDENCE"));
   if (status === "PERIOD_MISMATCH") missingData.push(missing("PERIOD_MISMATCH"));
   if (status === "CURRENCY_MISMATCH") missingData.push(missing("CURRENCY_MISMATCH"));
-  if (status === "REVIEW_REQUIRED" && (hakedis && !isAuthoritativeSource(hakedis.source) || invoice && !isAuthoritativeSource(invoice.source))) missingData.push(missing("NON_AUTHORITATIVE_DATA"));
+  if (status === "REVIEW_REQUIRED" && nonAuthoritativeEvidence) missingData.push(missing("NON_AUTHORITATIVE_DATA"));
 
   return {
     ok: true,

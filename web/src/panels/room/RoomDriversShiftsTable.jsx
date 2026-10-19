@@ -63,7 +63,7 @@ export default function RoomDriversShiftsTable({
       </table>
 
       <div className="muted" style={{ marginTop: 10 }}>
-        Gecici not: vardiya listesi su an bagli aracin <code>shifts[]</code> alanindan okunuyor. Sonraki adimda surucu bazli endpoint ile guclenecek.
+        Bu liste, seçili sürücünün yetkili araç bağlantısından doğrulanan vardiya özetini gösterir.
       </div>
     </div>
   );

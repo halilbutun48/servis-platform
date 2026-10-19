@@ -1,0 +1,174 @@
+{
+  "evidenceId": "m18-room-final-acceptance-owner-resolution-20261019",
+  "kind": "M18_ROOM_ACCEPTANCE_SCOPE_MATRIX_READ_ONLY_V1",
+  "createdAt": "2026-10-19T19:09:27.1941777Z",
+  "scope": "Existing ROOM evidence reconciliation only; no new browser execution, checker, SHA loop or runtime change",
+  "parentCheckpoint": {
+    "path": "docs/evidence/m18-room-final-acceptance-reconciliation-20261019.json",
+    "sha256": "C1508F3257EB57EDB21EFE7C9B523777B42AB01D2FBA8D738A4F8EE90EC7F124"
+  },
+  "ownerDecisionApplied": {
+    "canonicalRoutes": 19,
+    "liveIsMapAlias": true,
+    "part4Merged": ["CTX-001", "CTX-007", "CTX-008"],
+    "part5HistoricalSpecGaps": 6,
+    "historicalEvidenceMutated": false,
+    "syntheticCellsCreated": false,
+    "interpretation": "The owner-approved corrections remove duplicate or undefined counting pressure, but they do not silently replace the root AGENTS.md 132-cell closure boundary or promote grouped evidence to unique cells."
+  },
+  "scopeMatrix": [
+    {
+      "group": "canonical-route-surfaces",
+      "sourceEvidence": "docs/evidence/m18-room-part1-browser-recovery-checkpoint-20261019.json",
+      "observedUniqueSurfaceCount": 19,
+      "knownSurfaces": [
+        "/room",
+        "/room/map",
+        "/room/offers",
+        "/room/shifts",
+        "/room/vehicles",
+        "/room/drivers",
+        "/room/agreements",
+        "/room/copilot",
+        "/room/hub",
+        "/room/checkin",
+        "/room/financial-operations",
+        "/room/operation-health",
+        "/room/commercial-flow",
+        "/room/reports",
+        "/room/cost-scenarios",
+        "/shared/notifications",
+        "/shared/logs",
+        "/shared/kvkk",
+        "/shared/feedback"
+      ],
+      "productEvidence": "19 routes reached in public Chromium",
+      "closureStatus": "REQUIRED_NOT_PROVEN",
+      "reason": "The checkpoint records DOM reachability, not a unique closure-cell row for intent, target, criterion and one-to-one evidence. /room/live is an alias and is not a twentieth route."
+    },
+    {
+      "group": "interactive-surfaces",
+      "sourceEvidence": [
+        "docs/evidence/m18-room-part2-first-23-acceptance-20261019.json",
+        "docs/evidence/m18-room-part3-remaining-23-acceptance-20261019.json"
+      ],
+      "frontierProductEvidence": "23/23 + 23/23 PRODUCT_PASS; overlap 0",
+      "observedUniqueSurfaceCount": 46,
+      "closureStatus": "REQUIRED_NOT_PROVEN",
+      "reason": "Both checkpoints explicitly state canonical132CellIdsAssigned=false and that row keys are checkpoint labels, not final manifest IDs. The product frontier is accepted, but its mapping to unique closure cells is not persisted."
+    },
+    {
+      "group": "context-record-recovery",
+      "sourceEvidence": "docs/evidence/m18-room-part4-ctx002-006-public-acceptance-20261019.json",
+      "uniqueProductPass": 21,
+      "mergedAlreadyProven": [
+        {
+          "historicalId": "CTX-001",
+          "mergedInto": ["EXH-CTX-022", "EXH-CTX-023"]
+        },
+        {
+          "historicalId": "CTX-007",
+          "mergedInto": ["stale-selection-context-acceptance"]
+        },
+        {
+          "historicalId": "CTX-008",
+          "mergedInto": ["Devam-Geri-recovery-acceptance"]
+        }
+      ],
+      "closureStatus": "UNIQUE_PRODUCT_PASS_PLUS_MERGED",
+      "reason": "The owner-approved 24-to-21 correction is explicit and independently evidenced; merged cells do not create new PASS rows."
+    },
+    {
+      "group": "security-tenant-empty",
+      "sourceEvidence": "docs/evidence/m18-room-part5-final-evidence-reconciliation-20261019.json",
+      "uniqueProductPass": 11,
+      "mergedAlreadyProven": 2,
+      "historicalOwnerApprovedDeScope": 6,
+      "knownSecurityBlock": 0,
+      "businessWrite": 0,
+      "closureStatus": "GROUP_PRODUCT_PASS_WITH_UNRESOLVED_HISTORICAL_MAPPING",
+      "reason": "The evidence proves the real security/empty functions, including role/tenant isolation, DENY_BEFORE_RETRIEVAL, stale-selection protection and filter recovery. It does not identify every historical obligation as a unique row, so the group cannot by itself close the 132 boundary."
+    },
+    {
+      "group": "responsive-mobile",
+      "sourceEvidence": "docs/evidence/m18-room-part5-remaining-functional-acceptance-20261019.json",
+      "uniqueProductPass": 16,
+      "frontierStatus": "PRODUCT_PASS",
+      "closureStatus": "REQUIRED_NOT_PROVEN",
+      "reason": "The evidence preserves 16 unique mobile functions but does not persist 16 canonical closure-cell IDs and one-to-one criteria/evidence links."
+    },
+    {
+      "group": "suggested-question-contexts",
+      "sourceEvidence": [
+        "docs/evidence/m18-room-part1-browser-recovery-checkpoint-20261019.json",
+        "docs/evidence/m18-room-132-cell-reconciliation-20261019.json",
+        "docs/evidence/m18-room-final-acceptance-exit-20261019.json"
+      ],
+      "historicalAcceptedEvidence": "51/51",
+      "currentAffectedContextEvidence": "3/3",
+      "individuallyNamedScenarioRows": "EXH-SUG-001..016 are present as exact PASS rows in the existing reconciliation",
+      "groupedObservedContexts": 8,
+      "closureStatus": "PARTIAL_EXACT_ROWS_AND_GROUPED_EVIDENCE",
+      "reason": "The 8 context groups and 24 displayed-chip interactions are not a final 8-row or 24-row closure manifest. Existing exact scenario rows are preserved; grouped observations are not promoted without individual closure criteria."
+    },
+    {
+      "group": "independent-natural-language-acceptance",
+      "sourceEvidence": "docs/evidence/m18-room-final-acceptance-exit-20261019.json",
+      "currentEvidence": "10/10 PASS; 3/3 corrected defects PASS",
+      "closureStatus": "MERGED_INTO_RELEVANT_FUNCTIONS",
+      "reason": "These are cross-cutting user acceptance observations and are not additive acceptance-cell rows."
+    }
+  ],
+  "exactTraceableRows": {
+    "count": 33,
+    "source": "docs/evidence/m18-room-132-cell-reconciliation-20261019.json:exactScenarioRows",
+    "status": "PRODUCT_PASS",
+    "canonicalOwnerLimitation": "The existing rows contain scenario, surface, task, criterion and evidence references, but do not consistently persist file-level canonical owner names. No owner is invented in this reconciliation."
+  },
+  "historical69NotProvenReconciliation": {
+    "historicalCount": 69,
+    "resolvedByExistingExactRows": 33,
+    "resolvedByExplicitMerge": 3,
+    "resolvedByOwnerApprovedDeScope": 6,
+    "stillRequiredNotProven": "NOT_COMPUTABLE_AS_A_NUMERIC_REMAINDER",
+    "reason": "The historical 69 entries have no canonical per-entry IDs in the evidence. Subtracting 33, 3 or 6 would falsely assume that the grouped rows correspond one-to-one with the historical entries. The unresolved set therefore remains an explicit unknown scope, not an invented count."
+  },
+  "currentUniqueAcceptanceCount": {
+    "exactlyComputable": false,
+    "minimumIndividuallyNamedProductPassRows": 33,
+    "additionalGroupLevelProductEvidence": [
+      "19 canonical routes reached",
+      "46/46 interactive frontier PASS",
+      "21 unique PART 4 PASS",
+      "27 unique PART 5 PASS",
+      "51/51 historical suggested-question evidence",
+      "10/10 independent natural-language acceptance"
+    ],
+    "notAdditiveWarning": "These group totals overlap and cannot be summed into a truthful final unique total."
+  },
+  "mandatoryFunctionAssessment": {
+    "knownCurrentProductFail": 0,
+    "knownCurrentProductGap": 0,
+    "knownSecurityBlock": 0,
+    "knownFunctionLevelNotProven": 0,
+    "closureLevelRequiredNotProven": true,
+    "conclusion": "No concrete product defect is identified by the existing accepted evidence. The remaining blocker is evidence completeness: the mandatory closure mapping is not recoverable as a unique set from the existing grouped records."
+  },
+  "runtimeAndSecurity": {
+    "publicOrigin": "https://further-history-universities-hugo.trycloudflare.com",
+    "backendStartedAt": "2026-10-19T18:46:35.573Z",
+    "localPublicHealth": "ok=true, dbOk=true",
+    "tenantRoleSecurity": "GREEN in existing evidence",
+    "businessWrite": 0,
+    "publicExactSourceSha": "NOT_SERVED_BY_RUNTIME"
+  },
+  "closureDecision": {
+    "roomFunctional10of10": "NOT_CLOSED",
+    "immutableBaseline": "NOT_READY",
+    "agentsMdChanged": false,
+    "companyHandoff": "BLOCKED",
+    "exactBlocker": "Root AGENTS.md still requires 132 unique traceable mandatory cells. Existing evidence supports product groups and 33 exact rows but does not provide the missing one-to-one closure mapping. The owner count correction does not authorize inventing, deleting or silently relabeling mandatory functions.",
+    "nextSingleTask": "Obtain a canonical acceptance-owner decision or source-derived row manifest that names every mandatory cell, criterion and evidence link. Do not rerun browser tests unless that reconciliation identifies a genuinely unproven mandatory function."
+  },
+  "historicalEvidencePreserved": true
+}

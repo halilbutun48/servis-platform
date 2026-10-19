@@ -60,6 +60,19 @@ export default function ReconciliationPreviewCard({ agreementId, token, classNam
   const difference = data.difference || {};
   const differenceValue = difference.amountMinor == null ? "Veri yok" : formatMoneyMinor(difference.amountMinor, currency);
   const tone = STATUS_TONES[status] || "default";
+  const hakedisReference = data.hakedisPreview?.reference || data.evidence?.hakedis?.reference || "Veri yok";
+  const invoiceReference = data.invoice?.reference || data.evidence?.invoice?.reference || "Veri yok";
+  const hakedisSource = data.hakedisPreview?.source || "-";
+  const invoiceSource = data.invoice?.source || "-";
+  const operationShiftIds = Array.isArray(operations.shiftIds)
+    ? operations.shiftIds.filter((value) => String(value || "").trim())
+    : [];
+  const expectedAmount = data.expectedAmount?.amountMinor == null && data.hakedisPreview?.exists
+    ? "Tutar girilmemiş"
+    : formatMoneyMinor(data.expectedAmount?.amountMinor, currency);
+  const invoiceAmount = data.invoice?.amountMinor == null && data.invoice?.exists
+    ? "Tutar girilmemiş"
+    : formatMoneyMinor(data.invoice?.amountMinor, currency);
 
   return (
     <section className={`card ${className}`.trim()} style={style} data-testid="reconciliation-preview-card" data-reconciliation-status={status}>
@@ -67,14 +80,24 @@ export default function ReconciliationPreviewCard({ agreementId, token, classNam
         <div>
           <div className="title">Hakediş ve fatura mutabakat önizlemesi</div>
           <div className="muted" style={{ marginTop: 4 }}>Dönem: {formatDate(data.period?.start)} - {formatDate(data.period?.end)}</div>
+          <div className="muted" style={{ marginTop: 4 }} data-testid="reconciliation-agreement-reference">Sözleşme: <b>{data.evidence?.agreement?.reference || "Veri yok"}</b></div>
         </div>
         <span className={`pill ${tone}`} data-testid="reconciliation-status">{data.statusLabel || "İncelenmeli"}</span>
       </div>
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
-        <Metric label="Beklenen hakediş" value={formatMoneyMinor(data.expectedAmount?.amountMinor, currency)} note="Hakediş kaynağı" />
-        <Metric label="Fatura tutarı" value={formatMoneyMinor(data.invoice?.amountMinor, currency)} note="Fatura kaynağı" />
+        <Metric label="Beklenen hakediş" value={expectedAmount} note="Hakediş kaynağı" />
+        <Metric label="Fatura tutarı" value={invoiceAmount} note="Fatura kaynağı" />
         <Metric label="Fark" value={differenceValue} note={difference.direction === "INVOICE_UNDER" ? "Fatura daha düşük" : difference.direction === "INVOICE_OVER" ? "Fatura daha yüksek" : "Karşılaştırma sonucu"} />
+      </div>
+
+      <div className="muted" style={{ marginTop: 12, display: "grid", gap: 4 }} data-testid="reconciliation-source-reference">
+        <div>Hakediş kaydı: <b>{hakedisReference}</b> • Kaynak: <b>{hakedisSource}</b></div>
+        <div>Fatura kaydı: <b>{invoiceReference}</b> • Kaynak: <b>{invoiceSource}</b></div>
+      </div>
+      <div className="muted" style={{ marginTop: 6 }} data-testid="reconciliation-operation-evidence">
+        Operasyon kanıtı: <b>{operations.completedCount || 0} / {operations.eligibleCount || 0} tamamlandı</b>
+        {operationShiftIds.length ? <> • Bağlı vardiya: <b>{operationShiftIds.map((id) => `#${id}`).join(", ")}</b></> : null}
       </div>
 
       <div className="muted" style={{ marginTop: 12 }}>

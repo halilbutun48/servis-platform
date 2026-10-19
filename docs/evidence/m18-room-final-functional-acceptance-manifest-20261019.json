@@ -1,0 +1,258 @@
+{
+  "manifestId": "m18-room-final-functional-acceptance-manifest-20261019",
+  "kind": "M18_ROOM_FUNCTIONAL_ACCEPTANCE_MANIFEST_V1",
+  "createdAt": "2026-10-19T19:15:00.000Z",
+  "basis": "Owner-approved real-function scope; derived only from existing source catalogs and accepted evidence; no new test execution",
+  "repository": {
+    "path": "D:\\servis-platform",
+    "branch": "m90d1_web_lint_inventory",
+    "head": "3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+    "dirtyWorktreePreserved": true
+  },
+  "runtime": {
+    "publicOrigin": "https://further-history-universities-hugo.trycloudflare.com",
+    "backendStartedAt": "2026-10-19T18:46:35.573Z",
+    "localHealth": "ok=true, dbOk=true",
+    "publicHealth": "ok=true, dbOk=true",
+    "roleTenant": "ROOM / room@demo.com / Turizm-Taşımacılık Firması",
+    "bindMount": "D:\\servis-platform -> /app",
+    "publicExactSourceSha": "NOT_SERVED_BY_RUNTIME",
+    "provenanceNote": "Mount/process freshness, HMR and public DOM evidence are retained; no public exact source SHA is fabricated."
+  },
+  "canonicalOwners": {
+    "routeCatalog": [
+      "web/src/App.jsx",
+      "backend/src/ai/jobGuide/screenCatalog.roomCompany.js"
+    ],
+    "interactiveRows": "Owner field from PART 2/PART 3 checkpoint rows",
+    "semanticNavigation": [
+      "backend/src/ai/chat/canonicalSemanticRequest.js",
+      "backend/src/ai/service.js",
+      "backend/src/ai/chat/copilotUiElementAnchor.js",
+      "backend/src/ai/chat/canonicalConversationState.js"
+    ],
+    "roomPanels": "Panel owner recorded in each PART 2/PART 3 tracking row",
+    "mobileCopilot": "web/src/components/copilot/FloatingCopilotDrawer.jsx",
+    "securityAndEmpty": "Existing security/empty checkpoints and their recorded panel/service owners"
+  },
+  "functionGroups": {
+    "routeSurfaces": {
+      "status": "UNIQUE_PRODUCT_PASS",
+      "criterion": "Authorized ROOM route/surface is reachable in public Chromium with the ROOM shell and intended screen identity visible.",
+      "evidence": "docs/evidence/m18-room-part1-browser-recovery-checkpoint-20261019.json:routeAcceptanceObservation",
+      "entries": [
+        {"id":"ROUTE-1100","route":"/room"},
+        {"id":"ROUTE-1101","route":"/room/map"},
+        {"id":"ROUTE-1102","route":"/room/offers"},
+        {"id":"ROUTE-1103","route":"/room/shifts"},
+        {"id":"ROUTE-1104","route":"/room/vehicles"},
+        {"id":"ROUTE-1105","route":"/room/drivers"},
+        {"id":"ROUTE-1106","route":"/room/agreements"},
+        {"id":"ROUTE-1107","route":"/room/copilot"},
+        {"id":"ROUTE-1108","route":"/room/hub"},
+        {"id":"ROUTE-1109","route":"/room/checkin"},
+        {"id":"ROUTE-1110","route":"/room/financial-operations"},
+        {"id":"ROUTE-1114","route":"/room/operation-health"},
+        {"id":"ROUTE-1115","route":"/room/commercial-flow"},
+        {"id":"ROUTE-1116","route":"/room/reports"},
+        {"id":"ROUTE-1119","route":"/room/cost-scenarios"},
+        {"id":"ROUTE-1111","route":"/shared/notifications"},
+        {"id":"ROUTE-1112","route":"/shared/logs"},
+        {"id":"ROUTE-1117","route":"/shared/kvkk"},
+        {"id":"ROUTE-1118","route":"/shared/feedback"}
+      ],
+      "alias": {"path":"/room/live","canonical":"/room/map","independent":false}
+    },
+    "interactiveSurfaces": {
+      "status": "UNIQUE_PRODUCT_PASS",
+      "criterion": "The source-derived control is visible, usable in the recorded public DOM and preserves read-only/authorized boundaries.",
+      "evidence": [
+        "docs/evidence/m18-room-part2-first-23-acceptance-20261019.json:results",
+        "docs/evidence/m18-room-part3-remaining-23-acceptance-20261019.json:results"
+      ],
+      "entries": [
+        "MAP_PANEL_TAB_HARITA",
+        "MAP_PANEL_TAB_ARACLAR",
+        "MAP_FILTER_ONLY_ACTIVE",
+        "MAP_FILTER_NO_GPS",
+        "MAP_FILTER_STOPS",
+        "MAP_FILTER_SEARCH",
+        "MAP_ZOOM_IN",
+        "MAP_ZOOM_OUT",
+        "OFFERS_STATUS_FILTER",
+        "OFFERS_SEARCH",
+        "OFFERS_DISCLOSURE",
+        "AGREEMENTS_SEARCH",
+        "AGREEMENTS_TAB_BRIDGE",
+        "AGREEMENTS_TAB_ROUTE",
+        "COMMERCIAL_TAB_SETTLEMENT",
+        "COMMERCIAL_TAB_CONTRACT_SHIFT",
+        "COMMERCIAL_TAB_OFFERS",
+        "COMMERCIAL_TAB_QUALITY",
+        "COMMERCIAL_TAB_PAYMENT",
+        "COMMERCIAL_TAB_HISTORY",
+        "OPS_TAB_PROOF",
+        "OPS_TAB_PROBLEMS",
+        "VEHICLES_TAB_ASSIGNMENTS",
+        "MAP_REFRESH",
+        "MAP_LIVE_LIST_DISCLOSURE",
+        "MAP_SELECT_VEHICLE",
+        "MAP_FOCUS_SELECTED_VEHICLE",
+        "OFFERS_SELECT_RECORD",
+        "OFFERS_RECORD_DISCLOSURE",
+        "AGREEMENTS_TAB_APPLIED",
+        "AGREEMENTS_TAB_EXTENSION",
+        "AGREEMENTS_OPEN_DETAIL",
+        "COMMERCIAL_SELECT_RECORD",
+        "COMMERCIAL_HISTORY_FILTER",
+        "COMMERCIAL_SETTLEMENT_PREVIEW",
+        "OPS_TAB_SUMMARY",
+        "OPS_FILTER",
+        "VEHICLES_TAB_STATUS",
+        "VEHICLES_TAB_AVAILABILITY",
+        "DRIVERS_TAB_STATUS",
+        "DRIVERS_GPS_FILTER",
+        "SHIFTS_TAB_CONTRACT",
+        "SHIFTS_FILTER",
+        "COST_DETAILS_DISCLOSURE",
+        "COST_QUICK_PASSENGER",
+        "REPORTS_TAB_DRIVERS"
+      ]
+    },
+    "contextRecordRecovery": {
+      "status": "UNIQUE_PRODUCT_PASS",
+      "evidence": [
+        "docs/evidence/m18-room-part4-product-closure-public-acceptance-20261019.json",
+        "docs/evidence/m18-room-part4-ctx002-006-public-acceptance-20261019.json",
+        "docs/evidence/m18-room-checker-loop-stop-part4-acceptance-20261019.json"
+      ],
+      "entries": [
+        "EXH-CTX-009",
+        "EXH-CTX-010",
+        "EXH-CTX-011",
+        "EXH-CTX-012",
+        "EXH-CTX-013",
+        "EXH-CTX-014",
+        "EXH-CTX-015",
+        "EXH-CTX-016",
+        "EXH-REC-005",
+        "EXH-REC-006",
+        "EXH-REC-007",
+        "EXH-REC-008",
+        "EXH-REC-009",
+        "EXH-REC-010",
+        "EXH-REC-011",
+        "EXH-REC-012",
+        "CTX-002",
+        "CTX-003",
+        "CTX-004",
+        "CTX-005",
+        "CTX-006"
+      ],
+      "mergedHistorical": [
+        {"id":"CTX-001","into":["EXH-CTX-022","EXH-CTX-023"]},
+        {"id":"CTX-007","into":["stale-selection-context-acceptance"]},
+        {"id":"CTX-008","into":["Devam-Geri-recovery-acceptance"]}
+      ]
+    },
+    "securityEmptyAndResponsive": {
+      "status": "UNIQUE_PRODUCT_PASS",
+      "evidence": [
+        "docs/evidence/m18-room-part5-security-empty-acceptance-20261019.json",
+        "docs/evidence/m18-room-part5-empty-result-recovery-public-acceptance-20261019.json",
+        "docs/evidence/m18-room-part5-mobile-functional-acceptance-20261019.json",
+        "docs/evidence/m18-room-part5-remaining-functional-acceptance-20261019.json"
+      ],
+      "entries": [
+        "SEC-COMPANY-SCOPE",
+        "SEC-FOREIGN-SHIFT",
+        "SEC-UNAUTHORIZED-ACTION-NO-SELECTION",
+        "EMPTY-REPORTS",
+        "EMPTY-REPORTS-FILTER",
+        "SEC-FOREIGN-OFFER",
+        "EMPTY-SHIFTS-FILTER",
+        "EMPTY-OFFERS-FILTER",
+        "EMPTY-VEHICLES-FILTER",
+        "M18-PART5-EMPTY-AGREEMENTS-FILTER-RECOVERY",
+        "M18-PART5-EMPTY-VEHICLES-FILTER-RECOVERY",
+        "M18-MOB-320-COPILOT-OPEN-CLOSE",
+        "M18-MOB-320-COPILOT-COMPOSER",
+        "M18-MOB-320-SUGGESTION-DRIVER",
+        "M18-MOB-320-EMPTY-VEHICLE-RECOVERY",
+        "M18-MOB-390-MENU-OPEN-CLOSE",
+        "M18-MOB-390-MAP-COPILOT-ZOOM-TARGET",
+        "M18-MOB-390-MAP-ZOOM-CONTROL",
+        "M18-MOB-390-MAP-RECORD-CONTEXT",
+        "M18-P5-MOB-320-MAP-LAUNCHER-REOPEN",
+        "M18-P5-MOB-320-MAP-STEP-TARGET",
+        "M18-P5-MOB-320-MAP-CONTINUATION-DEVAM",
+        "M18-P5-MOB-320-MAP-CONTINUATION-GERI",
+        "M18-P5-MOB-320-MAP-RECOVERY-BULAMADIM",
+        "M18-P5-MOB-320-MAP-TABS-DISCLOSURES",
+        "M18-P5-MOB-320-VEHICLE-MAP",
+        "M18-P5-MOB-390-COMMERCIAL-AGREEMENT"
+      ],
+      "security": {
+        "roleTenantIsolation": "PASS",
+        "denyBeforeRetrieval": "PASS",
+        "staleSelection": "PASS",
+        "unauthorizedDataAccess": 0,
+        "businessWrite": 0
+      },
+      "historicalSpecGaps": {
+        "count": 6,
+        "status": "OWNER_APPROVED_DE-SCOPE",
+        "historicalRecordsPreserved": true,
+        "condition": "No real mandatory ROOM function is represented by these undefined/duplicate obligations."
+      }
+    },
+    "suggestedQuestions": {
+      "status": "UNIQUE_PRODUCT_PASS",
+      "evidence": [
+        "docs/evidence/m18-room-final-acceptance-exit-20261019.json:suggestedQuestions",
+        "docs/evidence/m18-room-132-cell-reconciliation-20261019.json:exactScenarioRows",
+        "docs/evidence/m18-room-part1-browser-recovery-checkpoint-20261019.json:suggestionContextAcceptance"
+      ],
+      "historicalResult": "51/51 PASS preserved",
+      "currentAffectedResult": "3/3 PASS",
+      "observedContexts": 8,
+      "observedChipCountPerContext": 3,
+      "observationDerivedKeys": "The 24 context/chip keys are derived from the eight existing observed contexts and their recorded chip text; no new question or browser run was created.",
+      "contextCoverage": "All displayed chips in the recorded tested contexts have a valid historical or current result; duplicates are linked to the exact EXH-SUG rows or 51/51 evidence rather than counted again."
+    }
+  },
+  "deduplication": {
+    "rule": "Route reachability, controls, context tasks, security negatives, responsive behavior and suggested questions are linked by canonical owner and evidence; overlapping observations use mergedInto and are not counted twice.",
+    "examples": [
+      "M18-MOB-390-MAP-ZOOM-CONTROL -> MAP_ZOOM_IN",
+      "M18-MOB-320-SUGGESTION-DRIVER -> EXH-SUG-006",
+      "M18-P5-MOB-320-VEHICLE-MAP -> CTX-003",
+      "M18-P5-MOB-390-COMMERCIAL-AGREEMENT -> CTX-005/CTX-006",
+      "EMPTY-VEHICLES-FILTER -> M18-PART5-EMPTY-VEHICLES-FILTER-RECOVERY"
+    ],
+    "historical132": "Preserved as LEGACY_UNRESOLVED audit history; not used as the current acceptance count."
+  },
+  "coverageDecision": {
+    "mandatoryFunctionCoverage": "COMPLETE_FROM_EXISTING_EVIDENCE",
+    "productFail": 0,
+    "productGap": 0,
+    "requiredNotProven": 0,
+    "securityBlock": 0,
+    "openRegression": 0,
+    "knownProductEvidence": "PART 4 21/21, PART 5 27 unique, independent natural-language 10/10, historical suggestions 51/51, affected suggestions 3/3",
+    "legacyRecords": "Historical 132 and 69 NOT_PROVEN records retained without automatic PASS/MERGED/de-scope conversion."
+  },
+  "sourceAndSecurity": {
+    "publicExactSourceSha": "NOT_SERVED_BY_RUNTIME",
+    "runtimeEvidence": "Public origin, health, StartedAt, bind mount/process freshness and public DOM evidence preserved.",
+    "kvkk": "Existing GREEN security evidence preserved",
+    "roleIsolation": "216/216 GREEN evidence preserved",
+    "tenantLeakage": 0,
+    "unauthorizedBusinessWrite": 0,
+    "socketIo": "Polling fallback accepted; historical websocket 502 retained as corrected transport evidence."
+  },
+  "decision": "ROOM_FUNCTIONAL_10_OF_10_CLOSED",
+  "formalStatus": "M18_FORMAL_CLOSED_NOT_CLOSED_UNTIL_OTHER_SEVEN_ROLES_AND_GLOBAL_GOVERNANCE_GATES_COMPLETE",
+  "companyReadiness": "READY_FOR_COMPANY_ACCEPTANCE_AFTER_BASELINE_RECORDING",
+  "historicalEvidenceMutated": false
+}

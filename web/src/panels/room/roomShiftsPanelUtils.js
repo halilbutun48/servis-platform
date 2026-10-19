@@ -127,6 +127,7 @@ function parsePossibleJson(text) {
 
 export function normalizeRoomShiftError(error, fallbackMessage = "İşlem başarısız") {
   const info = getApiErrorInfo(error, fallbackMessage);
+  const status = info.status || Number(error?.status || 0) || 0;
   const msg = String(error?.message || "");
   const parsed = parsePossibleJson(msg);
   const parsedError = parsed?.error && typeof parsed.error === "object" ? parsed.error : null;
@@ -134,9 +135,11 @@ export function normalizeRoomShiftError(error, fallbackMessage = "İşlem başar
 
   const payloadError = info.payload?.error && typeof info.payload.error === "object" ? info.payload.error : null;
   return {
-    status: info.status || Number(parsedData?.status || 0) || 0,
+    status: status || Number(parsedData?.status || 0) || 0,
     code: info.code || payloadError?.code || parsedError?.code || parsedData?.code || null,
-    message: info.message || payloadError?.message || parsedError?.message || parsedData?.message || fallbackMessage,
+    message: status >= 500 && status < 600
+      ? fallbackMessage
+      : info.message || payloadError?.message || parsedError?.message || parsedData?.message || fallbackMessage,
     details: info.details || payloadError?.details || parsedError?.details || parsedData?.details || null,
     data: payloadError || parsedError || parsedData || info.payload || null,
   };

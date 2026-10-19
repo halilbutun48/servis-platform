@@ -200,6 +200,15 @@ export default function RoomMapPanel() {
       const items = Array.isArray(r) ? r : [];
       setVehicles(items);
 
+      const hashQuery = typeof window !== "undefined" ? String(window.location.hash || "").split("?")[1] || "" : "";
+      const requestedFocusVehicleId = Number(new URLSearchParams(hashQuery).get("focusVehicleId") || 0);
+      const requestedFocusVehicle = requestedFocusVehicleId > 0
+        ? items.find((vehicle) => Number(vehicle?.id || 0) === requestedFocusVehicleId)
+        : null;
+      if (requestedFocusVehicle) {
+        setSelectedVehicleId(requestedFocusVehicle.id);
+        return;
+      }
       if (selectedVehicleId && !items.some((v) => String(v.id) === String(selectedVehicleId))) {
         setSelectedVehicleId(null);
       }
@@ -436,6 +445,8 @@ export default function RoomMapPanel() {
       scopeKey: "/room/map",
       entityType: selectedShift?.id ? "shift" : "vehicle",
       entityId: Number(selectedShift?.id || selected?.id || 0) || null,
+      relatedEntityType: selected?.id ? "vehicle" : "",
+      relatedEntityId: Number(selected?.id || 0) || null,
       label: selectedShift?.id
         ? `Vardiya #${selectedShift.id}`
           : selected?.plate
@@ -700,7 +711,12 @@ export default function RoomMapPanel() {
           badge={`${cards.length}`}
         >
           <div className="grid mapGrid mapGrid--primary-canvas" style={mapGridStyle}>
-            <MapOperationsDisclosure summary="Canlı araçlar ve vardiyalar" count={cards.length} className="mapListDisclosure">
+            <MapOperationsDisclosure
+              summary="Canlı araçlar ve vardiyalar"
+              count={cards.length}
+              className="mapListDisclosure"
+              copilotTarget="room-map:vehicle-list"
+            >
               {renderVehicleListCard({
                 title: "Canlı Liste",
                 subtitle: "Satıra tıkla → sağda timeline + harita.",
@@ -904,6 +920,7 @@ export default function RoomMapPanel() {
                 selectedVehicleId={selectedVehicleId}
                 onSelectVehicle={setSelectedVehicleId}
                 mode={mapMode}
+                copilotTargetPrefix="room:map"
                 fitKey={`room:${vehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}:${showStops ? "stops" : "nostops"}:${mapMode}`}
                 height="var(--mapH)"
               />
