@@ -203,9 +203,9 @@ function main() {
     // to a screen-purpose question.  It must stay grounded in the current
     // School operations surface, rather than inheriting the old feedback
     // matrix's unrelated "sorumlu rol" action expectation.
-    { id: 'matrix-school-ops', role: 'SCHOOL', path: '/school/operations', message: 'burada ne yapacağım', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Vardiyalar', 'Yeni iş'] },
+    { id: 'matrix-school-ops', role: 'SCHOOL', path: '/school/operations', message: 'burada ne yapacağım', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Vardiyalar', 'yeni plan'] },
     { id: 'matrix-organization-purpose', role: 'ORGANIZATION', path: '/organization', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['gezi veya organizasyon'] },
-    { id: 'matrix-organization-ops', role: 'ORGANIZATION', path: '/organization/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['Açık iş, bekleyen iş veya riskli kaydı bul', 'Özet kartları oku'] },
+    { id: 'matrix-organization-ops', role: 'ORGANIZATION', path: '/organization/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['açık veya bekleyen gezi işini seç', 'Özet kartları oku'] },
     { id: 'matrix-driver-today', role: 'DRIVER', path: '/driver/today', message: 'bu ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['bugün'] },
     { id: 'matrix-driver-change-pin', role: 'DRIVER', path: '/driver/change-pin', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['PIN'] },
     { id: 'matrix-personel-live', role: 'PERSONEL', path: '/personel/live', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['canlı'] },

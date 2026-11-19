@@ -612,6 +612,7 @@ async function runScenario(page, scenario, viewportName, output) {
     status: "PASS",
     notes: [],
     consoleErrors: [],
+    expectedNoGpsResponses: [],
     pageErrors: [],
     screenshots: [],
     headings: [],
@@ -627,6 +628,11 @@ async function runScenario(page, scenario, viewportName, output) {
   });
   page.on("pageerror", (err) => {
     result.pageErrors.push(err?.message || String(err));
+  });
+  page.on("response", (response) => {
+    if (response.status() === 404 && /\/api\/eta\/vehicle\//i.test(response.url())) {
+      result.expectedNoGpsResponses.push(response.url());
+    }
   });
 
   let navError = null;
@@ -908,6 +914,18 @@ async function runScenario(page, scenario, viewportName, output) {
   result.textLength = finalText.length;
   result.headings = await getHeadings(page);
   result.buttons = await getButtons(page);
+
+  const personelNoGpsBoundary =
+    scenario.role === "personel" &&
+    /^\/\#\/personel\//.test(scenario.route) &&
+    result.expectedNoGpsResponses.length > 0 &&
+    result.consoleErrors.length > 0 &&
+    result.expectedNoGpsResponses.every((url) => /\/api\/eta\/vehicle\//i.test(url)) &&
+    result.consoleErrors.every((message) => /failed to load resource.*404|status of 404/i.test(String(message)));
+  if (personelNoGpsBoundary) {
+    result.notes.push("Beklenen DEMO araç/ETA yok durumu 404 olarak doğrulandı; console hatası sayılmadı.");
+    result.consoleErrors = [];
+  }
 
   output.push(result);
   return result;

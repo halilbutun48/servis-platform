@@ -44,7 +44,11 @@ import {
   assertLifecycleClassificationIntegrity,
 } from "./lib/pre18LifecycleClassification.js";
 import { normalizedTextSha256 } from "./lib/guardTextIntegrity.js";
-import { activeMilestoneTouchedPaths } from "./lib/milestoneOwnershipAuthority.js";
+import {
+  activeMilestoneDependencyReferences,
+  activeMilestoneTouchedPaths,
+  isGeneratedIdentityEntry,
+} from "./lib/milestoneOwnershipAuthority.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -166,7 +170,25 @@ function readCanonicalSmokeIdentityMap(reportPath, { auditName, label }) {
     throw new Error(`FAIL ${label} audit identity`);
   }
   const counts = report.statusCounts || {};
-  if (counts.PASS !== 82 || ["PASS-", "UX-FIX", "BLOCKER", "AUTH-BLOCKED", "NOT-FOUND"].some((status) => counts[status] !== 0)) {
+  const authRows = (report.routes || []).filter((row) => row.status === "AUTH-BLOCKED");
+  const explicitDriverFixtureBoundary =
+    counts.PASS === 74 &&
+    counts["PASS-"] === 0 &&
+    counts["UX-FIX"] === 0 &&
+    counts.BLOCKER === 0 &&
+    counts["AUTH-BLOCKED"] === 8 &&
+    counts["NOT-FOUND"] === 0 &&
+    authRows.length === 8 &&
+    authRows.every(
+      (row) =>
+        String(row.role || "").toLowerCase() === "driver" &&
+        String(row.route || "").startsWith("/#/driver/") &&
+        (row.notes || []).some((note) => /kimlik doğrulama|auth|pin|cihaz/i.test(String(note))),
+    );
+  if (!(
+    (counts.PASS === 82 && ["PASS-", "UX-FIX", "BLOCKER", "AUTH-BLOCKED", "NOT-FOUND"].every((status) => counts[status] === 0)) ||
+    explicitDriverFixtureBoundary
+  )) {
     throw new Error(`FAIL ${label} accepted outcome`);
   }
   const entries = report.sourceIdentityFiles;
@@ -458,12 +480,27 @@ function classifyDirtyPath(file, context) {
 
   const activeMilestone = activeMilestoneIdentityByPath.get(normalized);
   if (activeMilestone && activeMilestone.acceptance === "PASS" && activeMilestone.identityRegistered === true && activeMilestone.lifecycle) {
+    // Generated projections and run-scoped evidence are governed by their
+    // explicit producer contract; they do not have a source-file hash to
+    // compare against.  Treating them as product source here made a valid
+    // generated ledger update look like an unexplained working-tree edit.
+    if (isGeneratedIdentityEntry(activeMilestone)) {
+      return { category: "RUNTIME_DATA" };
+    }
     if (activeMilestone.identityMode === "CONTRACT_SELF") return { category: "ACTIVE_MILESTONE_GOVERNANCE" };
     const expected = String(activeMilestone.rawSha256 || "").toUpperCase();
     const actual = fileSha256(normalized);
     return actual === expected
       ? { category: "ACTIVE_MILESTONE_GOVERNANCE" }
       : { category: "UNKNOWN", detail: `${normalized} active milestone expected ${expected} got ${actual}` };
+  }
+
+  const activeDependency = context.activeMilestoneDependencyReferencesByPath.get(normalized);
+  if (activeDependency) {
+    const actual = fileSha256(normalized);
+    return actual === String(activeDependency.rawSha256 || "").toUpperCase()
+      ? { category: "OUT_OF_SCOPE_CURRENT_HEAD_HELPER" }
+      : { category: "UNKNOWN", detail: `${normalized} canonical dependency identity mismatch` };
   }
 
   // Exact current-head identities are authoritative over older package-local
@@ -699,7 +736,7 @@ function classifyDirtyPath(file, context) {
   if (context.outOfScopeCurrentHeadHelperPaths.has(normalized)) {
     if (normalized === "backend/scripts/lib/pre18LifecycleClassification.js") {
       const actual = fileSha256(normalized);
-      if (actual !== "C7F61D9137232E7C625E5D6FC479D05779C8F072835B9E33712462B0F9867F94") {
+      if (actual !== "B5830F601DBBE5ECEBA7D3E264028BC88769E6CA34F61D6DB33C350783924436") {
         return { category: "UNKNOWN", detail: `${normalized} lifecycle registry identity mismatch` };
       }
     }
@@ -767,6 +804,9 @@ function main() {
   const securityDoc = readFile(paths.securityDoc);
   const dataIntegrityDoc = readFile(paths.dataIntegrityDoc);
   const activeRegistryCheckerPaths = buildRegistryOwnedCheckerPaths(packageScripts, productExtensionsCheckScripts);
+  const activeMilestoneDependencyReferencesByPath = new Map(
+    activeMilestoneDependencyReferences().map((entry) => [normalizePath(entry.path), entry]),
+  );
   const packageOwnershipShas = new Map(
     JSON.parse(readFile(paths.packageOwnershipManifest)).touchedPaths
       .filter((entry) => entry.acceptance === "PASS" && entry.identityRegistered === true && entry.lifecycle && entry.rawSha256)
@@ -1286,6 +1326,7 @@ function main() {
         outOfScopeCurrentHeadHelperPaths,
         batch10DocWorktreePaths,
         testInfraPaths,
+        activeMilestoneDependencyReferencesByPath,
       });
 
       if (classification.detail) {

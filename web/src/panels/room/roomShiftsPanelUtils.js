@@ -9,6 +9,11 @@ export function trimOrNull(s) {
   return t ? t : null;
 }
 
+export function displayUserNote(value) {
+  const text = String(value ?? "").trim();
+  return text && !/^(?:null|undefined)$/i.test(text) ? text : "";
+}
+
 export function formatTRY(amount) {
   return amount == null ? "" : formatOfferAmountMinor(amount);
 }

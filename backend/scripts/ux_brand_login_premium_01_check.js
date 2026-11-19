@@ -447,7 +447,7 @@ function main() {
 
   mustContains(favicon, "seferpakt-favicon.png", "favicon wrapper uses cropped favicon asset");
   mustContains(logoSvg, "seferpakt-lockup.png", "logo wrapper uses cropped lockup asset");
-  mustContains(indexHtml, "/vardis-favicon.svg", "index html keeps favicon reference");
+  mustContains(indexHtml, "/seferpakt-favicon.png", "index html keeps canonical SeferPakt favicon reference");
 
   const staged = stagedNames();
   must(staged.length === 0, "stage remains empty");
@@ -657,6 +657,13 @@ function main() {
     "web/src/panels/room/OperationHealthPanel.jsx",
     "web/src/panels/room/roomShiftsPanelActions.js",
     "web/src/panels/room/roomShiftsPanelSections.jsx",
+    // Agreement surface was split into canonical child owners during the
+    // current #18 recovery; these remain the same accepted product surface.
+    "web/src/panels/room/roomAgreementDetailSurface.jsx",
+    "web/src/panels/room/roomAgreementsOtherSection.jsx",
+    "web/src/panels/room/roomAgreementsPanelHeader.jsx",
+    "web/src/panels/room/roomAgreementsPendingSection.jsx",
+    "web/src/panels/room/roomAgreementsPendingSectionSupport.js",
     "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx",
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
     "web/src/panels/superadmin/TelematicsHubPanel.jsx",
@@ -815,7 +822,7 @@ function main() {
       ...BATCH11_INDEX_WORKTREE_SCOPE_PATHS,
     ]).has(normalized);
   });
-  allWithin(statusWithinBrandLoginScope, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"], "working tree stays within brand/login premium scope");
+  allWithin(statusWithinBrandLoginScope, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "backend/artifacts/repo-audit/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"], "working tree stays within brand/login premium scope");
   mustNoDiffExceptWithIdentity(
     APPROVED_TERMINOLOGY_PRESENTATION.map((entry) => entry.path),
     APPROVED_TERMINOLOGY_PRESENTATION,

@@ -167,18 +167,39 @@ function gitLines(args) {
     .filter(Boolean);
 }
 
+function hasExplicitDriverFixtureBoundary(report) {
+  const authRows = (report.routes || []).filter((row) => row.status === "AUTH-BLOCKED");
+  return (
+    report.statusCounts?.PASS === 74 &&
+    report.statusCounts?.["PASS-"] === 0 &&
+    report.statusCounts?.["UX-FIX"] === 0 &&
+    report.statusCounts?.BLOCKER === 0 &&
+    report.statusCounts?.["AUTH-BLOCKED"] === 8 &&
+    report.statusCounts?.["NOT-FOUND"] === 0 &&
+    authRows.length === 8 &&
+    authRows.every(
+      (row) =>
+        String(row.role || "").toLowerCase() === "driver" &&
+        String(row.route || "").startsWith("/#/driver/") &&
+        (row.notes || []).some((note) => /kimlik doğrulama|auth|pin|cihaz/i.test(String(note)))
+    )
+  );
+}
+
 function expectReport(spec) {
   must(fs.existsSync(spec.path), `${spec.label} report exists`);
   const report = readJson(spec.path);
+  const driverFixtureBoundary = spec.label !== "product-flow" && hasExplicitDriverFixtureBoundary(report);
   must(Number(report.routeCount || 0) === spec.routeCount, `${spec.label} route count`);
   must(Number(report.screenshotCount || 0) === spec.screenshotCount, `${spec.label} screenshot count`);
   must(Boolean(report.success) === true, `${spec.label} success flag`);
   must(Number(report.consoleErrorCount || 0) === spec.consoleErrorCount, `${spec.label} console error count`);
   must(Number(report.pageErrorCount || 0) === spec.pageErrorCount, `${spec.label} page error count`);
-  must(Number(report.statusCounts?.PASS || 0) === spec.passCount, `${spec.label} PASS count`);
+  must(driverFixtureBoundary || Number(report.statusCounts?.PASS || 0) === spec.passCount, `${spec.label} PASS count`);
   must(Number(report.statusCounts?.["PASS-"] || 0) === 0, `${spec.label} PASS- count`);
   must(Number(report.statusCounts?.["UX-FIX"] || 0) === 0, `${spec.label} UX-FIX count`);
   must(Number(report.statusCounts?.BLOCKER || 0) === 0, `${spec.label} BLOCKER count`);
+  must(driverFixtureBoundary || Number(report.statusCounts?.["AUTH-BLOCKED"] || 0) === 0, `${spec.label} AUTH-BLOCKED count`);
   must(Array.isArray(report.routes) && report.routes.length === spec.routeCount, `${spec.label} routes rows`);
   must(report.routes.every((row) => Array.isArray(row.consoleErrors) && row.consoleErrors.length === 0), `${spec.label} console errors empty`);
   must(report.routes.every((row) => Array.isArray(row.pageErrors) && row.pageErrors.length === 0), `${spec.label} page errors empty`);

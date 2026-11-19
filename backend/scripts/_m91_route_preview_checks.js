@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 export const repoRoot = path.resolve(__dirname, "../..");
 // Keep the room-panel path assembled so split-file checks do not hardcode the monolith literal.
 const roomAgreementsPanelPath = ["web/src/panels/room", "AgreementsPanel.jsx"].join("/");
+const roomAgreementsPendingSectionPath = ["web/src/panels/room", "roomAgreementsPendingSection.jsx"].join("/");
 
 function relPath(...parts) {
   return path.join(repoRoot, ...parts);
@@ -59,7 +60,7 @@ export function runM91AgreementNegotiationParityCheck() {
   assertIncludes("backend/src/routes/agreements.js", "AGREEMENT_REJECTED", "room rejected notification");
   assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "Yeni Teklif Gönder", "company counter button");
   assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "/company-counter", "company counter api call");
-  assertIncludes(roomAgreementsPanelPath, "Reddet", "room reject button");
+  assertIncludes(roomAgreementsPendingSectionPath, "Reddet", "room reject button");
   assertIncludes(roomAgreementsPanelPath, "/reject", "room reject api call");
   banner("M91B CHECK PASS");
 }

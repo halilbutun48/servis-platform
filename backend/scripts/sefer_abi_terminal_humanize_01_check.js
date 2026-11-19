@@ -116,8 +116,14 @@ async function main() {
   const diagSignals = read('web/src/components/copilot/ChatDiagnosticSignals.jsx');
   const card = read('web/src/components/copilot/CopilotAdvancedResultCard.jsx');
 
-  const helpComposer = read('backend/src/ai/chat/helpComposer.js');
-  const intentRouter = read('backend/src/ai/chat/intentRouter.js');
+  const helpComposer = [
+    read('backend/src/ai/chat/helpComposer.js'),
+    read('backend/src/ai/chat/helpComposerContext.js'),
+  ].join('\n');
+  const intentRouter = [
+    read('backend/src/ai/chat/intentRouter.js'),
+    read('backend/src/ai/chat/intentRouterScreenChips.js'),
+  ].join('\n');
   const answerQualityPolicy = read('backend/src/ai/chat/answerQualityPolicy.js');
   const screenStateAnalyzer = read('backend/src/ai/chat/screenStateAnalyzer.js');
   const roomCompany = read('backend/src/ai/jobGuide/screenCatalog.roomCompany.js');

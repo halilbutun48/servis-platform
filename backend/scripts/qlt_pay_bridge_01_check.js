@@ -78,6 +78,8 @@ const bridgeCard = read("web/src/panels/shared/QualityPaymentBridgePreviewCard.j
 const agreementFacts = read("web/src/utils/agreementCopilotFacts.js");
 const copilotFacts = read("web/src/utils/copilotFacts.js");
 const helpComposer = read("backend/src/ai/chat/helpComposer.js");
+const helpComposerContext = read("backend/src/ai/chat/helpComposerContext.js");
+const helpComposerSources = `${helpComposer}\n${helpComposerContext}`;
 const intentRouter = read("backend/src/ai/chat/intentRouter.js");
 const answerQualityPolicy = read("backend/src/ai/chat/answerQualityPolicy.js");
 const goldenQuestionPack = read("backend/src/ai/chat/goldenQuestionPack.js");
@@ -155,12 +157,12 @@ must(copilotFacts, "Ödeme başlatılabilir mi?", "copilot chips include blocked
 must(copilotFacts, "Sıradaki doğru işlem ne?", "copilot chips include next-action chip");
 must(copilotFacts, "qualityPaymentBridgeSummaryText", "copilot text includes bridge summary support");
 
-must(helpComposer, "Hakediş / kanıt önizlemesi", "help composer labels payment bridge safely");
-must(helpComposer, "Bu sadece önizlemedir; ödeme başlatılmaz", "help composer keeps readonly boundary");
-must(helpComposer, "Önce eksik kanıtları ve kalite kontrolünü tamamla", "help composer keeps safe advice");
-must(helpComposer, "Kanıt eksiklerini sor", "help composer asks about missing proofs safely");
-must(helpComposer, "PAYMENT_MISSING", "help composer keeps payment missing topic");
-must(helpComposer, "PAYMENT_PREVIEW", "help composer keeps payment preview topic");
+must(helpComposerSources, "Hakediş / kanıt önizlemesi", "help composer labels payment bridge safely");
+must(helpComposerSources, "Bu sadece önizlemedir; ödeme başlatılmaz", "help composer keeps readonly boundary");
+must(helpComposerSources, "Önce eksik kanıtları ve kalite kontrolünü tamamla", "help composer keeps safe advice");
+must(helpComposerSources, "Kanıt eksiklerini sor", "help composer asks about missing proofs safely");
+must(helpComposerSources, "PAYMENT_MISSING", "help composer keeps payment missing topic");
+must(helpComposerSources, "PAYMENT_PREVIEW", "help composer keeps payment preview topic");
 
 must(intentRouter, "PAYMENT_MISSING", "intent router keeps payment missing intent");
 must(intentRouter, "payment-missing-path", "intent router scores payment missing path");

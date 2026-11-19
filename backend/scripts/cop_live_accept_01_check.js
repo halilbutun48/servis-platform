@@ -301,7 +301,10 @@ const roleNavigation = read('web/src/utils/roleNavigation.js');
 const screenRegistry = read('web/src/copilot/screenRegistry.js');
   const service = read('backend/src/ai/service.js');
   const helpComposer = read('backend/src/ai/chat/helpComposer.js');
-  const intentRouter = read('backend/src/ai/chat/intentRouter.js');
+  const intentRouter = [
+    read('backend/src/ai/chat/intentRouter.js'),
+    read('backend/src/ai/chat/intentRouterScreenChips.js'),
+  ].join('\n');
   const answerPolicy = read('backend/src/ai/chat/answerQualityPolicy.js');
   const screenCatalog = read('backend/src/ai/jobGuide/screenCatalog.js');
 

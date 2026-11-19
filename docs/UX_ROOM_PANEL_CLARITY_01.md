@@ -23,7 +23,7 @@ Bu milestone Room panellerinde summary-first, premium ve daha anlaşılır gör�
 - Aynı bilgi birden fazla yerde tekrar edilmez.
 - `Detayı aç`, `İncele`, `Kayıt seç` gibi CTA'lar yönlendirici olur.
 - Teknik kanıt gerekiyorsa `Sistem kanıtı` gibi kontrollü etiketler kullanılır.
-- Güvenli ID dili `Vardiya ID`, `Sözleşme ID`, `Talep ID`, `Araç ID`, `Sürücü ID`, `Firma ID` biçimindedir.
+- Seçili kayıt dili kullanıcıya anlaşılır etiketlerle gösterilir; vardiya ve sözleşme kimliği Sefer Abi bağlamında `entityType`/`entityId` ve yapılandırılmış `facts` olarak korunur. Rota önizlemesi gibi teknik kanıt alanlarında kayıt kimliği yalnız ilgili kaydın yanında görünür.
 
 ## Doğrulama
 

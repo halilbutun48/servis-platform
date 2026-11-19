@@ -112,7 +112,7 @@ function hasAccessibleSuggestionsContract(source) {
     && toggleHandler
     && functionalToggle
     && /className="copilotSuggestionWrap" hidden=\{!suggestionsOpen\}/.test(region)
-    && /suggestions\.map\(\(chip, index\) =>[\s\S]*?onClick=\{\(\) => ask\(chip\)\}/.test(region);
+    && /suggestions\.map\(\(chip, index\) =>[\s\S]*?onClick=\{\(\) => (?:ask\(chip\)|\{[\s\S]*?ask\(chip\);[\s\S]*?\})/.test(region);
 }
 
 function hasStarterHelperWiring(drawer, helper) {
@@ -167,10 +167,12 @@ else fail('negative control rejects a missing suggestions region');
 const starterHelperDisconnected = drawerSource.replace('return buildCopilotStarterChips({', 'return [];');
 if (!hasStarterHelperWiring(starterHelperDisconnected, helperSource)) ok('negative control rejects a disconnected starter helper');
 else fail('negative control rejects a disconnected starter helper');
-const suggestionsCannotOpen = drawerSource.replace(
-  /(className="copilotContextSuggestions"[\s\S]*?const\s+next\s*=\s*)!previous/,
-  '$1previous',
-);
+const suggestionsCannotOpen = drawerSource
+  .replace(/setSuggestionsOpen\(\(previous\) => !previous\)/g, 'setSuggestionsOpen(() => false)')
+  .replace(
+    /(className="copilotContextSuggestions"[\s\S]*?const\s+next\s*=\s*)!previous/,
+    '$1previous',
+  );
 if (!hasAccessibleSuggestionsContract(suggestionsCannotOpen)) ok('negative control rejects permanently inaccessible suggestions');
 else fail('negative control rejects permanently inaccessible suggestions');
 

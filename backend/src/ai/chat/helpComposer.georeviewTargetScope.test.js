@@ -40,6 +40,7 @@ test('GeoReview continuation ignores a stale guided target from another route', 
   });
 
   assert.match(response.reply, /Konum İncele/);
+  assert.match(response.reply, /akışından devam edelim/);
   assert.match(response.reply, /M18 DEMO Personel 49/);
   assert.doesNotMatch(response.reply, /Tamamlanma adımlarını gör/);
   assert.doesNotMatch(response.reply, /sözleşme|vardiya|kanıt önizlemesi/i);
@@ -80,6 +81,7 @@ test('GeoReview continuation stays on the selected location record', () => {
   });
 
   assert.match(response.reply, /Konum İncele/);
+  assert.match(response.reply, /akışından devam edelim/);
   assert.match(response.reply, /M18 DEMO Personel 49/);
   assert.doesNotMatch(response.reply, /Tamamlanma adımlarını gör/);
   assert.doesNotMatch(response.reply, /sözleşme|vardiya|kanıt önizlemesi/i);

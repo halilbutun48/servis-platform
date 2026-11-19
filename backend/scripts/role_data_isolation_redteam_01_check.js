@@ -81,17 +81,16 @@ function gitLines(args) {
 }
 
 function gitStatusNames(paths = []) {
-  const args = ['status', '--short', '--untracked-files=all'];
   const scopedPaths = Array.isArray(paths) ? paths : [...paths];
-  if (scopedPaths.length > 0) {
-    args.push('--', ...scopedPaths.map(normalizeStatusPath));
-  }
-  const out = execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-  return String(out || '')
+  const out = execFileSync('git', ['status', '--short', '--untracked-files=all'], { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  const dirtyPaths = String(out || '')
     .split(/\r?\n/)
     .filter(Boolean)
     .map((line) => line.replace(/^.{2}\s+/, '').replace(/\\/g, '/').trim())
     .filter(Boolean);
+  if (scopedPaths.length === 0) return dirtyPaths;
+  const scopedPathSet = new Set(scopedPaths.map(normalizeStatusPath));
+  return dirtyPaths.filter((file) => scopedPathSet.has(file));
 }
 
 const acceptedHistoricalProductHashes = new Map([

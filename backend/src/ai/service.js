@@ -1491,13 +1491,11 @@ function buildGenericProductHelpProjection({ message, semanticPlan, user = null,
 export function buildSuperAdminOnboardingReviewSelectedLeadResponse({
   user,
   screenContext,
-  message,
   selectedRecord,
   semanticPlan = null,
 } = {}) {
   const role = String(user?.role || "").trim().toUpperCase();
   const path = String(screenContext?.path || "").split("?")[0];
-  const text = String(message || "").trim();
   const selected = selectedRecord && typeof selectedRecord === "object" ? selectedRecord : null;
   if (
     role !== "SUPER_ADMIN"

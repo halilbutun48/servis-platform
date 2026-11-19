@@ -41,7 +41,7 @@ export default function RoomAgreementsBridgeSection({
   onClearConflict,
 }) {
   return (
-    <div style={{ display: "grid", gap: 12 }}>
+    <div className="roomCriticalFixScope" style={{ display: "grid", gap: 12 }}>
       {copilotAgreementTarget ? (
         <div
           data-room-operation-bridge={String(copilotAgreementTarget.id)}

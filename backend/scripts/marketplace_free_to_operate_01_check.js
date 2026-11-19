@@ -97,6 +97,8 @@ async function main() {
   const intentRouter = read('backend/src/ai/chat/intentRouter.js');
   const answerPolicy = read('backend/src/ai/chat/answerQualityPolicy.js');
   const helpComposer = read('backend/src/ai/chat/helpComposer.js');
+  const helpComposerContext = read('backend/src/ai/chat/helpComposerContext.js');
+  const helpComposerSources = `${helpComposer}\n${helpComposerContext}`;
   const goldenPack = read('backend/src/ai/chat/goldenQuestionPack.js');
   const registryScripts = productExtensionsChecks.map((step) => step.script);
 
@@ -163,10 +165,10 @@ async function main() {
   must(intentRouter, 'Lisans ücreti var mı?', 'intent router marketplace chips visible');
   must(answerPolicy, 'marketplaceFreeToOperateChips', 'answer policy exposes marketplace chips');
   must(answerPolicy, 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'answer policy routes marketplace topic');
-  must(helpComposer, 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'help composer knows marketplace preview question type');
-  must(helpComposer, 'Lisans ücreti yoktur; mevcut / manuel / pilot / eski kayıt için pay doğmaz', 'help composer provides marketplace safety text');
-  must(helpComposer, 'Bu sadece başarı payı önizlemesidir.', 'help composer provides marketplace verification hint');
-  must(helpComposer, 'kaynak vardiya / teklif seçimi sinyallerini', 'help composer explains source-lineage gate');
+  must(helpComposerSources, 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'help composer knows marketplace preview question type');
+  must(helpComposerSources, 'Lisans ücreti yoktur; mevcut / manuel / pilot / eski kayıt için pay doğmaz', 'help composer provides marketplace safety text');
+  must(helpComposerSources, 'Bu sadece başarı payı önizlemesidir.', 'help composer provides marketplace verification hint');
+  must(helpComposerSources, 'kaynak vardiya / teklif seçimi sinyallerini', 'help composer explains source-lineage gate');
   must(goldenPack, 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?', 'golden question pack includes organization plan question');
 
   const serviceUrl = pathToFileURL(path.join(root, 'backend/src/services/platformFeePreviewService.js')).href;

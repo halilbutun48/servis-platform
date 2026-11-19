@@ -65,7 +65,10 @@ function main() {
   const roomHealth = read('web/src/panels/room/OperationHealthPanel.jsx');
 
   const copilotFacts = read('web/src/utils/copilotFacts.js');
-  const helpComposer = read('backend/src/ai/chat/helpComposer.js');
+  const helpComposer = [
+    read('backend/src/ai/chat/helpComposer.js'),
+    read('backend/src/ai/chat/helpComposerContext.js'),
+  ].join('\n');
   const intentRouter = read('backend/src/ai/chat/intentRouter.js');
   const answerPolicy = read('backend/src/ai/chat/answerQualityPolicy.js');
 

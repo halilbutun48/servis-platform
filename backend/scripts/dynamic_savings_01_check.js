@@ -20,7 +20,12 @@ function assertContains(relPath, needles, failures) {
     failures.push(`${relPath}: missing file`);
     return;
   }
-  const text = read(relPath);
+  const text = relPath === "backend/src/ai/chat/helpComposer.js"
+    ? [
+      read(relPath),
+      read("backend/src/ai/chat/helpComposerContext.js"),
+    ].join("\n")
+    : read(relPath);
   for (const needle of needles) {
     if (!String(text || "").includes(needle)) {
       failures.push(`${relPath}: missing "${needle}"`);

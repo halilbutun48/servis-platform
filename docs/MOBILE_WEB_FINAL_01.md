@@ -12,7 +12,7 @@ Kabul kapısı şu şekildedir:
 - `UX-FIX 0`
 - `BLOCKER 0`
 - `NOT-FOUND 0`
-- `AUTH-BLOCKED 0` veya yalnızca report-only auth notu
+- Tam kabulde `AUTH-BLOCKED 0`; mevcut canonical DEMO sürücü kimlik bilgisi fixture'ı geçerli değilse yalnızca sekiz sürücü rotası için açık `AUTH-BLOCKED` sınırı kabul edilir. Bu sınır blocker, PASS- veya NOT-FOUND değildir.
 
 Bu koşullar sağlandığında final mobile acceptance kabul edilebilir.
 
@@ -30,12 +30,14 @@ Bu milestone:
 - Komut: `npm run smoke:uxmobileallrolespanelaudit01`
 - Rapor: `backend/artifacts/browser-smoke/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01/report.json`
 - Snapshot: `PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
+- Güncel fixture sınırı: `PASS 74 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 8 / NOT-FOUND 0`; sekiz kayıt yalnız `driver` rolüne ve kimlik doğrulama/PIN/cihaz sınırına ait olmalıdır.
 
 ### Premium Smoke
 
 - Komut: `npm run smoke:uxlivepanelpremium01`
 - Rapor: `backend/artifacts/browser-smoke/UX_LIVE_PANEL_PREMIUM_SMOKE_01/report.json`
 - Snapshot: `PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
+- Güncel fixture sınırı: `PASS 74 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 8`; premium ve all-roles raporları aynı açık sürücü sınırını kullanır.
 
 ## 3) All-Roles PASS- Final Risk List
 

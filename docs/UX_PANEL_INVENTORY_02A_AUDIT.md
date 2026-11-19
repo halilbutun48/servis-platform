@@ -17,9 +17,9 @@ Tarama kapsamı:
 - `web/src/App.jsx` route/menu bağlantıları
 
 Özet envanter:
-  - `128` panel-related JSX dosyası: `web/src/panels/**/*.jsx` (commercial shift card presentation owner ve muhasebe dışa aktarım paneli dahil)
+  - `140` panel-related JSX dosyası: `web/src/panels/**/*.jsx` (commercial shift card presentation owner ve muhasebe dışa aktarım paneli dahil)
 - `64` route-backed unique screen component: `web/src/App.jsx` lazy import yüzeyi
-- `108` gerçek route surface + `/` root redirect ile `109` unique route literal
+- `108` gerçek route surface ve `108` unique route literal
 
 ### Super Admin (20)
 - `/superadmin`

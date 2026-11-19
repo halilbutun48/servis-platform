@@ -246,6 +246,11 @@ function buildProgressLead(snapshot = {}, reply = '') {
         'Şimdi: Olmadıysa en yakın menü kapısını birlikte bulalım.',
       ][Math.min(repeatCount, 2)];
     case 'CONTINUE_FLOW': {
+      const screenPath = String(snapshot?.screenPath || snapshot?.taskState?.screenPath || '').split('?')[0];
+      const questionType = String(snapshot?.questionType || snapshot?.taskState?.questionType || '');
+      if (screenPath === '/company' && questionType === 'EXCEL_ROUTE_PREVIEW') {
+        return 'Şimdi: Aynı vardiya akışını sürdürüyoruz.';
+      }
       const anchor = previousTaskState(snapshot);
       if (anchor && !containsNormalized(replyText, anchor)) {
         return `Şimdi: Aynı kayıtta devam ediyoruz: ${anchor}.`;

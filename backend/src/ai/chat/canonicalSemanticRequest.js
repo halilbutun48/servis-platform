@@ -97,6 +97,11 @@ export function inferRoleScopedUiTarget(text) {
   // screen/domain resolver so the authenticated COMPANY target can be shown.
   if (/\bpersonel\p{L}*\s+(?:erisim|baglanti|liste|kayit|ekle|aktar|yukle|excel|csv)\p{L}*\b/iu.test(value)) return null;
   const surfaceReference = /\b(?:ekran|sayfa|panel|menu|kullanici|yonetim|yetki|rol|bolum|alan)\p{L}*\b/iu.test(value);
+  // A concrete relationship request such as “araç/sürücü bağlantısını
+  // kontrol et” names records on the current surface, not a destination
+  // role. Let the relation resolver own that request unless the user also
+  // names an explicit screen/panel/menu target.
+  if (!surfaceReference && hasExplicitRelationCue(value)) return null;
   // A process predicate such as "yönetmek" can occur next to a surface noun
   // while the user is asking about responsibility or limits. It is not a
   // directional UI request. Keep role-scoped target promotion bounded to
@@ -276,7 +281,7 @@ const ROLE_HELP_ASPECTS = Object.freeze({
   // Match the role-work concept, not every word beginning with `is`.
   // `isleyis` / `isleyisini` is a screen-behaviour term and must not become
   // role responsibility evidence merely because it shares the `is` stem.
-  RESPONSIBILITY: /\b(?:sorumluluk|gorev|faaliyet|calisma)\p{L}*\b|\b(?:is(?:ler(?:i|im|in|ini|imiz|iniz|leri)?|im|in|imiz|iniz|leri)?|gorev(?:ler|im|in|imiz|iniz|leri)?|faaliyet(?:ler|im|in|imiz|iniz|leri)?|calisma(?:lar|m|n|miz|niz|lari)?)\b/iu,
+  RESPONSIBILITY: /\b(?:sorumluluk|gorev|faaliyet|calisma)\p{L}*\b|\b(?:is(?:ler(?:i|im|in|ini|imiz|iniz|leri)?|im|in|imiz|iniz|leri)?|gorev(?:ler|im|in|imiz|iniz|leri)?|faaliyet(?:ler|im|in|imiz|iniz|leri)?|calisma(?:lar|m|n|miz|niz|lari)?)\b|\b(?:ne|neler)\s+yap\p{L}*\s+gerek\p{L}*\b/iu,
   BOUNDARY: /\b(?:sinir|kapsam|limit|cerceve|dahil|ait|haric|disinda|uzerime)\p{L}*\b/iu,
   // Keep stems that are semantically stable under Turkish inflection. In
   // particular, `anla` would consume `anlat...` and `bil` would consume
@@ -295,7 +300,7 @@ function collectRoleHelpSemanticEvidence(value, { roleContext = "" } = {}) {
 
   const normalizedRoleContext = String(roleContext || "").trim().toUpperCase();
   const roleContextAvailable = ROLE_HELP_CONTEXTS.has(normalizedRoleContext);
-  const explicitRoleReference = /\b(?:company|room|driver|personel|parent|school|organization|super\s*admin|superadmin|sistem\s+yoneticisi|yonetici|sirket|firma|tasimacilik|surucu|veli|okul|organizasyon|oda|rol|kullanici|hesa[pb]|taraf)\p{L}*\b/iu.test(text);
+  const explicitRoleReference = /\b(?:company|room|driver|personel|parent|school|organization|super\s*admin|superadmin|sistem\s+yoneticisi|yonetici|sirket|firma|tasimacilik|surucu|veli|okul|organizasyon|oda|kullanici|hesa[pb]|taraf)\p{L}*\b/iu.test(text);
   const aspects = Object.entries(ROLE_HELP_ASPECTS)
     .filter(([, pattern]) => pattern.test(text))
     .map(([aspect]) => aspect);
@@ -323,7 +328,10 @@ function collectRoleHelpSemanticEvidence(value, { roleContext = "" } = {}) {
     && (explicitSurfaceExplanation || concreteAction);
   const situatedCurrentSurfaceHelp = /\b(?:burada|burda|bu\s+ekranda|bu\s+sayfada)\b.{0,48}\b(?:ne\s+yap\p{L}*|nereden\s+basla\p{L}*|sorun\p{L}*|problem\p{L}*|dikkat\p{L}*|bakmam\b|yard[iı]m\s+et|ad[iı]m\s+ad[iı]m)\b/iu.test(text);
   const specificTask = /\b(?:yeni|olustur|baslat|planla|duzenle|ayarla|sil|gonder|dagit|icra)\p{L}*\b/iu.test(text);
-  const roleSubject = explicitRoleReference || (roleContextAvailable && hasRoleAspect);
+  const roleOrientationNextAction = /\b(?:ne|neler)\s+yap\p{L}*\s+gerek\p{L}*\b/iu.test(text)
+    || /\b(?:nereden|hangi)\s+basla\p{L}*\b/iu.test(text);
+  const roleSubject = explicitRoleReference
+    || (roleContextAvailable && hasRoleAspect && aspects.some((aspect) => aspect !== "ORIENTATION"));
   const explicitCurrentSurfaceAnchor = /\b(?:ekran|sayfa|panel|menu|bolum)\p{L}*\b/iu.test(text);
   const roleContextOnlySurfaceExplanation = roleContextAvailable
     && !explicitRoleReference
@@ -341,6 +349,10 @@ function collectRoleHelpSemanticEvidence(value, { roleContext = "" } = {}) {
     && !concreteUiTarget
     && !concreteAction
     && !specificTask
+    // A selected-record next-action question must stay on the current
+    // surface/record path; only role-oriented wording without that record
+    // reference belongs in the role-help family.
+    && !(hasSelectedRecordReference(text) && hasNextActionOperationCue(text))
     // Explicit canonical operations (for example risk analysis) own the
     // utterance before broad role-orientation evidence can route it to the
     // role-help composer.  A bare COUNT signal is different: Turkish role
@@ -348,7 +360,8 @@ function collectRoleHelpSemanticEvidence(value, { roleContext = "" } = {}) {
     // must not turn that capability question into a record count.  Keep every
     // other concrete operation authoritative while allowing COUNT-only role
     // orientation to remain in the role-help lane.
-    && !inferExplicitOperations(text).some((operation) => operation !== "COUNT"),
+    && !inferExplicitOperations(text).some((operation) => operation !== "COUNT"
+      && !(operation === "NEXT_ACTION" && roleOrientationNextAction)),
   );
 
   return {
@@ -380,6 +393,10 @@ export function isExplicitRoleHelpIntent(value, { roleContext = "" } = {}) {
 export function isGenericProductHelpIntent(value, { roleContext = "" } = {}) {
   const text = normalize(value);
   if (!text) return false;
+  // A “which action is next?” question is contextual workflow guidance, not
+  // a generic product overview. Keep the structural next-action family ahead
+  // of the broad product-help vocabulary even when the user says “var?”.
+  if (/\b(?:sirada|sırada)\s+(?:hangi\s+)?(?:islem|işlem|adim|adım|kontrol)\p{L}*\s+var\b/iu.test(text)) return false;
   if (hasProductNoteLookupCue(text)) return false;
   const productUsageOrientation = /\b(?:seferpakt|program|uygulama|platform|sistem)\p{L}*\b/iu.test(text)
     && /\b(?:kullan\p{L}*|ogret\p{L}*|öğret\p{L}*|anlat\p{L}*|acikla\p{L}*|açıkla\p{L}*)\b/iu.test(text)
@@ -1586,6 +1603,12 @@ function hasCostAnalysisCue(text, conversationState = null, ui = null) {
     || /\b(?:ne|nedir|neye\s+gore|neden|nasil|nasıl|hesap|etki|fark|kayna\p{L}*|dayanak\p{L}*|acikla\p{L}*|anlat\p{L}*|geliyor\p{L}*|hazır|hazir|eksik|aşama|asama|hangi|durum|var)\b.{0,32}\b(?:maliyet|butce|gider|karlilik|gelir|finans|fatura|hakediş|hakedis|tahsilat|odeme|ödeme)\p{L}*\b/iu.test(value);
 }
 
+function hasExplicitCauseQuestion(text) {
+  const value = normalize(text);
+  return /\b(?:neden|niye|niçin|nicin)\b/iu.test(value)
+    || /\b(?:nasıl|nasil)\s+(?:oldu|olu(?:yor|şuyor|suyor)|art(?:tı|ti|iyor|iyo)|azal(?:dı|di|ıyor|iyo)|değiş(?:ti|tiyor)|degis(?:ti|tiyor))\b/iu.test(value);
+}
+
 function hasPlatformHistoricalAgreementReferenceCue(text) {
   const value = normalize(text);
   const platformScope = /\b(?:seferpakt|platform|genelinde|tum\s+odalar|odalar(?:in|i)?)\b/iu.test(value);
@@ -2384,9 +2407,10 @@ function hasTypedEntityRelationQuestion(text) {
 
 function hasExplicitRelationCue(text) {
   if (isSelectedRecordIdentityRelationForm(text)) return false;
+  const inflectedRelationCue = /\b(?:bagl\p{L}*|ilisk\p{L}*|esles\p{L}*|atam\p{L}*)\b/iu.test(text);
   return hasAnyTerm(text, [
     "bagli", "ait", "iliskili", "baglanti", "surucusu kim", "soforu kim", "bagli kayit", "bagli kaydi", "sozlesmesi var mi",
-  ]) || hasTypedEntityRelationQuestion(text)
+  ]) || inflectedRelationCue || hasTypedEntityRelationQuestion(text)
     || /(?:vardiya|sefer|arac\p{L}*|surucu\p{L}*|sofor\p{L}*|sozlesme\p{L}*|kayit\p{L}*).{0,24}(?:bagli|ait|iliskili|araci|vardiyasi|surucusu|soforu)/iu.test(text)
     || /\b(?:bagli\s+)?vardiyas\p{L}*\b/iu.test(text);
 }
@@ -3035,8 +3059,12 @@ function currentScreenKnowledgeKind(text, ui) {
   const situatedSurfaceFocus = /\b(?:burada|burda)\s+(?:ne\s+yap\p{L}*|nereden\s+basla\p{L}*)\b/iu.test(text);
   const situatedSurfaceRisk = /\b(?:burada|burda)\s+(?:sorun|problem|aksakl\p{L}*)\s+var\s+m[ıi]\b/iu.test(text);
   if (hasDirectFieldLookupCue(text) || hasAssessmentSummaryCue(text)) return "";
-  if (hasExplicitCurrentScreenPurposeCue(text)) return "SCREEN_FOCUS";
+  // A surface noun can appear inside an explicit next-action question (for
+  // example, “Bu ekran içinde ne yapmam gerekiyor?”). Resolve the operation
+  // before the broader screen-purpose family; otherwise onboarding/help
+  // routing hides the user's requested next step.
   if (hasNextActionOperationCue(text)) return ui?.selectedId || ui?.selectedType ? "" : "NEXT_ACTION";
+  if (hasExplicitCurrentScreenPurposeCue(text)) return "SCREEN_FOCUS";
   if (hasRiskCue(text) || situatedSurfaceRisk) {
     return ui?.selectedId || ui?.selectedType ? "" : "SCREEN_RISK";
   }
@@ -3235,6 +3263,7 @@ function hasNextActionOperationCue(text) {
     || /(?:sonraki|siradaki|bir\s+sonraki)\s+(?:dogru\s+|guvenli\s+)?kontrol\s*(?:ne)?\??$/iu.test(text)
     || /(?:bundan\s+sonra|hemen)\s+ne\s+yap\p{L}*/iu.test(text)
     || /sirada\s+ne\s+var/iu.test(text)
+    || /\b(?:sirada|sırada)\s+(?:hangi\s+)?(?:islem|işlem|adim|adım|kontrol)\p{L}*\s+var\b/iu.test(text)
     || /\b(?:simdi|hemen|bundan\s+sonra)?\s*(?:en\s+)?mantikli\s+(?:adim|is|islem|aksiyon)\p{L}*\b/iu.test(text)
     || /\b(?:hangi|ne)\s+(?:dogru\s+|guvenli\s+|mantikli\s+)?(?:adim|islem|aksiyon|kontrol)\p{L}*\s+(?:yap|gec|git|uygula|izle)\p{L}*\b/iu.test(text)
     || /\bhangi\s+(?:dogru\s+|guvenli\s+|mantikli\s+)?adim\p{L}*\s+(?:ile\s+)?ilerle\p{L}*\b/iu.test(text)
@@ -4079,7 +4108,12 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   const quoteFloorAnalysis = hasQuoteFloorAnalysisCue(text, conversationState, ui);
   const explicitBudgetMetricAnalysis = /\b(?:tahmini|manuel|operasyonel|gerceklesen|gerçekleşen)\s+maliyet\p{L}*\b|\bteklif\s+taban\p{L}*\b|\bk[âa]r\p{L}*\b/iu.test(text);
   if ((quoteFloorAnalysis || hasFinancialReadinessEvidence(text) || hasCostAnalysisCue(text, conversationState, ui))
-    && !hasNextActionOperationCue(text)) {
+    && !hasExplicitCauseQuestion(text)
+    && !hasNextActionOperationCue(text)
+    // A glossary definition is an explicit product-knowledge request. It
+    // must reach the canonical term-definition owner before a broad finance
+    // risk/readiness classifier can claim the same words as a metric query.
+    && !hasKnownTermDefinitionCue(text)) {
     return {
       taskType: "RISK",
       confidence: 0.95,
@@ -4664,7 +4698,11 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
     && !hasActiveGuidanceFailureCue(text)
     // A local deictic with no resolvable target is a clarification request,
     // not a role-global capability question.
-    && !hasScreenDeicticCue(text)) {
+    && !hasScreenDeicticCue(text)
+    // A selected-record phrase such as “bu kayıt” combined with a next-action
+    // question belongs to the current record/surface, not role-global help.
+    // Keep role questions without a record reference on the role-help path.
+    && !(hasSelectedRecordReference(text) && hasNextActionOperationCue(text))) {
     return {
       taskType: "OFF_TOPIC",
       confidence: 0.97,
@@ -5899,7 +5937,7 @@ function inferTask({ text, rawText = text, ui, conversationState = null }) {
   // relation cue. Resolve the domain-specific cost contract before generic
   // relation traversal so a financial follow-up reaches the authorized cost
   // evidence reader instead of the relation-missing fallback.
-  if (hasCostAnalysisCue(text, conversationState, ui)) return { taskType: "RISK", confidence: 0.9, domain: "BUDGET", requestedTasks: ["RISK"], explicitTaskIntent: true };
+  if (hasCostAnalysisCue(text, conversationState, ui) && !hasExplicitCauseQuestion(text)) return { taskType: "RISK", confidence: 0.9, domain: "BUDGET", requestedTasks: ["RISK"], explicitTaskIntent: true };
   if (!hasQuoteFloorAnalysisCue(text, conversationState, ui) && hasDirectFieldLookupCue(text) && !hasCardinalityCue(text)) {
     return directFieldLookupShape(text, ui);
   }
@@ -8009,7 +8047,7 @@ function resolveOldCanonicalConversationRequest({
   const canonicalContext = semanticContext || buildCanonicalSemanticContext({ message, user, screenContext, conversationState });
   const inferredShape = inferCanonicalSemanticRequest({ message, user, screenContext, conversationState, localSemanticProposal });
   const normalizedMessage = normalize(message);
-  const operationHealthIssueCue = /(?:riskli\s+cihaz|gps|konum\s+sinyali|cevrim\s+disi|çevrim\s+dışı|acik\s+sorun|açık\s+sorun)/iu.test(normalizedMessage);
+  const operationHealthIssueCue = /(?:riskli\s+cihaz|gps|konum\s+sinyali|cevrim\s+disi|çevrim\s+dışı|acik\s+sorun|açık\s+sorun|operasyon\s+(?:sorun|problem))/iu.test(normalizedMessage);
   const crossSurfaceOperationHealthIssue = String(user?.role || "").toUpperCase() === "ROOM"
     && /(?:satir|sıra|sorun|problem|riskli\s+cihaz|acik\s+sorun|açık\s+sorun)/iu.test(normalizedMessage);
   const selectedRoomShiftGpsFreshnessQuestion = String(user?.role || "").toUpperCase() === "ROOM"
@@ -8055,7 +8093,24 @@ function resolveOldCanonicalConversationRequest({
     })
     : inferredSemanticAction;
   const mapping = mapSemanticActionToCanonicalMeaning({ semanticAction, shape: scopedInferredShape });
-  const shape = mapping.shape;
+  const shape = operationHealthSurfaceIssue
+    ? {
+      ...mapping.shape,
+      taskType: "ISSUE",
+      domain: "OPERATIONS",
+      targetEntityType: null,
+      requestedTasks: ["ISSUE"],
+      requestedFields: Array.isArray(mapping.shape?.requestedFields) && mapping.shape.requestedFields.length
+        ? mapping.shape.requestedFields
+        : [{ key: "OPERATION_HEALTH_METRIC", domain: "OPERATIONS" }],
+      requestedFieldsAuthoritative: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: "CURRENT_SCREEN",
+      operationHealthMetricIntent: true,
+      operationHealthMetricMode: "GPS_ISSUE_SUBSET",
+    }
+    : mapping.shape;
   const semanticScope = preliminaryScope.class === "OFF_TOPIC_GENUINE"
     ? preliminaryScope
     : resolveSemanticScope({ text: message, shape, semanticAction });
@@ -8277,6 +8332,11 @@ function buildTypedCanonicalShape({ message, user, screenContext, conversationSt
     || explicitShiftReferenceFromText(message)
     || explicitVehicleReferenceFromText(message)
     || explicitAgreementReferenceFromText(message)
+    // A generic selected-record phrase such as “bu kayıt” is still an
+    // explicit target for precedence.  It must prevent role-global help from
+    // consuming a record-level next-action request before the current surface
+    // can answer it.
+    || hasSelectedRecordReference(normalize(message))
     || selectedRecordReference;
   const selectedShiftPassengerListRequest = hasSelectedShiftPassengerListCue(
     message,
@@ -8749,6 +8809,9 @@ function buildNewCanonicalResult({
     || explicitShiftReferenceFromText(message)
     || explicitVehicleReferenceFromText(message)
     || explicitAgreementReferenceFromText(message)
+    // Keep generic deictic record references (for example “bu kayıt”) on the
+    // selected-record/action path instead of allowing broad role help to win.
+    || hasSelectedRecordReference(normalize(message))
     || selectedRecordReference;
   const roomCapabilityBoundaryContinuation = hasRoomCapabilityBoundaryContinuation({
     message,
@@ -9229,6 +9292,7 @@ function buildNewCanonicalResult({
     : null;
   const financialCostAnalysisRequest = isFinancialOperationsSurface
     && hasCostAnalysisCue(message, conversationState, screenContext)
+    && !hasExplicitCauseQuestion(message)
     && !hasNextActionOperationCue(message);
   const financialCostAnalysisShape = financialCostAnalysisRequest
     ? {
@@ -9472,11 +9536,14 @@ function buildNewCanonicalResult({
       && /(?:satir|sıra|sorun|problem|riskli\s+cihaz|acik\s+sorun|açık\s+sorun)/iu.test(normalizedOperationHealthMessage))
     || selectedRoomShiftGpsFreshnessQuestion
   )
-    && (/(?:riskli\s+cihaz|gps|konum\s+sinyali|cevrim\s+disi|çevrim\s+dışı|acik\s+sorun|açık\s+sorun|problem)/iu.test(normalizedOperationHealthMessage)
+    && (/(?:riskli\s+cihaz|gps|konum\s+sinyali|cevrim\s+disi|çevrim\s+dışı|acik\s+sorun|açık\s+sorun|operasyon\s+(?:sorun|problem)|problem)/iu.test(normalizedOperationHealthMessage)
       || selectedRoomShiftGpsFreshnessQuestion)
     && !hasOperationHealthIssueViewCue(message, screenContext)
     && !explicitNonOperationHealthSelection;
-  if (operationHealthSurfaceIssue) {
+  const explicitOperationHealthDiagnostic = /\/room\/operation-health\b/iu.test(currentScreenPath)
+    && /(?:sorun|problem|aksak|riskli\s+cihaz|gps|konum\s+sinyali|acik\s+sorun|açık\s+sorun)/iu.test(normalizedOperationHealthMessage)
+    && !hasOperationHealthIssueViewCue(message, screenContext);
+  if (operationHealthSurfaceIssue || explicitOperationHealthDiagnostic) {
     const keepMetricContract = shape?.operationHealthMetricIntent === true || selectedRoomShiftGpsFreshnessQuestion;
     shape = {
       ...shape,
@@ -9544,7 +9611,22 @@ function buildNewCanonicalResult({
     && !inferred?.currentTargetReference?.targetKey
     && !conversationState?.uniqueDiscourseReferent
     && !conversationState?.activeTask;
-  if (unresolvedGenericRecordReferent) {
+  // A deictic record phrase ("şu kaydı", "bu kayıtlar") is not an
+  // authorized target by itself.  The typed layer may still expose the
+  // record noun as product evidence while leaving the action unresolved;
+  // without this boundary, the scope resolver promotes that partial evidence
+  // to PRODUCT_EXPLICIT and the response layer falls through to FIELD_LOOKUP.
+  // Keep the canonical request fail-closed until a selected record or a
+  // validated discourse referent is present.
+  const unresolvedDeicticReferent = !failure
+    && !currentUiContext(screenContext, conversationState, user).selectedEntityPresent
+    && semanticAction?.resolutionStatus === "UNRESOLVED"
+    && Array.isArray(semanticAction?.evidence)
+    && semanticAction.evidence.includes("DEICTIC_REFERENCE_WITHOUT_VALID_REFERENT")
+    && !conversationState?.uniqueDiscourseReferent
+    && !conversationState?.activeTask
+    && !conversationState?.activeGuidedTask;
+  if (unresolvedGenericRecordReferent || unresolvedDeicticReferent) {
     shape = {
       ...shape,
       taskType: "CLARIFY",
@@ -9564,15 +9646,19 @@ function buildNewCanonicalResult({
       generalProductHelpIntent: false,
       roleHelpIntent: false,
       primaryTask: "CLARIFY_RECORD_TARGET",
-      ambiguity: "RECORD_TYPE_OR_ID_REQUIRED",
+      ambiguity: unresolvedGenericRecordReferent
+        ? "RECORD_TYPE_OR_ID_REQUIRED"
+        : "REFERENT_NOT_UNIQUELY_JUSTIFIED",
     };
     semanticAction = resolvedSemanticAction({
       actionClass: "NONE",
-      objectClass: "RECORD",
+      objectClass: String(evidence?.object?.value || semanticAction?.objectClass || "").toUpperCase() === "RECORD"
+        ? "RECORD"
+        : null,
       targetCandidate: { objectClass: "RECORD" },
       explicitness: "EXPLICIT",
       evidence: ["GENERIC_RECORD_TARGET_UNRESOLVED"],
-      resolutionStatus: "AMBIGUOUS",
+      resolutionStatus: unresolvedGenericRecordReferent ? "AMBIGUOUS" : "UNRESOLVED",
       modifiers: { new: false, current: false, next: false, explicitTarget: false },
     });
   }
@@ -10087,7 +10173,7 @@ function buildNewCanonicalResult({
       resolutionStatus: "RESOLVED",
       modifiers: { new: false, current: true, next: false, explicitTarget: true },
     });
-  } else if (operationalDelayQuestion) {
+  } else if (operationalDelayQuestion && !(operationHealthSurfaceIssue || explicitOperationHealthDiagnostic)) {
     shape = {
       ...shape,
       taskType: "CAUSE",

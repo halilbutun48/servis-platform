@@ -12,6 +12,7 @@ import HakedisReconciliationEntryCard from "../../components/HakedisReconciliati
 import { statusBadgeInlineStyle } from "../../utils/statusBadge";
 import { buildAgreementConversionByShift } from "./companyShiftsPanelStateHelpers";
 import { resolveCommercialFlowRolePath } from "./commercialFlowNavigation";
+import { canReadReconciliationPreview } from "./companyAgreementsPanelHelpers";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -96,7 +97,7 @@ function resolveCommercialFlowTarget(item, agreementByShiftId) {
 }
 
 export default function CompanyCommercialFlowPanel() {
-  const { token } = useSession();
+  const { token, me } = useSession();
   const [summary, setSummary] = useState(null);
   const [shiftRows, setShiftRows] = useState([]);
   const [agreementRows, setAgreementRows] = useState([]);
@@ -350,6 +351,7 @@ export default function CompanyCommercialFlowPanel() {
       <HakedisReconciliationEntryCard
         agreement={reconciliationAgreement}
         token={token}
+        showPreview={canReadReconciliationPreview(me)}
         onOpenAgreement={openAgreementReconciliation}
       />
 

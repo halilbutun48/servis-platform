@@ -121,7 +121,7 @@ function inferLabels(pathname) {
   if (pathname === "/room/reports") return { menu: "Raporlar", registry: "Raporlar", catalog: "Raporlar", title: "Raporlar" };
 
   if (pathname === "/company") return { menu: "Planlama Merkezi", registry: "Planlama Merkezi", catalog: "Planlama Merkezi", title: "Company — Planlama Merkezi" };
-  if (pathname === "/school") return { menu: "Okul Merkezi", registry: "Okul Merkezi", catalog: "Okul Merkezi", title: "Okul — Planlama Merkezi" };
+  if (pathname === "/school") return { menu: "Planlama Merkezi", registry: "Planlama Merkezi", catalog: "Planlama Merkezi", title: "Okul — Planlama Merkezi" };
   if (pathname === "/organization") return { menu: "Gezi / Planlama Merkezi", registry: "Gezi / Planlama Merkezi", catalog: "Gezi / Planlama Merkezi", title: "Organizasyon — Gezi / Planlama Merkezi" };
   if (pathname.endsWith("/operations")) {
     if (pathname.startsWith("/school/")) return { menu: "Okul Operasyon Paneli", registry: "Okul Operasyon Paneli", catalog: "Okul Operasyon Paneli", title: "Okul Operasyon Paneli" };

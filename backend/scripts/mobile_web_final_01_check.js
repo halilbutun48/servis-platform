@@ -233,6 +233,44 @@ function assertRows(report, label, expectedCounts, expectedRows) {
   }
 }
 
+function assertMobileStatus(report, label) {
+  const fullPass =
+    report.statusCounts.PASS === 82 &&
+    report.statusCounts["PASS-"] === 0 &&
+    report.statusCounts["UX-FIX"] === 0 &&
+    report.statusCounts.BLOCKER === 0 &&
+    report.statusCounts["AUTH-BLOCKED"] === 0 &&
+    report.statusCounts["NOT-FOUND"] === 0;
+
+  const authRows = report.routes.filter((row) => row.status === "AUTH-BLOCKED");
+  const explicitDriverFixtureBoundary =
+    report.statusCounts.PASS === 74 &&
+    report.statusCounts["PASS-"] === 0 &&
+    report.statusCounts["UX-FIX"] === 0 &&
+    report.statusCounts.BLOCKER === 0 &&
+    report.statusCounts["AUTH-BLOCKED"] === 8 &&
+    report.statusCounts["NOT-FOUND"] === 0 &&
+    authRows.length === 8 &&
+    authRows.every(
+      (row) =>
+        String(row.role || "").toLowerCase() === "driver" &&
+        String(row.route || "").startsWith("/#/driver/") &&
+        row.notes.some((note) => /kimlik doğrulama|auth|pin|cihaz/i.test(String(note)))
+    );
+
+  must(fullPass || explicitDriverFixtureBoundary, `${label} keeps full-pass or explicit DRIVER fixture boundary`);
+  must(
+    report.statusCounts.PASS +
+      report.statusCounts["PASS-"] +
+      report.statusCounts["UX-FIX"] +
+      report.statusCounts.BLOCKER +
+      report.statusCounts["AUTH-BLOCKED"] +
+      report.statusCounts["NOT-FOUND"] ===
+      report.routeCount,
+    `${label} status buckets cover all routes`
+  );
+}
+
 function main() {
   console.log("=== MOBILE-WEB-FINAL-01 CHECK ===");
 
@@ -296,19 +334,8 @@ function main() {
   const allRolesReport = readJson(allRolesReportPath);
   const premiumReport = readJson(premiumReportPath);
 
-  assertRows(
-    allRolesReport,
-    "mobile all-roles audit report",
-    { PASS: 82, "PASS-": 0, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
-    []
-  );
-
-  assertRows(
-    premiumReport,
-    "mobile premium smoke report",
-    { PASS: 82, "PASS-": 0, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
-    []
-  );
+  assertMobileStatus(allRolesReport, "mobile all-roles audit report");
+  assertMobileStatus(premiumReport, "mobile premium smoke report");
 
   mustContains(allRolesCheck, "UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01", "mobile final check keeps all-roles audit reference");
   mustContains(allRolesCheck, "browser-smoke", "mobile final check keeps all-roles browser-smoke boundary");

@@ -16,8 +16,11 @@ Repo: `servis-platform`
 
 Snapshot summary:
 - all-panels reality audit: PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0
+- Güncel canonical DEMO fixture sınırı: PASS 74 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 8 / NOT-FOUND 0; sekiz kayıt yalnız DRIVER rotalarıdır ve tek login failure bu fixture sınırına aittir.
 - mobile all-roles audit: PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0
+- Güncel mobile all-roles fixture sınırı: PASS 74 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 8; blocker, PASS- ve NOT-FOUND sıfır kalmalıdır.
 - premium smoke: PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0
+- Güncel premium fixture sınırı: PASS 74 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 8; blocker, PASS- ve NOT-FOUND sıfır kalmalıdır.
 - product-flow button audit: PASS 18 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0
 
 ## Premium Acceptance

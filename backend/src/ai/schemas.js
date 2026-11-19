@@ -208,9 +208,9 @@ function matchesStandalonePhrase(text, phrases) {
 }
 
 function matchesExactPhrase(text, phrases) {
-  const value = normalizeLooseText(text);
+  const value = normalizeLooseText(text).replace(/[?!.,;:]+$/u, '').trim();
   if (!value) return false;
-  return (Array.isArray(phrases) ? phrases : []).some((phrase) => normalizeLooseText(phrase) === value);
+  return (Array.isArray(phrases) ? phrases : []).some((phrase) => normalizeLooseText(phrase).replace(/[?!.,;:]+$/u, '').trim() === value);
 }
 
 function hasContinuationNextStepQuestion(text) {

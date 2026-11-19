@@ -2926,7 +2926,7 @@ export function isUnselectedFinanceReconciliationQuestion({ baseResponse = {}, u
   return !/(?:maliyet|gider|masraf|quote|teklif\s+tabani|kâr|kar|zarar|senaryo)/iu.test(normalized);
 }
 
-export function buildUnselectedFinanceReconciliationResponse({ baseResponse = {}, user = {}, screenPath = "/room/financial-operations", message = "" } = {}) {
+export function buildUnselectedFinanceReconciliationResponse({ baseResponse = {}, screenPath = "/room/financial-operations", message = "" } = {}) {
   const normalized = normalizeText(message);
   const buyerSurface = /^\/(?:company|school|organization)\//iu.test(screenPath);
   const surfaceLabel = screenPath.startsWith("/school/")

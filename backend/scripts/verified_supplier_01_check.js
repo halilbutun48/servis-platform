@@ -346,6 +346,8 @@ must(terminology, "APPROVED_FOR_INVITE", "terminology supports invite-ready stat
       { path: "web/src/panels/company/companyShiftsPanelMobileCards.jsx", sha256: "7EF25E7C506E00B22C3439D008DDB70C0ABCB752E4B37D43EAF353B19400836B" },
       { path: "web/src/panels/company/planBuilderPanelSections.jsx", sha256: "7314FF9147161CF0B3BD8418FC29BCD773933C085B1F1D413C31720EF4175D98" },
       { path: "web/src/panels/company/PassengerLinksPanel.jsx", sha256: "A80115478963A14CC95AE20821E008E3E158F45D80122408EF20491AEDA3C844" },
+      { path: "web/src/panels/company/companyAgreementsPanelHelpers.js", sha256: "203A55710F0816E89FF1D7974DC1275301AE71E9AE7A290E40F7A3E6CEF0DF11" },
+      { path: "web/src/panels/company/companyAgreementsPanelHelpers.test.js", sha256: "063B582F0F08F9C1B4DDAD6E2DF6130F0CC4957553158CBED375AD07D4CFC2C4" },
       { path: "web/src/panels/organization/PlansPanel.jsx", sha256: "FE5E92D1DB8AC4AFE956EB606B191BEB0383161F4D3E5C2995853DAC9B77A105" },
       { path: "web/src/panels/organization/organizationPlansShared.jsx", sha256: "4767F805803F5926D20DDF3CDDFF8FB0813E812EA636F70C75FA1116CC7D84A9" },
       { path: "web/src/panels/personel/MyRidePanel.jsx", sha256: "A5D3968352C13CC3E4B7FD46B6B96723121AFFD4AAAA7B46512244F4EB469AD6" },

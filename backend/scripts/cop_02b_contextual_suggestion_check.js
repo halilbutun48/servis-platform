@@ -51,10 +51,15 @@ console.log('=== COP-02B CONTEXTUAL SUGGESTION CHECK ===');
 const pkg = read('package.json');
 const doc = read('docs/COPILOT_BAGLAMLI_ONERI_V1.md');
 const helpComposer = read('backend/src/ai/chat/helpComposer.js');
+const helpComposerContext = read('backend/src/ai/chat/helpComposerContext.js');
 const copilotPanel = read('web/src/panels/shared/CopilotPanel.jsx');
 const goldenPackText = read('backend/src/ai/chat/goldenQuestionPack.js');
 const scriptGuide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const generalReplySnippet = sliceBetween(helpComposer, '// COP-02A: program içi genel ürün rehberi fallback’i.', 'export function buildChatHelpResponse');
+const generalReplyVisibleTemplates = [...generalReplySnippet.matchAll(/`([\s\S]*?)`/g)]
+  .map((match) => String(match[1] || '').replace(/\$\{[\s\S]*?\}/g, ''))
+  .join(' ')
+  .replace(/\$\{[^}]*\}/g, '');
 
 has('docs/COPILOT_BAGLAMLI_ONERI_V1.md');
 has('backend/scripts/cop_02b_contextual_suggestion_check.js');
@@ -116,7 +121,7 @@ must(helpComposer, 'buildContextPriorityDecision', 'helpComposer keeps context p
 must(helpComposer, 'resolveFollowUpContextQuestion', 'helpComposer keeps follow-up resolver');
 must(helpComposer, 'buildRoleBoundaryExplanation', 'helpComposer keeps role boundary explainer');
 must(helpComposer, 'buildEvidenceConfidenceWording', 'helpComposer keeps evidence confidence wording');
-must(helpComposer, 'buildContextualSuggestedChips', 'helpComposer keeps contextual chips helper');
+must(helpComposerContext, 'buildContextualSuggestedChips', 'helpComposer context keeps contextual chips helper');
 must(helpComposer, 'contextualSuggestedChips', 'helpComposer exposes contextual chips field');
 must(helpComposer, 'contextPriority', 'helpComposer exposes context priority field');
 must(helpComposer, 'sameRecordLikely', 'helpComposer keeps same-record signal');
@@ -128,13 +133,13 @@ must(helpComposer, 'Neden?', 'helpComposer keeps why heading');
 must(helpComposer, 'Öneri:', 'helpComposer keeps suggestion heading');
 must(helpComposer, 'Sıradaki doğru işlem:', 'helpComposer keeps next-step heading');
 must(helpComposer, 'slice(0, roleMode === \'SIMPLE\' ? 2 : 4)', 'helpComposer keeps 2-4 visible chip limit');
-mustNot(generalReplySnippet, 'raw', 'general reply avoids raw wording');
-mustNot(generalReplySnippet, 'payload', 'general reply avoids payload wording');
-mustNot(generalReplySnippet, 'token', 'general reply avoids token wording');
-mustNot(generalReplySnippet, 'hash', 'general reply avoids hash wording');
-mustNot(generalReplySnippet, 'debug', 'general reply avoids debug wording');
-mustNot(generalReplySnippet, 'driver GPS', 'general reply avoids driver GPS wording');
-mustNot(generalReplySnippet, 'agreement', 'general reply avoids agreement wording');
+mustNot(generalReplyVisibleTemplates, 'raw', 'general reply avoids raw wording');
+mustNot(generalReplyVisibleTemplates, 'payload', 'general reply avoids payload wording');
+mustNot(generalReplyVisibleTemplates, 'token', 'general reply avoids token wording');
+mustNot(generalReplyVisibleTemplates, 'hash', 'general reply avoids hash wording');
+mustNot(generalReplyVisibleTemplates, 'debug', 'general reply avoids debug wording');
+mustNot(generalReplyVisibleTemplates, 'driver GPS', 'general reply avoids driver GPS wording');
+mustNot(generalReplyVisibleTemplates, 'agreement', 'general reply avoids agreement wording');
 
 must(copilotPanel, 'contextualSuggestedChips', 'copilot panel uses contextual chips');
 must(copilotPanel, 'Takip önerileri', 'copilot panel shows follow-up chips label');

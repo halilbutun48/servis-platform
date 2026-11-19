@@ -275,7 +275,8 @@ assert((service.match(/!hasExplicitCandidateRecord/g) || []).length >= 3, "expli
 assert(/if\s*\(\s*!hasExplicitCandidateRecord\s*&&\s*\(\s*conversationRoute\.route === "GENERIC_PRODUCT_HELP"/u.test(service), "explicit offer record requests cannot fall into the generic product-help presentation branch");
 assert(
   service.includes("const reasoningAnswer = roomFinancialVehicleRiskIntent")
-    && service.includes("workflowGuidance || (screenContextHelp")
+    && (service.includes("workflowGuidance || (screenContextHelp")
+      || /workflowGuidance\s*\|\|\s*parentLiveLocationHelp\s*\|\|\s*\(screenContextHelp/u.test(service))
     && service.includes("screenScopedNextAction")
     && service.includes("hasExplicitCandidateRecord && !selectedRecordContextRequest"),
   "explicit record requests bypass generic reasoning before authorized record navigation",

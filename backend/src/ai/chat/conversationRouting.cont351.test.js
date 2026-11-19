@@ -13,6 +13,16 @@ test("açık yetki veya KVKK sınırı talebi ekran yönlendirmesine düşmez", 
   assert.equal(result.reason, "EXPLICIT_AUTHORIZATION_BOUNDARY_LANGUAGE");
 });
 
+test('kısa ürün amacı sorusu genel ürün yardımında kalır', () => {
+  const result = resolveConversationRoute({
+    message: 'Bu program ne?',
+    screenContext: { path: '/company/shifts', label: 'Vardiyalar' },
+  });
+
+  assert.equal(result.route, 'GENERIC_PRODUCT_HELP');
+  assert.equal(result.reason, 'GENERIC_PRODUCT_HELP_TEXT_SIGNAL');
+});
+
 test("açık başka tenant isteği canonical ürün yönlendirmesinden önce reddedilir", () => {
   const result = resolveConversationRoute({
     message: "Başka tenantın yolcusunu ve durağını göster.",

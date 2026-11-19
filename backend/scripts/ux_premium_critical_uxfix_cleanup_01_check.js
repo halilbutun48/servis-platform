@@ -255,7 +255,7 @@ function evidenceBucket(row) {
   if (row.kind === "reviewQueue" && Number(row.checks?.reviewActionCount || 0) < 3) return "review-gap";
   if (row.kind === "routePreview" && row.checks?.compactRoutePreview === true) return "route-preview";
   if (row.kind === "commercialFlow" && hasNote("commercial flow accepted/applied bucket görünür")) return "commercial-bucket";
-  if (row.kind === "dispatch" && row.checks?.dispatchApplyEnabled === true) return "dispatch";
+  if (row.kind === "dispatch" && (row.checks?.dispatchApplyEnabled === true || row.checks?.dispatchSafePrerequisiteGateVisible === true)) return "dispatch";
   if (row.kind === "convertToAgreement" && row.checks?.convertedToAgreementDraft === true) return "convert-draft";
   if (row.kind === "liveMap" && row.route === "/#/parent/live" && (row.consoleErrors || []).length > 0) return "console-noise";
   if (row.kind === "liveMap" && row.route === "/#/company/map" && (row.consoleErrors || []).length > 0) return "console-noise";

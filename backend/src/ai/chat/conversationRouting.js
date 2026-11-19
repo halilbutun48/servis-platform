@@ -3,6 +3,28 @@ import { hasBoardingChangeRequestEntrySignal } from "./intentRouterCore.js";
 
 export { isExplicitRoleHelpIntent, isGenericProductHelpIntent };
 
+// A purpose question is an orientation request, not a request to start a
+// guided workflow. Keep this speech-act boundary shared by intent routing and
+// reply composition so phrases such as "Bu program ne işe yarar?" cannot be
+// swallowed by a route-specific onboarding guide.
+export function isProductPurposeQuestion(value) {
+  const text = normalize(value);
+  if (!text) return false;
+  return /\b(?:bu\s+)?(?:program|uygulama|platform|sistem)\p{L}*\s+ne\s+(?:ise\s+yar\p{L}*|yapar\p{L}*)\b/iu.test(text)
+    || /\bne\s+(?:ise\s+yar\p{L}*|icin\s+kullan\p{L}*)\b/iu.test(text)
+    || /\bamac\p{L}*\s+ne\b/iu.test(text)
+    || /^(?:bu\s+)?(?:program|uygulama|platform|sistem)\p{L}*\s+ne[?!.,;:]*$/iu.test(text);
+}
+
+// These short requests refer to a prior explanation or task. With no active
+// task they must remain a continuation boundary so the assistant asks for a
+// base instead of silently turning them into generic product teaching.
+export function isStandaloneContinuationQuestion(value) {
+  const text = normalize(value);
+  if (!text) return false;
+  return /^(?:adim\s+adim\s+(?:anlat|acikla|goster)|devam\s+et|devamını\s+(?:anlat|acikla)|devamini\s+(?:anlat|acikla)|sonra\s+ne|peki\s+sonra\s+ne)\??$/iu.test(text);
+}
+
 const PRODUCT_WORDS = [
   "vardiya", "sefer", "shift", "araç", "arac", "plaka", "sürücü", "surucu", "şoför", "sofor",
   "gps", "konum", "rota", "durak", "eta", "operasyon", "servis", "teklif", "sözleşme", "sozlesme", "kontrat",

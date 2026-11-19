@@ -160,7 +160,8 @@ must(floatingDrawerSource, 'const requestSelection = liveSelection || stateSelec
 must(floatingDrawerSource, 'const uiSurface = captureCopilotUiSurface();', 'floating drawer captures the current UI surface');
 must(floatingDrawerSource, 'selectedEntitySet: Array.isArray(requestSelection?.entitySet) ? requestSelection.entitySet : []', 'floating drawer forwards the selected entity set');
 must(copilotPanelSource, 'const scopedChatSelection = chatSelection', 'copilot panel keeps the current route-bound selection');
-must(copilotPanelSource, 'const requestSelection = liveSelection || scopedChatSelection || null;', 'copilot panel resolves the current explicit selection');
+must(copilotPanelSource, 'const fallbackEntitySelection = selectedChatItem', 'copilot panel builds a safe explicit-selection fallback');
+must(copilotPanelSource, 'const requestSelection = liveSelection || scopedChatSelection || fallbackEntitySelection;', 'copilot panel resolves the current explicit selection');
 must(copilotPanelSource, 'const uiSurface = captureCopilotUiSurface();', 'copilot panel captures the current UI surface');
 must(copilotPanelSource, 'selectedEntityId: Number(requestSelection?.entityId || 0) || null', 'copilot panel forwards the selected entity id');
 must(schemasSource, 'helpContextSummary', 'schemas keeps helpContextSummary bridge');

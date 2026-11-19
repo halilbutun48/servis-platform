@@ -205,6 +205,8 @@ Bu milestone smoke eşiklerini değiştirmez:
 - `npm run smoke:uxlivepanelpremium01` -> `PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0`
 - `npm run smoke:uxallpanelsrealityaudit01` -> `PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0`
 - `npm run smoke:uxmobileallrolespanelaudit01` -> `PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0`
+
+Canonical DEMO fixture note: current local/public smoke evidence may report `PASS 74 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 8 / NOT-FOUND 0` when all eight blocked rows are explicitly DRIVER routes with the documented PIN/device authentication boundary. This is not treated as a product PASS for the DRIVER routes and does not allow unrelated authentication failures.
 - `consoleErrorCount=0`
 - `pageErrorCount=0`
 - `429=none`

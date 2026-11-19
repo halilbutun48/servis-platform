@@ -87,7 +87,7 @@ function freezeRecord(record) {
 const rawCanonicalProvenanceRecords = [
   {
     path: "backend/src/routes/commercialCoreRoutes.js",
-    currentSha256: "11A5136CDA54B1467757BF9422EB6B63B0B00F9633CD1A8AF3303A5BA2A06E41",
+    currentSha256: "28CFE870EB4F981B8AFC3AC42C4838C44B5E54EB4A4F95086C0B0134DC109C30",
     baselinePresence: "ABSENT",
     workingTreeState: "TRACKED_UNMODIFIED",
     provenanceClass: "CONCURRENT_CANONICAL",
@@ -124,7 +124,7 @@ const rawCanonicalProvenanceRecords = [
   },
   {
     path: "backend/src/routes/commercialCorePaymentRoutes.js",
-    currentSha256: "9BB53FE97B17F28892AF3B8C8E91373D7276183873E0258E694AD694F5E1B552",
+    currentSha256: "53C908A0C414D73A9BC397DCC89FC1D8DD285AC0D842FD949426911307DFA993",
     baselinePresence: "ABSENT",
     workingTreeState: "TRACKED_UNMODIFIED",
     provenanceClass: "CONCURRENT_CANONICAL",
@@ -166,7 +166,7 @@ const rawCanonicalProvenanceRecords = [
   },
   {
     path: "backend/src/routes/commercialCorePaymentReportsRoutes.js",
-    currentSha256: "41A7F4A75CD21B56BD29C8D9B068C01BD6D1B9D56496969A8C1307C246D0BB10",
+    currentSha256: "B75677CFBED20166B2DE6CA3DF7068F9591081CEC72EAAC9DEE17BC501F35481",
     baselinePresence: "ABSENT",
     workingTreeState: "TRACKED_UNMODIFIED",
     provenanceClass: "CONCURRENT_CANONICAL",
@@ -207,7 +207,7 @@ const rawCanonicalProvenanceRecords = [
   },
   {
     path: "backend/src/routes/commercialCoreRoomRoutes.js",
-    currentSha256: "CA2B42085F02A2DFEB03ED3992FE47583152EE424FF39DDF73C9699B99D6D2FF",
+    currentSha256: "33702851BD305EC69D9C21982B3AC49705CBD75612172992A8AA01163DC9F56B",
     baselinePresence: "ABSENT",
     workingTreeState: "TRACKED_UNMODIFIED",
     provenanceClass: "CONCURRENT_CANONICAL",
@@ -242,7 +242,7 @@ const rawCanonicalProvenanceRecords = [
   },
   {
     path: "backend/src/routes/commercialCoreRouteData.js",
-    currentSha256: "5EB28DD6ABEC1AD63CA236AB567BB14B0CEEF35D54DF75343D5EC746F5A6FCD2",
+    currentSha256: "2DF560872A4B6B94C576DD7DA0610C44F053B1EA494EA57B307BFED5030A5A6C",
     baselinePresence: "ABSENT",
     workingTreeState: "TRACKED_UNMODIFIED",
     provenanceClass: "CONCURRENT_CANONICAL",

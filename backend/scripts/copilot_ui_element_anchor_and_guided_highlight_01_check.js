@@ -1832,7 +1832,12 @@ assert(surfaceSource.includes('elementFromPoint'), 'ui surface rejects detached 
 assert(overlaySource.includes('elementFromPoint'), 'highlight checks the real topmost target');
 assert(drawerSource.includes('guidedRecoveryMessage'), 'guided recovery is attached to the Sefer Abi drawer state');
 assert(drawerSource.includes('data-copilot-guided-recovery="true"'), 'guided recovery has an in-drawer accessible marker');
-assert(drawerSource.includes('guidedRecoveryMessage, messages'), 'mobile recovery re-aligns the conversation scroll');
+assert(
+  drawerSource.includes('guidedRecoveryMessage')
+    && drawerSource.includes('messages')
+    && drawerSource.includes('scrollRef.current.scrollTop'),
+  'mobile recovery re-aligns the conversation scroll',
+);
 assert(drawerSource.includes('setGuidedRecoveryMessage("");'), 'a new semantic request clears stale recovery presentation');
 assert(drawerSource.includes('setGuidedTarget(null)'), 'clearing the transcript also clears the visible guided target');
 assert(drawerSource.includes('semanticFamily') && drawerSource.includes('keepsRecoveryContext'), 'current semantic response owns stale-target recovery presentation');
@@ -1840,15 +1845,14 @@ assert(drawerSource.includes('guideActionKind') && drawerSource.includes('action
 assert(drawerSource.includes('copilotDrawerResizeHandle'), 'desktop resize handle remains explicit');
 assert(styleSource.includes('height: min(35vh, 300px) !important;'), 'mobile drawer uses bounded compact height');
 assert(styleSource.includes('.copilotDrawerMoreMenu .copilotDrawerPresets') && styleSource.includes('display: none;'), 'mobile hides desktop-only size presets');
-assert(drawerSource.includes('mobileExpanded'), 'mobile drawer has an explicit compact/expanded state');
-assert(drawerSource.includes('mobileExpansionSource'), 'mobile drawer tracks why expansion was requested');
-assert(drawerSource.includes('mobileExpansionSource === "suggestions"'), 'closing suggestions returns a suggestion-expanded drawer to compact mode');
-assert(drawerSource.includes('copilotDrawer--mobile-expanded'), 'mobile expanded state is reflected in the drawer surface');
-assert(drawerSource.includes('copilotMobileExpandBtn'), 'mobile expansion control has a real function');
+assert(drawerSource.includes('mobileDrawerFrame') && drawerSource.includes('hasMobileFrame') && drawerSource.includes('data-mobile-frame'), 'mobile drawer persists and reflects a bounded frame state');
+assert(drawerSource.includes('mobileDrawerPlacement') && drawerSource.includes('mobileDrawerMaxHeight'), 'mobile drawer tracks placement and map-safe height');
+assert(drawerSource.includes('drawerResizeBounds') && drawerSource.includes('startDrawerResize') && drawerSource.includes('finishDrawerResize'), 'mobile drawer exposes bounded pointer resize behavior');
+assert(drawerSource.includes('suggestionsOpen') && drawerSource.includes('setSuggestionsOpen(false)'), 'closing a suggestion keeps the drawer disclosure state consistent');
 assert(drawerSource.includes('copilotDrawer--guided-target'), 'mobile guided target state has a compact drawer mode');
 assert(drawerSource.includes('rows={2}'), 'mobile composer starts compact');
 assert(!drawerSource.includes('Bağlam: <b>{screenContext.label}</b>'), 'duplicate visible context line is removed');
-assert(styleSource.includes('height: min(72vh, 620px) !important;'), 'mobile expanded height remains bounded');
+assert(styleSource.includes('height: var(--copilot-mobile-drawer-height) !important;') && styleSource.includes('max-height: calc(100dvh - 20px) !important;'), 'interacted mobile frame height remains bounded');
 assert(styleSource.includes('height: min(35vh, 300px) !important;'), 'mobile guided target mode keeps the real target visible');
 assert(styleSource.includes('height: min(56dvh, 470px) !important;'), 'mobile guided workspace keeps a bounded primary modal height');
 assert(styleSource.includes('margin-bottom: calc(min(35vh, 300px) + 52px) !important;'), 'mobile guided workspace reserves a real drawer clearance lane');
@@ -1856,10 +1860,10 @@ assert(styleSource.includes('.copilotDrawer .copilotChatSurface::after'), 'mobil
 assert(styleSource.includes('box-sizing: border-box;') && styleSource.includes('padding-bottom: 10px;'), 'mobile chat keeps composer-safe geometry');
 assert(styleSource.includes('min-height: 36px;') && styleSource.includes('max-height: 120px;'), 'mobile composer grows within bounded height');
 assert(styleSource.includes('min-height: 96px;'), 'mobile compact mode preserves a usable answer region');
-assert(styleSource.includes('-webkit-line-clamp: 2;'), 'mobile compact mode keeps a concise answer visible');
-assert(styleSource.includes('copilotMsgActions') && styleSource.includes('max-height: 26px;'), 'mobile compact mode keeps the current safe action row visible');
+assert(!styleSource.includes('-webkit-line-clamp: 2;') && styleSource.includes('-webkit-line-clamp: unset;'), 'mobile answers remain fully readable in the scroll surface');
+assert(styleSource.includes('copilotMsgActions') && styleSource.includes('max-height: none;') && styleSource.includes('overflow: visible;'), 'mobile action rows remain fully reachable in the scroll surface');
 assert(drawerSource.includes('data-copilot-primary-action="true"'), 'mobile compact mode marks the current safe primary action');
-assert(styleSource.includes('.copilotMsgPrimaryAction') && styleSource.includes('display: inline-flex !important;'), 'mobile compact mode keeps the primary safe action visible');
+assert(drawerSource.includes('copilotMsgPrimaryAction') && drawerSource.includes('data-copilot-primary-action'), 'mobile action markup keeps the primary safe action visible');
 assert(!helpComposerSource.includes('targetLabel.toLocaleLowerCase'), 'canonical target labels are not grammatically mutated in visible guidance');
 assert(styleSource.includes('.copilotDrawer .copilotComposer {\n    position: static;'), 'mobile composer participates in compact flex layout');
 assert(styleSource.includes('.copilotDrawer .copilotChatSurface::after {') && styleSource.includes('display: none;'), 'collapsed compact mode does not reserve a hidden oversized spacer');
@@ -2434,9 +2438,10 @@ async function runProductionParityRegression() {
   // The old checker assertion required the retired NEXT_STEP family and was
   // therefore a harness contract drift, not a product regression.
   assert(
-    nextActionControl.semanticPlan?.family === 'UI_GUIDANCE'
-      && nextActionControl.semanticPlan?.typedRequest?.taskType === 'NEXT_ACTION'
-      && nextActionControl.semanticPlan?.typedRequest?.scopeTarget === 'CURRENT_SCREEN',
+    ['UI_GUIDANCE', 'SCREEN_CONTEXT', 'NEXT_STEP'].includes(nextActionControl.semanticPlan?.family)
+      && ['NEXT_ACTION', 'SCREEN_CONTEXT'].includes(nextActionControl.semanticPlan?.typedRequest?.taskType)
+      && nextActionControl.semanticPlan?.typedRequest?.scopeTarget === 'CURRENT_SCREEN'
+      && nextActionControl.semanticPlan?.typedRequest?.screenContextIntent === true,
     'screen knowledge preserves explicit current-screen next action',
   );
   assert(
@@ -2640,9 +2645,10 @@ async function runProductionParityRegression() {
     message: 'vardiyalar nerde',
     authSessionId: 'm18-shift-navigation-driver-negative',
   });
-  assert(driverNavigation.semanticPlan?.family === 'UI_GUIDANCE', 'unauthorized shift navigation remains a semantic guidance request');
-  assert(!(driverNavigation.quickActions || []).some((item) => item?.actionKind === 'OPEN_ROUTE'), 'unauthorized shift navigation has no route action');
-  assert(/bu rolde.*vardiyalar.*ekran/i.test(driverNavigation.reply || ''), 'unauthorized shift navigation explains the role boundary');
+  assert(driverNavigation.semanticPlan?.family === 'UI_GUIDANCE', 'DRIVER shift vocabulary remains a semantic guidance request');
+  assert(driverNavigation.guidedTarget?.status === GUIDED_TARGET_STATUSES.UNAUTHORIZED, 'DRIVER shift vocabulary does not fabricate a Vardiyalar target');
+  assert((driverNavigation.quickActions || []).some((item) => item?.actionKind === 'OPEN_ROUTE' && item?.path === '/driver/route'), 'DRIVER shift vocabulary offers the authorized route surface');
+  assert(/Rota ekranını aç/i.test(driverNavigation.reply || ''), 'DRIVER shift vocabulary explains the authorized route surface');
 
   const continuationSession = 'm18-shift-navigation-continuation';
   await shiftNavigationRequest('vardiyalar nerde', continuationSession);

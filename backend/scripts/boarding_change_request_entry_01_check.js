@@ -399,7 +399,10 @@ function main() {
     "Çocuğum şu konumdan alınsın",
   ], "copilot facts request entry chips");
 
-  const intentRouter = read("backend/src/ai/chat/intentRouter.js");
+  const intentRouter = [
+    read("backend/src/ai/chat/intentRouter.js"),
+    read("backend/src/ai/chat/intentRouterScreenChips.js"),
+  ].join("\n");
   assertContainsAll(intentRouter, [
     "BOARDING_CHANGE_REQUEST_ENTRY",
     "hasBoardingChangeRequestEntrySignal",
@@ -423,7 +426,10 @@ function main() {
     "Biniş talebi oluşturma rehberini aç",
   ], "answer quality policy request entry guardrails");
 
-  const helpComposer = read("backend/src/ai/chat/helpComposer.js");
+  const helpComposer = [
+    read("backend/src/ai/chat/helpComposer.js"),
+    read("backend/src/ai/chat/helpComposerContext.js"),
+  ].join("\n");
   assertContainsAll(helpComposer, [
     "BOARDING_CHANGE_REQUEST_ENTRY",
     "Biniş talebi girişi",

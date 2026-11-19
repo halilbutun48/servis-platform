@@ -159,7 +159,7 @@ mustNot(doc, 'settlement execute', 'workflow doc avoids settlement execute wordi
 
 must(helpComposer, 'composeGeneralProductGuideReply', 'helpComposer keeps general workflow guide');
 must(helpComposer, 'shouldUseWorkflowGuide', 'helpComposer keeps workflow guide gate');
-must(helpComposer, 'if (type === \'SCREEN_PURPOSE\') return false;', 'helpComposer preserves screen-purpose gate');
+must(helpComposer, "if (type === 'SCREEN_PURPOSE' || type === 'TERM_HELP') return false;", 'helpComposer preserves screen-purpose and term-help gate');
 must(helpComposer, 'WORKFLOW_TOPICS', 'helpComposer keeps workflow topic set');
 must(helpComposer, 'selectedDiagnosticTheme', 'helpComposer keeps selected diagnostic theme');
 must(helpComposer, 'selectedDiagnosticSurfaceHint', 'helpComposer keeps selected diagnostic surface hint');

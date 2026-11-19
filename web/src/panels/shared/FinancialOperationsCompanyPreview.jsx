@@ -22,6 +22,7 @@ import { buildCompanyBudgetRiskPresentation } from "./financeRiskPresentation.js
 import FinanceRiskBadge from "./FinanceRiskBadge.jsx";
 import CompanyBudgetReconciliationCard from "./CompanyBudgetReconciliationCard.jsx";
 import CompanyInvoicePaymentPanel from "../../components/CompanyInvoicePaymentPanel.jsx";
+import CostScenarioWorkspacePanel from "./CostScenarioWorkspacePanel";
 import {
   formatBudgetAmountInputFromMinor,
   parseBudgetAmountInputToMinor,
@@ -829,6 +830,10 @@ export default function FinancialOperationsCompanyPreview({
       </div>
 
       <BuyerServiceContextCard context={buyerServiceContext} buyerKind={meta?.buyerKind} />
+
+      <div className="company-contextual-scenario" data-testid="company-contextual-scenario" style={{ marginTop: 12 }}>
+        <CostScenarioWorkspacePanel scope="COMPANY" embedded />
+      </div>
 
       <CompanyHistoricalFinancialEvidence
         items={historicalFinancialEvidence}

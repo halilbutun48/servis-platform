@@ -59,6 +59,13 @@ export function canRouteRefresh(agreement, origin) {
   return Number(origin?.sourceShiftId || 0) > 0;
 }
 
+export function canReadReconciliationPreview(me) {
+  const role = String(me?.role || "").trim().toUpperCase();
+  const companyKind = String(me?.companyKind || "").trim().toUpperCase();
+  if (role === "ROOM") return true;
+  return role === "COMPANY" && !["SCHOOL", "ORGANIZATION"].includes(companyKind);
+}
+
 export function isActiveRouteRefreshStatus(status) {
   return ["PENDING", "COUNTERED"].includes(String(status || "").toUpperCase());
 }

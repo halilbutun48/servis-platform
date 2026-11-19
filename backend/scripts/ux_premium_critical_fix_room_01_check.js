@@ -256,6 +256,11 @@ function main() {
   const shiftsPanel = read("web/src/panels/room/ShiftsPanel.jsx");
   const shiftsSections = read("web/src/panels/room/roomShiftsPanelSections.jsx");
   const agreementsPanel = read("web/src/panels/room/AgreementsPanel.jsx");
+  const agreementsActionSections = [
+    read("web/src/panels/room/roomAgreementsOtherSection.jsx"),
+    read("web/src/panels/room/roomAgreementsPendingSection.jsx"),
+    read("web/src/components/AgreementOpsBridgeCard.jsx"),
+  ].join("\n\n");
   const driversPanel = read("web/src/panels/room/DriversPanel.jsx");
   const statusTable = read("web/src/panels/room/RoomDriversStatusTable.jsx");
   const shiftsTable = read("web/src/panels/room/RoomDriversShiftsTable.jsx");
@@ -410,7 +415,7 @@ function main() {
 
   must(agreementsPanel, "roomCriticalFixScope", "room agreements panel uses room critical fix scope");
   must(agreementsPanel, "roomActionCTA", "room agreements detail CTA uses room action class");
-  must(agreementsPanel, "Detayı aç", "room agreements detail CTA label present");
+  must(agreementsActionSections, "Detayı aç", "room agreements detail CTA label present");
 
   must(driversPanel, "roomCriticalFixScope", "room drivers panel uses room critical fix scope");
   must(driversPanel, "roomDriverUiLabel", "room drivers panel keeps safe UI label helper");

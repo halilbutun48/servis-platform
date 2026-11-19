@@ -165,7 +165,7 @@ must(helpComposerEntityRuntime, 'Bu daha çok eksik veri gibi duruyor.', 'entity
 
 must(helpComposer, 'composeGeneralProductGuideReply', 'help composer keeps general guide reply');
 must(helpComposer, 'shouldUseWorkflowGuide', 'help composer keeps workflow guide gate');
-must(helpComposer, "if (type === 'SCREEN_PURPOSE') return false;", 'help composer preserves screen-purpose behavior');
+must(helpComposer, "if (type === 'SCREEN_PURPOSE' || type === 'TERM_HELP') return false;", 'help composer preserves screen-purpose and term-help behavior');
 ordered(helpComposer, ['Şimdi:', 'Bu programda bunun anlamı:', 'Neden?', 'Öneri:', 'Sıradaki doğru işlem:'], 'help composer workflow reply order');
 must(helpComposer, 'Ekrandaki sinyale göre konuşuyorum', 'help composer keeps live signal wording');
 must(helpComposer, 'Bu kayıt için elimde yeterli sinyal yok; ilk kontrol', 'help composer keeps missing signal wording');
@@ -178,13 +178,13 @@ mustNot(helpComposer, 'settlement execute', 'help composer avoids settlement exe
 mustNot(helpComposer, 'veriyi güncelledim', 'help composer avoids write claim wording');
 mustNot(helpComposer, 'ben bunu düzelttim', 'help composer avoids write claim wording');
 
-must(intentRouter, "workflowQuestion ? ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç']", 'intent router covers room map diagnostic wording');
+must(intentRouter, "base.push('Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç', 'İlgili aracı aç')", 'intent router covers room map diagnostic wording');
 mustNot(intentRouter, "workflowQuestion ? ['Bu araç neden haritada görünmüyor?',", 'intent router removes room map self-question wording');
-must(intentRouter, 'Ne yapayım?', 'intent router covers driver next-step wording');
-must(intentRouter, 'Servis durumunu göster', 'intent router covers personel live wording');
-must(intentRouter, 'Servis durumunu göster', 'intent router covers parent live wording');
+must(intentRouter, "matchesStandalonePhrase(text, ['ne yapayım', 'ne yapayim', 'şimdi ne yapayım', 'simdi ne yapayim'])", 'intent router covers driver next-step wording');
+must(intentRouter, 'live-service-visibility-path', 'intent router covers personel live wording');
+must(intentRouter, 'live-service-visibility-path', 'intent router covers parent live wording');
 must(intentRouter, 'İlgili sözleşmeyi aç', 'intent router covers contract-to-shift wording');
-must(intentRouter, 'Bu kayıt kimde?', 'intent router covers ownership wording');
+must(intentRouter, 'feedback-ownership', 'intent router covers ownership wording');
 must(intentRouter, 'Bildirim kaynağı', 'intent router covers notification source wording');
 must(intentRouter, 'Yetki sınırı', 'intent router covers boundary wording');
 must(intentRouter, 'Sürücünün telefonundan konum sinyali devrede mi?', 'intent router covers driver phone signal wording');

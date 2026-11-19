@@ -70,6 +70,8 @@ const pkg = read('package.json');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const policy = read('backend/src/ai/chat/answerQualityPolicy.js');
 const helpComposer = read('backend/src/ai/chat/helpComposer.js');
+const helpComposerContext = read('backend/src/ai/chat/helpComposerContext.js');
+const helpComposerSources = `${helpComposer}\n${helpComposerContext}`;
 const facts = read('web/src/utils/copilotFacts.js');
 const registryScripts = productExtensionsChecks.map((step) => step.script);
 
@@ -120,18 +122,18 @@ must(policy, 'Aynı kayıt için devam et', 'workflow chip policy keeps generic 
 must(policy, 'Ekran rehberini aç', 'workflow chip policy keeps generic guide block');
 must(policy, 'Vardiya engelini sor', 'workflow chip policy keeps blocked-shift block');
 
-must(helpComposer, 'Riskli cihazı aç, konum sinyali güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.', 'help composer keeps operation-health direct next step');
-  must(helpComposer, 'Başlatma zamanı ve aktif durum uygunsa konum sinyali/operasyon kanıtını kontrol et; araç/sürücü bağı görünmüyorsa kontrol et, atanmış görünüyorsa sonraki kontrol konum sinyali/operasyon kanıtını kontrol et.', 'help composer keeps shift direct next step');
-  must(helpComposer, 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya sözleşme üretim sinyali gerekir.', 'help composer keeps Turkish contract mismatch lead');
-  must(helpComposer, 'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.', 'help composer keeps contract next action');
-  must(helpComposer, 'normalizeVisibleSuggestionFragment(actionSimulation)', 'help composer keeps action simulation normalizer');
-must(helpComposer, 'replace(/^Bu aksiyonu simüle et', 'help composer strips generic simulated-action wording');
-mustNot(helpComposer, 'Sıradaki doğru işlem: Bu aksiyonu simüle et', 'help composer does not surface simulated-action text verbatim');
-mustNotRaw(helpComposer, 'contractShiftGeneration', 'help composer avoids technical contract signal wording');
-mustNotRaw(helpComposer, 'OperationProof', 'help composer avoids technical proof wording');
-mustNotRaw(helpComposer, 'JOB_TYPE_ENTITY_MISMATCH', 'help composer avoids raw mismatch code');
+must(helpComposerSources, 'Riskli cihazı aç, konum sinyali güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.', 'help composer keeps operation-health direct next step');
+  must(helpComposerSources, 'Başlatma zamanı ve aktif durum uygunsa konum sinyali/operasyon kanıtını kontrol et; araç/sürücü bağı görünmüyorsa kontrol et, atanmış görünüyorsa sonraki kontrol konum sinyali/operasyon kanıtını kontrol et.', 'help composer keeps shift direct next step');
+  must(helpComposerSources, 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya sözleşme üretim sinyali gerekir.', 'help composer keeps Turkish contract mismatch lead');
+  must(helpComposerSources, 'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.', 'help composer keeps contract next action');
+  must(helpComposerSources, 'normalizeVisibleSuggestionFragment(actionSimulation)', 'help composer keeps action simulation normalizer');
+must(helpComposerSources, 'replace(/^Bu aksiyonu simüle et', 'help composer strips generic simulated-action wording');
+mustNot(helpComposerSources, 'Sıradaki doğru işlem: Bu aksiyonu simüle et', 'help composer does not surface simulated-action text verbatim');
+mustNotRaw(helpComposerSources, 'contractShiftGeneration', 'help composer avoids technical contract signal wording');
+mustNotRaw(helpComposerSources, 'OperationProof', 'help composer avoids technical proof wording');
+mustNotRaw(helpComposerSources, 'JOB_TYPE_ENTITY_MISMATCH', 'help composer avoids raw mismatch code');
 
-ordered(helpComposer, [
+ordered(helpComposerSources, [
   'if (/(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text)',
   "if (path.includes('/commercial-core') || path.includes('/payment') || /(hakediş|hakedis|ödeme|odeme|settlement|komisyon|csv|önizleme|onizleme)/.test(text)) return /(hazır değil|hazir degil|hazırlık|hazirlik|eksik|kontrol gerekli)/.test(text) ? 'PAYMENT_READINESS' : 'PAYMENT_PREVIEW';",
 ], 'contract-shift detection beats payment readiness');

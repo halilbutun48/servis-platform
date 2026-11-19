@@ -215,6 +215,7 @@ const driverToday = buildCopilotStarterChips({
   screenPath: '/driver/today',
   selection: {
     selectedRecordType: 'shift',
+    selectedRecordId: 5,
     selectedRecordLabel: 'Vardiya #5',
     helpContextSummary: 'Aktif görev yok • Bugün vardiyalar var • Seçili kayıt: Vardiya #5 • Durum: Kabul Edildi • Araç: 34ABC123 • Son GPS: GPS bekleniyor',
     contextSummary: 'Bugünkü görev • Vardiya #5 • Araç 34ABC123 • Son GPS bekleniyor • Sıradaki durak: -',

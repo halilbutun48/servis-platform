@@ -285,6 +285,31 @@ export const CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES = Object.freeze([
     owner: "PRE_18_POST_TERMINOLOGY_PRODUCT_FLOW_EVIDENCE_REGEN_01",
     sha256: "F91EE19E52853798D49400E7EFCE9061992C6DA4CD7F6C01DD9ED2ED1C859547",
   },
+  {
+    path: "web/src/panels/room/roomAgreementDetailSurface.jsx",
+    owner: "M18_ROOM_AGREEMENTS_PANEL_SPLIT_RECOVERY_01",
+    sha256: "B3C75CB790AD44C3C43B2FD039178E9CC1F84A0DF5D9680214AB9F6E7A80C8D4",
+  },
+  {
+    path: "web/src/panels/room/roomAgreementsOtherSection.jsx",
+    owner: "M18_ROOM_AGREEMENTS_PANEL_SPLIT_RECOVERY_01",
+    sha256: "80E5106FD1C86488DCF809703CCAE40898B3A4257B1CA37BDB6688AEE217E036",
+  },
+  {
+    path: "web/src/panels/room/roomAgreementsPanelHeader.jsx",
+    owner: "M18_ROOM_AGREEMENTS_PANEL_SPLIT_RECOVERY_01",
+    sha256: "28325486298BD5D1043A0620D462986414104D4FD4CA98B9FAB1C64043FAA5DD",
+  },
+  {
+    path: "web/src/panels/room/roomAgreementsPendingSection.jsx",
+    owner: "M18_ROOM_AGREEMENTS_PANEL_SPLIT_RECOVERY_01",
+    sha256: "375F3C1E0054231F085D72F0FA8222DB2F409A8FAEECFF26BB306FCB05FA0071",
+  },
+  {
+    path: "web/src/panels/room/roomAgreementsPendingSectionSupport.js",
+    owner: "M18_ROOM_AGREEMENTS_PANEL_SPLIT_RECOVERY_01",
+    sha256: "71BE856A26E20AD56F4D159D48FE677900B6D32D2B0E241E0EA47FCE7DC87DB4",
+  },
 ]);
 const currentClosureProductSourceByPath = new Map(CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES.map((entry) => [entry.path, entry]));
 export const RATIFIED_CURRENT_HARNESS_PATHS = Object.freeze([

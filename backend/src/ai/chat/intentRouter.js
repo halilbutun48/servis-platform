@@ -12,7 +12,7 @@ import { screenChipsByPath } from './intentRouterScreenChips.js';
 import { uniqueStrings } from './replyShapes.js';
 import { resolveSemanticIntent, toPublicQuestionType } from './semanticIntentPlanner.js';
 import { hasActiveWorkflowStepReference } from './canonicalSemanticRequest.js';
-import { isGenericProductHelpIntent } from './conversationRouting.js';
+import { isGenericProductHelpIntent, isProductPurposeQuestion, isStandaloneContinuationQuestion } from './conversationRouting.js';
 import {
   BASE_RULES,
   COP02A_GENERAL_RULES,
@@ -180,8 +180,63 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
   };
   const originalText = normalizeText(options.originalMessage || '');
   const combinedText = originalText && originalText !== text ? `${text} ${originalText}` : text;
+  const hasCurrentSurfaceContext = Boolean(
+    String(options.screenPath || options.sourceScreenPath || '').trim()
+      || String(options.conversationState?.lastScreenPath || options.conversationState?.screenPath || '').trim()
+      || String(options.semanticResolutionContext?.effectiveScreenPath || options.semanticResolutionContext?.sourceScreenPath || '').trim(),
+  );
   if (!text) return { questionType: 'OPEN', confidence: 0.42, matchedSignals: [], preferRoute: false, routeRequest: false };
-  if (!options.canonicalRequest && isGenericProductHelpIntent(combinedText) && !hasActiveWorkflowStepReference(combinedText, options.conversationState)) {
+  if (!options.canonicalRequest
+    && isStandaloneContinuationQuestion(combinedText)
+    && !hasActiveWorkflowStepReference(combinedText, options.conversationState)) {
+    const continuationSemanticIntent = resolveSemanticIntent({
+      message: options.originalMessage || message,
+      user: { role: options.userRole || options.roleMode || '' },
+      conversationState: options.conversationState,
+      screenContext: plannerScreenContext(options),
+      canonicalRequest: options.canonicalRequest,
+    });
+    return {
+      questionType: 'CONTINUE_FLOW',
+      confidence: 0.95,
+      matchedSignals: ['CONTINUE_FLOW', 'continuation-without-base'],
+      preferRoute: false,
+      routeRequest: false,
+      semanticIntent: continuationSemanticIntent,
+    };
+  }
+  const productPurposeQuestion = isProductPurposeQuestion(combinedText);
+  const genericHelpGuidedTaskMeta = !options.canonicalRequest && !productPurposeQuestion && isGenericProductHelpIntent(combinedText)
+    ? detectCopilotGuidedTaskEngineIntent({
+      message,
+      originalMessage: options.originalMessage,
+      screenPath: options.screenPath,
+      sourceScreenPath: options.sourceScreenPath,
+      roleMode: options.roleMode,
+      userRole: options.userRole,
+      conversationState: options.conversationState,
+      entityType: options.entityType,
+      questionType: '',
+    })
+    : null;
+  if (!options.canonicalRequest
+    && genericHelpGuidedTaskMeta?.familyId
+    && !hasActiveWorkflowStepReference(combinedText, options.conversationState)) {
+    return {
+      questionType: genericHelpGuidedTaskMeta.questionType || 'OPEN',
+      confidence: Number(genericHelpGuidedTaskMeta.confidence || 0.96),
+      matchedSignals: Array.isArray(genericHelpGuidedTaskMeta.matchedSignals)
+        ? [...genericHelpGuidedTaskMeta.matchedSignals]
+        : [genericHelpGuidedTaskMeta.familyId || genericHelpGuidedTaskMeta.questionType || 'guided-task'],
+      preferRoute: Boolean(genericHelpGuidedTaskMeta.preferRoute),
+      routeRequest: Boolean(genericHelpGuidedTaskMeta.routeRequest),
+      guidedTaskMeta: genericHelpGuidedTaskMeta,
+    };
+  }
+  if (!options.canonicalRequest
+    && isGenericProductHelpIntent(combinedText)
+    && !hasCurrentSurfaceContext
+    && !hasActiveWorkflowStepReference(combinedText, options.conversationState)) {
     const semanticIntent = resolveSemanticIntent({
       message: options.originalMessage || message,
       user: { role: options.userRole || options.roleMode || '' },
@@ -239,6 +294,150 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
         semanticIntent,
       };
     }
+  }
+  // The canonical planner can identify a next-action request even when the
+  // sentence also names the current screen. Resolve that typed UI guidance
+  // before legacy onboarding rules, which otherwise turn “Bu ekran içinde ne
+  // yapmam gerekiyor?” into a generic product introduction.
+  if (!options.canonicalRequest
+    && semanticIntent?.screenKnowledgeKind === 'NEXT_ACTION'
+    && semanticIntent?.typedRequest?.screenContextIntent === true) {
+    return {
+      questionType: 'NEXT_BEST_ACTION',
+      confidence: Number(semanticIntent.confidence || 0.96),
+      matchedSignals: ['NEXT_BEST_ACTION', 'SEMANTIC_SCREEN_NEXT_ACTION'],
+      preferRoute: false,
+      routeRequest: false,
+      guidedTaskMeta: semanticIntent.guidedTaskMeta || null,
+      semanticIntent,
+    };
+  }
+  const semanticContextGuidedTaskMeta = !options.canonicalRequest
+    && !productPurposeQuestion
+    && ['GENERIC_PRODUCT_HELP', 'CURRENT_SITUATION'].includes(String(semanticIntent.family || ''))
+    ? detectCopilotGuidedTaskEngineIntent({
+      message,
+      originalMessage: options.originalMessage,
+      screenPath: options.screenPath,
+      sourceScreenPath: options.sourceScreenPath,
+      roleMode: options.roleMode,
+      userRole: options.userRole,
+      conversationState: options.conversationState,
+      entityType: options.entityType,
+      questionType: '',
+    })
+    : null;
+  if (semanticContextGuidedTaskMeta?.familyId) {
+    return {
+      questionType: semanticContextGuidedTaskMeta.questionType || 'OPEN',
+      confidence: Number(semanticContextGuidedTaskMeta.confidence || 0.96),
+      matchedSignals: Array.isArray(semanticContextGuidedTaskMeta.matchedSignals)
+        ? [...semanticContextGuidedTaskMeta.matchedSignals]
+        : [semanticContextGuidedTaskMeta.familyId || semanticContextGuidedTaskMeta.questionType || 'guided-task'],
+      preferRoute: Boolean(semanticContextGuidedTaskMeta.preferRoute),
+      routeRequest: Boolean(semanticContextGuidedTaskMeta.routeRequest),
+      guidedTaskMeta: semanticContextGuidedTaskMeta,
+    };
+  }
+  const earlyOnboardingGuidedTaskMeta = !options.canonicalRequest
+    && !productPurposeQuestion
+    && (looksLikeOnboardingStartQuestion(combinedText) || looksLikeScreenStartQuestion(combinedText))
+    ? detectCopilotGuidedTaskEngineIntent({
+      message,
+      originalMessage: options.originalMessage,
+      screenPath: options.screenPath,
+      sourceScreenPath: options.sourceScreenPath,
+      roleMode: options.roleMode,
+      userRole: options.userRole,
+      conversationState: options.conversationState,
+      entityType: options.entityType,
+      questionType: '',
+    })
+    : null;
+  if (earlyOnboardingGuidedTaskMeta?.familyId) {
+    return {
+      questionType: earlyOnboardingGuidedTaskMeta.questionType || 'OPEN',
+      confidence: Number(earlyOnboardingGuidedTaskMeta.confidence || 0.96),
+      matchedSignals: Array.isArray(earlyOnboardingGuidedTaskMeta.matchedSignals)
+        ? [...earlyOnboardingGuidedTaskMeta.matchedSignals]
+        : [earlyOnboardingGuidedTaskMeta.familyId || earlyOnboardingGuidedTaskMeta.questionType || 'guided-task'],
+      preferRoute: Boolean(earlyOnboardingGuidedTaskMeta.preferRoute),
+      routeRequest: Boolean(earlyOnboardingGuidedTaskMeta.routeRequest),
+      guidedTaskMeta: earlyOnboardingGuidedTaskMeta,
+    };
+  }
+
+  // Runtime-answer topics are safety boundaries, not generic location/help
+  // questions. Resolve them before the public semantic projection so a
+  // planner request such as Excel-to-route preview cannot be swallowed by a
+  // broader read-only question type (for example LOCATION_HELP).
+  const earlyRuntimeAnswerOwnsTurn = Boolean(
+    semanticIntent.typedRequest?.explicitTaskIntent
+    || semanticIntent.typedRequest?.explicitUserTarget
+    || (semanticIntent.discourseReference && semanticIntent.requestedFields?.length)
+  );
+  const earlyRuntimeAnswerMessage = earlyRuntimeAnswerOwnsTurn
+    ? message
+    : [message, options.originalMessage].filter(Boolean).join(' ');
+  const earlyRuntimeAnswerTopic = detectCopilotEBlockRuntimeAnswerTopic({
+    message: earlyRuntimeAnswerMessage,
+    screenPath: options.screenPath,
+  });
+  const earlyRuntimePreviewAuthorized = semanticIntent.authorizationDecision?.status === 'ALLOW'
+    && (
+      ['EXCEL_ROUTE_PREVIEW', 'ADDRESS_GEOCODE_PREVIEW', 'ROUTE_REVIEW_HUMAN_APPROVAL', 'ROUTE_APPLY_BLOCKED'].includes(earlyRuntimeAnswerTopic)
+      || (
+        earlyRuntimeAnswerTopic === 'OSRM_ROUTE_DRAFT_PREVIEW'
+        && Array.isArray(semanticIntent.requestedFields)
+        && semanticIntent.requestedFields.some((field) => String(field?.key || '').toUpperCase() === 'ROUTE')
+      )
+    );
+  if (['IMPORT_WRITE_BLOCKED', 'FAKE_SUCCESS_REQUEST_BLOCKED'].includes(earlyRuntimeAnswerTopic) || earlyRuntimePreviewAuthorized) {
+    const earlyGuidedTaskMeta = detectCopilotGuidedTaskEngineIntent({
+      message,
+      originalMessage: options.originalMessage,
+      screenPath: options.screenPath,
+      sourceScreenPath: options.sourceScreenPath,
+      roleMode: options.roleMode,
+      userRole: options.userRole,
+      conversationState: options.conversationState,
+      entityType: options.entityType,
+      questionType: earlyRuntimeAnswerTopic,
+    });
+    return {
+      questionType: earlyRuntimeAnswerTopic,
+      confidence: Number(earlyGuidedTaskMeta?.confidence || 0.98),
+      matchedSignals: Array.isArray(earlyGuidedTaskMeta?.matchedSignals)
+        ? [...earlyGuidedTaskMeta.matchedSignals]
+        : [earlyRuntimeAnswerTopic],
+      preferRoute: false,
+      routeRequest: false,
+      guidedTaskMeta: earlyGuidedTaskMeta || null,
+    };
+  }
+  const earlyRootCauseIntent = detectRootCauseQuestionIntent({ message: combinedText, originalMessage: originalText });
+  if (earlyRootCauseIntent && pathHas(`${options.screenPath} ${options.sourceScreenPath || ''}`, ['/company/planning-center', '/company/operations', '/organization/operations', '/school/operations', '/company/shifts', '/organization/shifts'])) {
+    return {
+      ...earlyRootCauseIntent,
+      matchedSignals: [...(earlyRootCauseIntent.matchedSignals || []), 'ROUTE_SCOPED_ROOT_CAUSE'],
+      semanticIntent,
+    };
+  }
+  // The operations surface exposes service-request status together with the
+  // role's approval/authority boundary. Keep that existing public contract
+  // for the narrow, read-only operations question instead of leaking the
+  // planner's internal REQUEST_STATUS family into the visible response.
+  if (semanticIntent.family === 'REQUEST_STATUS'
+    && semanticIntent.requestedDomains.includes('SERVICE_REQUESTS')
+    && pathHas(`${options.screenPath} ${options.sourceScreenPath || ''}`, ['/company/operations'])) {
+    return {
+      questionType: 'SEMANTIC_AUTHORIZATION_BOUNDARY',
+      confidence: semanticIntent.confidence,
+      matchedSignals: ['SEMANTIC_AUTHORIZATION_BOUNDARY', 'SEMANTIC_REQUEST_STATUS', 'DOMAIN_SERVICE_REQUESTS', 'OPERATIONS_AUTHORITY_BOUNDARY'],
+      preferRoute: false,
+      routeRequest: false,
+      semanticIntent,
+    };
   }
   const publicQuestionType = toPublicQuestionType(semanticIntent);
   if (publicQuestionType) {
@@ -382,7 +581,12 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     };
   }
   const rootCauseIntent = detectRootCauseQuestionIntent({ message: combinedText, originalMessage: originalText }); if (rootCauseIntent) return rootCauseIntent;
-  if (looksLikeDetailContinuationQuestion(originalText) || looksLikeDetailContinuationQuestion(combinedText)) {
+  // “Bu ekranı detaylı anlat” is an explicit current-surface purpose
+  // question, not a continuation of an earlier answer. Keep the generic
+  // detail-continuation rule for genuinely follow-up wording only.
+  const explicitCurrentSurfaceDetailQuestion = /^(?:bu\s+(?:ekranı|ekrani|paneli|panel|sayfayı|sayfayi|sayfa)\s+detay(?:lı|li)\s+anlat)\??$/iu.test(combinedText.trim());
+  if ((looksLikeDetailContinuationQuestion(originalText) || looksLikeDetailContinuationQuestion(combinedText))
+    && !explicitCurrentSurfaceDetailQuestion) {
     const lastQuestionType = normalizeText(options.conversationState?.taskState?.currentQuestionType || options.conversationState?.taskState?.lastQuestionType || options.conversationState?.lastQuestionType || options.conversationState?.lastGuidedTaskQuestionType || options.conversationState?.taskState?.currentGuidedTaskQuestionType || options.conversationState?.taskState?.lastGuidedTaskQuestionType || '');
     const lastConcern = normalizeText(String(
       options.conversationState?.taskState?.currentPrimaryConcern
@@ -418,6 +622,15 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
       questionType: 'HOW_TO_HELP',
       confidence: 0.86,
       matchedSignals: ['HOW_TO_HELP', 'detail-continuation-follow-up'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+  if (explicitCurrentSurfaceDetailQuestion) {
+    return {
+      questionType: 'SCREEN_PURPOSE',
+      confidence: 0.94,
+      matchedSignals: ['SCREEN_PURPOSE', 'explicit-current-surface-detail'],
       preferRoute: false,
       routeRequest: false,
     };

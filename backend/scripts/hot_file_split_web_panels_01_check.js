@@ -112,6 +112,7 @@ async function main() {
   const roomMain = read("web/src/panels/room/AgreementsPanel.jsx");
   const roomBridge = read("web/src/panels/room/roomAgreementsBridgeSection.jsx");
   const roomHelpers = read("web/src/panels/room/roomAgreementsPanelHelpers.js");
+  const agreementOpsBridgeCard = read("web/src/components/AgreementOpsBridgeCard.jsx");
   const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:hotfilesplitwebpanels01": "node backend/scripts/hot_file_split_web_panels_01_check.js"', "package.json exposes hot file split web panels check");
@@ -221,8 +222,8 @@ async function main() {
   mustNot(roomMain, "CollapsibleSection", "room main no longer owns bridge collapsible section inline");
 
   must(roomBridge, "roomCriticalFixScope", "room bridge section keeps roomCriticalFixScope");
-  must(roomBridge, "Detayı aç", "room bridge section keeps bridge CTA text");
-  must(roomBridge, "Rota Önizle", "room bridge section keeps route preview button text");
+  must(agreementOpsBridgeCard, "Detayı aç", "agreement bridge card keeps bridge CTA text");
+  must(agreementOpsBridgeCard, "Rota Önizle", "agreement bridge card keeps route preview button text");
   must(roomBridge, "Karşı Teklif", "room bridge section keeps counter button text");
   must(roomBridge, "Kabul Et", "room bridge section keeps approve button text");
   must(roomBridge, "AgreementOpsBridgeCard", "room bridge section owns bridge card");

@@ -72,8 +72,11 @@ const facts = read('web/src/utils/copilotFacts.js');
 const service = read('backend/src/ai/service.js');
 const http = read('backend/src/errors/http.js');
 const helpComposer = read('backend/src/ai/chat/helpComposer.js');
+const helpComposerContext = read('backend/src/ai/chat/helpComposerContext.js');
+const helpComposerSources = `${helpComposer}\n${helpComposerContext}`;
 const helpComposerEntityRuntime = read('backend/src/ai/chat/helpComposerEntityRuntime.js');
 const intentRouter = read('backend/src/ai/chat/intentRouter.js');
+const intentRouterScreenChips = read('backend/src/ai/chat/intentRouterScreenChips.js');
 const operationHealthPanel = read('web/src/panels/room/OperationHealthPanel.jsx');
 const registryScripts = productExtensionsChecks.map((step) => step.script);
 
@@ -114,43 +117,43 @@ must(helpComposerEntityRuntime, 'Önerilen adım:', 'entity runtime uses recomme
 mustNot(helpComposerEntityRuntime, 'Bu durumda doğru aksiyon şu olurdu:', 'entity runtime removes mechanical action wording');
 mustNotRaw(helpComposerEntityRuntime, 'OperationProof', 'entity runtime avoids visible technical proof wording');
 
-must(helpComposer, 'Önerilen adım:', 'help composer uses recommendation wording');
-must(helpComposer, "if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HELP'].includes(theme)) {", 'help composer keeps GPS map remap branch');
-must(helpComposer, "pickScreenByKind(screens, 'MAP')", 'help composer routes GPS questions to map screen');
-must(helpComposer, 'Canlı takip ekranını aç', 'help composer keeps live tracking prompt');
-must(helpComposer, 'Başlatma zamanı uygun mu?', 'help composer keeps shift action chip');
-must(helpComposer, 'Son konum bilgisi ne zaman geldi?', 'help composer keeps GPS action chip');
-must(helpComposer, "Sürücünün telefonundan konum sinyali devrede mi?", 'help composer keeps driver phone GPS chip');
-must(helpComposer, 'Konum sinyali/operasyon kanıtını kontrol et', 'help composer keeps gps action chip');
-must(helpComposer, "if (path.includes('/room/map') || path.includes('/room/live')) return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];", 'help composer keeps map/live GPS route');
-must(helpComposer, 'Hakediş önizlemesini aç', 'help composer keeps payment action chip');
-must(helpComposer, 'İlgili sözleşmeyi aç', 'help composer keeps contract action chip');
-must(helpComposer, 'Bildirim kaynağını göster', 'help composer keeps notification action chip');
-must(helpComposer, 'Açık geri bildirimi göster', 'help composer keeps feedback action chip');
-must(helpComposer, 'Bu ekranı detaylı anlat', 'help composer still keeps generic screen chip');
-mustNot(helpComposer, 'Bu durumda doğru aksiyon şu olurdu:', 'help composer removes mechanical action wording');
-mustNot(helpComposer, 'Bu araç neden haritada görünmüyor?', 'help composer removes room map self-question chip');
-mustNotRaw(helpComposer, 'OperationProof', 'help composer avoids visible technical proof wording');
-ordered(helpComposer, [
+must(helpComposerSources, 'Önerilen adım:', 'help composer uses recommendation wording');
+must(helpComposerSources, "if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HELP'].includes(theme)) {", 'help composer keeps GPS map remap branch');
+must(helpComposerSources, "pickScreenByKind(screens, 'MAP')", 'help composer routes GPS questions to map screen');
+must(helpComposerSources, 'Canlı takip ekranını aç', 'help composer keeps live tracking prompt');
+must(helpComposerSources, 'Başlatma zamanı uygun mu?', 'help composer keeps shift action chip');
+must(helpComposerSources, 'Son konum bilgisi ne zaman geldi?', 'help composer keeps GPS action chip');
+must(helpComposerSources, "Sürücünün telefonundan konum sinyali devrede mi?", 'help composer keeps driver phone GPS chip');
+must(helpComposerSources, 'Konum sinyali/operasyon kanıtını kontrol et', 'help composer keeps gps action chip');
+must(helpComposerSources, "if (path.includes('/room/map') || path.includes('/room/live')) return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];", 'help composer keeps map/live GPS route');
+must(helpComposerSources, 'Hakediş önizlemesini aç', 'help composer keeps payment action chip');
+must(helpComposerSources, 'İlgili sözleşmeyi aç', 'help composer keeps contract action chip');
+must(helpComposerSources, 'Bildirim kaynağını göster', 'help composer keeps notification action chip');
+must(helpComposerSources, 'Açık geri bildirimi göster', 'help composer keeps feedback action chip');
+must(helpComposerSources, 'Bu ekranı detaylı anlat', 'help composer still keeps generic screen chip');
+mustNot(helpComposerSources, 'Bu durumda doğru aksiyon şu olurdu:', 'help composer removes mechanical action wording');
+mustNot(helpComposerSources, 'Bu araç neden haritada görünmüyor?', 'help composer removes room map self-question chip');
+mustNotRaw(helpComposerSources, 'OperationProof', 'help composer avoids visible technical proof wording');
+ordered(helpComposerSources, [
   "if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HELP'].includes(theme)) {",
   "pickScreenByKind(screens, 'MAP')",
   'if (pathLooksLikeWorkflowSurface(sourcePath) && (selectedDiagnosticTheme(text) || isCommercialFlowContractToShiftQuestion(text))) {',
 ], 'help composer keeps GPS remap before workflow surface preserve');
 
-must(intentRouter, 'Başlatma zamanı uygun mu?', 'intent router keeps shift readiness chip');
-must(intentRouter, 'Konum sinyali/operasyon kanıtını kontrol et', 'intent router keeps gps/proof chip');
-must(intentRouter, 'Hakediş önizlemesini aç', 'intent router keeps payment chip');
-must(intentRouter, 'İlgili sözleşmeyi aç', 'intent router keeps contract chip');
-must(intentRouter, 'Bildirim kaynağını göster', 'intent router keeps notification chip');
-must(intentRouter, 'Riskli cihazı göster', 'intent router keeps operation-health risk chip');
-must(intentRouter, 'konum sinyali güncel değil / çevrim dışı satırını aç', 'intent router keeps operation-health stale chip');
-must(intentRouter, 'Açık sorunları sırala', 'intent router keeps operation-health issue chip');
-must(intentRouter, 'Aktif sürücüleri kontrol et', 'intent router keeps operation-health active driver chip');
-must(intentRouter, 'İşlem kaydını aç', 'intent router keeps logs chip');
-must(intentRouter, 'Check-in akışını aç', 'intent router keeps check-in chip');
-must(intentRouter, 'Hub akışını aç', 'intent router keeps hub chip');
-must(intentRouter, 'Okunmamış bildirimleri göster', 'intent router keeps notification list chip');
-must(intentRouter, 'İlgili kaydı aç', 'intent router keeps target-open chip');
+must(intentRouterScreenChips, 'Başlatma zamanı uygun mu?', 'intent router keeps shift readiness chip');
+must(intentRouterScreenChips, 'Konum sinyali/operasyon kanıtını kontrol et', 'intent router keeps gps/proof chip');
+must(intentRouterScreenChips, 'Hakediş önizlemesini aç', 'intent router keeps payment chip');
+must(intentRouterScreenChips, 'İlgili sözleşmeyi aç', 'intent router keeps contract chip');
+must(intentRouterScreenChips, 'Bildirim kaynağını göster', 'intent router keeps notification chip');
+must(intentRouterScreenChips, 'Riskli cihazı göster', 'intent router keeps operation-health risk chip');
+must(intentRouterScreenChips, 'konum sinyali güncel değil / çevrim dışı satırını aç', 'intent router keeps operation-health stale chip');
+must(intentRouterScreenChips, 'Açık sorunları sırala', 'intent router keeps operation-health issue chip');
+must(intentRouterScreenChips, 'Aktif sürücüleri kontrol et', 'intent router keeps operation-health active driver chip');
+must(intentRouterScreenChips, 'İşlem kaydını aç', 'intent router keeps logs chip');
+must(intentRouterScreenChips, 'Check-in akışını aç', 'intent router keeps check-in chip');
+must(intentRouterScreenChips, 'Hub akışını aç', 'intent router keeps hub chip');
+must(intentRouterScreenChips, 'Okunmamış bildirimleri göster', 'intent router keeps notification list chip');
+must(intentRouterScreenChips, 'İlgili kaydı aç', 'intent router keeps target-open chip');
 must(intentRouter, "pathHas(options.screenPath, ['/room/map', '/room/live', '/company/live', '/organization/live', '/school/live', '/driver/map', '/driver/live', '/vehicles'])", 'intent router keeps live map location routing');
 mustNot(intentRouter, 'Bu araç neden haritada görünmüyor?', 'intent router removes room map self-question chip');
 mustNot(intentRouter, 'Sözleşme burada ne işe yarıyor?', 'intent router removes agreement self-question chip');

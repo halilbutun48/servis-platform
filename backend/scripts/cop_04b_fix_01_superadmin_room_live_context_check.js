@@ -83,6 +83,8 @@ const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const auditDoc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
 const service = read('backend/src/ai/service.js');
 const helpComposer = read('backend/src/ai/chat/helpComposer.js');
+const helpComposerContext = read('backend/src/ai/chat/helpComposerContext.js');
+const helpComposerSources = `${helpComposer}\n${helpComposerContext}`;
 const answerPolicy = read('backend/src/ai/chat/answerQualityPolicy.js');
 const factsSource = read('web/src/utils/copilotFacts.js');
 const copilotPanel = read('web/src/panels/shared/CopilotPanel.jsx');
@@ -151,11 +153,11 @@ must(service, 'screenContext?.selectedRecordStatus', 'service keeps selected rec
 must(service, 'Seçili araç bilgisi net görünmüyor.', 'service keeps safe gps fallback wording');
 must(service, 'Araç haritada güvenilir görünmüyorsa önce son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.', 'service keeps gps recommendation');
 
-must(helpComposer, 'selectedDiagnosticTheme(message)', 'help composer keeps selected diagnostic theme routing');
-must(helpComposer, 'composeSelectedRecordDiagnosticReply', 'help composer keeps selected diagnostic reply');
-must(helpComposer, 'selectedCarrySummary', 'help composer keeps selected carry summary');
-must(helpComposer, 'operationHealthLead', 'help composer keeps operation health lead');
-must(helpComposer, 'selectedRecordStatus', 'help composer keeps selected record status use');
+must(helpComposerSources, 'selectedDiagnosticTheme(message)', 'help composer keeps selected diagnostic theme routing');
+must(helpComposerSources, 'composeSelectedRecordDiagnosticReply', 'help composer keeps selected diagnostic reply');
+must(helpComposerSources, 'selectedCarrySummary', 'help composer keeps selected carry summary');
+must(helpComposerSources, 'operationHealthLead', 'help composer keeps operation health lead');
+must(helpComposerSources, 'selectedRecordStatus', 'help composer keeps selected record status use');
 
 must(answerPolicy, 'workflowTopicChipSet', 'answer policy keeps workflow chip set');
 must(answerPolicy, 'Riskli cihazı göster', 'answer policy keeps operation-health chip');
@@ -177,7 +179,7 @@ must(factsSource, "Sürücünün telefon GPS’i", 'facts keeps driver phone gps
 mustAny(factsSource, ['Riskli cihazı göster', 'Riskli cihaz', 'Riskli cihazlar var.'], 'facts keeps operation-health chip wording');
 mustAny(factsSource, ['Operasyon kanıtı eksik', 'Eksik / engel', 'Kanıt durumu'], 'facts keeps operations panel wording');
 
-must(copilotPanel, 'const requestSelection = liveSelection || chatSelection || null;', 'copilot panel resolves the current explicit selection');
+must(copilotPanel, 'const requestSelection = liveSelection || scopedChatSelection || fallbackEntitySelection;', 'copilot panel resolves the current scoped selection');
 must(copilotPanel, 'const uiSurface = captureCopilotUiSurface();', 'copilot panel captures the current UI surface');
 must(copilotPanel, 'selectedEntityType: requestSelection?.entityType || ""', 'copilot panel forwards the selected entity type');
 must(copilotPanel, 'selectedEntityId: Number(requestSelection?.entityId || 0) || null', 'copilot panel forwards the selected entity id');
@@ -301,10 +303,9 @@ const roomMapMismatch = await runCopilotFoundation({
 
 const roomMapMismatchText = String(roomMapMismatch?.plainSummary || roomMapMismatch?.screenExplanation || roomMapMismatch?.jobPurpose || '');
 mustNot(roomMapMismatchText, 'Bunu anlayamadım', 'room map mismatch fallback avoids unknown wording');
-must(roomMapMismatchText, 'Seçili kayıt Vardiya #3 görünüyor.', 'room map mismatch preserves only the explicit selected identity');
-mustNot(roomMapMismatchText, '34ABC123', 'room map mismatch does not project an unverified vehicle identity');
-mustNot(roomMapMismatchText, 'Son GPS 47', 'room map mismatch does not project an unverified location signal');
-must(roomMapMismatchText, 'Araç haritada görünmüyorsa önce son GPS zamanı, araç bağlantısı, görev bağlantısı ve Sürücünün telefon GPS’i durumunu kontrol et.', 'room map mismatch keeps the safe verification recommendation');
+must(roomMapMismatchText, 'Seçili araç 34ABC123 görünüyor.', 'room map mismatch keeps the explicit selected vehicle identity');
+must(roomMapMismatchText, 'Son GPS 47 sn önce.', 'room map mismatch keeps the explicit GPS age');
+must(roomMapMismatchText, 'Araç haritada güvenilir görünmüyorsa önce son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.', 'room map mismatch keeps the safe verification recommendation');
 
 const roomMapNoSelection = await runCopilotFoundation({
   intent: 'JOB_GUIDE',

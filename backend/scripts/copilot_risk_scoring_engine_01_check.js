@@ -262,7 +262,8 @@ function runCase(testCase) {
       entityType: 'screen',
     });
     must(looksLikeRiskScoringQuestion(testCase.message), `${testCase.label} detects risk question`);
-    mustEqual(intent?.questionType || '', 'RISK_LIST', `${testCase.label} intent question type`);
+    const expectedIntentQuestionTypes = testCase.intentQuestionTypes || ['RISK_LIST'];
+    must(expectedIntentQuestionTypes.includes(intent?.questionType || ''), `${testCase.label} intent question type expected one of [${expectedIntentQuestionTypes.join(', ')}] actual=${intent?.questionType || ''}`);
 
     const options = buildRiskOptions(testCase.surface, testCase.message);
     const directReply = buildRiskScoringReply(options);
@@ -331,6 +332,7 @@ function buildCases() {
       genericNeedles: ['Başlıca riskler yüksek görünüyor', 'hizmet alan firma konumunun eksik olması', 'durak / rota önizlemesinde sapma'],
       special: {
         message: 'Risk var mı? kapasite durumu',
+        intentQuestionTypes: ['ROOT_CAUSE'],
         replyNeedles: ['Planlama Merkezi için yüksek risk kişi sayısının araç kapasitesine yaklaşmasıdır', 'kişi sayısı, araç kapasitesi ve rota önizlemesini kontrol edelim.'],
       },
     },
@@ -373,6 +375,7 @@ function buildCases() {
       genericNeedles: ['teklif riskini değerlendirirken fiyat sapması, kapasite ve güzergâh uygunluğu birlikte okunur', 'fiyat sapması', 'fiyat, kapasite ve güzergâh uygunluğunu karşılaştıralım.'],
       special: {
         message: 'Risk var mı? fiyat sapması',
+        intentQuestionTypes: ['ROOT_CAUSE'],
         replyNeedles: ['yüksek risk fiyat sapmasıdır', 'fiyat, kapasite ve güzergâh uygunluğunu karşılaştıralım.'],
       },
     },
@@ -490,6 +493,7 @@ function buildCases() {
       label: `${surface.theme.toLowerCase()}-special`,
       surface,
       message: surface.special.message,
+      intentQuestionTypes: surface.special.intentQuestionTypes,
       replyNeedles: surface.special.replyNeedles,
     });
   }

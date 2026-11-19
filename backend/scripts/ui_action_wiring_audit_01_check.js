@@ -244,16 +244,21 @@ function walkFiles(dir, out = []) {
   const abs = path.join(repoRoot, dir);
   const stat = fs.statSync(abs);
   if (stat.isFile()) {
-    if (/\.(?:js|jsx|ts|tsx)$/i.test(path.basename(dir))) out.push(dir.replace(/\\/g, "/"));
+    const base = path.basename(dir);
+    if (/(?:\.test|\.spec)\.(?:js|jsx|ts|tsx)$/i.test(base)) return out;
+    if (/\.(?:js|jsx|ts|tsx)$/i.test(base)) out.push(dir.replace(/\\/g, "/"));
     return out;
   }
   for (const entry of fs.readdirSync(abs, { withFileTypes: true })) {
+    if (entry.isDirectory() && /^(?:__tests__|tests?)$/i.test(entry.name)) continue;
     const next = path.posix.join(dir.replace(/\\/g, "/"), entry.name);
     if (entry.isDirectory()) {
       walkFiles(next, out);
       continue;
     }
-    if (entry.isFile() && /\.(?:js|jsx|ts|tsx)$/i.test(entry.name)) out.push(next);
+    if (entry.isFile()
+      && !/(?:\.test|\.spec)\.(?:js|jsx|ts|tsx)$/i.test(entry.name)
+      && /\.(?:js|jsx|ts|tsx)$/i.test(entry.name)) out.push(next);
   }
   return out;
 }

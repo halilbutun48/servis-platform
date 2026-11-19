@@ -358,7 +358,7 @@ function main() {
     message: 'Rota neden görünmüyor?',
   });
   must(planningHelp.reply, 'Kesin sebebi veriyle doğrulamak gerekir', 'help composer uses the current evidence-grounded root-cause reply');
-  must(planningHelp.reply, 'Önce seçili kayıt ve son sinyali kontrol edelim', 'help composer keeps the current safe first check');
+  must(planningHelp.reply, 'Önce eksik konumları ve vardiya saatini kontrol edelim', 'help composer keeps the current safe first check');
   mustNot(planningHelp.reply, 'Rota genelde personel konumu eksikse', 'help composer does not reintroduce a static diagnostic cause');
   if (planningHelp.questionType !== 'ROOT_CAUSE') {
     fail(`planning help questionType expected ROOT_CAUSE actual=${planningHelp.questionType}`);

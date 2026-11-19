@@ -90,6 +90,8 @@ const roomBridgeSection = read("web/src/panels/room/roomAgreementsBridgeSection.
 const agreementFacts = read("web/src/utils/agreementCopilotFacts.js");
 const copilotFacts = read("web/src/utils/copilotFacts.js");
 const helpComposer = read("backend/src/ai/chat/helpComposer.js");
+const helpComposerContext = read("backend/src/ai/chat/helpComposerContext.js");
+const helpComposerSources = `${helpComposer}\n${helpComposerContext}`;
 const intentRouter = read("backend/src/ai/chat/intentRouter.js");
 const answerQualityPolicy = read("backend/src/ai/chat/answerQualityPolicy.js");
 const goldenQuestionPack = read("backend/src/ai/chat/goldenQuestionPack.js");
@@ -162,10 +164,10 @@ must(copilotFacts, "Eksik sinyalleri göster", "copilot chips include missing-si
 must(copilotFacts, "SeferPuanı nasıl yükselir?", "copilot chips include improve-score question");
 must(copilotFacts, "isSeferScorePreview", "copilot detection includes sefer preview");
 
-must(helpComposer, "SEFER_SCORE_PREVIEW", "help composer knows sefer score workflow");
-must(helpComposer, "SeferPuanı önizlemesini", "help composer explains sefer preview");
-must(helpComposer, "SeferPuanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "help composer keeps preview boundary");
-must(helpComposer, "ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz", "help composer keeps safe boundary");
+must(helpComposerSources, "SEFER_SCORE_PREVIEW", "help composer knows sefer score workflow");
+must(helpComposerSources, "SeferPuanı önizlemesini", "help composer explains sefer preview");
+must(helpComposerSources, "SeferPuanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "help composer keeps preview boundary");
+must(helpComposerSources, "ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz", "help composer keeps safe boundary");
 
 must(intentRouter, "SEFER_SCORE_PREVIEW", "intent router knows sefer score intent");
 must(intentRouter, "sefer-score-path", "intent router scores sefer score path");

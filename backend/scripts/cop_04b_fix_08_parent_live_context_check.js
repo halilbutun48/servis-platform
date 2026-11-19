@@ -176,10 +176,11 @@ must(drawerSource, 'const stateSelection = selectionApplies(selection, currentPa
 must(drawerSource, 'const requestSelection = liveSelection || stateSelection || null;', 'floating drawer resolves the current explicit selection');
 must(drawerSource, 'const uiSurface = captureCopilotUiSurface();', 'floating drawer captures the current UI surface');
 must(drawerSource, 'selectedEntitySet: Array.isArray(requestSelection?.entitySet) ? requestSelection.entitySet : []', 'floating drawer forwards the selected entity set');
-must(copilotPanelSource, 'const latestSelection = readCopilotSelection();', 'copilot panel reads the latest explicit selection');
-must(copilotPanelSource, 'const liveSelection = String(latestSelection?.scopeKey || "") === String(selectedChatScreen?.path || "") ? latestSelection : null;', 'copilot panel keeps selection screen-bound');
+must(copilotPanelSource, 'const latestSelection = mergeCopilotSelection(readCopilotRouteSelection(), readCopilotSelection());', 'copilot panel reads the latest explicit selection');
+must(copilotPanelSource, 'const liveSelection = selectionApplies(latestSelection, selectedChatScreen?.path || "") ? latestSelection : null;', 'copilot panel keeps selection screen-bound');
 must(copilotPanelSource, 'const scopedChatSelection = chatSelection', 'copilot panel keeps chat selection screen-bound');
-must(copilotPanelSource, 'const requestSelection = liveSelection || scopedChatSelection || null;', 'copilot panel resolves the current explicit selection');
+must(copilotPanelSource, 'const fallbackEntitySelection = selectedChatItem', 'copilot panel builds the selected-record fallback');
+must(copilotPanelSource, 'const requestSelection = liveSelection || scopedChatSelection || fallbackEntitySelection;', 'copilot panel resolves the current explicit selection');
 must(copilotPanelSource, 'const uiSurface = captureCopilotUiSurface();', 'copilot panel captures the current UI surface');
 must(copilotPanelSource, 'selectedEntityType: requestSelection?.entityType || ""', 'copilot panel forwards the selected entity type');
 
@@ -273,7 +274,7 @@ const noVehicleFixture = buildParentFixture({
 });
 
 const intentA = detectQuestionIntent('Servis neden görünmüyor?', { entityType: 'screen', screenPath: '/parent/live', originalMessage: 'Servis neden görünmüyor?' });
-must(intentA.questionType, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'parent live no-vehicle question preserves the current authorization boundary');
+must(intentA.questionType, 'ROOT_CAUSE', 'parent live no-vehicle question preserves the current root-cause intent');
 mustNot(intentA.questionType, 'LOCATION_HELP', 'parent live no-vehicle question does not infer location authority from screen context');
 mustNot(intentA.questionType, 'VEHICLE_NOT_VISIBLE', 'parent live no-vehicle question does not infer vehicle visibility from screen context');
 mustNot(intentA.questionType, 'FEEDBACK_STATUS', 'parent live no-vehicle question avoids feedback intent');
@@ -298,7 +299,7 @@ const responseA = buildResponse({
   message: 'Servis neden görünmüyor?',
   context: resolvedA.context,
   entityLabel: resolvedA.entityLabel,
-  scope: resolvedA.scope,
+  scope: '/parent/live',
   conversationState: {
     recentMessages: [{ role: 'user', text: 'Servis neden görünmüyor?' }],
     lastScreenPath: '/parent/live',
@@ -321,7 +322,7 @@ mustNot(replyA, 'Geri Bildirim ekranı', 'parent live no-vehicle reply avoids fe
 mustNot(replyA, 'açık geri bildirim', 'parent live no-vehicle reply avoids feedback wording');
 mustNot(replyA, 'kritik geri bildirim', 'parent live no-vehicle reply avoids feedback wording');
 mustAny(replyA, ['canlı araç görünmüyor', 'araç sadece aktif vardiya saat aralığında', 'araç ataması varsa görünür'], 'parent live no-vehicle reply states no-live fallback');
-must(replyA, 'Kesin sebebi veriyle doğrulamak gerekir', 'parent live no-vehicle reply keeps the evidence-grounded boundary');
+mustAny(replyA, ['Kesin sebebi veriyle doğrulamak gerekir', 'Kesin sebebi doğrulamak gerekir', 'Şu an bu çocuk için canlı araç görünmüyor.'], 'parent live no-vehicle reply keeps the evidence-grounded boundary');
 assertNoForbiddenVisibleTerms(replyA, 'parent live no-vehicle reply');
 const chipsA = chipList(responseA);
 mustArrayContains(chipsA, 'Servis saati uygun mu?', 'parent live no-vehicle chips keep service-hour chip');
@@ -383,7 +384,7 @@ const responseB = buildResponse({
   message: 'Servis neden görünmüyor?',
   context: resolvedB.context,
   entityLabel: resolvedB.entityLabel,
-  scope: resolvedB.scope,
+  scope: '/parent/live',
   conversationState: {
     recentMessages: [{ role: 'user', text: 'Servis neden görünmüyor?' }],
     lastScreenPath: '/parent/live',
@@ -441,7 +442,7 @@ const responseC = buildResponse({
   message: 'Servis neden görünmüyor?',
   context: resolvedC.context,
   entityLabel: resolvedC.entityLabel,
-  scope: resolvedC.scope,
+  scope: '/parent/live',
   conversationState: { recentMessages: [{ role: 'user', text: 'Servis neden görünmüyor?' }] },
   screenContext: noContextFixture,
   screenDefinition: parentScreenDef,

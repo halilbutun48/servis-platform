@@ -27,7 +27,6 @@ test("aktif vardiya yoksa genel DRIVER rotası en yakın gelecek vardiyayı seç
 });
 
 test("zaman aralığı dışında olsa da ACTIVE durumundaki vardiya önceliklidir", () => {
-  const now = new Date("2026-11-16T15:00:00.000Z");
   const active = shift(19, "2026-11-16T14:00:00.000Z", "2026-11-16T16:00:00.000Z", "ACTIVE");
   const future = shift(56, "2026-11-26T04:00:00.000Z", "2026-11-26T06:00:00.000Z");
 
@@ -35,7 +34,6 @@ test("zaman aralığı dışında olsa da ACTIVE durumundaki vardiya önceliklid
 });
 
 test("aktif veya gelecek vardiya yoksa en son geçmiş vardiyaya geri döner", () => {
-  const now = new Date("2026-11-16T15:00:00.000Z");
   const older = shift(17, "2026-11-15T09:00:00.000Z", "2026-11-15T11:00:00.000Z");
   const latest = shift(19, "2026-11-16T14:00:00.000Z", "2026-11-16T16:00:00.000Z");
 

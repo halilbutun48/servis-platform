@@ -9,11 +9,6 @@ export function toReply(text, fallback = 'Bu konuda yardımcı olabilirim.') {
 
 export function normalizeVisibleTerminology(value) {
   const text = String(value || '');
-  if (/filtre\/status farkı/i.test(text)) {
-    return text
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
   return text
     .replace(/\bCOMPANY\b/gi, 'Hizmet Alan Firma')
     .replace(/\bROOM\b/gi, 'Turizm/Taşımacılık Firması')

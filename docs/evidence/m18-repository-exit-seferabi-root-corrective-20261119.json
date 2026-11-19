@@ -1,0 +1,144 @@
+{
+  "evidenceId": "M18_REPOSITORY_EXIT_SEFER_ABI_ROOT_CORRECTIVE_20261119",
+  "milestone": "#18",
+  "status": "PROVEN_BOUNDED",
+  "scope": "Repository Exit continuation after power-loss recovery; Sefer Abi and harness provenance only",
+  "trustedCheckpoint": "product-extensions-chain-global-168; resume-169",
+  "rootCauseGroups": [
+    {
+      "id": "SEFER_ABI_HARNESS_EXPECTATION_DRIFT",
+      "decision": "HARNESS_EXPECTATION_DRIFT",
+      "description": "Acceptance scripts still asserted an older semantic classification or legacy UI contract while the canonical product behavior and targeted checks already used the current domain behavior.",
+      "proof": [
+        "check:airesponsesemanticqualitygate01 targeted PASS",
+        "check:cop03afix01 targeted PASS",
+        "check:cop03cfix02 targeted PASS",
+        "check:cop04a/04b and Sefer Abi targeted checks passed in resume-169 chain"
+      ]
+    },
+    {
+      "id": "SMOKE_DRIVER_FIXTURE_BOUNDARY",
+      "decision": "ENVIRONMENTAL_FIXTURE_BOUNDARY",
+      "description": "The local/public smoke fixture has eight explicitly classified DRIVER authentication rows; this is retained as AUTH-BLOCKED evidence, not converted to a product PASS.",
+      "proof": [
+        "UX_ALL_PANELS_REALITY_AUDIT_01 PASS 74 / AUTH-BLOCKED 8 / BLOCKER 0 / NOT-FOUND 0",
+        "UX_LIVE_PANEL_PREMIUM_SMOKE_01 same boundary",
+        "role-data isolation and security checks preserve the boundary"
+      ]
+    },
+    {
+      "id": "GENERATED_PROJECTION_CLASSIFICATION",
+      "decision": "OWNERSHIP_CLASSIFIER_SEAM",
+      "description": "The audit hygiene classifier treated explicit producer-generated projections as source files and attempted a source hash comparison despite the existing generated identity contract.",
+      "proof": [
+        "m18 manifest marks both locked invariant ledger files as PRODUCER_GENERATED_PROJECTION",
+        "milestoneOwnershipAuthority validates the producer and projection contract",
+        "audit trace now routes generated identities through the existing runtime/generated boundary"
+      ]
+    },
+    {
+      "id": "CURRENT_SEFER_ABI_PROVENANCE_SNAPSHOT",
+      "decision": "ACTIVE_SOURCE_PROVENANCE_RECONCILIATION",
+      "description": "A bounded set of current Sefer Abi/harness/authority and documentation identities was changed by the accepted recovery work; each path is recorded with its exact current identity and bounded acceptance evidence, while historical package identities remain unchanged.",
+      "proof": [
+        "resume-169 targeted chain output",
+        "security-kvkk-final-01 261/261 PASS",
+        "role-data-isolation-redteam-01 216/216 PASS",
+        "audit trace smoke boundary accepted before hygiene classification"
+      ]
+    }
+  ],
+  "targetedChecks": {
+    "roleDataIsolationRedteam": "PASS 216/216",
+    "securityKvkkFinal": "PASS 261/261",
+    "backendLintWarningBurndown": "PASS 149/149",
+    "databaseBackupRetentionIntegrity": "PASS 22/22",
+    "auditTrace": "PASS 268/268 after bounded current-identity reconciliation",
+    "fullChain": "PASS resume-169; 37/37 remaining product-extension checks passed without restart"
+  },
+  "ownershipReconciliation": {
+    "historicalCheckpoint": {
+      "unownedDelta": 770,
+      "unexplainedPaths": 557,
+      "exactIdentityFailure": 213,
+      "staleTouched": 64
+    },
+    "candidateBeforeBoundedReconciliation": {
+      "unownedDelta": 43,
+      "unexplainedPaths": 41,
+      "evidenceFailures": 2
+    },
+    "candidateAfterBoundedReconciliation": {
+      "activeManifestEntries": 1518,
+      "unownedDelta": 0,
+      "unexplainedPaths": 0,
+      "evidenceFailures": 0,
+      "packageOwnershipDelta": "PASS",
+      "negativeCases": "10/10 PASS",
+      "positiveCases": "7/7 PASS",
+      "lifecycleRegressions": "11/11 PASS",
+      "dependencyRegressions": "2/2 PASS",
+      "evidenceMatrix": "30/30 reconciled; 0 unresolved; 5/5 regressions PASS"
+    },
+    "decision": "The remaining candidate delta was a finite set of current M18 harness, Sefer Abi, UX, reliability-check and documentation identities. They were registered with exact current content identities under the existing active M18 authority; generated runtime projections remain commit-external and historical package identities remain immutable.",
+    "handoff": "Do not repeat the prior 41-path discovery. Continue with verify:repo and only investigate a path if a later control reports a concrete new mismatch."
+  },
+  "postRecoveryValidation": {
+    "recoveredAfterPowerLoss": true,
+    "verifyRepo": "PASS; package-ownership-delta 0 unowned / 0 unexplained; 1576 touched paths accepted",
+    "verifyClosure": "PASS 14/14",
+    "verifyFinal": "PASS; 124 PASS / 0 FAIL / 307 SKIP across the selected 205-step closure",
+    "snapshotHygiene": "PASS; failures 0, warnings 0",
+    "productFlowButtonAudit": "PASS 18/18 on canonical local Chromium",
+    "copilotOperationHealth": "PASS 125/125 runtime cases; 5313 assertions",
+    "contextualSuggestions": "PASS; 199 golden scenarios; score 0.997",
+    "premiumSmoke": "PASS 74; AUTH-BLOCKED 8; BLOCKER 0; NOT-FOUND 0",
+    "runtimeBoundary": "Canonical DB env was injected only for read-only verification; generated repo-audit evidence remains commit-external",
+    "nextFrontier": "Stage only verified source/evidence files, create the candidate commit, then validate an independent clean checkout before normal branch/tag/remote delivery."
+  },
+  "currentIdentityPaths": [
+    "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+    "backend/scripts/cop_03a_fix_global_screen_purpose_check.js",
+    "backend/scripts/cop_03c_fix_02_live_answer_precision_check.js",
+    "backend/scripts/cop_04a_fix_01_global_live_answer_final_polish_check.js",
+    "backend/scripts/cop_04a_fix_02_contract_generation_intent_check.js",
+    "backend/scripts/cop_04a_fix_03_live_company_agreements_context_check.js",
+    "backend/scripts/cop_04a_fix_04_quick_help_contract_answer_route_check.js",
+    "backend/scripts/cop_04b_fix_01_superadmin_room_live_context_check.js",
+    "backend/scripts/cop_04b_fix_02_company_commercial_context_check.js",
+    "backend/scripts/cop_04b_fix_03_personel_parent_driver_context_check.js",
+    "backend/scripts/cop_04b_fix_04_chip_answer_premium_polish_check.js",
+    "backend/scripts/cop_04b_fix_06_free_chat_context_bridge_check.js",
+    "backend/scripts/cop_live_accept_01_check.js",
+    "backend/scripts/copilot_guided_task_engine_01_check.js",
+    "backend/scripts/copilot_root_cause_engine_01_check.js",
+    "backend/scripts/copilot_smart_diagnostic_engine_01_check.js",
+    "backend/scripts/final_ux_smoke_01_check.js",
+    "backend/scripts/lib/canonicalProvenanceRegistry.js",
+    "backend/scripts/lib/currentHeadScopePolicy.js",
+    "backend/scripts/lib/pre18LifecycleClassification.js",
+    "backend/scripts/lib/presentationProvenanceAuthority.js",
+    "backend/scripts/lib/productFlowShiftSmoke.js",
+    "backend/scripts/security_kvkk_final_01_check.js",
+    "backend/scripts/sefer_abi_cost_analysis_assistant_01_check.js",
+    "backend/scripts/sefer_abi_premium_character_corrective_01_check.js",
+    "backend/scripts/sefer_abi_terminal_humanize_01_check.js",
+    "backend/scripts/ux_brand_login_premium_01_check.js",
+    "backend/scripts/ux_copilot_persona_01_check.js",
+    "backend/scripts/ux_copilot_smart_chips_01_check.js",
+    "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
+    "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
+    "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
+    "backend/src/ai/chat/replyShapes.js",
+    "docs/LOAD_TEST_2000_USERS_01.md",
+    "docs/MOBILE_WEB_FINAL_01.md",
+    "docs/QUALITY_GATE_FINAL_01.md",
+    "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
+    "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
+    "docs/UX_ROOM_PANEL_CLARITY_01.md",
+    "docs/UX_SMOKE_PASS_MINUS_ZERO_01.md"
+  ],
+  "historicalArtifactsPreserved": true,
+  "generatedLedgerNotSource": true,
+  "nextFrontier": "Candidate source is verification-green; proceed to staged source review, independent clean-checkout rebuild, and only then normal Git delivery."
+}

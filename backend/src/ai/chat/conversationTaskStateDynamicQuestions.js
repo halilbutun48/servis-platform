@@ -177,7 +177,7 @@ function buildSurfaceSnapshot({
     // Company-specific guidance must therefore be proven by the authorized
     // company route/context, never by a generic label or visible button.
     isCompanyPlanningSurface:
-      /^\/company(?:\/|$)/u.test(resolvedScreenPath)
+      /^(?:\/company|\/organization)(?:\/|$)/u.test(resolvedScreenPath)
       && (
         looksLikeCompanyPlanningSurfaceText(planningSurfaceText)
         || looksLikeCompanyPlanningSurfaceText(visibleSurfaceText)

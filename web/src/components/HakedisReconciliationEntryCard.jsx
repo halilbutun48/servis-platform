@@ -1,6 +1,6 @@
 import ReconciliationPreviewCard from "./ReconciliationPreviewCard";
 
-export default function HakedisReconciliationEntryCard({ agreement, token, onOpenAgreement, collectionEnabled = false }) {
+export default function HakedisReconciliationEntryCard({ agreement, token, onOpenAgreement, collectionEnabled = false, showPreview = true }) {
   const agreementId = Number(agreement?.id || 0);
 
   return (
@@ -16,7 +16,13 @@ export default function HakedisReconciliationEntryCard({ agreement, token, onOpe
 
       {agreementId > 0 ? (
         <>
-          <ReconciliationPreviewCard agreementId={agreementId} token={token} collectionEnabled={collectionEnabled} />
+          {showPreview ? (
+            <ReconciliationPreviewCard agreementId={agreementId} token={token} collectionEnabled={collectionEnabled} />
+          ) : (
+            <div className="panelMeta" data-testid="hakedis-reconciliation-role-boundary">
+              Bu rolde mutabakat ayrıntısı bu yüzeyde gösterilmez. Yetkili sözleşme görünümünü açarak kayıt bağlamını inceleyebilirsin.
+            </div>
+          )}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" className="btn primary" data-testid="hakedis-reconciliation-cta" onClick={onOpenAgreement}>
               Mutabakatı incele

@@ -121,11 +121,13 @@ must(serviceSource, 'liveFacts', 'service accepts liveFacts alias');
 must(helpComposerSource, 'liveFacts', 'help composer accepts liveFacts alias');
 must(floatingDrawerSource, 'const latestSelection = readCopilotSelection();', 'floating drawer refreshes live selection at submit time');
 must(floatingDrawerSource, 'entityType: "screen"', 'floating drawer submits free chat as screen-scoped request');
-must(floatingDrawerSource, 'const requestSelection = liveSelection || selection || null;', 'floating drawer forwards the current explicit selection');
+must(floatingDrawerSource, 'const stateSelection = selectionApplies(selection, currentPath) ? selection : null;', 'floating drawer scopes the current explicit selection');
+must(floatingDrawerSource, 'const requestSelection = liveSelection || stateSelection || null;', 'floating drawer forwards the current explicit selection');
 must(floatingDrawerSource, 'selectedEntitySet: Array.isArray(requestSelection?.entitySet) ? requestSelection.entitySet : []', 'floating drawer forwards the selected entity set');
-must(copilotPanelSource, 'const latestSelection = readCopilotSelection();', 'copilot panel refreshes live selection at submit time');
+must(copilotPanelSource, 'const latestSelection = mergeCopilotSelection(readCopilotRouteSelection(), readCopilotSelection());', 'copilot panel refreshes live selection at submit time');
 must(copilotPanelSource, 'entityType: "screen"', 'copilot panel submits free chat as screen-scoped request');
-must(copilotPanelSource, 'const requestSelection = liveSelection || chatSelection || null;', 'copilot panel forwards the current explicit selection');
+must(copilotPanelSource, 'const scopedChatSelection = chatSelection', 'copilot panel scopes the current explicit selection');
+must(copilotPanelSource, 'const requestSelection = liveSelection || scopedChatSelection || fallbackEntitySelection;', 'copilot panel forwards the current explicit selection');
 must(copilotPanelSource, 'selectedEntityId: Number(requestSelection?.entityId || 0) || null', 'copilot panel forwards the selected entity id');
 must(serviceSource, 'Bu ekranda seçili araç bilgisi net görünmüyor', 'service keeps safe no-selection fallback');
 must(helpComposerSource, 'Son konum bilgisi ne zaman geldi?', 'help composer keeps gps chip');
@@ -187,7 +189,7 @@ const fixtureA = {
 };
 
 const intentA = detectQuestionIntent('Bu araç neden haritada görünmüyor?', { entityType: 'screen', screenPath: fixtureA.path, originalMessage: 'Bu araç neden haritada görünmüyor?' });
-must(intentA.questionType, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'free chat location question preserves the current authorization boundary');
+must(intentA.questionType, 'ROOT_CAUSE', 'free chat location question preserves the current root-cause diagnostic');
 mustNot(intentA.questionType, 'LOCATION_HELP', 'free chat location question does not infer location authority from screen context');
 
 const responseA = buildResponse(fixtureA);

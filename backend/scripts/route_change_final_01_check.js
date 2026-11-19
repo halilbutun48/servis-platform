@@ -74,7 +74,10 @@ function main() {
   const sharedCard = read('web/src/panels/shared/AgreementRouteChangePreviewCard.jsx');
   const agreementFacts = read('web/src/utils/agreementCopilotFacts.js');
   const copilotFacts = read('web/src/utils/copilotFacts.js');
-  const helpComposer = read('backend/src/ai/chat/helpComposer.js');
+  const helpComposer = [
+    read('backend/src/ai/chat/helpComposer.js'),
+    read('backend/src/ai/chat/helpComposerContext.js'),
+  ].join('\n');
   const intentRouter = read('backend/src/ai/chat/intentRouter.js');
   const answerQualityPolicy = read('backend/src/ai/chat/answerQualityPolicy.js');
   const goldenPack = read('backend/src/ai/chat/goldenQuestionPack.js');

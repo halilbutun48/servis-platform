@@ -263,7 +263,8 @@ function main() {
         return (
           hay.includes("detayi kapat") ||
           hay.includes("collapse icinde aciliyor") ||
-          hay.includes("bos/fallback durumda okunur")
+          hay.includes("bos/fallback durumda okunur") ||
+          hay.includes("operasyon koprusu ayri cta")
         );
       })),
       "agreement preview rows keep open or fallback evidence"
@@ -272,8 +273,12 @@ function main() {
     const dispatchRows = report.routes.filter((row) => row.kind === "dispatch");
     must(dispatchRows.length === 2, "dispatch coverage appears in both viewports");
     must(
-      dispatchRows.every((row) => Array.isArray(row.notes) && row.notes.some((note) => normalize(note).includes("dispatch apply button enabled on seeded selection"))),
-      "dispatch rows keep enabled evidence"
+      dispatchRows.every((row) =>
+        row.checks?.dispatchApplyEnabled === true ||
+        row.checks?.dispatchSafePrerequisiteGateVisible === true ||
+        (Array.isArray(row.notes) && row.notes.some((note) => normalize(note).includes("dispatch apply button enabled on seeded selection")))
+      ),
+      "dispatch rows keep enabled or safe-prerequisite evidence"
     );
 
     const launcherVisible = report.routes.filter((row) => row.checks?.seferAbiLauncherVisible);

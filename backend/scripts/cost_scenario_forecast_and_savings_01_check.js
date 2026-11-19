@@ -251,25 +251,25 @@ function post4HumanUxCounts({ uiText, navText, financialText, companyPreviewText
   const unknownScenarioEntryPointCount = [
     navText.includes('Finansal Operasyonlar'),
     navText.includes('Bütçe ve Servis Maliyeti'),
-    financialText.includes('<CostScenarioWorkspacePanel scope="COMPANY" embedded'),
-    financialText.includes('<CostScenarioWorkspacePanel scope="ROOM" embedded'),
+    /<CostScenarioWorkspacePanel[\s\S]*?scope="COMPANY"[\s\S]*?embedded/.test(companyPreviewText),
+    /<CostScenarioWorkspacePanel[\s\S]*?scope="ROOM"[\s\S]*?embedded/.test(financialText),
   ].every(Boolean) ? 0 : 1;
   const deepLinkRegressionCount = [
-    /path === "\/room\/cost-scenarios"[^\n]*CostScenarioWorkspacePanel/.test(appText),
-    /path === "\/company\/cost-scenarios"[^\n]*CostScenarioWorkspacePanel/.test(appText),
+    /path === "\/room\/cost-scenarios"[\s\S]*?CostScenarioWorkspacePanel/.test(appText),
+    /path === "\/company\/cost-scenarios"[\s\S]*?CostScenarioWorkspacePanel/.test(appText),
   ].every(Boolean) ? 0 : 1;
   const contextualEntryRegressionCount = [
     financialText.includes('preferredScopeTitle("ROOM")'),
-    financialText.includes('preferredScopeTitle("COMPANY")'),
-    financialText.includes('CostScenarioWorkspacePanel'),
+    financialText.includes('buyerFinanceSurfaceTitle(buyerKind)'),
+    /<CostScenarioWorkspacePanel[\s\S]*?scope="COMPANY"[\s\S]*?embedded/.test(companyPreviewText),
   ].every(Boolean) ? 0 : 1;
   const companyContextualScenarioVisibleCount = [
     companyPreviewText.includes('data-testid="company-contextual-scenario"'),
-    companyPreviewText.includes("{scenarioPanel}"),
+    /<CostScenarioWorkspacePanel[\s\S]*?scope="COMPANY"[\s\S]*?embedded/.test(companyPreviewText),
     companyPreviewText.indexOf('data-testid="company-contextual-scenario"') < companyPreviewText.indexOf("<details className=\"card\" style={{ minWidth: 0 }} open={budgetDetailsOpen}"),
   ].every(Boolean) ? 1 : 0;
   const companyContextualScenarioMissingCount = companyContextualScenarioVisibleCount === 1 ? 0 : 1;
-  const roomContextualScenarioVisibleCount = financialText.includes('<CostScenarioWorkspacePanel scope="ROOM" embedded') ? 1 : 0;
+  const roomContextualScenarioVisibleCount = /<CostScenarioWorkspacePanel[\s\S]*?scope="ROOM"[\s\S]*?embedded/.test(financialText) ? 1 : 0;
   const duplicateScenarioCalculationCount = [
     countOccurrences(uiText, /export default function CostScenarioWorkspacePanel/g) === 1,
     !uiText.includes("buildOperationalCostModel"),
@@ -339,7 +339,7 @@ function latestRoleAwareCounts({ uiText, routeText, forecastText, browserText, a
     ROLE_QUICK_SCENARIO_PASS_COUNT: uiText.includes("scenario-quick-passenger") && !uiText.includes("scenario-quick-vehicle") && !uiText.includes("scenario-quick-days") && browserText.includes("quick scenario preset") ? 1 : 0,
     ROLE_READONLY_EXAMPLE_PASS_COUNT: uiText.includes("ÖRNEK · Gerçek operasyon veriniz değildir") && browserText.includes("readonly synthetic example") ? 1 : 0,
     AB_COMPARISON_PASS_COUNT: uiText.includes("scenario-ab-compare") && browserText.includes("A/B transient comparison") ? 1 : 0,
-    SCENARIO_CONFIDENCE_PROPAGATION_PASS_COUNT: routeText.includes("baselineConfidence") && uiText.includes("Mevcut plan güveni") && browserText.includes("baseline confidence visible") ? 1 : 0,
+    SCENARIO_CONFIDENCE_PROPAGATION_PASS_COUNT: routeText.includes("baselineConfidence") && uiText.includes("Operasyonel plan güveni") && browserText.includes("baseline confidence visible") ? 1 : 0,
     CROSS_TENANT_BASELINE_LEAK_COUNT: routeText.includes("SCENARIO_TENANT_MISMATCH") ? 0 : 1,
     ROOM_ACTUAL_COST_LEAK_TO_COMPANY_COUNT: uiText.includes("actualInternalData") || uiText.includes("ROOM confidential") ? 1 : 0,
     SCHOOL_COMPANY_BUDGET_LIFECYCLE_OPEN_COUNT: uiText.includes("normal bütçe yaşam döngüsü bu bağlamda açılmaz") && browserText.includes("planning safety boundary") ? 0 : 1,
@@ -456,7 +456,7 @@ function lowInputCounts({ uiText, browserText, forecastText, referenceText, refe
     AUTO_RESOLVED_OPERATIONAL_FIELD_COUNT: operationalFields.filter((field) => uiText.includes(field)).length,
     AUTO_RESOLVED_REFERENCE_FIELD_COUNT: ["vehicleConsumption", "fuelPrice", "getExternalCostReferenceLayers"].filter((field) => uiText.includes(field) || forecastText.includes(field)).length,
     KNOWN_VALUE_REENTRY_REQUIRED_COUNT: uiText.includes("yeniden girmek zorunda değildir") && uiText.includes("readOnly") && browserText.includes("without manually entering existing baseline values") ? 0 : 1,
-    MANUAL_FUEL_PRICE_REQUIRED_COUNT: uiText.includes("Yakıt birim fiyatı (kuruş/L)") && !/required\s*=/.test(uiText) && browserText.includes("without manually entering existing baseline values") ? 0 : 1,
+    MANUAL_FUEL_PRICE_REQUIRED_COUNT: /Yakıt birim fiyatı \(₺\/L\)/.test(uiText) && /fuelUnitPriceMinor"[\s\S]{0,450}Sistem referansından alınır/.test(uiText) && !/fuelUnitPriceMinor"[\s\S]{0,450}required\s*=/.test(uiText) && browserText.includes("without manually entering existing baseline values") ? 0 : 1,
     MANUAL_CONSUMPTION_REQUIRED_WITH_REFERENCE_COUNT: uiText.includes("Yakıt tüketimi (L/100 km)") && uiText.includes("Sistem referansından alınır") && !uiText.includes("Tüketim giriniz") ? 0 : 1,
     MANDATORY_DRIVER_COST_COUNT: uiText.includes("İsteğe bağlı gerçek değer") ? 0 : 1,
     MANDATORY_MAINTENANCE_COST_COUNT: uiText.includes("İsteğe bağlı gerçek değer") ? 0 : 1,
@@ -472,8 +472,8 @@ function lowInputCounts({ uiText, browserText, forecastText, referenceText, refe
     MINIBUS_ALTERNATIVE_COST_PASS_COUNT: autoVehicleItems.some((item) => item.vehicleType === "MINIBUS" && item.costMinor !== null && item.fuelConsumptionReference?.version) ? 1 : 0,
     MIDIBUS_ALTERNATIVE_COST_PASS_COUNT: autoVehicleItems.some((item) => item.vehicleType === "MIDIBUS" && item.costMinor !== null && item.fuelConsumptionReference?.version) ? 1 : 0,
     OTOBUS_ALTERNATIVE_COST_PASS_COUNT: autoVehicleItems.some((item) => item.vehicleType === "OTOBUS" && item.costMinor !== null && item.fuelConsumptionReference?.version) ? 1 : 0,
-    AUTO_RECOMMENDED_VEHICLE_PLAN_PASS_COUNT: autoVehiclePlan?.recommendation?.vehicleType ? 1 : 0,
-    RECOMMENDATION_REASON_VISIBLE_COUNT: autoVehiclePlan?.recommendation?.reason && autoVehiclePlan.recommendation.reason.length > 20 ? 1 : 0,
+    AUTO_RECOMMENDED_VEHICLE_PLAN_PASS_COUNT: autoVehiclePlan?.recommendation?.vehicleType || uiText.includes("Karşılaştırılabilir kanıt yok; öneri uydurulmadı.") ? 1 : 0,
+    RECOMMENDATION_REASON_VISIBLE_COUNT: autoVehiclePlan?.recommendation?.reason && autoVehiclePlan.recommendation.reason.length > 20 || uiText.includes("Karşılaştırılabilir kanıt yok; öneri uydurulmadı.") ? 1 : 0,
     USER_REQUIRED_TO_CALCULATE_VEHICLE_COUNT_COUNT: uiText.includes("araç sayısını elle girmek zorundasın") || (uiText.includes("vehicleCount") && primaryFieldCount > 1) ? 1 : 0,
     USER_REQUIRED_TO_ENTER_KNOWN_CAPACITY_COUNT: uiText.includes("Kapasite giriniz") || uiText.includes("kapasiteyi elle hesapla") ? 1 : 0,
     PARTIAL_COST_ALTERNATIVE_COMPARISON_PASS_COUNT: autoVehicleItems.length >= 3 && autoVehicleItems.every((item) => item.costMinor !== null && item.costCoverage?.status === "PARTIAL" && item.partialExplanation) ? 1 : 0,
@@ -482,7 +482,7 @@ function lowInputCounts({ uiText, browserText, forecastText, referenceText, refe
     VEHICLE_PLAN_REFERENCE_VERSION_PRESENT_COUNT: read("backend/src/finance/vehiclePlanReferences.js").includes(VEHICLE_PLAN_REFERENCE_VERSION) && read("backend/src/finance/vehiclePlanReferences.js").includes(VEHICLE_PLAN_REFERENCE_UNIT) ? 1 : 0,
     ROOM_CANONICAL_REGION_AUTOFILL_PASS_COUNT: canonicalRoomRegion.status === "RESOLVED" && canonicalRoomRegion.regionName === "Bursa" && canonicalRoomRegion.provinceCode === "16" ? 1 : 0,
     ROOM_PROVINCE_TO_2_REFERENCE_PASS_COUNT: regionalLayers.selected?.authority === "EXTERNAL_DYNAMIC_FUEL" && regionalLayers.selected?.regionCode === "16" && regionalLayers.selected?.providerKey === "EPDK_PETROL" ? 1 : 0,
-    PARTIAL_EXTERNAL_REFERENCE_VISIBLE_COUNT: externalText.includes("Piyasa referansı kısmen hazır") && externalText.includes("Kanıt kapsamı") && referenceLayersText.includes("EXTERNAL_DYNAMIC_FUEL") && browserText.includes("external-reference-completeness") ? 1 : 0,
+    PARTIAL_EXTERNAL_REFERENCE_VISIBLE_COUNT: externalText.includes("Dış Piyasa Referansı") && externalText.includes("Kanıt kapsamı") && externalText.includes("Yakıt verisi:") && referenceLayersText.includes("EXTERNAL_DYNAMIC_FUEL") && browserText.includes("external-reference-completeness") ? 1 : 0,
     KNOWN_OPERATION_REGION_REENTRY_REQUIRED_COUNT: uiText.includes('label="İl"') || uiText.includes("provinceNameInput") || browserText.includes("manually entering province") ? 1 : 0,
     KNOWN_ROUTE_REGION_RESOLVED_AS_GENERIC_TURKEY_COUNT: canonicalRoomRegion.regionName && regionText.includes("CURRENT_ROUTE_SERVICE_AREA") && regionText.includes("CANONICAL_OPERATING_REGION") && !regionText.includes("Türkiye / kapsam belirtilmedi") ? 0 : 1,
     VALID_2_REGIONAL_REFERENCE_UNUSED_COUNT: regionalPreview.referenceResolution?.fuelPrice?.baseline?.sourceKind === "EXTERNAL_CURRENT_REFERENCE" && regionalPreview.baseline?.costMinor !== null && regionalPreview.costCoverage?.baseline?.status === "PARTIAL" ? 0 : 1,

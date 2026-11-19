@@ -499,7 +499,7 @@ function buildThemeCases() {
         selectedEntityId: 5,
       }),
       messages: ['Kök neden ne?', 'Neden tekrar ediyor?', 'En olası neden ne?'],
-      replyNeedles: ['talebin tedarikçiye ulaşmaması', 'tedarikçi dönüşünün beklenmesi', 'filtre/status farkı'],
+      replyNeedles: ['talebin tedarikçiye ulaşmaması', 'tedarikçi dönüşünün beklenmesi', 'filtre/durum farkı'],
       chipNeedles: ['Talep durumu', 'Teklif filtresi', 'Tedarikçi dönüşü'],
     },
     {
@@ -840,14 +840,15 @@ function buildThemeCases() {
       chipNeedles: ['Devam et', 'Yaptım', 'Bulamadım', 'Detayını anlat'],
     },
     {
-      kind: 'regression',
+      kind: 'root',
       label: 'personel-live-diagnostic-01',
       role: 'PERSONEL',
       fixture: personelLiveFixture,
       message: 'Servis neden görünmüyor?',
+      theme: 'PERSONEL_LIVE',
       expectedQuestionTypes: ['ROOT_CAUSE'],
-      replyNeedles: ['Kesin sebebi veriyle doğrulamak gerekir', 'en olası nedenler', 'son sinyali kontrol edelim'],
-      chipNeedles: ['Servis', 'Araç', 'Durak', 'Saat'],
+      replyNeedles: ['atanmış aktif vardiya olmaması', 'servis saatinin başlamaması', 'araç konum sinyali verisinin gelmemesi'],
+      chipNeedles: ['Atanmış vardiya', 'Son konum bilgisi zamanı', 'Araç bağlantısı', 'Servis saati'],
     },
     {
       kind: 'regression',

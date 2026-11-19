@@ -32,3 +32,22 @@ test("vardiya üzerindeki kanonik alanlar aktif offer özetinden önceliklidir",
   assert.equal(result.roomOfferAmount, 4_500_000);
   assert.equal(result.roomOfferDecision, "ACCEPTED");
 });
+
+test("string null teklif notunu kullanıcıya göstermez", () => {
+  const result = getShiftOfferPresentation({
+    companyOfferNote: "null",
+    roomOfferNote: "undefined",
+    offers: [{ id: 275, status: "COUNTERED", noteCompany: "null", noteRoom: "undefined" }],
+  });
+
+  assert.equal(result.companyOfferNote, null);
+  assert.equal(result.roomOfferNote, null);
+});
+
+test("teklif notundaki null ekonomik alanı kullanıcıya sızmaz", () => {
+  const result = getShiftOfferPresentation({
+    roomOfferNote: "Finans senaryosu scenario-replay · teklif tabanı null",
+  });
+
+  assert.equal(result.roomOfferNote, "Finans senaryosu scenario-replay");
+});

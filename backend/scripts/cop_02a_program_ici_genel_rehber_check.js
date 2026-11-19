@@ -129,18 +129,22 @@ must(helpComposer, 'sorun + neden + öneri + sıradaki adım', 'helpComposer kee
 must(helpComposer, 'emin değilse ilk kontrolü söyler', 'helpComposer keeps uncertainty fallback marker');
 
 const generalReplySnippet = sliceBetween(helpComposer, '// COP-02A: program içi genel ürün rehberi fallback’i.', 'export function buildChatHelpResponse');
+const generalReplyVisibleTemplates = [...generalReplySnippet.matchAll(/`([\s\S]*?)`/g)]
+  .map((match) => String(match[1] || '').replace(/\$\{[\s\S]*?\}/g, ''))
+  .join(' ')
+  .replace(/\$\{[^}]*\}/g, '');
 must(generalReplySnippet, 'Şimdi:', 'general reply has now lead');
 must(generalReplySnippet, 'Bu programda bunun anlamı:', 'general reply has program meaning lead');
 must(generalReplySnippet, 'Neden?', 'general reply has why lead');
 must(generalReplySnippet, 'Öneri:', 'general reply has suggestion lead');
 must(generalReplySnippet, 'Sıradaki doğru işlem:', 'general reply has next step lead');
-mustNot(generalReplySnippet, 'raw', 'general reply avoids raw wording');
-mustNot(generalReplySnippet, 'payload', 'general reply avoids payload wording');
-mustNot(generalReplySnippet, 'token', 'general reply avoids token wording');
-mustNot(generalReplySnippet, 'hash', 'general reply avoids hash wording');
-mustNot(generalReplySnippet, 'debug', 'general reply avoids debug wording');
-mustNot(generalReplySnippet, 'driver GPS', 'general reply avoids driver GPS wording');
-mustNot(generalReplySnippet, 'agreement', 'general reply avoids agreement wording');
+mustNot(generalReplyVisibleTemplates, 'raw', 'general reply avoids raw wording');
+mustNot(generalReplyVisibleTemplates, 'payload', 'general reply avoids payload wording');
+mustNot(generalReplyVisibleTemplates, 'token', 'general reply avoids token wording');
+mustNot(generalReplyVisibleTemplates, 'hash', 'general reply avoids hash wording');
+mustNot(generalReplyVisibleTemplates, 'debug', 'general reply avoids debug wording');
+mustNot(generalReplyVisibleTemplates, 'driver GPS', 'general reply avoids driver GPS wording');
+mustNot(generalReplyVisibleTemplates, 'agreement', 'general reply avoids agreement wording');
 
 must(intentRouter, 'bu kullanıcı ne yapabilir', 'intent router covers role capability');
 must(intentRouter, 'sözleşme ile vardiya ilişkisi ne', 'intent router covers contract-shift relation');

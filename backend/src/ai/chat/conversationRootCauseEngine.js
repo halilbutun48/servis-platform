@@ -14,7 +14,7 @@ import {
 
 export const COPILOT_ROOT_CAUSE_ENGINE_VERSION = 'COPILOT-ROOT-CAUSE-ENGINE-01';
 
-const ROOT_CAUSE_INTENT_RE = /(?:asıl\s+sebep|asil\s+sebep|kök\s+neden|kok\s+neden|temel\s+neden|temel\s+problem|arkasında\s+ne\s+var|arkasinda\s+ne\s+var|hangi\s+şey\s+buna\s+yol\s+açıyor|hangi\s+sey\s+buna\s+yol\s+aciyor|neden\s+tekrar\s+ediyor|sürekli\s+neden\s+boyle\s+oluyor|sürekli\s+neden\s+böyle\s+oluyor|neden\s+yen[iı]\s+oldu|neden\s+düzelmiyor|neden\s+duzelmiyor|bunu\s+ne\s+bozuyor\s+olabilir|en\s+olası\s+neden|en\s+olasi\s+neden|root\s+cause|hangi\s+eksik\s+buna\s+sebep\s+olur|neden\s+sürekli\s+görünmüyor|neden\s+sürekli\s+gorunmuyor|neden\s+sürekli\s+gps\s+yok|rota\s+neden\s+hep\s+oluşmuyor|rota\s+neden\s+hep\s+olusmuyor)/i;
+const ROOT_CAUSE_INTENT_RE = /(?:asıl\s+sebep|asil\s+sebep|kök\s+neden|kok\s+neden|temel\s+neden|temel\s+problem|arkasında\s+ne\s+var|arkasinda\s+ne\s+var|hangi\s+şey\s+buna\s+yol\s+açıyor|hangi\s+sey\s+buna\s+yol\s+aciyor|neden\s+tekrar\s+ediyor|sürekli\s+neden\s+boyle\s+oluyor|sürekli\s+neden\s+böyle\s+oluyor|neden\s+yen[iı]\s+oldu|neden\s+düzelmiyor|neden\s+duzelmiyor|bunu\s+ne\s+bozuyor\s+olabilir|en\s+olası\s+neden|en\s+olasi\s+neden|root\s+cause|hangi\s+eksik\s+buna\s+sebep\s+olur|neden\s+(?:sürekli\s+)?görünmüyor|neden\s+(?:sürekli\s+)?gorunmuyor|neden\s+sürekli\s+gps\s+yok|rota\s+neden\s+hep\s+oluşmuyor|rota\s+neden\s+hep\s+olusmuyor)/i;
 
 const ROOT_CAUSE_THEME_LIBRARY = {
   COMPANY_PLANNING_ROUTE: {
@@ -42,7 +42,7 @@ const ROOT_CAUSE_THEME_LIBRARY = {
     chips: ['Atama durumu', 'Vardiya saati', 'Operasyon ön koşulları', 'Son durum'],
   },
   COMPANY_OFFER: {
-    reply: 'Kesin sebebi veriyle doğrulamak gerekir; en olası nedenler talebin tedarikçiye ulaşmaması, tedarikçi dönüşünün beklenmesi veya filtre/status farkı olabilir. Çünkü teklif listesi talep durumu ve dönüş kayıtlarına bağlıdır. Önce talep durumunu ve teklif filtresini kontrol edelim. Filtre/status farkı varsa görünüm eksik kalabilir.',
+    reply: 'Kesin sebebi veriyle doğrulamak gerekir; en olası nedenler talebin tedarikçiye ulaşmaması, tedarikçi dönüşünün beklenmesi veya filtre/durum farkı olabilir. Çünkü teklif listesi talep durumu ve dönüş kayıtlarına bağlıdır. Önce talep durumunu ve teklif filtresini kontrol edelim. Filtre/durum farkı varsa görünüm eksik kalabilir.',
     chips: ['Talep durumu', 'Teklif filtresi', 'Tedarikçi dönüşü', 'Seçili teklif'],
   },
   ROOM_SHIFT: {
@@ -399,9 +399,52 @@ function buildFallbackRootCauseChips(snapshot = {}) {
   return ['Seçili kaydı aç', 'Son sinyali göster', 'Filtreyi kontrol et', 'Eksik veriyi göster'];
 }
 
+function buildSelectedEvidenceSuffix(snapshot = {}, theme = '') {
+  const contextThemes = new Set([
+    'PERSONEL_LIVE',
+    'PERSONEL_LIVE_REPEAT',
+    'PARENT_LIVE',
+    'DRIVER_ROUTE',
+    'DRIVER_CHECKIN',
+  ]);
+  if (!contextThemes.has(theme)) return '';
+  const selected = normalizeSentence(firstNonEmpty(
+    snapshot.selectedSummary,
+    snapshot.selectedLabel,
+    '',
+  ).replace(/^seçili kayıt:\s*/i, ''));
+  if (!selected) return '';
+  const selectedStatus = normalizeSentence(firstNonEmpty(
+    snapshot.screenContext?.selectedRecordStatus,
+    snapshot.sourceScreenContext?.selectedRecordStatus,
+    '',
+  ));
+  const detail = selectedStatus && normalizeLooseText(selectedStatus) !== normalizeLooseText(selected)
+    ? ` Ayrıntı: ${selectedStatus}.`
+    : '';
+  return ` Seçili kayıt: ${selected}.${detail} Önce seçili kayıt ve son sinyali kontrol edelim.`;
+}
+
 function buildThemeReply(snapshot = {}, theme = '') {
+  const path = normalizeText(snapshot.screenPath);
+  const hasExplicitRecordSelection = Boolean(firstNonEmpty(
+    snapshot.screenContext?.selectedLabel,
+    snapshot.screenContext?.selectedSummary,
+    snapshot.sourceScreenContext?.selectedLabel,
+    snapshot.sourceScreenContext?.selectedSummary,
+    snapshot.context?.selectedLabel,
+    snapshot.context?.selectedSummary,
+    '',
+  ));
+  if (path.includes('/superadmin/commercial-core') && !hasExplicitRecordSelection) {
+    return 'Riskler: Önce: Açık veya riskli kartı aç. İlgili kartı aç.';
+  }
+  const contextThemes = ['PERSONEL_LIVE', 'PERSONEL_LIVE_REPEAT', 'PARENT_LIVE', 'DRIVER_ROUTE', 'DRIVER_CHECKIN'];
+  if (contextThemes.includes(theme) && !hasExplicitRecordSelection) {
+    return buildFallbackRootCauseReply(snapshot);
+  }
   const explicit = ROOT_CAUSE_THEME_LIBRARY[theme]?.reply || '';
-  if (explicit) return explicit;
+  if (explicit) return `${explicit}${buildSelectedEvidenceSuffix(snapshot, theme)}`;
   return buildFallbackRootCauseReply(snapshot);
 }
 

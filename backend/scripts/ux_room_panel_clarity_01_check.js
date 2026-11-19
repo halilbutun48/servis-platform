@@ -82,6 +82,9 @@ function main() {
   const shiftsOverview = read("web/src/panels/room/roomShiftsOverviewSection.jsx");
   const shiftsSections = read("web/src/panels/room/roomShiftsPanelSections.jsx");
   const agreementsPanel = read("web/src/panels/room/AgreementsPanel.jsx");
+  const agreementsHeader = read("web/src/panels/room/roomAgreementsPanelHeader.jsx");
+  const agreementsOther = read("web/src/panels/room/roomAgreementsOtherSection.jsx");
+  const agreementsPending = read("web/src/panels/room/roomAgreementsPendingSection.jsx");
   const agreementSections = read("web/src/panels/room/roomAgreementsPanelSections.jsx");
   const commercialFlow = read("web/src/panels/room/CommercialFlowPanel.jsx");
   const operationHealth = read("web/src/panels/room/OperationHealthPanel.jsx");
@@ -118,15 +121,19 @@ function main() {
   must(doc, "UX-FIX coverage gap", "room clarity doc keeps coverage-gap wording");
   must(doc, "Bu milestone yeni business flow eklemez.", "room clarity doc keeps no-business-flow boundary");
 
-  must(shiftsPanel, "Vardiya ID", "room shifts panel uses safe id labels");
-  must(shiftsPanel, "Araç ID", "room shifts panel uses safe vehicle id labels");
-  must(shiftsPanel, "Sürücü ID", "room shifts panel uses safe driver id labels");
-  must(shiftsPanel, "Sözleşme ID", "room shifts panel uses safe agreement id labels");
+  must(shiftsPanel, "entityType: 'shift'", "room shifts panel keeps selected shift entity type");
+  must(shiftsPanel, "entityId: Number(copilotShift?.id", "room shifts panel keeps selected shift entity id");
+  must(shiftsPanel, 'label: "Seçili vardiya"', "room shifts panel uses humanized selected label");
+  must(shiftsPanel, "buildShiftFacts", "room shifts panel forwards structured shift facts");
+  must(shiftsPanel, "label: 'Araç'", "room shifts panel exposes vehicle context field");
+  must(shiftsPanel, "label: 'Sürücü'", "room shifts panel exposes driver context field");
+  must(shiftsPanel, "label: 'Sözleşme'", "room shifts panel exposes agreement context badge");
 
   must(shiftsOverview, "Vardiya Özeti", "room shifts overview title present");
   mustNot(shiftsOverview, "Shifts (ROOM) · Room / Vardiyalar", "room shifts overview removes duplicate legacy title");
   must(shiftsOverview, "Özet üstte; karar, dispatch ve rota önizleme tablarda kalır.", "room shifts overview keeps summary-first copy");
-  must(shiftsOverview, "Vardiya ID", "room shifts overview uses safe preview labels");
+  must(shiftsOverview, "onOpenRouteEvidence", "room shifts overview keeps selected-record route evidence action");
+  must(shiftsOverview, "Seçili vardiya için kayıtlı rota ve durak girişini açar.", "room shifts overview explains selected-record route action");
 
   must(
     shiftsSections,
@@ -138,23 +145,24 @@ function main() {
   must(shiftsSections, "Bölme önizlemesi oluştur", "room shifts dispatch preview create CTA present");
   must(shiftsSections, "Tüm öneriler hazır. Önizlemeyi uygulayabilirsin.", "room shifts dispatch success hint present");
 
-  must(agreementsPanel, "Taşımacılık Firması / Sözleşmeler", "room agreements title present");
-  must(agreementsPanel, "Detayı aç", "room agreements detail CTA present");
-  must(agreementsPanel, "Sözleşme ID", "room agreements uses safe contract id labels");
-  must(agreementsPanel, "Araç ID", "room agreements uses safe vehicle id labels");
-  must(agreementsPanel, "Sürücü ID", "room agreements uses safe driver id labels");
-  must(agreementsPanel, "Vardiya ID", "room agreements uses safe shift id labels");
-  mustNot(agreementsPanel, "Sözleşme #", "room agreements removes hash-based contract labels");
-  mustNot(agreementsPanel, "Talep #", "room agreements removes hash-based request labels");
+  must(agreementsHeader, "Taşımacılık Firması / Sözleşmeler", "room agreements title present");
+  must(agreementsOther, "Detayı aç", "room agreements detail CTA present for other agreements");
+  must(agreementsPending, "Detayı aç", "room agreements detail CTA present for pending agreements");
+  must(agreementsPanel, "entityType: 'agreement'", "room agreements keeps selected agreement entity type");
+  must(agreementsPanel, "entityId: Number(item?.id", "room agreements keeps selected agreement entity id");
+  must(agreementsPanel, "buildAgreementCopilotFacts", "room agreements forwards structured agreement facts");
+  must(agreementsPanel, "label: 'Araç'", "room agreements exposes vehicle context field");
+  must(agreementsPanel, "label: 'Sürücü'", "room agreements exposes driver context field");
+  must(agreementsPanel, "label: \`Sözleşme #", "room agreements keeps selected agreement label");
 
-  must(agreementSections, "Sözleşme ID", "agreement route sections use safe contract labels");
-  must(agreementSections, "Talep ID", "agreement route sections use safe request labels");
+  must(agreementSections, "const agreementId = Number(item?.agreementId", "agreement route sections keep linked agreement id");
+  must(agreementSections, "const requestId = Number(item?.id", "agreement route sections keep route request id");
+  must(agreementSections, "summaryText=", "agreement route sections keep request summary binding");
+  must(agreementSections, "Talep #", "agreement route sections keep request context in preview");
   must(agreementSections, "Mevcut Rota", "agreement route sections keep current preview label");
   must(agreementSections, "Önerilen Yeni Rota", "agreement route sections keep proposed preview label");
   must(agreementSections, "Önceki Rota", "agreement route sections keep previous route label");
   must(agreementSections, "Uygulanan Yeni Rota", "agreement route sections keep applied route label");
-  mustNot(agreementSections, "Sözleşme #", "agreement route sections remove hash contract labels");
-  mustNot(agreementSections, "Talep #", "agreement route sections remove hash request labels");
 
   must(commercialFlow, "Ticari Akış", "commercial flow title present");
   must(commercialFlow, "FlowSummaryStrip", "commercial flow keeps summary strip");
@@ -166,10 +174,11 @@ function main() {
   must(operationHealth, "Düşük canlılık / Çevrim dışı", "operation health uses safe health labels");
   must(operationHealth, "Kanıt / Rehber", "operation health keeps evidence guide tab");
 
-  must(bridgeCard, "Taşımacılık Firması no", "agreement ops bridge card uses safe room labels");
-  must(bridgeCard, "Araç ID", "agreement ops bridge card uses safe vehicle labels");
-  must(bridgeCard, "Sürücü ID", "agreement ops bridge card uses safe driver labels");
-  must(bridgeCard, "Detayı aç", "agreement ops bridge card keeps detail CTA");
+  must(bridgeCard, "const contextText = room?.name || agreementStatusText", "agreement ops bridge card keeps scoped room/status context");
+  must(bridgeCard, "const vehicleLabel =", "agreement ops bridge card keeps vehicle context");
+  must(bridgeCard, "const driverLabel =", "agreement ops bridge card keeps driver context");
+  must(bridgeCard, "Operasyon kanıtı durumu", "agreement ops bridge card keeps evidence status");
+  must(bridgeCard, "Detayları göster", "agreement ops bridge card keeps detail CTA");
 
   must(roomOpsBoard, "Operasyon Özeti", "room operations board title present");
   must(roomOpsBoard, "Personel ID", "room operations board uses safe personnel labels");

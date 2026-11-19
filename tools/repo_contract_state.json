@@ -142,6 +142,7 @@
                                "classifications":  {
                                                          "backend/indexes/documentation_registry_v1.json":  { "class": "safe-candidate-review", "note": "current documentation registry; cleanup only with consumer evidence" },
                                                          "backend/scripts/ai_response_semantic_quality_gate_01_check.js":  { "class": "safe-candidate-review", "note": "current semantic gate runner; retain until replacement is proven" },
+                                                         "backend/scripts/cache_coalescing_and_backoff_01_check.js":  { "class": "acceptance-sensitive / later", "note": "current cache/backoff reliability acceptance runner; retain until replacement is proven" },
                                                          "backend/scripts/canonical_conversation_core_01_check.js":  { "class": "acceptance-sensitive / later", "note": "current Sefer Abi conversation acceptance runner" },
                                                          "backend/scripts/company_budget_and_service_cost_01_check.js":  { "class": "acceptance-sensitive / later", "note": "finance acceptance runner; preserve FINANCE_ACCEPTED_WITH_SCOPE evidence" },
                                                          "backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js":  { "class": "acceptance-sensitive / later", "note": "accepted Copilot UI anchor regression" },
@@ -155,7 +156,6 @@
                                                          "backend/src/ai/chat/copilotUiElementAnchor.js":  { "class": "acceptance-sensitive / later", "note": "accepted Copilot UI anchor authority" },
                                                          "backend/src/ai/chat/helpComposer.js":  { "class": "justified-exception", "note": "accepted response-composition center; no refactor without explicit scope" },
                                                          "backend/src/ai/chat/helpComposerSafeReplies.js":  { "class": "acceptance-sensitive / later", "note": "user-visible safe reply contract" },
-                                                         "backend/src/ai/chat/intentRouter.js":  { "class": "acceptance-sensitive / later", "note": "deterministic intent routing authority" },
                                                          "backend/src/ai/jobGuide/screenCatalog.js":  { "class": "acceptance-sensitive / later", "note": "636/95 product ownership and guidance catalog" },
                                                          "backend/src/ai/chat/seferAbiCostAnalysisAssistant.js":  { "class": "acceptance-sensitive / later", "note": "finance-context Sefer Abi authority" },
                                                          "backend/src/ai/chat/semanticIntentPlanner.js":  { "class": "acceptance-sensitive / later", "note": "semantic plan authority" },

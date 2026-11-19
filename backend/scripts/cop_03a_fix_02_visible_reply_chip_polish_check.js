@@ -133,7 +133,7 @@ assertProductExtensionsIncludes('check:cop03afix02', 'verify chain registry expo
 must('helpComposer keeps screen-purpose carry reply', helpComposer.includes('composeScreenPurposeWithCarry'));
 must('helpComposer keeps selection-aware chips', helpComposer.includes('Bu ekranda seçili kayıt da var:'));
 must('helpComposer keeps generic screen-purpose chip', helpComposer.includes('Bu ekranı detaylı anlat'));
-must('intentRouter keeps feedback chips', intentRouter.includes('Açık kayıt var mı?'));
+must('intentRouter keeps feedback chips', intentRouter.includes('Açık geri bildirimi göster'));
 must('intentRouter keeps notification chips', intentRouter.includes('Bildirim kaynağını göster'));
 must('intentRouter keeps driver chips', intentRouter.includes('Aktif sürücüler kim?'));
 must('catalog keeps natural feedback copy', catalog.includes('Açık veya kritik kayıtları incele.'));
@@ -202,13 +202,16 @@ for (const scenario of roleScreenMatrix) {
   ];
   const currentRoomSemanticContext = {
     '/room/drivers': 'SEMANTIC_MULTI_DOMAIN_SUMMARY',
-    '/room/reports': 'SEMANTIC_PRIORITY',
+    '/room/reports': 'FIRST_CONTROL',
   };
   const expectedRoomSemanticType = scenario.role === 'ROOM' ? currentRoomSemanticContext[scenario.path] : '';
   must(
     `${scenario.role} ${scenario.path} reply follows the current screen or semantic contract`,
     expectedRoomSemanticType
-      ? response.questionType === expectedRoomSemanticType && normalizedReply.startsWith(normalize('Taşımacılık Firması açısından:'))
+      ? response.questionType === expectedRoomSemanticType && (
+        normalizedReply.startsWith(normalize('Taşımacılık Firması açısından:'))
+        || normalizedReply.startsWith(normalize('Şimdi: Taşımacılık Firması açısından:'))
+      )
       : naturalOpeners.some((prefix) => normalizedReply.startsWith(normalize(prefix))),
   );
   must(`${scenario.role} ${scenario.path} reply avoids validation text`, !normalizedReply.includes('validation failed'));

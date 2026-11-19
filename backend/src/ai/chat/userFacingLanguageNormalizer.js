@@ -99,7 +99,7 @@ const INTERNAL_IDENTITY_KEYS = new Set([
   "authorizedContext", "anchor", "locator", "routeKey", "actionKind", "guideJobType", "jobType",
   "path", "kind",
   "activeGoal", "activeWorkflow", "activeStep", "currentExpectedStep", "currentSurface", "currentRole",
-  "effectiveRole", "mode", "provider", "providerSummary", "questionType", "assistantIntent", "intent", "intentLabel",
+  "effectiveRole", "mode", "provider", "providerSummary", "questionType", "assistantIntent", "intent", "intentLabel", "interactionIntentFamily",
   "lastReasoningAssistantRole", "lastReasoningAssistantMode", "lastReasoningAssistantFingerprint",
   "safeOnly", "workflowIntent", "workflowId", "ordinal", "completedThroughOrdinal", "currentTargetKey",
 ]);

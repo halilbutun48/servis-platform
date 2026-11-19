@@ -131,6 +131,7 @@ function main() {
     read("web/src/panels/company/ShiftPeopleTab.jsx"),
     read("web/src/panels/company/AgreementWizard.jsx"),
   ].join("\n\n");
+  const hubVisibleUserText = hubVisible.replace(/data-copilot-target="[^"]*"/gi, "");
   mustContains(read("web/src/components/geo/HubMapPicker.jsx"), 'subjectLabel = "Toplanma Konumu"', "HubMapPicker defaults to Toplanma Konumu");
   mustContains(read("web/src/components/AgreementOpsBridgeCard.jsx"), "Toplanma Konumu", "AgreementOpsBridgeCard shows Toplanma Konumu label");
   mustContains(hubVisible, "Taşımacılık Firması Konumu", "Hub UI shows room-specific Konum label");
@@ -150,7 +151,7 @@ function main() {
   mustContains(hubVisible, "Toplanma Konumu eksik; rota tahmini durak sırasına göre gösteriliyor.", "Route preview keeps translated hub fallback");
   mustNotContains(hubVisible, "Room Hub", "Hub UI removes room hub copy");
   mustNotContains(hubVisible, "Company Hub", "Hub UI removes company hub copy");
-  mustNotContains(hubVisible, "Hub:", "Hub UI removes raw colon label");
+  mustNotContains(hubVisibleUserText, "Hub:", "Hub UI removes raw visible colon label");
   mustNotContains(hubVisible, "Hub Lat", "Hub UI removes raw lat label");
   mustNotContains(hubVisible, "Hub Lng", "Hub UI removes raw lng label");
   mustNotContains(hubVisible, "Hub konumu", "Hub UI removes raw hub location copy");

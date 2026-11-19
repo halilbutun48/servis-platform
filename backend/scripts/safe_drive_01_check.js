@@ -424,7 +424,7 @@ async function main() {
 
   const commercialCorePreviewBlock = windowText(
     commercialCoreRoomRoutes,
-    "const [ room, roomSummary, latestShift, latestAgreement, ] = await Promise.all([",
+    "const [ room, roomSummary, latestShift, latestAgreement,",
     "prisma.shift.findFirst({",
     "commercialCore preview block",
   );
@@ -444,9 +444,9 @@ async function main() {
   assertIncludes(trustQuality, "wrapAsyncRouterMethods(r);", "trustQuality keeps async router wrapping");
 
   mustFileSha256("backend/src/routes/commercialCore.js", "14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F", "approved commercialCore.js SHA matches");
-  mustFileSha256("backend/src/routes/commercialCoreRoomRoutes.js", "CA2B42085F02A2DFEB03ED3992FE47583152EE424FF39DDF73C9699B99D6D2FF", "approved commercialCoreRoomRoutes.js SHA matches");
+  mustFileSha256("backend/src/routes/commercialCoreRoomRoutes.js", "33702851BD305EC69D9C21982B3AC49705CBD75612172992A8AA01163DC9F56B", "approved commercialCoreRoomRoutes.js SHA matches");
   mustFileSha256("backend/src/routes/operationProof.js", "E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0", "approved operationProof.js SHA matches");
-  mustFileSha256("backend/src/routes/trustQuality.js", "0E2358DAA468D205DAC92CFF6E01BA4CE3FD3E89350505BE6DF704882C6A8FBD", "approved trustQuality.js SHA matches");
+  mustFileSha256("backend/src/routes/trustQuality.js", "1B8DE904D9A7723C2125F692AE76F6274E866ED8BC9492CD29EC2ABC09426BC4", "approved trustQuality.js SHA matches");
   mustCondition(Boolean(approvedSafeDriveDashboardBulk?.sha256), "current-head policy owns dashboardBulk identity");
   mustFileSha256("backend/src/services/dashboardBulk.js", approvedSafeDriveDashboardBulk.sha256, "approved dashboardBulk.js SHA matches");
   mustFileSha256("backend/src/services/qualityPaymentBridgeService.js", "935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83", "approved qualityPaymentBridgeService.js SHA matches");

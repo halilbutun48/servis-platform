@@ -41,6 +41,7 @@ import CompanyAgreementsMobileCards from "./companyAgreementsMobileCards";
 import CompanyAgreementsBridgeSection from "./companyAgreementsBridgeSection";
 import {
   buildRouteRefreshLaunch,
+  canReadReconciliationPreview,
   canRouteRefresh,
   compactText,
   daysLeftYmd,
@@ -1275,7 +1276,9 @@ export default function AgreementsPanel() {
                   onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
                   emptyText="Bu sözleşmeden henüz üretilmiş vardiya yok. Operasyon bağlantısı ilk generated shift oluşunca burada görünür."
                 />
-                <ReconciliationPreviewCard agreementId={selectedAgreementRow.a.id} token={token} style={{ marginTop: 12 }} />
+                {canReadReconciliationPreview(me) ? (
+                  <ReconciliationPreviewCard agreementId={selectedAgreementRow.a.id} token={token} style={{ marginTop: 12 }} />
+                ) : null}
               </div>
             ) : null}
             <CompanyAgreementsSelectedSummarySection

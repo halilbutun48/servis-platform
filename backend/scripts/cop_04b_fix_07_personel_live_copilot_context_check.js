@@ -100,12 +100,16 @@ function assertNoForbiddenVisibleTerms(text, label) {
 
 function hasScreenContextProjection(source, pathExpression) {
   const payload = String(source || '').match(/screenContext:\s*\{([\s\S]*?)(?=\n\s*uiHints:)/)?.[1] || '';
+  const directSelection = /selectedEntityType:\s*requestSelection\?\.entityType\s*\|\|\s*["']{2}/.test(payload)
+    && /selectedEntityId:\s*Number\(requestSelection\?\.entityId\s*\|\|\s*0\)\s*\|\|\s*null/.test(payload);
+  const computedSelection = /selectedEntityType,\s*\n\s*selectedEntityId,/.test(payload)
+    && /const selectedEntityType\s*=\s*routeSelectedEntityType\s*\|\|\s*requestSelection\?\.entityType/.test(source)
+    && /const selectedEntityId\s*=\s*Number\(routeSelectedEntityId\s*\|\|\s*requestSelection\?\.entityId/.test(source);
   return Boolean(payload)
     && new RegExp(`path:\\s*${pathExpression}`).test(payload)
     && /role:\s*me\?\.role\s*\|\|\s*["']{2}/.test(payload)
     && /selectedLabel:\s*requestSelection\?\.label\s*\|\|\s*["']{2}/.test(payload)
-    && /selectedEntityType:\s*requestSelection\?\.entityType\s*\|\|\s*["']{2}/.test(payload)
-    && /selectedEntityId:\s*Number\(requestSelection\?\.entityId\s*\|\|\s*0\)\s*\|\|\s*null/.test(payload);
+    && (directSelection || computedSelection);
 }
 
 function hasDrawerContextContract(source) {
@@ -219,7 +223,9 @@ else fail('screen context transport requires an allowed route and resolved scree
 
 const drawerMissingRole = mutateScreenContextProjection(drawerSource, (projection) => projection.replace(/role:\s*me\?\.role\s*\|\|\s*["']{2},?/, ''));
 const drawerMissingPath = mutateScreenContextProjection(drawerSource, (projection) => projection.replace('path: screenContext.path,', 'path: "",'));
-const drawerMissingSelection = mutateScreenContextProjection(drawerSource, (projection) => projection.replace(/^\s*selectedEntityType:\s*requestSelection\?\.entityType\s*\|\|\s*["']{2},\s*\n\s*selectedEntityId:\s*Number\(requestSelection\?\.entityId\s*\|\|\s*0\)\s*\|\|\s*null,\s*\n/gm, ''));
+const drawerMissingSelection = mutateScreenContextProjection(drawerSource, (projection) => projection
+  .replace(/^\s*selectedEntityType:\s*requestSelection\?\.entityType\s*\|\|\s*["']{2},\s*\n\s*selectedEntityId:\s*Number\(requestSelection\?\.entityId\s*\|\|\s*0\)\s*\|\|\s*null,\s*\n/gm, '')
+  .replace(/^\s*selectedEntityType,\s*\n\s*selectedEntityId,\s*\n/gm, ''));
 const drawerWrongRole = mutateScreenContextProjection(drawerSource, (projection) => projection.replace('role: me?.role || ""', 'role: "COMPANY"'));
 const panelMissingRole = mutateScreenContextProjection(copilotPanelSource, (projection) => projection.replace(/role:\s*me\?\.role\s*\|\|\s*["']{2},?/, ''));
 const panelMissingPath = mutateScreenContextProjection(copilotPanelSource, (projection) => projection.replace('path: selectedChatScreen.path,', 'path: "",'));
@@ -299,6 +305,10 @@ function buildPersonelFixture({ selectedRecord = null, selectedEntityType = 'veh
     selectedLabel,
     selectedEntityType,
     selectedEntityId,
+    selectedRecordType: selectedEntityType,
+    selectedRecordId: selectedEntityId,
+    selectedRecordType: selectedEntityType,
+    selectedRecordId: selectedEntityId,
     selectedSummary: includeLiveFacts ? helpContextSummary || facts.selectedRecordSummary || facts.copilotSummary || '' : '',
     selectedRecordSummary: includeLiveFacts ? facts.selectedRecordSummary || helpContextSummary || '' : '',
     selectedRecordStatus,
@@ -324,6 +334,10 @@ const liveHelpSummary = 'Şu an: Canlı • Seçili kayıt: Bugünkü servis •
 const liveContextSummary = 'Personel canlı takip • Shift #1 • Araç 34ABC123 • GPS Çevrim Dışı / OFFLINE • Son GPS: 11dk • Sıradaki: Durak A • ETA: 3dk • Rota km: 1.6km';
 const liveFixture = buildPersonelFixture({
   selectedRecord: null,
+  selectedLabel: '',
+  selectedLabel: 'Bugünkü servis • 34ABC123',
+  selectedRecordLabel: 'Bugünkü servis • 34ABC123',
+  selectedRecordStatus: 'Araç: 34ABC123 • Son GPS: 11dk • GPS durumu: Çevrim Dışı / OFFLINE • Kaynak: Sürücünün telefon GPS’i • Sıradaki durak: Durak A • ETA: 3 dk • Servis durumu: Kabul Edildi',
   helpContextSummary: liveHelpSummary,
   contextSummary: liveContextSummary,
   selectedFields: [
@@ -367,9 +381,14 @@ const responseLive = buildResponse({
   entityId: Number(personelScreen.id),
   user: personelUser,
   message: intent,
-  context: resolvedLive.context,
+  context: {
+    ...resolvedLive.context,
+    screenPath: liveFixture.path,
+    selectedLabel: liveFixture.selectedLabel,
+    selectedSummary: liveFixture.selectedSummary,
+  },
   entityLabel: resolvedLive.entityLabel,
-  scope: resolvedLive.scope,
+  scope: '/personel/live',
   conversationState: {
     recentMessages: [{ role: 'user', text: intent }],
     lastScreenPath: '/personel/live',

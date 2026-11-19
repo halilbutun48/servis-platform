@@ -37,7 +37,7 @@ export function buildGeoReviewContinuationReply({ message = '', screenContext = 
   const path = String(screenContext?.path || '').split('?')[0].trim();
   if (!path.includes('/georeview')) return '';
   const normalizedMessage = normalizeGeoStatusQuestionText(message);
-  const asksContinuation = /(?:devam|sonraki|biraz daha|adım adım|adim adim|ne yap(?:ayım|alim|ayim)|şimdi ne|simdi ne)/i.test(normalizedMessage);
+  const asksContinuation = /(?:\bdevam(?:ını|ini|ına|ina)\s+(?:anlat|göster|goster)\b|\bdevam\s+edelim\b|\bdevam[.!?]*$|\bbiraz\s+daha\b|\badım\s+adım\b|\badim\s+adim\b)/i.test(normalizedMessage);
   if (!asksContinuation) return '';
 
   const rows = Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields : [];
@@ -57,7 +57,7 @@ export function buildGeoReviewContinuationReply({ message = '', screenContext = 
     FAILED: 'Başarısız',
   }[status.toUpperCase()] || status || 'seçili kayıtta görünmüyor';
   const coordinateText = coordinate || 'seçili kayıtta görünmüyor';
-  return `${screenLabel} ekranında seçili kayıt ${selectedLabel} için devam: önce Durum alanını (${statusLabel}) ve Koordinat alanını (${coordinateText}) kontrol et. Gerekirse bu ekrandaki yetkili konum düzeltme/kaydetme kontrolünü kullan; Sefer Abi senin yerine yeni işlem başlatmıyor. Bu yanıt yalnızca seçili kayıt ve yetkili tenant bağlamından okunuyor; başka alan, kayıt veya tenant verisi açmıyorum.`;
+  return `${screenLabel} akışından devam edelim: seçili kayıt ${selectedLabel} için önce Durum alanını (${statusLabel}) ve Koordinat alanını (${coordinateText}) kontrol et. Gerekirse bu ekrandaki yetkili konum düzeltme/kaydetme kontrolünü kullan; Sefer Abi senin yerine yeni işlem başlatmıyor. Bu yanıt yalnızca seçili kayıt ve yetkili tenant bağlamından okunuyor; başka alan, kayıt veya tenant verisi açmıyorum.`;
 }
 
 export function createSelectedRuntimeHelpers(deps = {}) {

@@ -63,12 +63,12 @@ function assertExactChips(actual, expected, label) {
 
 function assertDrawerDefaultSize(drawerSource) {
   must(drawerSource, 'DEFAULT_DRAWER_SIZE = "S"', 'drawer defaults to compact size');
-  must(drawerSource, 'const [size, setSize] = useState(normalizeDrawerSize(initial.size));', 'drawer uses normalized initial size');
+  must(drawerSource, 'const [size] = useState(normalizeDrawerSize(initial.size));', 'drawer uses normalized initial size');
   must(drawerSource, 'function normalizeDrawerSize(size)', 'drawer has size normalizer');
   must(drawerSource, 'return size === "S" || size === "M" ? size : DEFAULT_DRAWER_SIZE;', 'drawer clamps persisted size to small/medium');
-  must(drawerSource, 'setSize("S")', 'drawer keeps small size control');
-  must(drawerSource, 'setSize("M")', 'drawer keeps medium size control');
-  must(drawerSource, 'setSize("L")', 'drawer keeps large size control');
+  must(drawerSource, 'const [customDrawerSize, setCustomDrawerSize] = useState', 'drawer preserves user-resized dimensions');
+  must(drawerSource, 'const drawerResizeHandleRef = useRef(null);', 'drawer exposes the resize handle lifecycle');
+  must(drawerSource, 'setCustomDrawerSize({ width: frame.width, height: frame.height });', 'drawer persists user-resized dimensions');
 }
 
 console.log('=== UX-SEFER-ABI-LAUNCHER-01 CHECK ===');

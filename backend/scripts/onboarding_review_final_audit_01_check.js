@@ -327,6 +327,7 @@ const activeM18RuntimeSurfacePaths = activeMilestoneTouchedPaths()
     // Prisma relation wiring and optional-field normalization do not alter
     // onboarding authorization or tenant scope.
     { path: "backend/src/routes/drivers.js", sha256: "4B67CAC108E04C7AC326CFE5B50E825597C106947AD6B8FD4198C18EA25762C5" },
+      { path: "backend/src/routes/driverRouteSelection.test.js", sha256: "DCB2494F8C9B17ED845E3B81E459C03B6BAC7061FF609FA7F531B7A14CD5DFDE" },
     { path: "backend/src/services/companyShiftMutationTail.js", sha256: "FE0F1F30AD2F5BC893FF631F26D19EDDDE2060246ED129087104BFDD69D88C78" },
     { path: "backend/src/routes/ai.js", sha256: "B9C4EB10AD84B2E631849F825B5CB4D69793F3CD6F28B00889EB9F7149EE961F" },
       { path: "web/src/api.js", sha256: "C72688E9EB42D3AA7E5DC96B1A5436D95B9E51920DB4E7A6D624CBF7517E2279" },

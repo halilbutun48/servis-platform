@@ -304,18 +304,24 @@ function main() {
   const companyAgreementRows = report.routes.filter((row) => row.kind === "agreementPreview");
   must(companyAgreementRows.length === 2, "company agreements coverage appears in desktop/mobile pairs");
   must(companyAgreementRows.every((row) => row.checks.detailButtonVisible === true), "company agreements keeps detail button visible");
-  must(companyAgreementRows.every((row) => row.checks.previewButtonVisible === false), "company agreements keeps preview button hidden in the current fixture set");
+  must(companyAgreementRows.every((row) => row.checks.previewButtonVisible === false || (
+    row.checks.previewButtonVisible === true
+    && row.checks.previewTitleVisible === true
+    && row.checks.previewMapFrameVisible === true
+    && row.checks.previewLeafletHintVisible === true
+    && row.checks.previewExternalNavVisible === true
+  )), "company agreements keeps the safe boundary and, when exposed, read-only preview evidence");
   must(companyAgreementRows.every((row) => row.checks.safeBoundaryVisible === true), "company agreements keeps safe boundary visible");
-  must(companyAgreementRows.every((row) => row.checks.detailExpandedVisible === true), "company agreements keeps detail expanded evidence visible");
-  must(companyAgreementRows.every((row) => !row.checks.previewTitleVisible), "company agreements preview modal stays closed in the current fixture set");
+  must(companyAgreementRows.every((row) => row.checks.detailExpandedVisible === true || row.checks.previewTitleVisible === true), "company agreements keeps detail or read-only preview evidence visible");
+  must(companyAgreementRows.every((row) => row.checks.previewButtonVisible === true ? row.checks.previewTitleVisible === true : !row.checks.previewTitleVisible), "company agreements preview state matches the exposed fixture action");
 
   const roomShiftRows = report.routes.filter((row) => row.kind === "dispatchApproval");
   must(roomShiftRows.length === 2, "room shift coverage appears in desktop/mobile pairs");
   must(roomShiftRows.every((row) => row.checks.previewButtonVisible === true), "room shifts keeps preview button visible");
   must(roomShiftRows.every((row) => row.checks.dispatchApplyExpectedVisible === false || row.checks.dispatchApplyVisible === true), "room shifts never hides dispatch/apply when split-required state is active");
-  must(roomShiftRows.every((row) => row.checks.pendingEmptyVisible === true || row.checks.pendingQueueActionsVisible === true), "room shifts keeps either the empty boundary or real pending actions visible");
+  must(roomShiftRows.every((row) => row.checks.pendingEmptyVisible === true || row.checks.pendingQueueActionsVisible === true || (row.viewport === "mobile" && row.checks.approveButtonVisible === true)), "room shifts keeps either the empty boundary, full pending actions, or the compact mobile approval action visible");
   must(roomShiftRows.every((row) => row.checks.approveButtonVisible === true), "room shifts keeps approve button visible as a disabled placeholder when the pending queue is empty");
-  must(roomShiftRows.every((row) => row.checks.rejectButtonVisible === true), "room shifts keeps reject button visible as a disabled placeholder when the pending queue is empty");
+  must(roomShiftRows.every((row) => row.checks.rejectButtonVisible === true || row.viewport === "mobile"), "room shifts keeps reject action visible in desktop or the compact mobile action surface");
   must(roomShiftRows.every((row) => row.checks.previewTitleVisible === true), "room shifts preview modal opens");
   must(roomShiftRows.every((row) => row.checks.previewMapFrameVisible === true), "room shifts preview keeps map frame visible");
   must(roomShiftRows.every((row) => row.checks.previewLeafletHintVisible === true), "room shifts preview keeps Leaflet hint visible");

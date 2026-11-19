@@ -1,15 +1,15 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-09-29
+Tarih: 2026-11-19
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `494`
-- Toplam executable tracked file: `1543`
-- Combined registry row: `2037`
-- Root/backend/web/mobile package dağılımı: root `307`, backend `1123`, web `103`, mobile `201`
-- Tools executable dağılımı: tools `303`
+- Toplam package script entry: `511`
+- Toplam executable tracked file: `2230`
+- Combined registry row: `2741`
+- Root/backend/web/mobile package dağılımı: root `315`, backend `1617`, web `302`, mobile `201`
+- Tools executable dağılımı: tools `306`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-SMOKE-PASS-MINUS-ZERO-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
@@ -395,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `1027`
+- NEEDS_REVIEW: `1731`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `432`
+- Eski sistem term eşleşmesi: `559`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 1027 |
+| NEEDS_REVIEW | 1731 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -435,6 +435,7 @@ Repo: `servis-platform`
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | root:check | package.json | root | npm run verify:repo | verify-core | ACTIVE_CORE |  | ROOT-CHECK |  | Breaks canonical verification chain |  |
+| root:check:m18ownershipinventory230 | package.json | root | node backend/scripts/m18_acceptance_inventory_ownership_regression_01_check.mjs | review | NEEDS_REVIEW |  | ROOT-CHECK-M-18-OWNERSHIPINVENTORY-230 |  | Owner or chain unclear |  |
 | root:check:brand | package.json | root | node tools/check_brand.js | core | ACTIVE_CORE |  | ROOT-CHECK-BRAND |  | Breaks canonical verification chain |  |
 | root:check:m98e2e | package.json | root | node backend/scripts/m98_e2e_code_pin_access_acceptance_check.js | auth-session | REQUIRES_AUTH_SESSION | REQUIRES_AUTH_SESSION | ROOT-CHECK-M-98-E-2-E |  | Fails without auth/session |  |
 | root:check:m98e3 | package.json | root | node backend/scripts/m98_e3_code_pin_field_ux_check.js | device | REQUIRES_DEVICE | REQUIRES_DEVICE | ROOT-CHECK-M-98-E-3 |  | Fails without device/emulator |  |
@@ -479,6 +480,9 @@ Repo: `servis-platform`
 | root:check:copilotdispatchactionprep01 | package.json | root | node backend/scripts/copilot_dispatch_action_prep_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-DISPATCH-ACTION-PREP-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotactionprep01 | package.json | root | node backend/scripts/copilot_action_prep_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTACTIONPREP-01 |  | Owner or chain unclear |  |
 | root:check:financialoperationssurfaceandrbac01 | package.json | root | node backend/scripts/financial_operations_surface_and_rbac_01_check.js | verify-core | ACTIVE_CORE |  | FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 |  | Breaks canonical verification chain |  |
+| root:check:roomfinancesalaryroompolicy01 | package.json | root | node backend/scripts/room_finance_salary_room_policy_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-ROOMFINANCESALARYROOMPOLICY-01 |  | Owner or chain unclear |  |
+| root:check:roomfinancialoperationstabs01 | package.json | root | node backend/scripts/room_financial_operations_tabs_regression_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-ROOMFINANCIALOPERATIONSTABS-01 |  | Owner or chain unclear |  |
+| root:check:seferpakt2026demorebuild | package.json | root | node backend/scripts/seferpakt_2026_demo_rebuild_check.mjs | review | NEEDS_REVIEW |  | ROOT-CHECK-SEFERPAKT-2026-DEMOREBUILD |  | Owner or chain unclear |  |
 | root:check:operationalcostmodel01 | package.json | root | node backend/scripts/operational_cost_model_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-OPERATIONALCOSTMODEL-01 |  | Breaks canonical verification chain |  |
 | root:check:externalcostdataproviderfreshness01 | package.json | root | node backend/scripts/external_cost_data_provider_freshness_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-EXTERNALCOSTDATAPROVIDERFRESHNESS-01 |  | Owner or chain unclear |  |
 | root:accept:externalcostdataproviderfreshness01 | package.json | root | node backend/scripts/external_cost_data_provider_freshness_01_live.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-EXTERNALCOSTDATAPROVIDERFRESHNESS-01 |  | Owner or chain unclear |  |
@@ -499,12 +503,16 @@ Repo: `servis-platform`
 | root:check:seferabipremiumcharactercorrective01 | package.json | root | node backend/scripts/sefer_abi_premium_character_corrective_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-SEFERABIPREMIUMCHARACTERCORRECTIVE-01 |  | Owner or chain unclear |  |
 | root:smoke:seferabipremiumcharactercorrective01 | package.json | root | node backend/scripts/sefer_abi_premium_character_corrective_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-SEFERABIPREMIUMCHARACTERCORRECTIVE-01 |  | Owner or chain unclear |  |
 | root:smoke:seferabicharactersafesnappolish01 | package.json | root | node backend/scripts/sefer_abi_character_animation_safe_snap_polish_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-SEFERABICHARACTERSAFESNAPPOLISH-01 |  | Owner or chain unclear |  |
+| root:smoke:seferabiavatarcanvasidle01 | package.json | root | node backend/scripts/sefer_abi_avatar_canvas_idle_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-SEFERABIAVATARCANVASIDLE-01 |  | Owner or chain unclear |  |
 | root:check:projectdocumentationarchitectureandcodebaseindex01 | package.json | root | node backend/scripts/project_documentation_architecture_and_codebase_index_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-PROJECTDOCUMENTATIONARCHITECTUREANDCODEBASEINDEX-01 |  | Owner or chain unclear |  |
 | root:accept:projectgapreadiness01 | package.json | root | node backend/scripts/project_wide_gap_and_release_readiness_audit_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-PROJECTGAPREADINESS-01 |  | Owner or chain unclear |  |
 | root:smoke:projectgapreadiness01 | package.json | root | node backend/scripts/project_wide_gap_and_release_readiness_audit_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-PROJECTGAPREADINESS-01 |  | Owner or chain unclear |  |
 | root:check:roomprofitabilityandquotefloor01 | package.json | root | node backend/scripts/room_profitability_and_quote_floor_01_check.js | verify-core | ACTIVE_CORE |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Breaks canonical verification chain |  |
 | root:check:companybudgetandservicecost01 | package.json | root | node backend/scripts/company_budget_and_service_cost_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-COMPANYBUDGETANDSERVICECOST-01 |  | Breaks canonical verification chain |  |
 | root:check:hakedisinvoicereconciliationpreview01 | package.json | root | node backend/scripts/hakedis_invoice_reconciliation_preview_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-HAKEDISINVOICERECONCILIATIONPREVIEW-01 |  | Owner or chain unclear |  |
+| root:check:uxroomagreements-p1 | package.json | root | node backend/scripts/ux_room_agreements_p1_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXROOMAGREEMENTS-P-1 |  | Owner or chain unclear |  |
+| root:smoke:uxroomagreements-p1 | package.json | root | node backend/scripts/ux_room_agreements_p1_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-UXROOMAGREEMENTS-P-1 |  | Owner or chain unclear |  |
+| root:smoke:uxroomagreementstwo-controls | package.json | root | node backend/scripts/ux_room_agreements_two_controls_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-UXROOMAGREEMENTSTWO-CONTROLS |  | Owner or chain unclear |  |
 | root:accept:hakedisinvoicereconciliationpreview01 | package.json | root | node backend/scripts/hakedis_invoice_reconciliation_preview_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-HAKEDISINVOICERECONCILIATIONPREVIEW-01 |  | Owner or chain unclear |  |
 | root:smoke:hakedisinvoicereconciliationpreview01 | package.json | root | node backend/scripts/hakedis_invoice_reconciliation_preview_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-HAKEDISINVOICERECONCILIATIONPREVIEW-01 |  | Owner or chain unclear |  |
 | root:check:uxmarketplacepanels01 | package.json | root | node backend/scripts/ux_marketplace_panels_01_check.js | verify-core | ACTIVE_CORE |  | UX-MARKETPLACE-PANELS-01 |  | Breaks canonical verification chain |  |
@@ -756,6 +764,9 @@ Repo: `servis-platform`
 | backend:prisma:migrate:deploy | backend/package.json | backend | node scripts/database_migration_baseline_and_live_adoption_01_owner.mjs deploy | review | NEEDS_REVIEW |  | BACKEND-PRISMA-MIGRATE-DEPLOY |  | Owner or chain unclear |  |
 | backend:prisma:migration:acceptance | backend/package.json | backend | node scripts/database_migration_baseline_and_live_adoption_01.mjs | review | NEEDS_REVIEW |  | BACKEND-PRISMA-MIGRATION-ACCEPTANCE |  | Owner or chain unclear |  |
 | backend:prisma:migration:ci | backend/package.json | backend | node scripts/database_migration_baseline_and_live_adoption_01_ci.mjs | review | NEEDS_REVIEW |  | BACKEND-PRISMA-MIGRATION-CI |  | Owner or chain unclear |  |
+| backend:check:company-budget-scope-01 | backend/package.json | backend | node scripts/company_budget_scope_01_check.js | review | NEEDS_REVIEW |  | BACKEND-CHECK-COMPANY-BUDGET-SCOPE-01 |  | Owner or chain unclear |  |
+| backend:check:company-budget-commitment-02 | backend/package.json | backend | node scripts/company_budget_commitment_02_check.js | review | NEEDS_REVIEW |  | BACKEND-CHECK-COMPANY-BUDGET-COMMITMENT-02 |  | Owner or chain unclear |  |
+| backend:check:company-budget-part2a-browser | backend/package.json | backend | node scripts/company_budget_part2a_browser.mjs | review | NEEDS_REVIEW |  | BACKEND-CHECK-COMPANY-BUDGET-PART-2-A-BROWSER |  | Owner or chain unclear |  |
 | backend:bootstrap | backend/package.json | backend | npm run prisma:generate && npm run prisma:migrate:deploy && npm run seed | review | NEEDS_REVIEW |  | BACKEND-BOOTSTRAP |  | Owner or chain unclear |  |
 | backend:lint | backend/package.json | backend | node scripts/run_backend_lint.js | backend-lint | ACTIVE_BACKEND_LINT |  | BACKEND-LINT |  | Breaks backend lint gate | backend lint wrapper |
 | backend:check:semantic-intent-adversarial | backend/package.json | backend | node scripts/semantic_intent_adversarial_check.js | review | NEEDS_REVIEW |  | BACKEND-CHECK-SEMANTIC-INTENT-ADVERSARIAL |  | Owner or chain unclear |  |
@@ -829,6 +840,12 @@ Repo: `servis-platform`
 | backend:backup:restore | backend/package.json | backend | node scripts/database_backup_retention_and_integrity_01.mjs restore | review | NEEDS_REVIEW |  | BACKEND-BACKUP-RESTORE |  | Owner or chain unclear |  |
 | backend:backup:acceptance | backend/package.json | backend | node scripts/database_backup_retention_and_integrity_01_acceptance.mjs | review | NEEDS_REVIEW |  | BACKEND-BACKUP-ACCEPTANCE |  | Owner or chain unclear |  |
 | backend:backup:check | backend/package.json | backend | node scripts/database_backup_retention_and_integrity_01_check.js | review | NEEDS_REVIEW |  | BACKEND-BACKUP-CHECK |  | Owner or chain unclear |  |
+| backend:freeze:fixture | backend/package.json | backend | node scripts/global_write_freeze_fixture_01.mjs | review | NEEDS_REVIEW |  | BACKEND-FREEZE-FIXTURE |  | Owner or chain unclear |  |
+| backend:freeze:fixture:check | backend/package.json | backend | node scripts/global_write_freeze_fixture_01_check.js | review | NEEDS_REVIEW |  | BACKEND-FREEZE-FIXTURE-CHECK |  | Owner or chain unclear |  |
+| backend:role-hardening:fixture | backend/package.json | backend | node scripts/postgres_role_hardening_fixture_01.mjs | review | NEEDS_REVIEW |  | BACKEND-ROLE-HARDENING-FIXTURE |  | Owner or chain unclear |  |
+| backend:role-hardening:fixture:check | backend/package.json | backend | node scripts/postgres_role_hardening_fixture_01_check.js | review | NEEDS_REVIEW |  | BACKEND-ROLE-HARDENING-FIXTURE-CHECK |  | Owner or chain unclear |  |
+| backend:worker-role-separation:fixture | backend/package.json | backend | node scripts/worker_database_role_separation_fixture_01.mjs | review | NEEDS_REVIEW |  | BACKEND-WORKER-ROLE-SEPARATION-FIXTURE |  | Owner or chain unclear |  |
+| backend:worker-role-separation:fixture:check | backend/package.json | backend | node scripts/worker_database_role_separation_fixture_01_check.js | review | NEEDS_REVIEW |  | BACKEND-WORKER-ROLE-SEPARATION-FIXTURE-CHECK |  | Owner or chain unclear |  |
 | backend:milestones:static | backend/package.json | backend | node scripts/run_m0_latest.js --static-only --to latest --continue | release | ACTIVE_RELEASE_ONLY | RELEASE_ONLY | BACKEND-MILESTONES-STATIC |  | Breaks release / evidence / closure gate |  |
 | backend:m91check | backend/package.json | backend | node scripts/run_m91_route_preview_checks.js | review | ACTIVE |  | BACKEND-M-91-CHECK |  | Owner or chain unclear |  |
 | backend:m91:smoke:agreement | backend/package.json | backend | node scripts/m91_shift_to_agreement_smoke.js | review | NEEDS_REVIEW |  | BACKEND-M-91-SMOKE-AGREEMENT |  | Owner or chain unclear |  |
@@ -844,7 +861,14 @@ Repo: `servis-platform`
 | backend:bench:reset | backend/package.json | backend | node scripts/bench_reset_data.js --force | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | BACKEND-BENCH-RESET |  | Loses manual smoke entrypoint |  |
 | backend:spec16check | backend/package.json | backend | node scripts/project_spec_v1_future_strengthening_coverage_check.js | release | ACTIVE_RELEASE_ONLY | RELEASE_ONLY | BACKEND-SPEC-16-CHECK |  | Breaks release / evidence / closure gate |  |
 | eslint.config.js | backend/eslint.config.js | backend |  | review | NEEDS_REVIEW |  | ESLINT-CONFIG |  | Owner or chain unclear |  |
+| m18DemoFixtureFoundation.js | backend/prisma/m18DemoFixtureFoundation.js | backend |  | review | NEEDS_REVIEW |  | M-18-DEMO-FIXTURE-FOUNDATION |  | Owner or chain unclear |  |
+| m18DemoTelemetryFixture.continuation93.test.js | backend/prisma/m18DemoTelemetryFixture.continuation93.test.js | backend |  | review | NEEDS_REVIEW |  | M-18-DEMO-TELEMETRY-FIXTURE-CONTINUATION-93-TEST |  | Owner or chain unclear |  |
+| m18DemoTelemetryFixture.js | backend/prisma/m18DemoTelemetryFixture.js | backend |  | review | NEEDS_REVIEW |  | M-18-DEMO-TELEMETRY-FIXTURE |  | Owner or chain unclear |  |
+| m18HakedisCoverageFixture.js | backend/prisma/m18HakedisCoverageFixture.js | backend |  | review | NEEDS_REVIEW |  | M-18-HAKEDIS-COVERAGE-FIXTURE |  | Owner or chain unclear |  |
+| m18ParentLiveFixture.continuation326.test.js | backend/prisma/m18ParentLiveFixture.continuation326.test.js | backend |  | review | NEEDS_REVIEW |  | M-18-PARENT-LIVE-FIXTURE-CONTINUATION-326-TEST |  | Owner or chain unclear |  |
+| m18ServiceEvaluationFixture.continuation325.test.js | backend/prisma/m18ServiceEvaluationFixture.continuation325.test.js | backend |  | review | NEEDS_REVIEW |  | M-18-SERVICE-EVALUATION-FIXTURE-CONTINUATION-325-TEST |  | Owner or chain unclear |  |
 | seed.js | backend/prisma/seed.js | backend | backend:bootstrap, backend:seed | review | NEEDS_REVIEW |  | SEED |  | Owner or chain unclear |  |
+| seferpakt2026CanonicalDemoSeed.js | backend/prisma/seferpakt2026CanonicalDemoSeed.js | backend |  | review | NEEDS_REVIEW |  | SEFERPAKT-2026-CANONICAL-DEMO-SEED |  | Owner or chain unclear |  |
 | _agreement_source_shift_harness.js | backend/scripts/_agreement_source_shift_harness.js | backend |  | helper | ACTIVE |  | AGREEMENT-SOURCE-SHIFT-HARNESS |  | Owner or chain unclear | internal helper |
 | _harness.js | backend/scripts/_harness.js | backend | root:check:scriptharnessconsolidation01 | product-extensions | ACTIVE |  | HARNESS |  | Owner or chain unclear | internal helper |
 | _m91_route_preview_checks.js | backend/scripts/_m91_route_preview_checks.js | backend | backend:m91check | helper | ACTIVE |  | M-91-ROUTE-PREVIEW-CHECKS |  | Owner or chain unclear | internal helper |
@@ -875,6 +899,8 @@ Repo: `servis-platform`
 | bootstrap_dependencies.js | backend/scripts/bootstrap_dependencies.js | backend |  | review | NEEDS_REVIEW |  | BOOTSTRAP-DEPENDENCIES |  | Owner or chain unclear |  |
 | bug_route_impact_preview_button_01_check.js | backend/scripts/bug_route_impact_preview_button_01_check.js | backend | root:check:bugrouteimpactpreviewbutton01 | review | NEEDS_REVIEW |  | BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01-CHECK |  | Owner or chain unclear |  |
 | cache_coalescing_and_backoff_01_check.js | backend/scripts/cache_coalescing_and_backoff_01_check.js | backend | root:check:cachecoalescingandbackoff01 | review | NEEDS_REVIEW |  | CACHE-COALESCING-AND-BACKOFF-01-CHECK |  | Owner or chain unclear |  |
+| canonical_conversation_core_01_check.js | backend/scripts/canonical_conversation_core_01_check.js | backend | root:check:canonicalconversationcore01 | review | NEEDS_REVIEW |  | CANONICAL-CONVERSATION-CORE-01-CHECK |  | Owner or chain unclear |  |
+| canonical_docker_lifecycle.continuation234.test.js | backend/scripts/canonical_docker_lifecycle.continuation234.test.js | backend |  | review | NEEDS_REVIEW |  | CANONICAL-DOCKER-LIFECYCLE-CONTINUATION-234-TEST |  | Owner or chain unclear |  |
 | canonical_provenance_registry_01_check.js | backend/scripts/canonical_provenance_registry_01_check.js | backend |  | review | NEEDS_REVIEW |  | CANONICAL-PROVENANCE-REGISTRY-01-CHECK |  | Owner or chain unclear |  |
 | change_impact_registry_v1_check.js | backend/scripts/change_impact_registry_v1_check.js | backend | backend:check:changeimpactregistryv1 | review | NEEDS_REVIEW |  | CHANGE-IMPACT-REGISTRY-V-1-CHECK |  | Owner or chain unclear |  |
 | check_ownership_registry_v1_check.js | backend/scripts/check_ownership_registry_v1_check.js | backend | backend:check:checkownershipregistryv1 | review | NEEDS_REVIEW |  | CHECK-OWNERSHIP-REGISTRY-V-1-CHECK |  | Owner or chain unclear |  |
@@ -882,6 +908,7 @@ Repo: `servis-platform`
 | company_budget_and_service_cost_01_check.js | backend/scripts/company_budget_and_service_cost_01_check.js | backend | root:check:companybudgetandservicecost01 | review | NEEDS_REVIEW |  | COMPANY-BUDGET-AND-SERVICE-COST-01-CHECK |  | Owner or chain unclear |  |
 | company_fetch_storm_check.js | backend/scripts/company_fetch_storm_check.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-FETCH-STORM-CHECK |  | Owner or chain unclear |  |
 | company_fetch_storm_v2_check.cjs | backend/scripts/company_fetch_storm_v2_check.cjs | backend |  | review | NEEDS_REVIEW |  | COMPANY-FETCH-STORM-V-2-CHECK |  | Owner or chain unclear |  |
+| cont220_agreement_operation_status_regression_check.mjs | backend/scripts/cont220_agreement_operation_status_regression_check.mjs | backend |  | review | NEEDS_REVIEW |  | CONT-220-AGREEMENT-OPERATION-STATUS-REGRESSION-CHECK |  | Owner or chain unclear |  |
 | cop_01a_op_qlt_pay_copilot_guide_check.js | backend/scripts/cop_01a_op_qlt_pay_copilot_guide_check.js | backend | root:check:cop01a | product | ACTIVE |  | COP-01-A-OP-QLT-PAY-COPILOT-GUIDE-CHECK |  | Owner or chain unclear | product check/helper |
 | cop_01b_selected_record_diagnostic_context_check.js | backend/scripts/cop_01b_selected_record_diagnostic_context_check.js | backend | root:check:cop01b | product | ACTIVE |  | COP-01-B-SELECTED-RECORD-DIAGNOSTIC-CONTEXT-CHECK |  | Owner or chain unclear | product check/helper |
 | cop_01c_real_context_bridge_check.js | backend/scripts/cop_01c_real_context_bridge_check.js | backend | root:check:cop01c | product | ACTIVE |  | COP-01-C-REAL-CONTEXT-BRIDGE-CHECK |  | Owner or chain unclear | product check/helper |
@@ -977,6 +1004,9 @@ Repo: `servis-platform`
 | financial_operations_surface_and_rbac_01_check.js | backend/scripts/financial_operations_surface_and_rbac_01_check.js | backend | root:check:financialoperationssurfaceandrbac01 | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 |  | Owner or chain unclear |  |
 | fullcheck.js | backend/scripts/fullcheck.js | backend | backend:fullcheck | review | NEEDS_REVIEW |  | FULLCHECK |  | Owner or chain unclear |  |
 | generate_documentation_registry_v1.js | backend/scripts/generate_documentation_registry_v1.js | backend | backend:generate:documentationregistryv1 | review | NEEDS_REVIEW |  | GENERATE-DOCUMENTATION-REGISTRY-V-1 |  | Owner or chain unclear |  |
+| global_locked_invariant_suite_01_check.js | backend/scripts/global_locked_invariant_suite_01_check.js | backend | root:check:globallockedinvariantsuite01 | review | NEEDS_REVIEW |  | GLOBAL-LOCKED-INVARIANT-SUITE-01-CHECK |  | Owner or chain unclear |  |
+| global_write_freeze_fixture_01.mjs | backend/scripts/global_write_freeze_fixture_01.mjs | backend | backend:freeze:fixture, backend:freeze:fixture:check | review | NEEDS_REVIEW |  | GLOBAL-WRITE-FREEZE-FIXTURE-01 |  | Owner or chain unclear |  |
+| global_write_freeze_fixture_01_check.js | backend/scripts/global_write_freeze_fixture_01_check.js | backend | backend:freeze:fixture:check | review | NEEDS_REVIEW |  | GLOBAL-WRITE-FREEZE-FIXTURE-01-CHECK |  | Owner or chain unclear |  |
 | guard_v2_standardization_01_check.js | backend/scripts/guard_v2_standardization_01_check.js | backend | root:check:guardv2standardization01 | review | NEEDS_REVIEW |  | GUARD-V-2-STANDARDIZATION-01-CHECK |  | Owner or chain unclear |  |
 | guided_7x21_and_agreement_contract_check.js | backend/scripts/guided_7x21_and_agreement_contract_check.js | backend |  | review | NEEDS_REVIEW |  | GUIDED-7-X-21-AND-AGREEMENT-CONTRACT-CHECK |  | Owner or chain unclear |  |
 | guided_offer_agreement_skip_check.js | backend/scripts/guided_offer_agreement_skip_check.js | backend |  | review | NEEDS_REVIEW |  | GUIDED-OFFER-AGREEMENT-SKIP-CHECK |  | Owner or chain unclear |  |
@@ -1002,6 +1032,10 @@ Repo: `servis-platform`
 | guardValidationEnvironment.js | backend/scripts/lib/guardValidationEnvironment.js | backend |  | review | NEEDS_REVIEW |  | GUARD-VALIDATION-ENVIRONMENT |  | Owner or chain unclear |  |
 | impactAwareValidationExecutorV1.js | backend/scripts/lib/impactAwareValidationExecutorV1.js | backend |  | review | NEEDS_REVIEW |  | IMPACT-AWARE-VALIDATION-EXECUTOR-V-1 |  | Owner or chain unclear |  |
 | impactAwareValidationPlannerV1.js | backend/scripts/lib/impactAwareValidationPlannerV1.js | backend |  | review | NEEDS_REVIEW |  | IMPACT-AWARE-VALIDATION-PLANNER-V-1 |  | Owner or chain unclear |  |
+| m18AcceptanceOwnershipRules.mjs | backend/scripts/lib/m18AcceptanceOwnershipRules.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ACCEPTANCE-OWNERSHIP-RULES |  | Owner or chain unclear |  |
+| m18HoldoutExecutionAdapter.mjs | backend/scripts/lib/m18HoldoutExecutionAdapter.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-EXECUTION-ADAPTER |  | Owner or chain unclear |  |
+| m18HoldoutGovernance.mjs | backend/scripts/lib/m18HoldoutGovernance.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-GOVERNANCE |  | Owner or chain unclear |  |
+| m18RunScopedProvenance.mjs | backend/scripts/lib/m18RunScopedProvenance.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-SCOPED-PROVENANCE |  | Owner or chain unclear |  |
 | milestoneOwnershipAuthority.js | backend/scripts/lib/milestoneOwnershipAuthority.js | backend |  | review | NEEDS_REVIEW |  | MILESTONE-OWNERSHIP-AUTHORITY |  | Owner or chain unclear |  |
 | pre18LifecycleClassification.js | backend/scripts/lib/pre18LifecycleClassification.js | backend |  | review | NEEDS_REVIEW |  | PRE-18-LIFECYCLE-CLASSIFICATION |  | Owner or chain unclear |  |
 | pre_18_authenticated_role_context.mjs | backend/scripts/lib/pre_18_authenticated_role_context.mjs | backend |  | review | NEEDS_REVIEW |  | PRE-18-AUTHENTICATED-ROLE-CONTEXT |  | Owner or chain unclear |  |
@@ -1034,6 +1068,8 @@ Repo: `servis-platform`
 | live_tracking_final_01_acceptance_check.js | backend/scripts/live_tracking_final_01_acceptance_check.js | backend | root:check:livetrackingfinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | load_test_2000_users_01_check.js | backend/scripts/load_test_2000_users_01_check.js | backend | root:check:loadtest2000users01 | review | NEEDS_REVIEW |  | LOAD-TEST-2000-USERS-01 |  | Owner or chain unclear |  |
 | load_test_2000_users_01_harness.js | backend/scripts/load_test_2000_users_01_harness.js | backend |  | review | NEEDS_REVIEW |  | LOAD-TEST-2000-USERS-01 |  | Owner or chain unclear |  |
+| locked_invariant_registry_01_check.js | backend/scripts/locked_invariant_registry_01_check.js | backend | root:check:lockedinvariantregistry01 | review | NEEDS_REVIEW |  | LOCKED-INVARIANT-REGISTRY-01-CHECK |  | Owner or chain unclear |  |
+| locked_invariant_violation_ledger_01_check.js | backend/scripts/locked_invariant_violation_ledger_01_check.js | backend | root:check:lockedinvariantledger01 | review | NEEDS_REVIEW |  | LOCKED-INVARIANT-VIOLATION-LEDGER-01-CHECK |  | Owner or chain unclear |  |
 | m0check.js | backend/scripts/m0check.js | backend | backend:m0check | product | ACTIVE_RELEASE_ONLY |  | M-0-CHECK |  | Owner or chain unclear | product check/helper |
 | m10check.js | backend/scripts/m10check.js | backend | backend:m10check | product | ACTIVE_RELEASE_ONLY |  | M-10-CHECK |  | Owner or chain unclear | product check/helper |
 | m11check.js | backend/scripts/m11check.js | backend | backend:m11check | product | ACTIVE_RELEASE_ONLY |  | M-11-CHECK |  | Owner or chain unclear | product check/helper |
@@ -1045,6 +1081,244 @@ Repo: `servis-platform`
 | m163check.js | backend/scripts/m163check.js | backend |  | review | NEEDS_REVIEW |  | M-163-CHECK |  | Owner or chain unclear |  |
 | m16check.js | backend/scripts/m16check.js | backend |  | product | ACTIVE_RELEASE_ONLY |  | M-16-CHECK |  | Owner or chain unclear | product check/helper |
 | m17check.js | backend/scripts/m17check.js | backend |  | product | ACTIVE_RELEASE_ONLY |  | M-17-CHECK |  | Owner or chain unclear | product check/helper |
+| m18_acceptance_inventory_ownership_regression_01_check.mjs | backend/scripts/m18_acceptance_inventory_ownership_regression_01_check.mjs | backend | root:check:m18ownershipinventory230 | review | NEEDS_REVIEW |  | M-18-ACCEPTANCE-INVENTORY-OWNERSHIP-REGRESSION-01-CHECK |  | Owner or chain unclear |  |
+| m18_action_reference_r2_fresh_audit_20261005.mjs | backend/scripts/m18_action_reference_r2_fresh_audit_20261005.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ACTION-REFERENCE-R-2-FRESH-AUDIT-20261005 |  | Owner or chain unclear |  |
+| m18_action_reference_r2_fresh_author_20261005.mjs | backend/scripts/m18_action_reference_r2_fresh_author_20261005.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ACTION-REFERENCE-R-2-FRESH-AUTHOR-20261005 |  | Owner or chain unclear |  |
+| m18_action_reference_r2_fresh_execute_20261005.mjs | backend/scripts/m18_action_reference_r2_fresh_execute_20261005.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ACTION-REFERENCE-R-2-FRESH-EXECUTE-20261005 |  | Owner or chain unclear |  |
+| m18_agreement_cancel_audit_regression_check.js | backend/scripts/m18_agreement_cancel_audit_regression_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-AGREEMENT-CANCEL-AUDIT-REGRESSION-CHECK |  | Owner or chain unclear |  |
+| m18_basic_user_language_regression_01_check.js | backend/scripts/m18_basic_user_language_regression_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-BASIC-USER-LANGUAGE-REGRESSION-01-CHECK |  | Owner or chain unclear |  |
+| m18_basic_user_language_smoke_01_check.mjs | backend/scripts/m18_basic_user_language_smoke_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-BASIC-USER-LANGUAGE-SMOKE-01-CHECK |  | Owner or chain unclear |  |
+| m18_cap38_dashboard_request_projection_01_check.mjs | backend/scripts/m18_cap38_dashboard_request_projection_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CAP-38-DASHBOARD-REQUEST-PROJECTION-01-CHECK |  | Owner or chain unclear |  |
+| m18_cap39_operation_problem_semantic_equivalence_01_check.mjs | backend/scripts/m18_cap39_operation_problem_semantic_equivalence_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CAP-39-OPERATION-PROBLEM-SEMANTIC-EQUIVALENCE-01-CHECK |  | Owner or chain unclear |  |
+| m18_cap40_vehicle_gps_semantic_01_check.mjs | backend/scripts/m18_cap40_vehicle_gps_semantic_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CAP-40-VEHICLE-GPS-SEMANTIC-01-CHECK |  | Owner or chain unclear |  |
+| m18_cap41_agreement_inventory_completeness_01_check.mjs | backend/scripts/m18_cap41_agreement_inventory_completeness_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CAP-41-AGREEMENT-INVENTORY-COMPLETENESS-01-CHECK |  | Owner or chain unclear |  |
+| m18_cap41_agreement_list_goster_01_check.mjs | backend/scripts/m18_cap41_agreement_list_goster_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CAP-41-AGREEMENT-LIST-GOSTER-01-CHECK |  | Owner or chain unclear |  |
+| m18_cap41_typed_evidence_collection_summary_01_check.mjs | backend/scripts/m18_cap41_typed_evidence_collection_summary_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CAP-41-TYPED-EVIDENCE-COLLECTION-SUMMARY-01-CHECK |  | Owner or chain unclear |  |
+| m18_cont234_room_cost_acceptance.mjs | backend/scripts/m18_cont234_room_cost_acceptance.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-234-ROOM-COST-ACCEPTANCE |  | Owner or chain unclear |  |
+| m18_cont235_superadmin_logexport_acceptance.mjs | backend/scripts/m18_cont235_superadmin_logexport_acceptance.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-235-SUPERADMIN-LOGEXPORT-ACCEPTANCE |  | Owner or chain unclear |  |
+| m18_cont236_isolated_finance_chain.mjs | backend/scripts/m18_cont236_isolated_finance_chain.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-236-ISOLATED-FINANCE-CHAIN |  | Owner or chain unclear |  |
+| m18_cont311_login_probe.mjs | backend/scripts/m18_cont311_login_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-311-LOGIN-PROBE |  | Owner or chain unclear |  |
+| m18_cont311_org_plans_browser.mjs | backend/scripts/m18_cont311_org_plans_browser.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-311-ORG-PLANS-BROWSER |  | Owner or chain unclear |  |
+| m18_cont311_org_plans_browser_reuse_session.mjs | backend/scripts/m18_cont311_org_plans_browser_reuse_session.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-311-ORG-PLANS-BROWSER-REUSE-SESSION |  | Owner or chain unclear |  |
+| m18_cont311_org_plans_privacy_browser.mjs | backend/scripts/m18_cont311_org_plans_privacy_browser.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-311-ORG-PLANS-PRIVACY-BROWSER |  | Owner or chain unclear |  |
+| m18_cont311_parent_live_browser.mjs | backend/scripts/m18_cont311_parent_live_browser.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-311-PARENT-LIVE-BROWSER |  | Owner or chain unclear |  |
+| m18_cont311_parent_live_probe.mjs | backend/scripts/m18_cont311_parent_live_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-311-PARENT-LIVE-PROBE |  | Owner or chain unclear |  |
+| m18_cont311_service_eval_candidate_browser.mjs | backend/scripts/m18_cont311_service_eval_candidate_browser.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-311-SERVICE-EVAL-CANDIDATE-BROWSER |  | Owner or chain unclear |  |
+| m18_cont311_service_eval_public_reuse.mjs | backend/scripts/m18_cont311_service_eval_public_reuse.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-311-SERVICE-EVAL-PUBLIC-REUSE |  | Owner or chain unclear |  |
+| m18_cont311_service_eval_rbac_browser.mjs | backend/scripts/m18_cont311_service_eval_rbac_browser.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-311-SERVICE-EVAL-RBAC-BROWSER |  | Owner or chain unclear |  |
+| m18_cont311_service_eval_role_browser.mjs | backend/scripts/m18_cont311_service_eval_role_browser.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-311-SERVICE-EVAL-ROLE-BROWSER |  | Owner or chain unclear |  |
+| m18_cont312_school_agreements_overflow_probe.mjs | backend/scripts/m18_cont312_school_agreements_overflow_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-312-SCHOOL-AGREEMENTS-OVERFLOW-PROBE |  | Owner or chain unclear |  |
+| m18_cont325_service_evaluation_browser.mjs | backend/scripts/m18_cont325_service_evaluation_browser.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-325-SERVICE-EVALUATION-BROWSER |  | Owner or chain unclear |  |
+| m18_cont349_driver_audit_readback.mjs | backend/scripts/m18_cont349_driver_audit_readback.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-DRIVER-AUDIT-READBACK |  | Owner or chain unclear |  |
+| m18_cont349_org_agreement20_probe.mjs | backend/scripts/m18_cont349_org_agreement20_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-AGREEMENT-20-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_org_cancel20.mjs | backend/scripts/m18_cont349_org_cancel20.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-CANCEL-20 |  | Owner or chain unclear |  |
+| m18_cont349_org_cancel20_replay.mjs | backend/scripts/m18_cont349_org_cancel20_replay.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-CANCEL-20-REPLAY |  | Owner or chain unclear |  |
+| m18_cont349_org_convert_shift55.mjs | backend/scripts/m18_cont349_org_convert_shift55.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-CONVERT-SHIFT-55 |  | Owner or chain unclear |  |
+| m18_cont349_org_create_agreement55.mjs | backend/scripts/m18_cont349_org_create_agreement55.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-CREATE-AGREEMENT-55 |  | Owner or chain unclear |  |
+| m18_cont349_org_create_draft_probe.mjs | backend/scripts/m18_cont349_org_create_draft_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-CREATE-DRAFT-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_org_guided_probe.mjs | backend/scripts/m18_cont349_org_guided_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-GUIDED-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_org_pending_shift_probe.mjs | backend/scripts/m18_cont349_org_pending_shift_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-PENDING-SHIFT-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_org_post_offer_probe.mjs | backend/scripts/m18_cont349_org_post_offer_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-POST-OFFER-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_org_send_offer_probe.mjs | backend/scripts/m18_cont349_org_send_offer_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-SEND-OFFER-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_org_shift55_dom.mjs | backend/scripts/m18_cont349_org_shift55_dom.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-SHIFT-55-DOM |  | Owner or chain unclear |  |
+| m18_cont349_org_status_probe.mjs | backend/scripts/m18_cont349_org_status_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-STATUS-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_org_step2_probe.mjs | backend/scripts/m18_cont349_org_step2_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-STEP-2-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_org_step3_probe.mjs | backend/scripts/m18_cont349_org_step3_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORG-STEP-3-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_organization_surface_probe.mjs | backend/scripts/m18_cont349_organization_surface_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ORGANIZATION-SURFACE-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_public_readback.mjs | backend/scripts/m18_cont349_public_readback.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-PUBLIC-READBACK |  | Owner or chain unclear |  |
+| m18_cont349_room_accept_offer30.mjs | backend/scripts/m18_cont349_room_accept_offer30.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ROOM-ACCEPT-OFFER-30 |  | Owner or chain unclear |  |
+| m18_cont349_room_accept_offer30_retry.mjs | backend/scripts/m18_cont349_room_accept_offer30_retry.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ROOM-ACCEPT-OFFER-30-RETRY |  | Owner or chain unclear |  |
+| m18_cont349_room_accept_offer_probe.mjs | backend/scripts/m18_cont349_room_accept_offer_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ROOM-ACCEPT-OFFER-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_room_agreement_probe.mjs | backend/scripts/m18_cont349_room_agreement_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ROOM-AGREEMENT-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_room_button_dom.mjs | backend/scripts/m18_cont349_room_button_dom.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ROOM-BUTTON-DOM |  | Owner or chain unclear |  |
+| m18_cont349_room_device_reset_repeat.mjs | backend/scripts/m18_cont349_room_device_reset_repeat.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ROOM-DEVICE-RESET-REPEAT |  | Owner or chain unclear |  |
+| m18_cont349_room_driver_acceptance.mjs | backend/scripts/m18_cont349_room_driver_acceptance.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ROOM-DRIVER-ACCEPTANCE |  | Owner or chain unclear |  |
+| m18_cont349_room_driver_security.mjs | backend/scripts/m18_cont349_room_driver_security.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ROOM-DRIVER-SECURITY |  | Owner or chain unclear |  |
+| m18_cont349_room_offer_dom_probe.mjs | backend/scripts/m18_cont349_room_offer_dom_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ROOM-OFFER-DOM-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_room_offer_probe.mjs | backend/scripts/m18_cont349_room_offer_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ROOM-OFFER-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_room_offer_state_probe.mjs | backend/scripts/m18_cont349_room_offer_state_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ROOM-OFFER-STATE-PROBE |  | Owner or chain unclear |  |
+| m18_cont349_room_select_offer30_retry.mjs | backend/scripts/m18_cont349_room_select_offer30_retry.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ROOM-SELECT-OFFER-30-RETRY |  | Owner or chain unclear |  |
+| m18_cont349_room_select_offer_probe.mjs | backend/scripts/m18_cont349_room_select_offer_probe.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-349-ROOM-SELECT-OFFER-PROBE |  | Owner or chain unclear |  |
+| m18_cont350_seferabi_global_matrix.mjs | backend/scripts/m18_cont350_seferabi_global_matrix.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-350-SEFERABI-GLOBAL-MATRIX |  | Owner or chain unclear |  |
+| m18_cont351_seferabi_full_acceptance.mjs | backend/scripts/m18_cont351_seferabi_full_acceptance.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-CONT-351-SEFERABI-FULL-ACCEPTANCE |  | Owner or chain unclear |  |
+| m18_continuation_morphology_01_check.js | backend/scripts/m18_continuation_morphology_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-CONTINUATION-MORPHOLOGY-01-CHECK |  | Owner or chain unclear |  |
+| m18_demo_fixture_foundation_01_check.mjs | backend/scripts/m18_demo_fixture_foundation_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DEMO-FIXTURE-FOUNDATION-01-CHECK |  | Owner or chain unclear |  |
+| m18_dlevel_bounded_natural_language_stress_01.mjs | backend/scripts/m18_dlevel_bounded_natural_language_stress_01.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-BOUNDED-NATURAL-LANGUAGE-STRESS-01 |  | Owner or chain unclear |  |
+| m18_dlevel_browser_workflow_trace_01_check.mjs | backend/scripts/m18_dlevel_browser_workflow_trace_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-BROWSER-WORKFLOW-TRACE-01-CHECK |  | Owner or chain unclear |  |
+| m18_dlevel_continuation_normalization_01_check.mjs | backend/scripts/m18_dlevel_continuation_normalization_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-CONTINUATION-NORMALIZATION-01-CHECK |  | Owner or chain unclear |  |
+| m18_dlevel_continue_browser_smoke_01.mjs | backend/scripts/m18_dlevel_continue_browser_smoke_01.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-CONTINUE-BROWSER-SMOKE-01 |  | Owner or chain unclear |  |
+| m18_dlevel_generic_help_01_check.mjs | backend/scripts/m18_dlevel_generic_help_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-GENERIC-HELP-01-CHECK |  | Owner or chain unclear |  |
+| m18_dlevel_generic_help_browser_diagnostic_01.mjs | backend/scripts/m18_dlevel_generic_help_browser_diagnostic_01.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-GENERIC-HELP-BROWSER-DIAGNOSTIC-01 |  | Owner or chain unclear |  |
+| m18_dlevel_generic_help_diagnostic_01_check.mjs | backend/scripts/m18_dlevel_generic_help_diagnostic_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-GENERIC-HELP-DIAGNOSTIC-01-CHECK |  | Owner or chain unclear |  |
+| m18_dlevel_guided_target_recovery_01_check.mjs | backend/scripts/m18_dlevel_guided_target_recovery_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-GUIDED-TARGET-RECOVERY-01-CHECK |  | Owner or chain unclear |  |
+| m18_dlevel_manual_family_red_20261007.mjs | backend/scripts/m18_dlevel_manual_family_red_20261007.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-MANUAL-FAMILY-RED-20261007 |  | Owner or chain unclear |  |
+| m18_dlevel_navigation_guidance_01_check.mjs | backend/scripts/m18_dlevel_navigation_guidance_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-NAVIGATION-GUIDANCE-01-CHECK |  | Owner or chain unclear |  |
+| m18_dlevel_real_ui_roots_01_check.mjs | backend/scripts/m18_dlevel_real_ui_roots_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-REAL-UI-ROOTS-01-CHECK |  | Owner or chain unclear |  |
+| m18_dlevel_responsive_role_matrix_01.mjs | backend/scripts/m18_dlevel_responsive_role_matrix_01.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-RESPONSIVE-ROLE-MATRIX-01 |  | Owner or chain unclear |  |
+| m18_dlevel_room_help_trace_01.mjs | backend/scripts/m18_dlevel_room_help_trace_01.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-ROOM-HELP-TRACE-01 |  | Owner or chain unclear |  |
+| m18_dlevel_workflow_recovery_trace_01_check.mjs | backend/scripts/m18_dlevel_workflow_recovery_trace_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DLEVEL-WORKFLOW-RECOVERY-TRACE-01-CHECK |  | Owner or chain unclear |  |
+| m18_docker_aware_provenance_01_check.mjs | backend/scripts/m18_docker_aware_provenance_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-DOCKER-AWARE-PROVENANCE-01-CHECK |  | Owner or chain unclear |  |
+| m18_e01_authority_mode_01_check.mjs | backend/scripts/m18_e01_authority_mode_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-E-01-AUTHORITY-MODE-01-CHECK |  | Owner or chain unclear |  |
+| m18_final_company05_continuation_state_01_check.mjs | backend/scripts/m18_final_company05_continuation_state_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| m18_final_fresh_20261006_audit.mjs | backend/scripts/m18_final_fresh_20261006_audit.mjs | backend |  | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| m18_final_fresh_20261006_author.mjs | backend/scripts/m18_final_fresh_20261006_author.mjs | backend |  | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| m18_final_fresh_20261006_execute.mjs | backend/scripts/m18_final_fresh_20261006_execute.mjs | backend |  | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| m18_final_fresh_20261006_freeze.mjs | backend/scripts/m18_final_fresh_20261006_freeze.mjs | backend |  | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| m18_final_fresh_20261006_precheck.mjs | backend/scripts/m18_final_fresh_20261006_precheck.mjs | backend |  | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| m18_final_fresh_20261006_provenance.mjs | backend/scripts/m18_final_fresh_20261006_provenance.mjs | backend |  | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| m18_fixture_provenance_producer_01_check.mjs | backend/scripts/m18_fixture_provenance_producer_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-FIXTURE-PROVENANCE-PRODUCER-01-CHECK |  | Owner or chain unclear |  |
+| m18_fresh_governed_v3_precheck_01_check.mjs | backend/scripts/m18_fresh_governed_v3_precheck_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-FRESH-GOVERNED-V-3-PRECHECK-01-CHECK |  | Owner or chain unclear |  |
+| m18_fresh_unseen_56_holdout_20261004_check.mjs | backend/scripts/m18_fresh_unseen_56_holdout_20261004_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-FRESH-UNSEEN-56-HOLDOUT-20261004-CHECK |  | Owner or chain unclear |  |
+| m18_g01_role_boundary_semantic_preservation_01_check.js | backend/scripts/m18_g01_role_boundary_semantic_preservation_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-G-01-ROLE-BOUNDARY-SEMANTIC-PRESERVATION-01-CHECK |  | Owner or chain unclear |  |
+| m18_generic_help_concrete_object_01_check.mjs | backend/scripts/m18_generic_help_concrete_object_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-GENERIC-HELP-CONCRETE-OBJECT-01-CHECK |  | Owner or chain unclear |  |
+| m18_genuine_oos_arithmetic_01_check.mjs | backend/scripts/m18_genuine_oos_arithmetic_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-GENUINE-OOS-ARITHMETIC-01-CHECK |  | Owner or chain unclear |  |
+| m18_gov001_contract_arbitration_01_check.mjs | backend/scripts/m18_gov001_contract_arbitration_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-GOV-001-CONTRACT-ARBITRATION-01-CHECK |  | Owner or chain unclear |  |
+| m18_gov001_create_authorization_contract_01_check.mjs | backend/scripts/m18_gov001_create_authorization_contract_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-GOV-001-CREATE-AUTHORIZATION-CONTRACT-01-CHECK |  | Owner or chain unclear |  |
+| m18_gov001_final12_evidence_owner_01_check.mjs | backend/scripts/m18_gov001_final12_evidence_owner_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| m18_governance_identity_contract_01_check.mjs | backend/scripts/m18_governance_identity_contract_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-GOVERNANCE-IDENTITY-CONTRACT-01-CHECK |  | Owner or chain unclear |  |
+| m18_guided_batch_idempotency_01_acceptance.mjs | backend/scripts/m18_guided_batch_idempotency_01_acceptance.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-GUIDED-BATCH-IDEMPOTENCY-01-ACCEPTANCE |  | Owner or chain unclear |  |
+| m18_h03_basic_help_corrective_01_check.js | backend/scripts/m18_h03_basic_help_corrective_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-H-03-BASIC-HELP-CORRECTIVE-01-CHECK |  | Owner or chain unclear |  |
+| m18_h03_basic_help_service_01_check.mjs | backend/scripts/m18_h03_basic_help_service_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-H-03-BASIC-HELP-SERVICE-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_action_reference_calibration_01_check.mjs | backend/scripts/m18_holdout_action_reference_calibration_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-ACTION-REFERENCE-CALIBRATION-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_action_reference_diagnostic_01_check.mjs | backend/scripts/m18_holdout_action_reference_diagnostic_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-ACTION-REFERENCE-DIAGNOSTIC-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_authoring_governance_01_check.mjs | backend/scripts/m18_holdout_authoring_governance_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-AUTHORING-GOVERNANCE-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_authorization_contract_01_check.mjs | backend/scripts/m18_holdout_authorization_contract_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-AUTHORIZATION-CONTRACT-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_contract_alignment_01_check.mjs | backend/scripts/m18_holdout_contract_alignment_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-CONTRACT-ALIGNMENT-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_contract_alignment_diagnostic_01_check.mjs | backend/scripts/m18_holdout_contract_alignment_diagnostic_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-CONTRACT-ALIGNMENT-DIAGNOSTIC-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_execution_context_01_check.mjs | backend/scripts/m18_holdout_execution_context_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-EXECUTION-CONTEXT-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_execution_context_api_01_check.mjs | backend/scripts/m18_holdout_execution_context_api_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-EXECUTION-CONTEXT-API-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_execution_integration_01_check.mjs | backend/scripts/m18_holdout_execution_integration_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-EXECUTION-INTEGRATION-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_freeze_01_check.mjs | backend/scripts/m18_holdout_freeze_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-FREEZE-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_fresh_v4r2_recovery_audit_01_check.mjs | backend/scripts/m18_holdout_fresh_v4r2_recovery_audit_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-FRESH-V-4-R-2-RECOVERY-AUDIT-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_fresh_v4r2_recovery_author_01_check.mjs | backend/scripts/m18_holdout_fresh_v4r2_recovery_author_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-FRESH-V-4-R-2-RECOVERY-AUTHOR-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_fresh_v4r2_recovery_execute_01_check.mjs | backend/scripts/m18_holdout_fresh_v4r2_recovery_execute_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-FRESH-V-4-R-2-RECOVERY-EXECUTE-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_oracle_calibration_01_check.mjs | backend/scripts/m18_holdout_oracle_calibration_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-ORACLE-CALIBRATION-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_oracle_diagnostic_01_check.mjs | backend/scripts/m18_holdout_oracle_diagnostic_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-ORACLE-DIAGNOSTIC-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_real_schema_integration_01_check.mjs | backend/scripts/m18_holdout_real_schema_integration_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-REAL-SCHEMA-INTEGRATION-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_real_schema_pipeline_01_check.mjs | backend/scripts/m18_holdout_real_schema_pipeline_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-REAL-SCHEMA-PIPELINE-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_replacement_v4r1_author_01_check.mjs | backend/scripts/m18_holdout_replacement_v4r1_author_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-REPLACEMENT-V-4-R-1-AUTHOR-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_replacement_v4r1_execute_01_check.mjs | backend/scripts/m18_holdout_replacement_v4r1_execute_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-REPLACEMENT-V-4-R-1-EXECUTE-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_replacement_v4r2_audit_01_check.mjs | backend/scripts/m18_holdout_replacement_v4r2_audit_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-REPLACEMENT-V-4-R-2-AUDIT-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_replacement_v4r2_author_01_check.mjs | backend/scripts/m18_holdout_replacement_v4r2_author_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-REPLACEMENT-V-4-R-2-AUTHOR-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_replacement_v4r2_execute_01_check.mjs | backend/scripts/m18_holdout_replacement_v4r2_execute_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-REPLACEMENT-V-4-R-2-EXECUTE-01-CHECK |  | Owner or chain unclear |  |
+| m18_holdout_surface_object_calibration_01_check.mjs | backend/scripts/m18_holdout_surface_object_calibration_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-HOLDOUT-SURFACE-OBJECT-CALIBRATION-01-CHECK |  | Owner or chain unclear |  |
+| m18_lang_01_structural_01_check.mjs | backend/scripts/m18_lang_01_structural_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-LANG-01-STRUCTURAL-01-CHECK |  | Owner or chain unclear |  |
+| m18_local_model_semantic_pilot_01_check.js | backend/scripts/m18_local_model_semantic_pilot_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-LOCAL-MODEL-SEMANTIC-PILOT-01-CHECK |  | Owner or chain unclear |  |
+| m18_local_nlu_frontier_sweep_01_check.mjs | backend/scripts/m18_local_nlu_frontier_sweep_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-LOCAL-NLU-FRONTIER-SWEEP-01-CHECK |  | Owner or chain unclear |  |
+| m18_mixed_navigation_guidance_01_check.mjs | backend/scripts/m18_mixed_navigation_guidance_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-MIXED-NAVIGATION-GUIDANCE-01-CHECK |  | Owner or chain unclear |  |
+| m18_mixed_navigation_guidance_runtime_01_check.mjs | backend/scripts/m18_mixed_navigation_guidance_runtime_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-MIXED-NAVIGATION-GUIDANCE-RUNTIME-01-CHECK |  | Owner or chain unclear |  |
+| m18_navigate_view_converb_01_check.mjs | backend/scripts/m18_navigate_view_converb_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-NAVIGATE-VIEW-CONVERB-01-CHECK |  | Owner or chain unclear |  |
+| m18_parent_live_fixture_apply.mjs | backend/scripts/m18_parent_live_fixture_apply.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-PARENT-LIVE-FIXTURE-APPLY |  | Owner or chain unclear |  |
+| m18_polite_action_morphology_01_check.mjs | backend/scripts/m18_polite_action_morphology_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-POLITE-ACTION-MORPHOLOGY-01-CHECK |  | Owner or chain unclear |  |
+| m18_polite_action_morphology_runtime_01_check.mjs | backend/scripts/m18_polite_action_morphology_runtime_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-POLITE-ACTION-MORPHOLOGY-RUNTIME-01-CHECK |  | Owner or chain unclear |  |
+| m18_post_r15_fresh_acceptance_20261009_audit.mjs | backend/scripts/m18_post_r15_fresh_acceptance_20261009_audit.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-POST-R-15-FRESH-ACCEPTANCE-20261009-AUDIT |  | Owner or chain unclear |  |
+| m18_post_r15_fresh_acceptance_20261009_author.mjs | backend/scripts/m18_post_r15_fresh_acceptance_20261009_author.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-POST-R-15-FRESH-ACCEPTANCE-20261009-AUTHOR |  | Owner or chain unclear |  |
+| m18_post_r15_fresh_acceptance_20261009_provenance.mjs | backend/scripts/m18_post_r15_fresh_acceptance_20261009_provenance.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-POST-R-15-FRESH-ACCEPTANCE-20261009-PROVENANCE |  | Owner or chain unclear |  |
+| m18_r5_navigate_view_fresh_audit_20261006.mjs | backend/scripts/m18_r5_navigate_view_fresh_audit_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-R-5-NAVIGATE-VIEW-FRESH-AUDIT-20261006 |  | Owner or chain unclear |  |
+| m18_r5_navigate_view_fresh_author_20261006.mjs | backend/scripts/m18_r5_navigate_view_fresh_author_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-R-5-NAVIGATE-VIEW-FRESH-AUTHOR-20261006 |  | Owner or chain unclear |  |
+| m18_r5_navigate_view_fresh_execute_20261006.mjs | backend/scripts/m18_r5_navigate_view_fresh_execute_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-R-5-NAVIGATE-VIEW-FRESH-EXECUTE-20261006 |  | Owner or chain unclear |  |
+| m18_r5_navigate_view_fresh_freeze_20261006.mjs | backend/scripts/m18_r5_navigate_view_fresh_freeze_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-R-5-NAVIGATE-VIEW-FRESH-FREEZE-20261006 |  | Owner or chain unclear |  |
+| m18_r5_read_view_clarification_01_check.mjs | backend/scripts/m18_r5_read_view_clarification_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-R-5-READ-VIEW-CLARIFICATION-01-CHECK |  | Owner or chain unclear |  |
+| m18_r6_diagnostic_cluster_red_20261006.mjs | backend/scripts/m18_r6_diagnostic_cluster_red_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-R-6-DIAGNOSTIC-CLUSTER-RED-20261006 |  | Owner or chain unclear |  |
+| m18_r6_read_view_clarification_fresh_audit_20261006.mjs | backend/scripts/m18_r6_read_view_clarification_fresh_audit_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-R-6-READ-VIEW-CLARIFICATION-FRESH-AUDIT-20261006 |  | Owner or chain unclear |  |
+| m18_r6_read_view_clarification_fresh_author_20261006.mjs | backend/scripts/m18_r6_read_view_clarification_fresh_author_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-R-6-READ-VIEW-CLARIFICATION-FRESH-AUTHOR-20261006 |  | Owner or chain unclear |  |
+| m18_r6_read_view_clarification_fresh_execute_20261006.mjs | backend/scripts/m18_r6_read_view_clarification_fresh_execute_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-R-6-READ-VIEW-CLARIFICATION-FRESH-EXECUTE-20261006 |  | Owner or chain unclear |  |
+| m18_r6_read_view_clarification_fresh_freeze_20261006.mjs | backend/scripts/m18_r6_read_view_clarification_fresh_freeze_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-R-6-READ-VIEW-CLARIFICATION-FRESH-FREEZE-20261006 |  | Owner or chain unclear |  |
+| m18_reference_deictic_resolution_01_check.js | backend/scripts/m18_reference_deictic_resolution_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-REFERENCE-DEICTIC-RESOLUTION-01-CHECK |  | Owner or chain unclear |  |
+| m18_rn002_structural_navigation_corrective_01_check.js | backend/scripts/m18_rn002_structural_navigation_corrective_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-RN-002-STRUCTURAL-NAVIGATION-CORRECTIVE-01-CHECK |  | Owner or chain unclear |  |
+| m18_ro001_general_information_screen_context_structural_01_check.js | backend/scripts/m18_ro001_general_information_screen_context_structural_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-RO-001-GENERAL-INFORMATION-SCREEN-CONTEXT-STRUCTURAL-01-CHECK |  | Owner or chain unclear |  |
+| m18_role_help_surface_context_01_check.js | backend/scripts/m18_role_help_surface_context_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-ROLE-HELP-SURFACE-CONTEXT-01-CHECK |  | Owner or chain unclear |  |
+| m18_room02_recovery_audit_20261006.mjs | backend/scripts/m18_room02_recovery_audit_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ROOM-02-RECOVERY-AUDIT-20261006 |  | Owner or chain unclear |  |
+| m18_room02_recovery_author_20261006.mjs | backend/scripts/m18_room02_recovery_author_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ROOM-02-RECOVERY-AUTHOR-20261006 |  | Owner or chain unclear |  |
+| m18_room02_recovery_execute_20261006.mjs | backend/scripts/m18_room02_recovery_execute_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ROOM-02-RECOVERY-EXECUTE-20261006 |  | Owner or chain unclear |  |
+| m18_room02_recovery_freeze_20261006.mjs | backend/scripts/m18_room02_recovery_freeze_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ROOM-02-RECOVERY-FREEZE-20261006 |  | Owner or chain unclear |  |
+| m18_room_agreement_bridge_goster_01_browser.mjs | backend/scripts/m18_room_agreement_bridge_goster_01_browser.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ROOM-AGREEMENT-BRIDGE-GOSTER-01-BROWSER |  | Owner or chain unclear |  |
+| m18_room_agreement_bridge_goster_01_check.mjs | backend/scripts/m18_room_agreement_bridge_goster_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ROOM-AGREEMENT-BRIDGE-GOSTER-01-CHECK |  | Owner or chain unclear |  |
+| m18_room_agreement_inventory_01_check.mjs | backend/scripts/m18_room_agreement_inventory_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ROOM-AGREEMENT-INVENTORY-01-CHECK |  | Owner or chain unclear |  |
+| m18_room_offer_technical_marker_leak_01_check.mjs | backend/scripts/m18_room_offer_technical_marker_leak_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ROOM-OFFER-TECHNICAL-MARKER-LEAK-01-CHECK |  | Owner or chain unclear |  |
+| m18_room_product_teaching_continuation_01_check.mjs | backend/scripts/m18_room_product_teaching_continuation_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ROOM-PRODUCT-TEACHING-CONTINUATION-01-CHECK |  | Owner or chain unclear |  |
+| m18_room_role_target_authorization_01_check.mjs | backend/scripts/m18_room_role_target_authorization_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ROOM-ROLE-TARGET-AUTHORIZATION-01-CHECK |  | Owner or chain unclear |  |
+| m18_room_role_target_authorization_service_01_check.mjs | backend/scripts/m18_room_role_target_authorization_service_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ROOM-ROLE-TARGET-AUTHORIZATION-SERVICE-01-CHECK |  | Owner or chain unclear |  |
+| m18_room_route_show_semantic_01_check.mjs | backend/scripts/m18_room_route_show_semantic_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-ROOM-ROUTE-SHOW-SEMANTIC-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_e_e01_scope_precedence_regression_01_check.js | backend/scripts/m18_run_e_e01_scope_precedence_regression_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-E-E-01-SCOPE-PRECEDENCE-REGRESSION-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_f01_scope_precedence_browser_01_check.mjs | backend/scripts/m18_run_f01_scope_precedence_browser_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-F-01-SCOPE-PRECEDENCE-BROWSER-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_f01_scope_precedence_regression_01_check.js | backend/scripts/m18_run_f01_scope_precedence_regression_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-F-01-SCOPE-PRECEDENCE-REGRESSION-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_g01_object_mapping_browser_01_check.mjs | backend/scripts/m18_run_g01_object_mapping_browser_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-G-01-OBJECT-MAPPING-BROWSER-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_g01_object_mapping_regression_01_check.js | backend/scripts/m18_run_g01_object_mapping_regression_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-G-01-OBJECT-MAPPING-REGRESSION-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_i01_action_authority_service_01_check.mjs | backend/scripts/m18_run_i01_action_authority_service_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-I-01-ACTION-AUTHORITY-SERVICE-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_i01_action_distinction_browser_01_check.mjs | backend/scripts/m18_run_i01_action_distinction_browser_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-I-01-ACTION-DISTINCTION-BROWSER-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_i01_action_distinction_mobile_01_check.mjs | backend/scripts/m18_run_i01_action_distinction_mobile_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-I-01-ACTION-DISTINCTION-MOBILE-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_i01_explain_orientation_regression_01_check.js | backend/scripts/m18_run_i01_explain_orientation_regression_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-I-01-EXPLAIN-ORIENTATION-REGRESSION-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_i01_explain_view_navigate_contrastive_01_check.js | backend/scripts/m18_run_i01_explain_view_navigate_contrastive_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-I-01-EXPLAIN-VIEW-NAVIGATE-CONTRASTIVE-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_j02_role_help_authority_01_check.js | backend/scripts/m18_run_j02_role_help_authority_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-J-02-ROLE-HELP-AUTHORITY-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_j02_role_help_browser_01_check.mjs | backend/scripts/m18_run_j02_role_help_browser_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-J-02-ROLE-HELP-BROWSER-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_j02_role_help_regression_01_check.js | backend/scripts/m18_run_j02_role_help_regression_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-J-02-ROLE-HELP-REGRESSION-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_j02_role_help_service_01_check.mjs | backend/scripts/m18_run_j02_role_help_service_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-J-02-ROLE-HELP-SERVICE-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_k02_role_concept_browser_01_check.mjs | backend/scripts/m18_run_k02_role_concept_browser_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-K-02-ROLE-CONCEPT-BROWSER-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_k02_role_concept_composition_01_check.js | backend/scripts/m18_run_k02_role_concept_composition_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-K-02-ROLE-CONCEPT-COMPOSITION-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_k02_role_concept_regression_01_check.js | backend/scripts/m18_run_k02_role_concept_regression_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-K-02-ROLE-CONCEPT-REGRESSION-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_k02_role_concept_service_01_check.mjs | backend/scripts/m18_run_k02_role_concept_service_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-K-02-ROLE-CONCEPT-SERVICE-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_l01_role_help_regression_01_check.js | backend/scripts/m18_run_l01_role_help_regression_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-L-01-ROLE-HELP-REGRESSION-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_m_authoring_validate_01_check.mjs | backend/scripts/m18_run_m_authoring_validate_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-M-AUTHORING-VALIDATE-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_m_freeze_01_check.mjs | backend/scripts/m18_run_m_freeze_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-M-FREEZE-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_m_frozen_execute_01_check.mjs | backend/scripts/m18_run_m_frozen_execute_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-M-FROZEN-EXECUTE-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_o_freeze_01_check.mjs | backend/scripts/m18_run_o_freeze_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-O-FREEZE-01-CHECK |  | Owner or chain unclear |  |
+| m18_run_scoped_provenance_01_check.mjs | backend/scripts/m18_run_scoped_provenance_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-RUN-SCOPED-PROVENANCE-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_authority_switch_01_check.js | backend/scripts/m18_semantic_authority_switch_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-AUTHORITY-SWITCH-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_context_composition_01_check.js | backend/scripts/m18_semantic_context_composition_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-CONTEXT-COMPOSITION-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_evidence_browser_01_check.mjs | backend/scripts/m18_semantic_evidence_browser_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-EVIDENCE-BROWSER-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_evidence_composition_01_check.js | backend/scripts/m18_semantic_evidence_composition_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-EVIDENCE-COMPOSITION-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_evidence_contract_01_check.js | backend/scripts/m18_semantic_evidence_contract_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-EVIDENCE-CONTRACT-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_evidence_false_positive_01_check.js | backend/scripts/m18_semantic_evidence_false_positive_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-EVIDENCE-FALSE-POSITIVE-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_evidence_responsive_01_check.mjs | backend/scripts/m18_semantic_evidence_responsive_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-EVIDENCE-RESPONSIVE-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_evidence_service_01_check.mjs | backend/scripts/m18_semantic_evidence_service_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-EVIDENCE-SERVICE-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_evidence_shadow_01_check.js | backend/scripts/m18_semantic_evidence_shadow_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-EVIDENCE-SHADOW-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_generalization_diagnostic_01_check.js | backend/scripts/m18_semantic_generalization_diagnostic_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-GENERALIZATION-DIAGNOSTIC-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_matcher_retirement_01_check.js | backend/scripts/m18_semantic_matcher_retirement_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-MATCHER-RETIREMENT-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_plan_only_01_check.js | backend/scripts/m18_semantic_plan_only_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-PLAN-ONLY-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_security_boundary_01_check.js | backend/scripts/m18_semantic_security_boundary_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-SECURITY-BOUNDARY-01-CHECK |  | Owner or chain unclear |  |
+| m18_semantic_specificity_architecture_01_check.js | backend/scripts/m18_semantic_specificity_architecture_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-SEMANTIC-SPECIFICITY-ARCHITECTURE-01-CHECK |  | Owner or chain unclear |  |
+| m18_service_evaluation_fixture_apply.mjs | backend/scripts/m18_service_evaluation_fixture_apply.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-SERVICE-EVALUATION-FIXTURE-APPLY |  | Owner or chain unclear |  |
+| m18_shared_surface_contextual_view_01_check.js | backend/scripts/m18_shared_surface_contextual_view_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-SHARED-SURFACE-CONTEXTUAL-VIEW-01-CHECK |  | Owner or chain unclear |  |
+| m18_superadmin_rooms_selected_record_semantic_regression_01.mjs | backend/scripts/m18_superadmin_rooms_selected_record_semantic_regression_01.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-SUPERADMIN-ROOMS-SELECTED-RECORD-SEMANTIC-REGRESSION-01 |  | Owner or chain unclear |  |
+| m18_surface_object_r1_fresh_audit_20261005.mjs | backend/scripts/m18_surface_object_r1_fresh_audit_20261005.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-SURFACE-OBJECT-R-1-FRESH-AUDIT-20261005 |  | Owner or chain unclear |  |
+| m18_surface_object_r1_fresh_author_20261005.mjs | backend/scripts/m18_surface_object_r1_fresh_author_20261005.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-SURFACE-OBJECT-R-1-FRESH-AUTHOR-20261005 |  | Owner or chain unclear |  |
+| m18_surface_object_r1_fresh_execute_20261005.mjs | backend/scripts/m18_surface_object_r1_fresh_execute_20261005.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-SURFACE-OBJECT-R-1-FRESH-EXECUTE-20261005 |  | Owner or chain unclear |  |
+| m18_surface_object_r1_probe_20261005.mjs | backend/scripts/m18_surface_object_r1_probe_20261005.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-SURFACE-OBJECT-R-1-PROBE-20261005 |  | Owner or chain unclear |  |
+| m18_task12_final_residual_stage1_01_check.js | backend/scripts/m18_task12_final_residual_stage1_01_check.js | backend |  | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| m18_task12_final_residual_stage2_01_check.js | backend/scripts/m18_task12_final_residual_stage2_01_check.js | backend |  | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| m18_task12_final_residual_stage3_01_check.js | backend/scripts/m18_task12_final_residual_stage3_01_check.js | backend |  | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| m18_task12_s1_r1_role_help_composition_01_check.js | backend/scripts/m18_task12_s1_r1_role_help_composition_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-TASK-12-S-1-R-1-ROLE-HELP-COMPOSITION-01-CHECK |  | Owner or chain unclear |  |
+| m18_task12_structural_anti_overfit_micro_check_01.js | backend/scripts/m18_task12_structural_anti_overfit_micro_check_01.js | backend |  | review | NEEDS_REVIEW |  | M-18-TASK-12-STRUCTURAL-ANTI-OVERFIT-MICRO-CHECK-01 |  | Owner or chain unclear |  |
+| m18_task12_trusted_product_corrective_01_check.js | backend/scripts/m18_task12_trusted_product_corrective_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-TASK-12-TRUSTED-PRODUCT-CORRECTIVE-01-CHECK |  | Owner or chain unclear |  |
+| m18_task12_typed_evidence_persistence_01_check.js | backend/scripts/m18_task12_typed_evidence_persistence_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-TASK-12-TYPED-EVIDENCE-PERSISTENCE-01-CHECK |  | Owner or chain unclear |  |
+| m18_task12_wave1_turkish_structural_contract_01_check.js | backend/scripts/m18_task12_wave1_turkish_structural_contract_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-TASK-12-WAVE-1-TURKISH-STRUCTURAL-CONTRACT-01-CHECK |  | Owner or chain unclear |  |
+| m18_task12_wave2_typed_role_aspect_composition_01_check.js | backend/scripts/m18_task12_wave2_typed_role_aspect_composition_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-TASK-12-WAVE-2-TYPED-ROLE-ASPECT-COMPOSITION-01-CHECK |  | Owner or chain unclear |  |
+| m18_task12_wave3_concrete_object_oos_veto_01_check.js | backend/scripts/m18_task12_wave3_concrete_object_oos_veto_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-TASK-12-WAVE-3-CONCRETE-OBJECT-OOS-VETO-01-CHECK |  | Owner or chain unclear |  |
+| m18_task12_wave4_structural_continuation_composition_01_check.js | backend/scripts/m18_task12_wave4_structural_continuation_composition_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-TASK-12-WAVE-4-STRUCTURAL-CONTINUATION-COMPOSITION-01-CHECK |  | Owner or chain unclear |  |
+| m18_task13_current_source_startup_01_check.mjs | backend/scripts/m18_task13_current_source_startup_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-TASK-13-CURRENT-SOURCE-STARTUP-01-CHECK |  | Owner or chain unclear |  |
+| m18_task14_remaining_root_clusters_01_check.js | backend/scripts/m18_task14_remaining_root_clusters_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-TASK-14-REMAINING-ROOT-CLUSTERS-01-CHECK |  | Owner or chain unclear |  |
+| m18_trusted_source_pin_01_check.mjs | backend/scripts/m18_trusted_source_pin_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-TRUSTED-SOURCE-PIN-01-CHECK |  | Owner or chain unclear |  |
+| m18_trusted_source_pin_table_01_check.mjs | backend/scripts/m18_trusted_source_pin_table_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-TRUSTED-SOURCE-PIN-TABLE-01-CHECK |  | Owner or chain unclear |  |
+| m18_turkish_semantic_features_01_check.js | backend/scripts/m18_turkish_semantic_features_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-TURKISH-SEMANTIC-FEATURES-01-CHECK |  | Owner or chain unclear |  |
+| m18_typed_semantic_evidence_baseline_01_check.js | backend/scripts/m18_typed_semantic_evidence_baseline_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-TYPED-SEMANTIC-EVIDENCE-BASELINE-01-CHECK |  | Owner or chain unclear |  |
+| m18_typed_semantic_evidence_implementation_gate_01_check.js | backend/scripts/m18_typed_semantic_evidence_implementation_gate_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-TYPED-SEMANTIC-EVIDENCE-IMPLEMENTATION-GATE-01-CHECK |  | Owner or chain unclear |  |
+| m18_typed_semantic_evidence_regression_spine_01_check.js | backend/scripts/m18_typed_semantic_evidence_regression_spine_01_check.js | backend |  | review | NEEDS_REVIEW |  | M-18-TYPED-SEMANTIC-EVIDENCE-REGRESSION-SPINE-01-CHECK |  | Owner or chain unclear |  |
+| m18_v3_comp_01_structural_01_check.mjs | backend/scripts/m18_v3_comp_01_structural_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-V-3-COMP-01-STRUCTURAL-01-CHECK |  | Owner or chain unclear |  |
+| m18_vcd_authorization_contract_01_check.mjs | backend/scripts/m18_vcd_authorization_contract_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-VCD-AUTHORIZATION-CONTRACT-01-CHECK |  | Owner or chain unclear |  |
+| m18_vcd_replacement_audit_20261006.mjs | backend/scripts/m18_vcd_replacement_audit_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-VCD-REPLACEMENT-AUDIT-20261006 |  | Owner or chain unclear |  |
+| m18_vcd_replacement_author_20261006.mjs | backend/scripts/m18_vcd_replacement_author_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-VCD-REPLACEMENT-AUTHOR-20261006 |  | Owner or chain unclear |  |
+| m18_vcd_replacement_execute_20261006.mjs | backend/scripts/m18_vcd_replacement_execute_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-VCD-REPLACEMENT-EXECUTE-20261006 |  | Owner or chain unclear |  |
+| m18_vcd_replacement_precheck_20261006.mjs | backend/scripts/m18_vcd_replacement_precheck_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-VCD-REPLACEMENT-PRECHECK-20261006 |  | Owner or chain unclear |  |
+| m18_vcd_replacement_provenance_20261006.mjs | backend/scripts/m18_vcd_replacement_provenance_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-VCD-REPLACEMENT-PROVENANCE-20261006 |  | Owner or chain unclear |  |
+| m18_vcd_task_contract_01_check.mjs | backend/scripts/m18_vcd_task_contract_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-VCD-TASK-CONTRACT-01-CHECK |  | Owner or chain unclear |  |
+| m18_view_create_desiderative_01_check.mjs | backend/scripts/m18_view_create_desiderative_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-VIEW-CREATE-DESIDERATIVE-01-CHECK |  | Owner or chain unclear |  |
+| m18_view_create_desiderative_diagnostic_20261006.mjs | backend/scripts/m18_view_create_desiderative_diagnostic_20261006.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-VIEW-CREATE-DESIDERATIVE-DIAGNOSTIC-20261006 |  | Owner or chain unclear |  |
+| m18_wp05_offer_note_goster_01_check.mjs | backend/scripts/m18_wp05_offer_note_goster_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-WP-05-OFFER-NOTE-GOSTER-01-CHECK |  | Owner or chain unclear |  |
+| m18_wp06_financial_detail_goster_01_check.mjs | backend/scripts/m18_wp06_financial_detail_goster_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-WP-06-FINANCIAL-DETAIL-GOSTER-01-CHECK |  | Owner or chain unclear |  |
+| m18_wp06_financial_semantic_residual_01_check.mjs | backend/scripts/m18_wp06_financial_semantic_residual_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-WP-06-FINANCIAL-SEMANTIC-RESIDUAL-01-CHECK |  | Owner or chain unclear |  |
+| m18_wp07_final_correctives_01_check.mjs | backend/scripts/m18_wp07_final_correctives_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| m18_wp07_multiturn_continuity_01_check.mjs | backend/scripts/m18_wp07_multiturn_continuity_01_check.mjs | backend |  | review | NEEDS_REVIEW |  | M-18-WP-07-MULTITURN-CONTINUITY-01-CHECK |  | Owner or chain unclear |  |
 | m18check.js | backend/scripts/m18check.js | backend |  | product | ACTIVE_RELEASE_ONLY |  | M-18-CHECK |  | Owner or chain unclear | product check/helper |
 | m19check.js | backend/scripts/m19check.js | backend |  | product | ACTIVE_RELEASE_ONLY |  | M-19-CHECK |  | Owner or chain unclear | product check/helper |
 | m1check.js | backend/scripts/m1check.js | backend | backend:m1check | review | NEEDS_REVIEW |  | M-1-CHECK |  | Owner or chain unclear |  |
@@ -1252,6 +1526,8 @@ Repo: `servis-platform`
 | pay_safe_01_payment_write_gate_check.js | backend/scripts/pay_safe_01_payment_write_gate_check.js | backend | root:check:paysafe01 | product | ACTIVE |  | PAY-SAFE-01-PAYMENT-WRITE-GATE-CHECK |  | Owner or chain unclear | product check/helper |
 | plan_center_guided_flow_persistence_01_check.js | backend/scripts/plan_center_guided_flow_persistence_01_check.js | backend | root:check:plancenterguidedflowpersistence01 | review | NEEDS_REVIEW |  | PLAN-CENTER-GUIDED-FLOW-PERSISTENCE-01-CHECK |  | Owner or chain unclear |  |
 | post_3_identity_and_evidence_lifecycle_hardening_01_check.js | backend/scripts/post_3_identity_and_evidence_lifecycle_hardening_01_check.js | backend |  | review | NEEDS_REVIEW |  | POST-3-IDENTITY-AND-EVIDENCE-LIFECYCLE-HARDENING-01-CHECK |  | Owner or chain unclear |  |
+| postgres_role_hardening_fixture_01.mjs | backend/scripts/postgres_role_hardening_fixture_01.mjs | backend | backend:role-hardening:fixture, backend:role-hardening:fixture:check | review | NEEDS_REVIEW |  | POSTGRES-ROLE-HARDENING-FIXTURE-01 |  | Owner or chain unclear |  |
+| postgres_role_hardening_fixture_01_check.js | backend/scripts/postgres_role_hardening_fixture_01_check.js | backend | backend:role-hardening:fixture:check | review | NEEDS_REVIEW |  | POSTGRES-ROLE-HARDENING-FIXTURE-01-CHECK |  | Owner or chain unclear |  |
 | pre_18_agreement_wizard_deterministic_state_acceptance_01.mjs | backend/scripts/pre_18_agreement_wizard_deterministic_state_acceptance_01.mjs | backend |  | review | NEEDS_REVIEW |  | PRE-18-AGREEMENT-WIZARD-DETERMINISTIC-STATE-ACCEPTANCE-01 |  | Owner or chain unclear |  |
 | pre_18_agreement_wizard_unreachable_defensive_branch_check.mjs | backend/scripts/pre_18_agreement_wizard_unreachable_defensive_branch_check.mjs | backend |  | review | NEEDS_REVIEW |  | PRE-18-AGREEMENT-WIZARD-UNREACHABLE-DEFENSIVE-BRANCH-CHECK |  | Owner or chain unclear |  |
 | pre_18_backend_security_context_acceptance_check.mjs | backend/scripts/pre_18_backend_security_context_acceptance_check.mjs | backend |  | review | NEEDS_REVIEW |  | PRE-18-BACKEND-SECURITY-CONTEXT-ACCEPTANCE-CHECK |  | Owner or chain unclear |  |
@@ -1429,6 +1705,8 @@ Repo: `servis-platform`
 | role_based_simple_navigation_and_task_home_01_check.js | backend/scripts/role_based_simple_navigation_and_task_home_01_check.js | backend | root:check:rolebasedsimplenavigationandtaskhome01 | review | NEEDS_REVIEW |  | ROLE-BASED-SIMPLE-NAVIGATION-AND-TASK-HOME-01-CHECK |  | Owner or chain unclear |  |
 | role_based_simple_navigation_and_task_home_01_visual_corrective_01_browser.mjs | backend/scripts/role_based_simple_navigation_and_task_home_01_visual_corrective_01_browser.mjs | backend |  | review | NEEDS_REVIEW |  | ROLE-BASED-SIMPLE-NAVIGATION-AND-TASK-HOME-01-VISUAL-CORRECTIVE-01-BROWSER |  | Owner or chain unclear |  |
 | role_data_isolation_redteam_01_check.js | backend/scripts/role_data_isolation_redteam_01_check.js | backend | root:check:roledataisolationredteam01 | review | NEEDS_REVIEW |  | ROLE-DATA-ISOLATION-REDTEAM-01 |  | Owner or chain unclear |  |
+| room_commercial_flow_items_binding_01_check.js | backend/scripts/room_commercial_flow_items_binding_01_check.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COMMERCIAL-FLOW-ITEMS-BINDING-01-CHECK |  | Owner or chain unclear |  |
+| room_guided_org_route_preview_01_test.js | backend/scripts/room_guided_org_route_preview_01_test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-GUIDED-ORG-ROUTE-PREVIEW-01-TEST |  | Owner or chain unclear |  |
 | room_profitability_and_quote_floor_01_check.js | backend/scripts/room_profitability_and_quote_floor_01_check.js | backend | root:check:roomprofitabilityandquotefloor01 | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Owner or chain unclear |  |
 | room_profitability_and_quote_floor_01_expansion.js | backend/scripts/room_profitability_and_quote_floor_01_expansion.js | backend |  | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Owner or chain unclear |  |
 | room_vehicle_driver_uppercase_normalization_01_check.js | backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js | backend | root:check:roomvehicledriveruppercase01 | review | NEEDS_REVIEW |  | ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01-CHECK |  | Owner or chain unclear |  |
@@ -1437,6 +1715,7 @@ Repo: `servis-platform`
 | run_guard_regression_chain.js | backend/scripts/run_guard_regression_chain.js | backend | root:check:core-regression, root:check:extended-regression, root:check:release-regression | review | NEEDS_REVIEW |  | RUN-GUARD-REGRESSION-CHAIN |  | Owner or chain unclear |  |
 | run_impact_aware_validation_v1.js | backend/scripts/run_impact_aware_validation_v1.js | backend | backend:run:impactawarevalidationv1 | review | NEEDS_REVIEW |  | RUN-IMPACT-AWARE-VALIDATION-V-1 |  | Owner or chain unclear |  |
 | run_m0_latest.js | backend/scripts/run_m0_latest.js | backend | backend:m91:milestones, backend:milestones:static, root:verify:milestones, root:verify:milestones:live | verify:repo | ACTIVE_CORE |  | RUN-M-0-LATEST |  | Owner or chain unclear | canonical runner |
+| run_m0_latest_classification.test.js | backend/scripts/run_m0_latest_classification.test.js | backend |  | review | NEEDS_REVIEW |  | RUN-M-0-LATEST-CLASSIFICATION-TEST |  | Owner or chain unclear |  |
 | run_m0_m66.js | backend/scripts/run_m0_m66.js | backend |  | review | NEEDS_REVIEW |  | RUN-M-0-M-66 |  | Owner or chain unclear |  |
 | run_m91_route_preview_checks.js | backend/scripts/run_m91_route_preview_checks.js | backend | backend:m91check | verify:repo | ACTIVE_CORE |  | RUN-M-91-ROUTE-PREVIEW-CHECKS |  | Owner or chain unclear | canonical runner |
 | run_product_extensions_check_chain.js | backend/scripts/run_product_extensions_check_chain.js | backend | root:check:product-extensions | product-extensions | ACTIVE_CORE |  | RUN-PRODUCT-EXTENSIONS-CHECK-CHAIN |  | Owner or chain unclear | canonical runner |
@@ -1446,15 +1725,25 @@ Repo: `servis-platform`
 | scale_readiness_check.js | backend/scripts/scale_readiness_check.js | backend |  | review | NEEDS_REVIEW |  | SCALE-READINESS-CHECK |  | Owner or chain unclear |  |
 | script_harness_consolidation_01_check.js | backend/scripts/script_harness_consolidation_01_check.js | backend | root:check:scriptharnessconsolidation01 | product-extensions | ACTIVE_CORE |  | SCRIPT-HARNESS-CONSOLIDATION-01-CHECK |  | Owner or chain unclear | canonical repo harness inventory |
 | security_kvkk_final_01_check.js | backend/scripts/security_kvkk_final_01_check.js | backend | root:check:securitykvkkfinal01 | review | NEEDS_REVIEW |  | SECURITY-KVKK-FINAL-01 |  | Owner or chain unclear |  |
+| sefer_abi_actionable_bubble_acceptance_01_browser.mjs | backend/scripts/sefer_abi_actionable_bubble_acceptance_01_browser.mjs | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-ACTIONABLE-BUBBLE-ACCEPTANCE-01-BROWSER |  | Owner or chain unclear |  |
 | sefer_abi_all_roles_reasoning_assistant_01_check.js | backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js | backend | root:check:seferabiallrolesreasoningassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01-CHECK |  | Owner or chain unclear |  |
+| sefer_abi_avatar_canvas_idle_01_browser.mjs | backend/scripts/sefer_abi_avatar_canvas_idle_01_browser.mjs | backend | root:smoke:seferabiavatarcanvasidle01 | review | NEEDS_REVIEW |  | SEFER-ABI-AVATAR-CANVAS-IDLE-01-BROWSER |  | Owner or chain unclear |  |
+| sefer_abi_avatar_canvas_size_02_browser.mjs | backend/scripts/sefer_abi_avatar_canvas_size_02_browser.mjs | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-AVATAR-CANVAS-SIZE-02-BROWSER |  | Owner or chain unclear |  |
+| sefer_abi_avatar_states_04_browser.mjs | backend/scripts/sefer_abi_avatar_states_04_browser.mjs | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-AVATAR-STATES-04-BROWSER |  | Owner or chain unclear |  |
+| sefer_abi_avatar_static_fallback_05_browser.mjs | backend/scripts/sefer_abi_avatar_static_fallback_05_browser.mjs | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-AVATAR-STATIC-FALLBACK-05-BROWSER |  | Owner or chain unclear |  |
+| sefer_abi_avatar_visual_quality_03_browser.mjs | backend/scripts/sefer_abi_avatar_visual_quality_03_browser.mjs | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-AVATAR-VISUAL-QUALITY-03-BROWSER |  | Owner or chain unclear |  |
 | sefer_abi_character_animation_safe_snap_polish_01_browser.mjs | backend/scripts/sefer_abi_character_animation_safe_snap_polish_01_browser.mjs | backend | root:smoke:seferabicharactersafesnappolish01 | review | NEEDS_REVIEW |  | SEFER-ABI-CHARACTER-ANIMATION-SAFE-SNAP-POLISH-01-BROWSER |  | Owner or chain unclear |  |
 | sefer_abi_cost_analysis_assistant_01_acceptance.mjs | backend/scripts/sefer_abi_cost_analysis_assistant_01_acceptance.mjs | backend | root:accept:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-COST-ANALYSIS-ASSISTANT-01-ACCEPTANCE |  | Owner or chain unclear |  |
 | sefer_abi_cost_analysis_assistant_01_browser.mjs | backend/scripts/sefer_abi_cost_analysis_assistant_01_browser.mjs | backend | root:smoke:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-COST-ANALYSIS-ASSISTANT-01-BROWSER |  | Owner or chain unclear |  |
 | sefer_abi_cost_analysis_assistant_01_check.js | backend/scripts/sefer_abi_cost_analysis_assistant_01_check.js | backend | root:check:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-COST-ANALYSIS-ASSISTANT-01-CHECK |  | Owner or chain unclear |  |
+| sefer_abi_expression_acceptance_09_browser.mjs | backend/scripts/sefer_abi_expression_acceptance_09_browser.mjs | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-EXPRESSION-ACCEPTANCE-09-BROWSER |  | Owner or chain unclear |  |
+| sefer_abi_frameless_07_browser.mjs | backend/scripts/sefer_abi_frameless_07_browser.mjs | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-FRAMELESS-07-BROWSER |  | Owner or chain unclear |  |
 | sefer_abi_premium_character_corrective_01_browser.mjs | backend/scripts/sefer_abi_premium_character_corrective_01_browser.mjs | backend | root:smoke:seferabipremiumcharactercorrective01 | review | NEEDS_REVIEW |  | SEFER-ABI-PREMIUM-CHARACTER-CORRECTIVE-01-BROWSER |  | Owner or chain unclear |  |
 | sefer_abi_premium_character_corrective_01_check.js | backend/scripts/sefer_abi_premium_character_corrective_01_check.js | backend | root:check:seferabipremiumcharactercorrective01 | review | NEEDS_REVIEW |  | SEFER-ABI-PREMIUM-CHARACTER-CORRECTIVE-01-CHECK |  | Owner or chain unclear |  |
 | sefer_abi_reasoning_assistant_01_check.js | backend/scripts/sefer_abi_reasoning_assistant_01_check.js | backend | root:check:seferabireasoningassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-REASONING-ASSISTANT-01-CHECK |  | Owner or chain unclear |  |
 | sefer_abi_room_fuel_province_coverage_01_acceptance.mjs | backend/scripts/sefer_abi_room_fuel_province_coverage_01_acceptance.mjs | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-ROOM-FUEL-PROVINCE-COVERAGE-01-ACCEPTANCE |  | Owner or chain unclear |  |
+| sefer_abi_sprite_blink_spike_06.mjs | backend/scripts/sefer_abi_sprite_blink_spike_06.mjs | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-SPRITE-BLINK-SPIKE-06 |  | Owner or chain unclear |  |
+| sefer_abi_sprite_blink_trial_08_browser.mjs | backend/scripts/sefer_abi_sprite_blink_trial_08_browser.mjs | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-SPRITE-BLINK-TRIAL-08-BROWSER |  | Owner or chain unclear |  |
 | sefer_abi_terminal_humanize_01_check.js | backend/scripts/sefer_abi_terminal_humanize_01_check.js | backend | root:check:seferabiterminalhumanize01 | review | NEEDS_REVIEW |  | SEFER-ABI-TERMINAL-HUMANIZE-01-CHECK |  | Owner or chain unclear |  |
 | sefer_abi_turkish_user_facing_language_01_check.js | backend/scripts/sefer_abi_turkish_user_facing_language_01_check.js | backend | root:check:seferabiturkishuserfacinglanguage01 | review | NEEDS_REVIEW |  | SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-01-CHECK |  | Owner or chain unclear |  |
 | sefer_abi_turkish_user_facing_terminology_01_check.js | backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js | backend | root:check:seferabiturkishterminology01 | review | NEEDS_REVIEW |  | SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-01-CHECK |  | Owner or chain unclear |  |
@@ -1546,18 +1835,37 @@ Repo: `servis-platform`
 | verify_chain_01_product_extensions_check.js | backend/scripts/verify_chain_01_product_extensions_check.js | backend | root:check:verifychain01 | product-extensions | ACTIVE_CORE |  | VERIFY-CHAIN-01-PRODUCT-EXTENSIONS-CHECK |  | Owner or chain unclear | canonical runner |
 | web_01a_flow_summary_polish_check.js | backend/scripts/web_01a_flow_summary_polish_check.js | backend | root:check:web01a | review | NEEDS_REVIEW |  | WEB-01-A-FLOW-SUMMARY-POLISH-CHECK |  | Owner or chain unclear |  |
 | web_01b_superadmin_system_mode_summary_check.js | backend/scripts/web_01b_superadmin_system_mode_summary_check.js | backend | root:check:web01b | review | NEEDS_REVIEW |  | WEB-01-B-SUPERADMIN-SYSTEM-MODE-SUMMARY-CHECK |  | Owner or chain unclear |  |
+| worker_database_role_separation_fixture_01.mjs | backend/scripts/worker_database_role_separation_fixture_01.mjs | backend | backend:worker-role-separation:fixture, backend:worker-role-separation:fixture:check | review | NEEDS_REVIEW |  | WORKER-DATABASE-ROLE-SEPARATION-FIXTURE-01 |  | Owner or chain unclear |  |
+| worker_database_role_separation_fixture_01_check.js | backend/scripts/worker_database_role_separation_fixture_01_check.js | backend | backend:worker-role-separation:fixture:check | review | NEEDS_REVIEW |  | WORKER-DATABASE-ROLE-SEPARATION-FIXTURE-01-CHECK |  | Owner or chain unclear |  |
 | addressGeocodingConfidencePolicy.js | backend/src/ai/chat/addressGeocodingConfidencePolicy.js | backend |  | review | NEEDS_REVIEW |  | ADDRESS-GEOCODING-CONFIDENCE-POLICY |  | Owner or chain unclear |  |
 | answerQualityPolicy.js | backend/src/ai/chat/answerQualityPolicy.js | backend |  | review | NEEDS_REVIEW |  | ANSWER-QUALITY-POLICY |  | Owner or chain unclear |  |
+| authorizationGate.continuation83.test.js | backend/src/ai/chat/authorizationGate.continuation83.test.js | backend |  | review | NEEDS_REVIEW |  | AUTHORIZATION-GATE-CONTINUATION-83-TEST |  | Owner or chain unclear |  |
 | authorizationGate.js | backend/src/ai/chat/authorizationGate.js | backend |  | review | NEEDS_REVIEW |  | AUTHORIZATION-GATE |  | Owner or chain unclear |  |
+| authorizationGate.scope.test.js | backend/src/ai/chat/authorizationGate.scope.test.js | backend |  | review | NEEDS_REVIEW |  | AUTHORIZATION-GATE-SCOPE-TEST |  | Owner or chain unclear |  |
 | canonicalConversationState.js | backend/src/ai/chat/canonicalConversationState.js | backend |  | review | NEEDS_REVIEW |  | CANONICAL-CONVERSATION-STATE |  | Owner or chain unclear |  |
+| canonicalConversationState.test.js | backend/src/ai/chat/canonicalConversationState.test.js | backend |  | review | NEEDS_REVIEW |  | CANONICAL-CONVERSATION-STATE-TEST |  | Owner or chain unclear |  |
+| canonicalConversationTrace.js | backend/src/ai/chat/canonicalConversationTrace.js | backend |  | review | NEEDS_REVIEW |  | CANONICAL-CONVERSATION-TRACE |  | Owner or chain unclear |  |
+| canonicalSemanticContext.js | backend/src/ai/chat/canonicalSemanticContext.js | backend |  | review | NEEDS_REVIEW |  | CANONICAL-SEMANTIC-CONTEXT |  | Owner or chain unclear |  |
+| canonicalSemanticContext.serviceRequest.test.js | backend/src/ai/chat/canonicalSemanticContext.serviceRequest.test.js | backend |  | review | NEEDS_REVIEW |  | CANONICAL-SEMANTIC-CONTEXT-SERVICE-REQUEST-TEST |  | Owner or chain unclear |  |
+| canonicalSemanticRequest.continuation103.test.js | backend/src/ai/chat/canonicalSemanticRequest.continuation103.test.js | backend |  | review | NEEDS_REVIEW |  | CANONICAL-SEMANTIC-REQUEST-CONTINUATION-103-TEST |  | Owner or chain unclear |  |
+| canonicalSemanticRequest.continuation233.test.js | backend/src/ai/chat/canonicalSemanticRequest.continuation233.test.js | backend |  | review | NEEDS_REVIEW |  | CANONICAL-SEMANTIC-REQUEST-CONTINUATION-233-TEST |  | Owner or chain unclear |  |
+| canonicalSemanticRequest.continuation256.test.js | backend/src/ai/chat/canonicalSemanticRequest.continuation256.test.js | backend |  | review | NEEDS_REVIEW |  | CANONICAL-SEMANTIC-REQUEST-CONTINUATION-256-TEST |  | Owner or chain unclear |  |
+| canonicalSemanticRequest.continuation83.test.js | backend/src/ai/chat/canonicalSemanticRequest.continuation83.test.js | backend |  | review | NEEDS_REVIEW |  | CANONICAL-SEMANTIC-REQUEST-CONTINUATION-83-TEST |  | Owner or chain unclear |  |
 | canonicalSemanticRequest.js | backend/src/ai/chat/canonicalSemanticRequest.js | backend |  | review | NEEDS_REVIEW |  | CANONICAL-SEMANTIC-REQUEST |  | Owner or chain unclear |  |
+| canonicalSemanticRequest.schoolOperations.test.js | backend/src/ai/chat/canonicalSemanticRequest.schoolOperations.test.js | backend |  | review | NEEDS_REVIEW |  | CANONICAL-SEMANTIC-REQUEST-SCHOOL-OPERATIONS-TEST |  | Owner or chain unclear |  |
+| companyHubContext.continuation181.test.js | backend/src/ai/chat/companyHubContext.continuation181.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-HUB-CONTEXT-CONTINUATION-181-TEST |  | Owner or chain unclear |  |
+| companyOfferCollectionContinuation140.test.js | backend/src/ai/chat/companyOfferCollectionContinuation140.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-OFFER-COLLECTION-CONTINUATION-140-TEST |  | Owner or chain unclear |  |
+| companySelectedRecordRecovery.test.js | backend/src/ai/chat/companySelectedRecordRecovery.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-SELECTED-RECORD-RECOVERY-TEST |  | Owner or chain unclear |  |
+| companySelectedShiftStatus.continuation54.test.js | backend/src/ai/chat/companySelectedShiftStatus.continuation54.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-SELECTED-SHIFT-STATUS-CONTINUATION-54-TEST |  | Owner or chain unclear |  |
 | contextResolver.js | backend/src/ai/chat/contextResolver.js | backend |  | review | NEEDS_REVIEW |  | CONTEXT-RESOLVER |  | Owner or chain unclear |  |
 | conversationNextBestActionEngine.js | backend/src/ai/chat/conversationNextBestActionEngine.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-NEXT-BEST-ACTION-ENGINE |  | Owner or chain unclear |  |
 | conversationOperationHealthEngine.js | backend/src/ai/chat/conversationOperationHealthEngine.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-OPERATION-HEALTH-ENGINE |  | Owner or chain unclear |  |
 | conversationPlanReviewEngine.js | backend/src/ai/chat/conversationPlanReviewEngine.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-PLAN-REVIEW-ENGINE |  | Owner or chain unclear |  |
 | conversationRiskScoringEngine.js | backend/src/ai/chat/conversationRiskScoringEngine.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-RISK-SCORING-ENGINE |  | Owner or chain unclear |  |
 | conversationRootCauseEngine.js | backend/src/ai/chat/conversationRootCauseEngine.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-ROOT-CAUSE-ENGINE |  | Owner or chain unclear |  |
+| conversationRouting.cont351.test.js | backend/src/ai/chat/conversationRouting.cont351.test.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-ROUTING-CONT-351-TEST |  | Owner or chain unclear |  |
 | conversationRouting.js | backend/src/ai/chat/conversationRouting.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-ROUTING |  | Owner or chain unclear |  |
+| conversationRouting.security.test.js | backend/src/ai/chat/conversationRouting.security.test.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-ROUTING-SECURITY-TEST |  | Owner or chain unclear |  |
 | conversationSmartDiagnostics.js | backend/src/ai/chat/conversationSmartDiagnostics.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-SMART-DIAGNOSTICS |  | Owner or chain unclear |  |
 | conversationTaskState.js | backend/src/ai/chat/conversationTaskState.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE |  | Owner or chain unclear |  |
 | conversationTaskStateBuilders.js | backend/src/ai/chat/conversationTaskStateBuilders.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-BUILDERS |  | Owner or chain unclear |  |
@@ -1588,27 +1896,70 @@ Repo: `servis-platform`
 | copilotRouteReviewHumanApprovalPolicy.js | backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-POLICY |  | Owner or chain unclear |  |
 | copilotShiftToAgreementPrep.js | backend/src/ai/chat/copilotShiftToAgreementPrep.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-SHIFT-TO-AGREEMENT-PREP |  | Owner or chain unclear |  |
 | copilotStopRouteDraftPolicy.js | backend/src/ai/chat/copilotStopRouteDraftPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-POLICY |  | Owner or chain unclear |  |
+| copilotUiElementAnchor.continuation83.test.js | backend/src/ai/chat/copilotUiElementAnchor.continuation83.test.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-UI-ELEMENT-ANCHOR-CONTINUATION-83-TEST |  | Owner or chain unclear |  |
 | copilotUiElementAnchor.js | backend/src/ai/chat/copilotUiElementAnchor.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-UI-ELEMENT-ANCHOR |  | Owner or chain unclear |  |
+| crossRoleSynchronizationKnowledge.continuation365.test.js | backend/src/ai/chat/crossRoleSynchronizationKnowledge.continuation365.test.js | backend |  | review | NEEDS_REVIEW |  | CROSS-ROLE-SYNCHRONIZATION-KNOWLEDGE-CONTINUATION-365-TEST |  | Owner or chain unclear |  |
+| driverRouteNextStop.continuation173.test.js | backend/src/ai/chat/driverRouteNextStop.continuation173.test.js | backend |  | review | NEEDS_REVIEW |  | DRIVER-ROUTE-NEXT-STOP-CONTINUATION-173-TEST |  | Owner or chain unclear |  |
 | etaSanity.js | backend/src/ai/chat/etaSanity.js | backend |  | review | NEEDS_REVIEW |  | ETA-SANITY |  | Owner or chain unclear |  |
 | excelToRouteReadinessRedteamPack.js | backend/src/ai/chat/excelToRouteReadinessRedteamPack.js | backend |  | review | NEEDS_REVIEW |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-PACK |  | Owner or chain unclear |  |
+| fieldAcceptanceContextContinuation141.test.js | backend/src/ai/chat/fieldAcceptanceContextContinuation141.test.js | backend |  | review | NEEDS_REVIEW |  | FIELD-ACCEPTANCE-CONTEXT-CONTINUATION-141-TEST |  | Owner or chain unclear |  |
 | fieldPrivacyPolicy.js | backend/src/ai/chat/fieldPrivacyPolicy.js | backend |  | review | NEEDS_REVIEW |  | FIELD-PRIVACY-POLICY |  | Owner or chain unclear |  |
+| financeStarterRouting.test.js | backend/src/ai/chat/financeStarterRouting.test.js | backend |  | review | NEEDS_REVIEW |  | FINANCE-STARTER-ROUTING-TEST |  | Owner or chain unclear |  |
+| financialDecisionExplanation.test.js | backend/src/ai/chat/financialDecisionExplanation.test.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-DECISION-EXPLANATION-TEST |  | Owner or chain unclear |  |
+| financialScenarioContext.js | backend/src/ai/chat/financialScenarioContext.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-SCENARIO-CONTEXT |  | Owner or chain unclear |  |
+| financialScenarioContext.test.js | backend/src/ai/chat/financialScenarioContext.test.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-SCENARIO-CONTEXT-TEST |  | Owner or chain unclear |  |
 | goldenQuestionPack.js | backend/src/ai/chat/goldenQuestionPack.js | backend |  | review | NEEDS_REVIEW |  | GOLDEN-QUESTION-PACK |  | Owner or chain unclear |  |
+| helpComposer.continuation321.test.js | backend/src/ai/chat/helpComposer.continuation321.test.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-CONTINUATION-321-TEST |  | Owner or chain unclear |  |
+| helpComposer.continuation338.test.js | backend/src/ai/chat/helpComposer.continuation338.test.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-CONTINUATION-338-TEST |  | Owner or chain unclear |  |
+| helpComposer.georeviewTargetScope.test.js | backend/src/ai/chat/helpComposer.georeviewTargetScope.test.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-GEOREVIEW-TARGET-SCOPE-TEST |  | Owner or chain unclear |  |
 | helpComposer.js | backend/src/ai/chat/helpComposer.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER |  | Owner or chain unclear |  |
 | helpComposerEntityRuntime.js | backend/src/ai/chat/helpComposerEntityRuntime.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-ENTITY-RUNTIME |  | Owner or chain unclear |  |
 | helpComposerSafeReplies.js | backend/src/ai/chat/helpComposerSafeReplies.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-SAFE-REPLIES |  | Owner or chain unclear |  |
+| helpComposerSelectedRuntime.continuation202.test.js | backend/src/ai/chat/helpComposerSelectedRuntime.continuation202.test.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-SELECTED-RUNTIME-CONTINUATION-202-TEST |  | Owner or chain unclear |  |
+| helpComposerSelectedRuntime.georeview.test.js | backend/src/ai/chat/helpComposerSelectedRuntime.georeview.test.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-SELECTED-RUNTIME-GEOREVIEW-TEST |  | Owner or chain unclear |  |
 | helpComposerSelectedRuntime.js | backend/src/ai/chat/helpComposerSelectedRuntime.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-SELECTED-RUNTIME |  | Owner or chain unclear |  |
 | intentRouter.js | backend/src/ai/chat/intentRouter.js | backend |  | review | NEEDS_REVIEW |  | INTENT-ROUTER |  | Owner or chain unclear |  |
 | intentRouterCore.js | backend/src/ai/chat/intentRouterCore.js | backend |  | review | NEEDS_REVIEW |  | INTENT-ROUTER-CORE |  | Owner or chain unclear |  |
+| intentRouterCore.riskGuide.test.js | backend/src/ai/chat/intentRouterCore.riskGuide.test.js | backend |  | review | NEEDS_REVIEW |  | INTENT-ROUTER-CORE-RISK-GUIDE-TEST |  | Owner or chain unclear |  |
+| intentRouterScreenChips.js | backend/src/ai/chat/intentRouterScreenChips.js | backend |  | review | NEEDS_REVIEW |  | INTENT-ROUTER-SCREEN-CHIPS |  | Owner or chain unclear |  |
+| localSemanticProposal.js | backend/src/ai/chat/localSemanticProposal.js | backend |  | review | NEEDS_REVIEW |  | LOCAL-SEMANTIC-PROPOSAL |  | Owner or chain unclear |  |
+| notificationsSelectedRecord.continuation76.test.js | backend/src/ai/chat/notificationsSelectedRecord.continuation76.test.js | backend |  | review | NEEDS_REVIEW |  | NOTIFICATIONS-SELECTED-RECORD-CONTINUATION-76-TEST |  | Owner or chain unclear |  |
+| operationVerificationContext.continuation160.test.js | backend/src/ai/chat/operationVerificationContext.continuation160.test.js | backend |  | review | NEEDS_REVIEW |  | OPERATION-VERIFICATION-CONTEXT-CONTINUATION-160-TEST |  | Owner or chain unclear |  |
 | osrmRouteDraftFromExcelPolicy.js | backend/src/ai/chat/osrmRouteDraftFromExcelPolicy.js | backend |  | review | NEEDS_REVIEW |  | OSRM-ROUTE-DRAFT-FROM-EXCEL-POLICY |  | Owner or chain unclear |  |
+| parentLiveNoVehicleReply.test.js | backend/src/ai/chat/parentLiveNoVehicleReply.test.js | backend |  | review | NEEDS_REVIEW |  | PARENT-LIVE-NO-VEHICLE-REPLY-TEST |  | Owner or chain unclear |  |
+| passengerLiveLinkStatus.continuation89.test.js | backend/src/ai/chat/passengerLiveLinkStatus.continuation89.test.js | backend |  | review | NEEDS_REVIEW |  | PASSENGER-LIVE-LINK-STATUS-CONTINUATION-89-TEST |  | Owner or chain unclear |  |
 | qualityScorer.js | backend/src/ai/chat/qualityScorer.js | backend |  | review | NEEDS_REVIEW |  | QUALITY-SCORER |  | Owner or chain unclear |  |
 | replyShapes.js | backend/src/ai/chat/replyShapes.js | backend |  | review | NEEDS_REVIEW |  | REPLY-SHAPES |  | Owner or chain unclear |  |
+| roomHgsExpenseAssistant.js | backend/src/ai/chat/roomHgsExpenseAssistant.js | backend |  | review | NEEDS_REVIEW |  | ROOM-HGS-EXPENSE-ASSISTANT |  | Owner or chain unclear |  |
+| roomHgsExpenseAssistant.test.js | backend/src/ai/chat/roomHgsExpenseAssistant.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-HGS-EXPENSE-ASSISTANT-TEST |  | Owner or chain unclear |  |
+| roomSelectedOfferStatus.continuation56.test.js | backend/src/ai/chat/roomSelectedOfferStatus.continuation56.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-SELECTED-OFFER-STATUS-CONTINUATION-56-TEST |  | Owner or chain unclear |  |
+| schoolParentAccessContext.continuation201.test.js | backend/src/ai/chat/schoolParentAccessContext.continuation201.test.js | backend |  | review | NEEDS_REVIEW |  | SCHOOL-PARENT-ACCESS-CONTEXT-CONTINUATION-201-TEST |  | Owner or chain unclear |  |
+| schoolParentAccessContext.js | backend/src/ai/chat/schoolParentAccessContext.js | backend |  | review | NEEDS_REVIEW |  | SCHOOL-PARENT-ACCESS-CONTEXT |  | Owner or chain unclear |  |
 | screenStateAnalyzer.js | backend/src/ai/chat/screenStateAnalyzer.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-STATE-ANALYZER |  | Owner or chain unclear |  |
+| seferAbiCostAnalysisAssistant.continuation233.test.js | backend/src/ai/chat/seferAbiCostAnalysisAssistant.continuation233.test.js | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-COST-ANALYSIS-ASSISTANT-CONTINUATION-233-TEST |  | Owner or chain unclear |  |
 | seferAbiCostAnalysisAssistant.js | backend/src/ai/chat/seferAbiCostAnalysisAssistant.js | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-COST-ANALYSIS-ASSISTANT |  | Owner or chain unclear |  |
+| seferAbiCostAnalysisAssistant.test.js | backend/src/ai/chat/seferAbiCostAnalysisAssistant.test.js | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-COST-ANALYSIS-ASSISTANT-TEST |  | Owner or chain unclear |  |
+| seferAbiPriceAdvisory.test.js | backend/src/ai/chat/seferAbiPriceAdvisory.test.js | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-PRICE-ADVISORY-TEST |  | Owner or chain unclear |  |
+| seferAbiProductKnowledgeReconciliation.test.js | backend/src/ai/chat/seferAbiProductKnowledgeReconciliation.test.js | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-PRODUCT-KNOWLEDGE-RECONCILIATION-TEST |  | Owner or chain unclear |  |
 | seferAbiReasoningAssistant.js | backend/src/ai/chat/seferAbiReasoningAssistant.js | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-REASONING-ASSISTANT |  | Owner or chain unclear |  |
+| semanticAuthorityMode.js | backend/src/ai/chat/semanticAuthorityMode.js | backend |  | review | NEEDS_REVIEW |  | SEMANTIC-AUTHORITY-MODE |  | Owner or chain unclear |  |
+| semanticCandidateFallback.js | backend/src/ai/chat/semanticCandidateFallback.js | backend |  | review | NEEDS_REVIEW |  | SEMANTIC-CANDIDATE-FALLBACK |  | Owner or chain unclear |  |
+| semanticEvidence.js | backend/src/ai/chat/semanticEvidence.js | backend |  | review | NEEDS_REVIEW |  | SEMANTIC-EVIDENCE |  | Owner or chain unclear |  |
+| semanticEvidenceComposer.js | backend/src/ai/chat/semanticEvidenceComposer.js | backend |  | review | NEEDS_REVIEW |  | SEMANTIC-EVIDENCE-COMPOSER |  | Owner or chain unclear |  |
+| semanticIntentPlanner.continuation02.test.js | backend/src/ai/chat/semanticIntentPlanner.continuation02.test.js | backend |  | review | NEEDS_REVIEW |  | SEMANTIC-INTENT-PLANNER-CONTINUATION-02-TEST |  | Owner or chain unclear |  |
+| semanticIntentPlanner.continuation12.test.js | backend/src/ai/chat/semanticIntentPlanner.continuation12.test.js | backend |  | review | NEEDS_REVIEW |  | SEMANTIC-INTENT-PLANNER-CONTINUATION-12-TEST |  | Owner or chain unclear |  |
+| semanticIntentPlanner.continuation311.test.js | backend/src/ai/chat/semanticIntentPlanner.continuation311.test.js | backend |  | review | NEEDS_REVIEW |  | SEMANTIC-INTENT-PLANNER-CONTINUATION-311-TEST |  | Owner or chain unclear |  |
 | semanticIntentPlanner.js | backend/src/ai/chat/semanticIntentPlanner.js | backend |  | review | NEEDS_REVIEW |  | SEMANTIC-INTENT-PLANNER |  | Owner or chain unclear |  |
+| semanticSpecificityResolver.js | backend/src/ai/chat/semanticSpecificityResolver.js | backend |  | review | NEEDS_REVIEW |  | SEMANTIC-SPECIFICITY-RESOLVER |  | Owner or chain unclear |  |
 | supplierMatching.js | backend/src/ai/chat/supplierMatching.js | backend |  | review | NEEDS_REVIEW |  | SUPPLIER-MATCHING |  | Owner or chain unclear |  |
 | supplierOfferCollect.js | backend/src/ai/chat/supplierOfferCollect.js | backend |  | review | NEEDS_REVIEW |  | SUPPLIER-OFFER-COLLECT |  | Owner or chain unclear |  |
+| turkishNavigationEvidence.js | backend/src/ai/chat/turkishNavigationEvidence.js | backend |  | review | NEEDS_REVIEW |  | TURKISH-NAVIGATION-EVIDENCE |  | Owner or chain unclear |  |
+| turkishSemanticFeatures.js | backend/src/ai/chat/turkishSemanticFeatures.js | backend |  | review | NEEDS_REVIEW |  | TURKISH-SEMANTIC-FEATURES |  | Owner or chain unclear |  |
 | userFacingLanguageNormalizer.js | backend/src/ai/chat/userFacingLanguageNormalizer.js | backend |  | review | NEEDS_REVIEW |  | USER-FACING-LANGUAGE-NORMALIZER |  | Owner or chain unclear |  |
+| userFacingLanguageNormalizer.test.js | backend/src/ai/chat/userFacingLanguageNormalizer.test.js | backend |  | review | NEEDS_REVIEW |  | USER-FACING-LANGUAGE-NORMALIZER-TEST |  | Owner or chain unclear |  |
+| directScreenMetric.continuation217.test.js | backend/src/ai/directScreenMetric.continuation217.test.js | backend |  | review | NEEDS_REVIEW |  | DIRECT-SCREEN-METRIC-CONTINUATION-217-TEST |  | Owner or chain unclear |  |
+| driverCopilotSourceContext.continuation198.test.js | backend/src/ai/driverCopilotSourceContext.continuation198.test.js | backend |  | review | NEEDS_REVIEW |  | DRIVER-COPILOT-SOURCE-CONTEXT-CONTINUATION-198-TEST |  | Owner or chain unclear |  |
+| driverMapEmptyState.continuation161.test.js | backend/src/ai/driverMapEmptyState.continuation161.test.js | backend |  | review | NEEDS_REVIEW |  | DRIVER-MAP-EMPTY-STATE-CONTINUATION-161-TEST |  | Owner or chain unclear |  |
 | copyOutputs.js | backend/src/ai/jobGuide/copyOutputs.js | backend |  | review | NEEDS_REVIEW |  | COPY-OUTPUTS |  | Owner or chain unclear |  |
 | glossary.js | backend/src/ai/jobGuide/glossary.js | backend |  | review | NEEDS_REVIEW |  | GLOSSARY |  | Owner or chain unclear |  |
 | index.js | backend/src/ai/jobGuide/index.js | backend | root:check:projectdocumentationarchitectureandcodebaseindex01 | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
@@ -1626,11 +1977,19 @@ Repo: `servis-platform`
 | precheck.js | backend/src/ai/jobGuide/precheck.js | backend |  | review | NEEDS_REVIEW |  | PRECHECK |  | Owner or chain unclear |  |
 | quickActions.js | backend/src/ai/jobGuide/quickActions.js | backend |  | review | NEEDS_REVIEW |  | QUICK-ACTIONS |  | Owner or chain unclear |  |
 | registry.js | backend/src/ai/jobGuide/registry.js | backend | backend:check:changeimpactregistryv1, backend:check:checkownershipregistryv1, backend:check:documentationregistryv1, backend:generate:documentationregistryv1, root:check:lockedinvariantregistry01 | review | NEEDS_REVIEW |  | REGISTRY |  | Owner or chain unclear |  |
+| screenCatalog.acceptanceCoverage.test.js | backend/src/ai/jobGuide/screenCatalog.acceptanceCoverage.test.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-CATALOG-ACCEPTANCE-COVERAGE-TEST |  | Owner or chain unclear |  |
 | screenCatalog.js | backend/src/ai/jobGuide/screenCatalog.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-CATALOG |  | Owner or chain unclear |  |
+| screenCatalog.roleContext.test.js | backend/src/ai/jobGuide/screenCatalog.roleContext.test.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-CATALOG-ROLE-CONTEXT-TEST |  | Owner or chain unclear |  |
 | screenCatalog.roomCompany.js | backend/src/ai/jobGuide/screenCatalog.roomCompany.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-CATALOG-ROOM-COMPANY |  | Owner or chain unclear |  |
 | screenCatalog.shared.js | backend/src/ai/jobGuide/screenCatalog.shared.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-CATALOG-SHARED |  | Owner or chain unclear |  |
+| parentCrossChildBoundary.test.js | backend/src/ai/parentCrossChildBoundary.test.js | backend |  | review | NEEDS_REVIEW |  | PARENT-CROSS-CHILD-BOUNDARY-TEST |  | Owner or chain unclear |  |
+| regionCapacitySemantic.js | backend/src/ai/regionCapacitySemantic.js | backend |  | review | NEEDS_REVIEW |  | REGION-CAPACITY-SEMANTIC |  | Owner or chain unclear |  |
+| regionCapacitySemantic.test.js | backend/src/ai/regionCapacitySemantic.test.js | backend |  | review | NEEDS_REVIEW |  | REGION-CAPACITY-SEMANTIC-TEST |  | Owner or chain unclear |  |
+| roomFinanceLedgerAssistant.test.js | backend/src/ai/roomFinanceLedgerAssistant.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-FINANCE-LEDGER-ASSISTANT-TEST |  | Owner or chain unclear |  |
 | schemas.js | backend/src/ai/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |
 | service.js | backend/src/ai/service.js | backend | backend:m63check, root:check:companybudgetandservicecost01, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
+| service.roomFinanceSelection.test.js | backend/src/ai/service.roomFinanceSelection.test.js | backend |  | review | NEEDS_REVIEW |  | SERVICE-ROOM-FINANCE-SELECTION-TEST |  | Owner or chain unclear |  |
+| superAdminOnboardingSemantic.test.js | backend/src/ai/superAdminOnboardingSemantic.test.js | backend |  | review | NEEDS_REVIEW |  | SUPER-ADMIN-ONBOARDING-SEMANTIC-TEST |  | Owner or chain unclear |  |
 | tools.js | backend/src/ai/tools.js | backend | root:check:brand, root:dev:reset | review | NEEDS_REVIEW |  | TOOLS |  | Owner or chain unclear |  |
 | audit.js | backend/src/audit.js | backend | root:accept:projectgapreadiness01, root:audit:repo, root:check:ai03bparaphraseintentaudit01, root:check:ai03bsemanticvisibleaudit01, root:check:auditlogandapprovaltrace01, root:check:cop04b, root:check:onboardingreviewfinal01, root:check:onboardingreviewfinalaudit01, root:check:productflowbuttonaudit01, root:check:projectgapreadiness01, root:check:projectwideturkishterminology01, root:check:testqualityandflakeaudit01, root:check:uiactionwiringaudit01, root:check:uxallpanelsrealityaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxmobileallrolespanelaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01, root:smoke:productflowbuttonaudit01, root:smoke:projectgapreadiness01, root:smoke:projectwideturkishterminology01, root:smoke:uxallpanelsrealityaudit01, root:smoke:uxmobileallrolespanelaudit01 | product-extensions | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
 | driverAccessGuard.js | backend/src/auth/driverAccessGuard.js | backend |  | review | NEEDS_REVIEW |  | DRIVER-ACCESS-GUARD |  | Owner or chain unclear |  |
@@ -1646,26 +2005,100 @@ Repo: `servis-platform`
 | rateLimits.js | backend/src/bootstrap/rateLimits.js | backend |  | review | NEEDS_REVIEW |  | RATE-LIMITS |  | Owner or chain unclear |  |
 | routeFactories.js | backend/src/bootstrap/routeFactories.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-FACTORIES |  | Owner or chain unclear |  |
 | routeMounts.js | backend/src/bootstrap/routeMounts.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-MOUNTS |  | Owner or chain unclear |  |
+| databaseTarget.js | backend/src/databaseTarget.js | backend |  | review | NEEDS_REVIEW |  | DATABASE-TARGET |  | Owner or chain unclear |  |
 | env.js | backend/src/env.js | backend | mobile:check:m81.4, mobile:check:m82.6 | review | NEEDS_REVIEW |  | ENV |  | Owner or chain unclear |  |
 | http.js | backend/src/errors/http.js | backend |  | review | NEEDS_REVIEW |  | HTTP |  | Owner or chain unclear |  |
+| http.test.js | backend/src/errors/http.test.js | backend |  | review | NEEDS_REVIEW |  | HTTP-TEST |  | Owner or chain unclear |  |
 | epdkBulletinProvider.js | backend/src/externalCost/epdkBulletinProvider.js | backend |  | review | NEEDS_REVIEW |  | EPDK-BULLETIN-PROVIDER |  | Owner or chain unclear |  |
 | epdkProvider.js | backend/src/externalCost/epdkProvider.js | backend |  | review | NEEDS_REVIEW |  | EPDK-PROVIDER |  | Owner or chain unclear |  |
 | externalCostReferenceService.js | backend/src/externalCost/externalCostReferenceService.js | backend |  | review | NEEDS_REVIEW |  | EXTERNAL-COST-REFERENCE-SERVICE |  | Owner or chain unclear |  |
+| kgmTollProvider.js | backend/src/externalCost/kgmTollProvider.js | backend |  | review | NEEDS_REVIEW |  | KGM-TOLL-PROVIDER |  | Owner or chain unclear |  |
+| otoyolTollProvider.js | backend/src/externalCost/otoyolTollProvider.js | backend |  | review | NEEDS_REVIEW |  | OTOYOL-TOLL-PROVIDER |  | Owner or chain unclear |  |
+| passageTariff.test.js | backend/src/externalCost/passageTariff.test.js | backend |  | review | NEEDS_REVIEW |  | PASSAGE-TARIFF-TEST |  | Owner or chain unclear |  |
+| passageTariffContract.js | backend/src/externalCost/passageTariffContract.js | backend |  | review | NEEDS_REVIEW |  | PASSAGE-TARIFF-CONTRACT |  | Owner or chain unclear |  |
 | providerFactory.js | backend/src/externalCost/providerFactory.js | backend |  | review | NEEDS_REVIEW |  | PROVIDER-FACTORY |  | Owner or chain unclear |  |
 | providerRegistry.js | backend/src/externalCost/providerRegistry.js | backend |  | review | NEEDS_REVIEW |  | PROVIDER-REGISTRY |  | Owner or chain unclear |  |
 | referenceContract.js | backend/src/externalCost/referenceContract.js | backend |  | review | NEEDS_REVIEW |  | REFERENCE-CONTRACT |  | Owner or chain unclear |  |
 | referenceLayers.js | backend/src/externalCost/referenceLayers.js | backend |  | review | NEEDS_REVIEW |  | REFERENCE-LAYERS |  | Owner or chain unclear |  |
+| referenceLayers.test.js | backend/src/externalCost/referenceLayers.test.js | backend |  | review | NEEDS_REVIEW |  | REFERENCE-LAYERS-TEST |  | Owner or chain unclear |  |
+| routePassageBinding.js | backend/src/externalCost/routePassageBinding.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-PASSAGE-BINDING |  | Owner or chain unclear |  |
+| routePassageBinding.test.js | backend/src/externalCost/routePassageBinding.test.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-PASSAGE-BINDING-TEST |  | Owner or chain unclear |  |
+| routePassageCorridorCatalog.js | backend/src/externalCost/routePassageCorridorCatalog.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-PASSAGE-CORRIDOR-CATALOG |  | Owner or chain unclear |  |
+| routePassageDiscovery.js | backend/src/externalCost/routePassageDiscovery.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-PASSAGE-DISCOVERY |  | Owner or chain unclear |  |
+| routePassageDiscovery.test.js | backend/src/externalCost/routePassageDiscovery.test.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-PASSAGE-DISCOVERY-TEST |  | Owner or chain unclear |  |
 | router.js | backend/src/externalCost/router.js | backend | root:check:m98e4b | review | NEEDS_REVIEW |  | ROUTER |  | Owner or chain unclear |  |
+| tollCoverageCatalog.js | backend/src/externalCost/tollCoverageCatalog.js | backend |  | review | NEEDS_REVIEW |  | TOLL-COVERAGE-CATALOG |  | Owner or chain unclear |  |
+| tollCoverageCatalog.test.js | backend/src/externalCost/tollCoverageCatalog.test.js | backend |  | review | NEEDS_REVIEW |  | TOLL-COVERAGE-CATALOG-TEST |  | Owner or chain unclear |  |
 | accountingExportContract.js | backend/src/finance/accountingExportContract.js | backend |  | review | NEEDS_REVIEW |  | ACCOUNTING-EXPORT-CONTRACT |  | Owner or chain unclear |  |
+| accountingExportContract.test.js | backend/src/finance/accountingExportContract.test.js | backend |  | review | NEEDS_REVIEW |  | ACCOUNTING-EXPORT-CONTRACT-TEST |  | Owner or chain unclear |  |
 | accountingExportFormats.js | backend/src/finance/accountingExportFormats.js | backend |  | review | NEEDS_REVIEW |  | ACCOUNTING-EXPORT-FORMATS |  | Owner or chain unclear |  |
+| agreementCommercialEvidence.js | backend/src/finance/agreementCommercialEvidence.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-COMMERCIAL-EVIDENCE |  | Owner or chain unclear |  |
+| agreementCommercialEvidence.test.js | backend/src/finance/agreementCommercialEvidence.test.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-COMMERCIAL-EVIDENCE-TEST |  | Owner or chain unclear |  |
+| companyAgreementApproval.js | backend/src/finance/companyAgreementApproval.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENT-APPROVAL |  | Owner or chain unclear |  |
+| companyAgreementApproval.test.js | backend/src/finance/companyAgreementApproval.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENT-APPROVAL-TEST |  | Owner or chain unclear |  |
+| companyAgreementDecision.js | backend/src/finance/companyAgreementDecision.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENT-DECISION |  | Owner or chain unclear |  |
+| companyAgreementDecision.test.js | backend/src/finance/companyAgreementDecision.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENT-DECISION-TEST |  | Owner or chain unclear |  |
 | companyBudgetAndServiceCost.js | backend/src/finance/companyBudgetAndServiceCost.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-AND-SERVICE-COST |  | Owner or chain unclear |  |
+| companyBudgetCommitmentPreview.js | backend/src/finance/companyBudgetCommitmentPreview.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-COMMITMENT-PREVIEW |  | Owner or chain unclear |  |
+| companyBudgetCommitmentPreview.test.js | backend/src/finance/companyBudgetCommitmentPreview.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-COMMITMENT-PREVIEW-TEST |  | Owner or chain unclear |  |
+| companyBudgetOfferComparison.js | backend/src/finance/companyBudgetOfferComparison.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-OFFER-COMPARISON |  | Owner or chain unclear |  |
+| companyBudgetOfferComparison.test.js | backend/src/finance/companyBudgetOfferComparison.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-OFFER-COMPARISON-TEST |  | Owner or chain unclear |  |
+| companyBuyerRoleFinance.test.js | backend/src/finance/companyBuyerRoleFinance.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUYER-ROLE-FINANCE-TEST |  | Owner or chain unclear |  |
+| companyPriceBudgetAdvisory.js | backend/src/finance/companyPriceBudgetAdvisory.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-PRICE-BUDGET-ADVISORY |  | Owner or chain unclear |  |
+| companyPriceBudgetAdvisory.test.js | backend/src/finance/companyPriceBudgetAdvisory.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-PRICE-BUDGET-ADVISORY-TEST |  | Owner or chain unclear |  |
 | costScenarioForecast.js | backend/src/finance/costScenarioForecast.js | backend |  | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST |  | Owner or chain unclear |  |
+| costScenarioForecast.test.js | backend/src/finance/costScenarioForecast.test.js | backend |  | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-TEST |  | Owner or chain unclear |  |
 | financialOperationsScope.js | backend/src/finance/financialOperationsScope.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SCOPE |  | Owner or chain unclear |  |
 | hakedisInvoiceReconciliation.js | backend/src/finance/hakedisInvoiceReconciliation.js | backend |  | review | NEEDS_REVIEW |  | HAKEDIS-INVOICE-RECONCILIATION |  | Owner or chain unclear |  |
+| hakedisInvoiceReconciliation.test.js | backend/src/finance/hakedisInvoiceReconciliation.test.js | backend |  | review | NEEDS_REVIEW |  | HAKEDIS-INVOICE-RECONCILIATION-TEST |  | Owner or chain unclear |  |
+| incomePeriodCorrection.js | backend/src/finance/incomePeriodCorrection.js | backend |  | review | NEEDS_REVIEW |  | INCOME-PERIOD-CORRECTION |  | Owner or chain unclear |  |
+| incomePeriodCorrection.test.js | backend/src/finance/incomePeriodCorrection.test.js | backend |  | review | NEEDS_REVIEW |  | INCOME-PERIOD-CORRECTION-TEST |  | Owner or chain unclear |  |
 | operationalCostMath.js | backend/src/finance/operationalCostMath.js | backend |  | review | NEEDS_REVIEW |  | OPERATIONAL-COST-MATH |  | Owner or chain unclear |  |
 | operationalCostModel.js | backend/src/finance/operationalCostModel.js | backend |  | review | NEEDS_REVIEW |  | OPERATIONAL-COST-MODEL |  | Owner or chain unclear |  |
+| platformAgreementPriceReference.js | backend/src/finance/platformAgreementPriceReference.js | backend |  | review | NEEDS_REVIEW |  | PLATFORM-AGREEMENT-PRICE-REFERENCE |  | Owner or chain unclear |  |
+| platformAgreementPriceReference.test.js | backend/src/finance/platformAgreementPriceReference.test.js | backend |  | review | NEEDS_REVIEW |  | PLATFORM-AGREEMENT-PRICE-REFERENCE-TEST |  | Owner or chain unclear |  |
+| platformAgreementReferenceData.js | backend/src/finance/platformAgreementReferenceData.js | backend |  | review | NEEDS_REVIEW |  | PLATFORM-AGREEMENT-REFERENCE-DATA |  | Owner or chain unclear |  |
+| platformAgreementReferenceData.test.js | backend/src/finance/platformAgreementReferenceData.test.js | backend |  | review | NEEDS_REVIEW |  | PLATFORM-AGREEMENT-REFERENCE-DATA-TEST |  | Owner or chain unclear |  |
+| roomAccountingPeriod.js | backend/src/finance/roomAccountingPeriod.js | backend |  | review | NEEDS_REVIEW |  | ROOM-ACCOUNTING-PERIOD |  | Owner or chain unclear |  |
+| roomAccountingPeriod.test.js | backend/src/finance/roomAccountingPeriod.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-ACCOUNTING-PERIOD-TEST |  | Owner or chain unclear |  |
+| roomAccountingPeriodLedger.js | backend/src/finance/roomAccountingPeriodLedger.js | backend |  | review | NEEDS_REVIEW |  | ROOM-ACCOUNTING-PERIOD-LEDGER |  | Owner or chain unclear |  |
+| roomAccountingPeriodLedger.test.js | backend/src/finance/roomAccountingPeriodLedger.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-ACCOUNTING-PERIOD-LEDGER-TEST |  | Owner or chain unclear |  |
+| roomCostAccess.js | backend/src/finance/roomCostAccess.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-ACCESS |  | Owner or chain unclear |  |
+| roomCostAllocation.js | backend/src/finance/roomCostAllocation.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-ALLOCATION |  | Owner or chain unclear |  |
+| roomCostAllocation.test.js | backend/src/finance/roomCostAllocation.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-ALLOCATION-TEST |  | Owner or chain unclear |  |
+| roomCostAssistantContract.js | backend/src/finance/roomCostAssistantContract.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-ASSISTANT-CONTRACT |  | Owner or chain unclear |  |
+| roomCostCategoryCatalog.js | backend/src/finance/roomCostCategoryCatalog.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-CATEGORY-CATALOG |  | Owner or chain unclear |  |
+| roomCostCategoryCatalog.test.js | backend/src/finance/roomCostCategoryCatalog.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-CATEGORY-CATALOG-TEST |  | Owner or chain unclear |  |
+| roomCostContextFilters.test.js | backend/src/finance/roomCostContextFilters.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-CONTEXT-FILTERS-TEST |  | Owner or chain unclear |  |
+| roomCostIntegrity.js | backend/src/finance/roomCostIntegrity.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-INTEGRITY |  | Owner or chain unclear |  |
+| roomCostIntegrity.test.js | backend/src/finance/roomCostIntegrity.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-INTEGRITY-TEST |  | Owner or chain unclear |  |
+| roomCostLedger.js | backend/src/finance/roomCostLedger.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-LEDGER |  | Owner or chain unclear |  |
+| roomCostOwnership.js | backend/src/finance/roomCostOwnership.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-OWNERSHIP |  | Owner or chain unclear |  |
+| roomCostPolicy.js | backend/src/finance/roomCostPolicy.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-POLICY |  | Owner or chain unclear |  |
+| roomCostPreviewAdapter.js | backend/src/finance/roomCostPreviewAdapter.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-PREVIEW-ADAPTER |  | Owner or chain unclear |  |
+| roomCostPreviewAdapter.vat.test.js | backend/src/finance/roomCostPreviewAdapter.vat.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-PREVIEW-ADAPTER-VAT-TEST |  | Owner or chain unclear |  |
+| roomCostScenarioContext.js | backend/src/finance/roomCostScenarioContext.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-SCENARIO-CONTEXT |  | Owner or chain unclear |  |
+| roomCostScenarioContext.test.js | backend/src/finance/roomCostScenarioContext.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-SCENARIO-CONTEXT-TEST |  | Owner or chain unclear |  |
+| roomCostSettlement.js | backend/src/finance/roomCostSettlement.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-SETTLEMENT |  | Owner or chain unclear |  |
+| roomCostSettlement.test.js | backend/src/finance/roomCostSettlement.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-SETTLEMENT-TEST |  | Owner or chain unclear |  |
+| roomCostVatClassification.test.js | backend/src/finance/roomCostVatClassification.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-VAT-CLASSIFICATION-TEST |  | Owner or chain unclear |  |
+| roomCostZeroFriction.test.js | backend/src/finance/roomCostZeroFriction.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-ZERO-FRICTION-TEST |  | Owner or chain unclear |  |
+| roomCostedQuoteSend.js | backend/src/finance/roomCostedQuoteSend.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COSTED-QUOTE-SEND |  | Owner or chain unclear |  |
+| roomCostedQuoteSend.test.js | backend/src/finance/roomCostedQuoteSend.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COSTED-QUOTE-SEND-TEST |  | Owner or chain unclear |  |
+| roomFinanceAccuracyIsolation.test.js | backend/src/finance/roomFinanceAccuracyIsolation.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-FINANCE-ACCURACY-ISOLATION-TEST |  | Owner or chain unclear |  |
+| roomMonthlyPriceReference.js | backend/src/finance/roomMonthlyPriceReference.js | backend |  | review | NEEDS_REVIEW |  | ROOM-MONTHLY-PRICE-REFERENCE |  | Owner or chain unclear |  |
+| roomMonthlyPriceReference.test.js | backend/src/finance/roomMonthlyPriceReference.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-MONTHLY-PRICE-REFERENCE-TEST |  | Owner or chain unclear |  |
 | roomProfitabilityAndQuoteFloor.js | backend/src/finance/roomProfitabilityAndQuoteFloor.js | backend |  | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR |  | Owner or chain unclear |  |
+| roomProfitabilityAndQuoteFloor.test.js | backend/src/finance/roomProfitabilityAndQuoteFloor.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-TEST |  | Owner or chain unclear |  |
+| roomQuoteFloorDraftScope.test.js | backend/src/finance/roomQuoteFloorDraftScope.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-QUOTE-FLOOR-DRAFT-SCOPE-TEST |  | Owner or chain unclear |  |
+| roomServiceCostContext.js | backend/src/finance/roomServiceCostContext.js | backend |  | review | NEEDS_REVIEW |  | ROOM-SERVICE-COST-CONTEXT |  | Owner or chain unclear |  |
+| roomServiceCostContext.test.js | backend/src/finance/roomServiceCostContext.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-SERVICE-COST-CONTEXT-TEST |  | Owner or chain unclear |  |
+| roomVehiclePlanningEvidence.js | backend/src/finance/roomVehiclePlanningEvidence.js | backend |  | review | NEEDS_REVIEW |  | ROOM-VEHICLE-PLANNING-EVIDENCE |  | Owner or chain unclear |  |
+| roomVehiclePlanningEvidence.test.js | backend/src/finance/roomVehiclePlanningEvidence.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-VEHICLE-PLANNING-EVIDENCE-TEST |  | Owner or chain unclear |  |
+| servicePeriodPlanning.js | backend/src/finance/servicePeriodPlanning.js | backend |  | review | NEEDS_REVIEW |  | SERVICE-PERIOD-PLANNING |  | Owner or chain unclear |  |
+| servicePeriodPlanning.test.js | backend/src/finance/servicePeriodPlanning.test.js | backend |  | review | NEEDS_REVIEW |  | SERVICE-PERIOD-PLANNING-TEST |  | Owner or chain unclear |  |
 | vehicleConsumptionReferences.js | backend/src/finance/vehicleConsumptionReferences.js | backend |  | review | NEEDS_REVIEW |  | VEHICLE-CONSUMPTION-REFERENCES |  | Owner or chain unclear |  |
+| vehicleConsumptionReferences.test.js | backend/src/finance/vehicleConsumptionReferences.test.js | backend |  | review | NEEDS_REVIEW |  | VEHICLE-CONSUMPTION-REFERENCES-TEST |  | Owner or chain unclear |  |
 | vehiclePlanReferences.js | backend/src/finance/vehiclePlanReferences.js | backend |  | review | NEEDS_REVIEW |  | VEHICLE-PLAN-REFERENCES |  | Owner or chain unclear |  |
 | geo.js | backend/src/geo.js | backend | root:check:addressgeocodingconfidence01 | review | NEEDS_REVIEW |  | GEO |  | Owner or chain unclear |  |
 | gpsStateGate.js | backend/src/gps/gpsStateGate.js | backend |  | review | NEEDS_REVIEW |  | GPS-STATE-GATE |  | Owner or chain unclear |  |
@@ -1675,20 +2108,24 @@ Repo: `servis-platform`
 | agreementMonitor.js | backend/src/jobs/agreementMonitor.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-MONITOR |  | Owner or chain unclear |  |
 | agreementShiftGenerator.js | backend/src/jobs/agreementShiftGenerator.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SHIFT-GENERATOR |  | Owner or chain unclear |  |
 | autoReachedQueue.js | backend/src/jobs/autoReachedQueue.js | backend |  | review | NEEDS_REVIEW |  | AUTO-REACHED-QUEUE |  | Owner or chain unclear |  |
+| autoReachedQueue.test.js | backend/src/jobs/autoReachedQueue.test.js | backend |  | review | NEEDS_REVIEW |  | AUTO-REACHED-QUEUE-TEST |  | Owner or chain unclear |  |
 | autoReachedQueueAlarm.js | backend/src/jobs/autoReachedQueueAlarm.js | backend |  | review | NEEDS_REVIEW |  | AUTO-REACHED-QUEUE-ALARM |  | Owner or chain unclear |  |
 | autoReachedQueueNotification.js | backend/src/jobs/autoReachedQueueNotification.js | backend |  | review | NEEDS_REVIEW |  | AUTO-REACHED-QUEUE-NOTIFICATION |  | Owner or chain unclear |  |
 | autoReachedQueueProof.js | backend/src/jobs/autoReachedQueueProof.js | backend |  | review | NEEDS_REVIEW |  | AUTO-REACHED-QUEUE-PROOF |  | Owner or chain unclear |  |
 | gpsStaleMonitor.js | backend/src/jobs/gpsStaleMonitor.js | backend |  | review | NEEDS_REVIEW |  | GPS-STALE-MONITOR |  | Owner or chain unclear |  |
 | index.js | backend/src/jobs/index.js | backend | root:check:projectdocumentationarchitectureandcodebaseindex01 | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
+| index.test.js | backend/src/jobs/index.test.js | backend |  | review | NEEDS_REVIEW |  | INDEX-TEST |  | Owner or chain unclear |  |
 | maintenanceMonitor.js | backend/src/jobs/maintenanceMonitor.js | backend |  | review | NEEDS_REVIEW |  | MAINTENANCE-MONITOR |  | Owner or chain unclear |  |
 | retentionCleanup.js | backend/src/jobs/retentionCleanup.js | backend |  | review | NEEDS_REVIEW |  | RETENTION-CLEANUP |  | Owner or chain unclear |  |
 | routeLearnMonitor.js | backend/src/jobs/routeLearnMonitor.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-LEARN-MONITOR |  | Owner or chain unclear |  |
 | shiftCompletionMonitor.js | backend/src/jobs/shiftCompletionMonitor.js | backend |  | review | NEEDS_REVIEW |  | SHIFT-COMPLETION-MONITOR |  | Owner or chain unclear |  |
+| workerClientInjection.test.js | backend/src/jobs/workerClientInjection.test.js | backend |  | review | NEEDS_REVIEW |  | WORKER-CLIENT-INJECTION-TEST |  | Owner or chain unclear |  |
 | documents.js | backend/src/kvkk/documents.js | backend |  | review | NEEDS_REVIEW |  | DOCUMENTS |  | Owner or chain unclear |  |
 | enforcement.js | backend/src/kvkk/enforcement.js | backend |  | review | NEEDS_REVIEW |  | ENFORCEMENT |  | Owner or chain unclear |  |
 | matrix.js | backend/src/kvkk/matrix.js | backend | root:check:ai03bsemanticvisiblelivematrix01, root:check:copilotroletaskmatrix01 | review | NEEDS_REVIEW |  | MATRIX |  | Owner or chain unclear |  |
 | retention.js | backend/src/kvkk/retention.js | backend | backend:backup:acceptance, backend:backup:check, backend:backup:create, backend:backup:inventory, backend:backup:policy, backend:backup:prune, backend:backup:restore, backend:backup:verify, root:accept:databasebackupretentionandintegrity01, root:check:databasebackupretentionandintegrity01 | review | NEEDS_REVIEW |  | RETENTION |  | Owner or chain unclear |  |
 | jsonFileStore.js | backend/src/lib/jsonFileStore.js | backend |  | review | NEEDS_REVIEW |  | JSON-FILE-STORE |  | Owner or chain unclear |  |
+| jsonFileStore.test.js | backend/src/lib/jsonFileStore.test.js | backend |  | review | NEEDS_REVIEW |  | JSON-FILE-STORE-TEST |  | Owner or chain unclear |  |
 | logger.js | backend/src/lib/logger.js | backend |  | review | NEEDS_REVIEW |  | LOGGER |  | Owner or chain unclear |  |
 | penalties.js | backend/src/lib/penalties.js | backend |  | review | NEEDS_REVIEW |  | PENALTIES |  | Owner or chain unclear |  |
 | reports.js | backend/src/lib/reports.js | backend |  | review | NEEDS_REVIEW |  | REPORTS |  | Owner or chain unclear |  |
@@ -1696,6 +2133,8 @@ Repo: `servis-platform`
 | apiRequestLog.js | backend/src/middleware/apiRequestLog.js | backend |  | review | NEEDS_REVIEW |  | API-REQUEST-LOG |  | Owner or chain unclear |  |
 | asyncHandler.js | backend/src/middleware/asyncHandler.js | backend |  | review | NEEDS_REVIEW |  | ASYNC-HANDLER |  | Owner or chain unclear |  |
 | consentGate.js | backend/src/middleware/consentGate.js | backend |  | review | NEEDS_REVIEW |  | CONSENT-GATE |  | Owner or chain unclear |  |
+| globalWriteFreeze.js | backend/src/middleware/globalWriteFreeze.js | backend |  | review | NEEDS_REVIEW |  | GLOBAL-WRITE-FREEZE |  | Owner or chain unclear |  |
+| globalWriteFreeze.test.js | backend/src/middleware/globalWriteFreeze.test.js | backend |  | review | NEEDS_REVIEW |  | GLOBAL-WRITE-FREEZE-TEST |  | Owner or chain unclear |  |
 | gpsThrottle1200ms.js | backend/src/middleware/gpsThrottle1200ms.js | backend |  | review | NEEDS_REVIEW |  | GPS-THROTTLE-1200-MS |  | Owner or chain unclear |  |
 | rateLimitRedisStore.js | backend/src/middleware/rateLimitRedisStore.js | backend |  | review | NEEDS_REVIEW |  | RATE-LIMIT-REDIS-STORE |  | Owner or chain unclear |  |
 | payloadV1.js | backend/src/notifications/payloadV1.js | backend |  | review | NEEDS_REVIEW |  | PAYLOAD-V-1 |  | Owner or chain unclear |  |
@@ -1727,22 +2166,29 @@ Repo: `servis-platform`
 | regionFailoverDrill.js | backend/src/ops/regionFailoverDrill.js | backend |  | review | NEEDS_REVIEW |  | REGION-FAILOVER-DRILL |  | Owner or chain unclear |  |
 | regionNextPhasePack.js | backend/src/ops/regionNextPhasePack.js | backend |  | review | NEEDS_REVIEW |  | REGION-NEXT-PHASE-PACK |  | Owner or chain unclear |  |
 | retentionBackupPolicy.js | backend/src/ops/retentionBackupPolicy.js | backend |  | review | NEEDS_REVIEW |  | RETENTION-BACKUP-POLICY |  | Owner or chain unclear |  |
+| seferpakt2026DemoRebuildPreflight.js | backend/src/ops/seferpakt2026DemoRebuildPreflight.js | backend |  | review | NEEDS_REVIEW |  | SEFERPAKT-2026-DEMO-REBUILD-PREFLIGHT |  | Owner or chain unclear |  |
+| serviceEvaluationScope.continuation311.test.js | backend/src/ops/serviceEvaluationScope.continuation311.test.js | backend |  | review | NEEDS_REVIEW |  | SERVICE-EVALUATION-SCOPE-CONTINUATION-311-TEST |  | Owner or chain unclear |  |
+| serviceEvaluationScope.js | backend/src/ops/serviceEvaluationScope.js | backend |  | review | NEEDS_REVIEW |  | SERVICE-EVALUATION-SCOPE |  | Owner or chain unclear |  |
 | serviceEvaluationStore.js | backend/src/ops/serviceEvaluationStore.js | backend |  | review | NEEDS_REVIEW |  | SERVICE-EVALUATION-STORE |  | Owner or chain unclear |  |
 | settlementReconciliationDesk.js | backend/src/ops/settlementReconciliationDesk.js | backend |  | review | NEEDS_REVIEW |  | SETTLEMENT-RECONCILIATION-DESK |  | Owner or chain unclear |  |
 | ssotAlignmentManifest.js | backend/src/ops/ssotAlignmentManifest.js | backend |  | review | NEEDS_REVIEW |  | SSOT-ALIGNMENT-MANIFEST |  | Owner or chain unclear |  |
 | trustQualityManifest.js | backend/src/ops/trustQualityManifest.js | backend |  | review | NEEDS_REVIEW |  | TRUST-QUALITY-MANIFEST |  | Owner or chain unclear |  |
+| prisma.corrective.test.js | backend/src/prisma.corrective.test.js | backend |  | review | NEEDS_REVIEW |  | PRISMA-CORRECTIVE-TEST |  | Owner or chain unclear |  |
 | prisma.js | backend/src/prisma.js | backend | backend:bootstrap, backend:prisma:generate, backend:prisma:modularization:acceptance, backend:prisma:modularization:check, backend:prisma:verify, backend:seed | review | NEEDS_REVIEW |  | PRISMA |  | Owner or chain unclear |  |
+| prisma.test.js | backend/src/prisma.test.js | backend |  | review | NEEDS_REVIEW |  | PRISMA-TEST |  | Owner or chain unclear |  |
 | index.js | backend/src/redis/index.js | backend | root:check:projectdocumentationarchitectureandcodebaseindex01 | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | miniRedis.js | backend/src/redis/miniRedis.js | backend |  | review | NEEDS_REVIEW |  | MINI-REDIS |  | Owner or chain unclear |  |
 | index.js | backend/src/region/index.js | backend | root:check:projectdocumentationarchitectureandcodebaseindex01 | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | operationRegion.js | backend/src/region/operationRegion.js | backend |  | review | NEEDS_REVIEW |  | OPERATION-REGION |  | Owner or chain unclear |  |
-| ownership.js | backend/src/region/ownership.js | backend | backend:check:checkownershipregistryv1, root:check:package-ownership-delta, root:precheck:m95e23c | review | NEEDS_REVIEW |  | OWNERSHIP |  | Owner or chain unclear |  |
+| ownership.js | backend/src/region/ownership.js | backend | backend:check:checkownershipregistryv1, root:check:m18ownershipinventory230, root:check:package-ownership-delta, root:precheck:m95e23c | review | NEEDS_REVIEW |  | OWNERSHIP |  | Owner or chain unclear |  |
 | accountingExports.js | backend/src/routes/accountingExports.js | backend |  | review | NEEDS_REVIEW |  | ACCOUNTING-EXPORTS |  | Owner or chain unclear |  |
 | admin.js | backend/src/routes/admin.js | backend | backend:m82_10check, backend:m94dcheck, root:check:cop04bfix01, root:check:uxsuperadminauditpanel01, root:check:uxsuperadmincommercialflow01, root:check:uxsuperadminfieldacceptancecenter01, root:check:uxsuperadminfielddispatchdiscovery01, root:check:uxsuperadminlabelpolish01, root:check:uxsuperadminlivemonitoring01, root:check:uxsuperadminoverviewcleanup01, root:check:uxsuperadminpanelclarity01, root:check:uxsuperadminqualitypanel01, root:check:web01b | review | NEEDS_REVIEW |  | ADMIN |  | Owner or chain unclear |  |
 | admin_logs.js | backend/src/routes/admin_logs.js | backend |  | review | NEEDS_REVIEW |  | ADMIN-LOGS |  | Owner or chain unclear |  |
 | agreementExtendNegotiationRouter.js | backend/src/routes/agreementExtendNegotiationRouter.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-EXTEND-NEGOTIATION-ROUTER |  | Owner or chain unclear |  |
 | agreementRouteRefreshRouter.js | backend/src/routes/agreementRouteRefreshRouter.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-ROUTE-REFRESH-ROUTER |  | Owner or chain unclear |  |
-| agreements.js | backend/src/routes/agreements.js | backend | root:check:cop04afix03, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01 | review | NEEDS_REVIEW |  | AGREEMENTS |  | Owner or chain unclear |  |
+| agreementSourceOffer.js | backend/src/routes/agreementSourceOffer.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SOURCE-OFFER |  | Owner or chain unclear |  |
+| agreementSourceOffer.test.js | backend/src/routes/agreementSourceOffer.test.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SOURCE-OFFER-TEST |  | Owner or chain unclear |  |
+| agreements.js | backend/src/routes/agreements.js | backend | root:check:cop04afix03, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxroomagreements-p1, root:smoke:uxroomagreements-p1, root:smoke:uxroomagreementstwo-controls | review | NEEDS_REVIEW |  | AGREEMENTS |  | Owner or chain unclear |  |
 | agreementsHelpers.js | backend/src/routes/agreementsHelpers.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENTS-HELPERS |  | Owner or chain unclear |  |
 | ai.js | backend/src/routes/ai.js | backend | backend:repo:check, backend:repo:check:chain, mobile:check:m81.2b, mobile:check:m96a, root:check:ai03bparaphraseintentaudit01, root:check:ai03bsemanticvisibleaudit01, root:check:ai03bsemanticvisiblelivematrix01, root:check:airesponsesemanticqualitygate01, root:check:cop03b, root:check:copilotairoadmap01, root:check:core-regression, root:check:extended-regression, root:check:hotfilesplitaichatcomposers01, root:check:m99kvkk01, root:check:pay01c, root:check:product-extensions, root:check:release-regression, root:check:roadmaplockaimarketplace01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:verifychain01, root:verify:closure, root:verify:docs, root:verify:hot, root:verify:repo, root:verify:web-contract | verify:repo | NEEDS_REVIEW |  | AI |  | Owner or chain unclear |  |
 | auth.js | backend/src/routes/auth.js | backend | backend:check:pre18-round12-canonical-authorization-browser, root:check:authstepupdevtoggle01, root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH |  | Owner or chain unclear |  |
@@ -1754,25 +2200,35 @@ Repo: `servis-platform`
 | commercialCorePaymentReportsRoutes.js | backend/src/routes/commercialCorePaymentReportsRoutes.js | backend |  | review | NEEDS_REVIEW |  | COMMERCIAL-CORE-PAYMENT-REPORTS-ROUTES |  | Owner or chain unclear |  |
 | commercialCorePaymentRoutes.js | backend/src/routes/commercialCorePaymentRoutes.js | backend |  | review | NEEDS_REVIEW |  | COMMERCIAL-CORE-PAYMENT-ROUTES |  | Owner or chain unclear |  |
 | commercialCoreRoomRoutes.js | backend/src/routes/commercialCoreRoomRoutes.js | backend |  | review | NEEDS_REVIEW |  | COMMERCIAL-CORE-ROOM-ROUTES |  | Owner or chain unclear |  |
+| commercialCoreRoomRoutes.test.js | backend/src/routes/commercialCoreRoomRoutes.test.js | backend |  | review | NEEDS_REVIEW |  | COMMERCIAL-CORE-ROOM-ROUTES-TEST |  | Owner or chain unclear |  |
 | commercialCoreRouteData.js | backend/src/routes/commercialCoreRouteData.js | backend |  | review | NEEDS_REVIEW |  | COMMERCIAL-CORE-ROUTE-DATA |  | Owner or chain unclear |  |
 | commercialCoreRoutes.js | backend/src/routes/commercialCoreRoutes.js | backend |  | review | NEEDS_REVIEW |  | COMMERCIAL-CORE-ROUTES |  | Owner or chain unclear |  |
+| companies.audit.continuation188.test.js | backend/src/routes/companies.audit.continuation188.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANIES-AUDIT-CONTINUATION-188-TEST |  | Owner or chain unclear |  |
 | companies.js | backend/src/routes/companies.js | backend |  | review | NEEDS_REVIEW |  | COMPANIES |  | Owner or chain unclear |  |
 | companyBudgetLifecycleRoutes.js | backend/src/routes/companyBudgetLifecycleRoutes.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-LIFECYCLE-ROUTES |  | Owner or chain unclear |  |
+| companyHub.audit.continuation171.test.js | backend/src/routes/companyHub.audit.continuation171.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-HUB-AUDIT-CONTINUATION-171-TEST |  | Owner or chain unclear |  |
 | companyHub.js | backend/src/routes/companyHub.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-HUB |  | Owner or chain unclear |  |
 | companyOverview.js | backend/src/routes/companyOverview.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-OVERVIEW |  | Owner or chain unclear |  |
+| companyOverviewPresentation.test.js | backend/src/routes/companyOverviewPresentation.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-OVERVIEW-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| companyPersonels.audit.continuation174.test.js | backend/src/routes/companyPersonels.audit.continuation174.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-PERSONELS-AUDIT-CONTINUATION-174-TEST |  | Owner or chain unclear |  |
 | companyPersonels.js | backend/src/routes/companyPersonels.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-PERSONELS |  | Owner or chain unclear |  |
 | costScenario.js | backend/src/routes/costScenario.js | backend |  | review | NEEDS_REVIEW |  | COST-SCENARIO |  | Owner or chain unclear |  |
+| costScenario.test.js | backend/src/routes/costScenario.test.js | backend |  | review | NEEDS_REVIEW |  | COST-SCENARIO-TEST |  | Owner or chain unclear |  |
 | dashboardBulk.js | backend/src/routes/dashboardBulk.js | backend |  | review | NEEDS_REVIEW |  | DASHBOARD-BULK |  | Owner or chain unclear |  |
 | driver.js | backend/src/routes/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
+| driverRouteSelection.test.js | backend/src/routes/driverRouteSelection.test.js | backend |  | review | NEEDS_REVIEW |  | DRIVER-ROUTE-SELECTION-TEST |  | Owner or chain unclear |  |
+| drivers.create-audit.continuation162.test.js | backend/src/routes/drivers.create-audit.continuation162.test.js | backend |  | review | NEEDS_REVIEW |  | DRIVERS-CREATE-AUDIT-CONTINUATION-162-TEST |  | Owner or chain unclear |  |
 | drivers.js | backend/src/routes/drivers.js | backend |  | review | NEEDS_REVIEW |  | DRIVERS |  | Owner or chain unclear |  |
 | eta.js | backend/src/routes/eta.js | backend | mobile:check:m49, mobile:check:m49.1, mobile:check:m95b, root:check:etaosrm01, root:check:etaosrm02, root:check:etasanity01, root:check:pay01c, root:check:uxpremiumcriticalfixagreementsdetail01 | review | NEEDS_REVIEW |  | ETA |  | Owner or chain unclear |  |
 | fieldAcceptance.js | backend/src/routes/fieldAcceptance.js | backend |  | review | NEEDS_REVIEW |  | FIELD-ACCEPTANCE |  | Owner or chain unclear |  |
 | geocode.js | backend/src/routes/geocode.js | backend |  | review | NEEDS_REVIEW |  | GEOCODE |  | Owner or chain unclear |  |
 | gps.js | backend/src/routes/gps.js | backend | backend:bench:gps:100, backend:bench:gps:100:auto, backend:bench:gps:300:auto:panels, backend:m95e20check, mobile:check:m57.1, mobile:check:m95c, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e23a, root:check:m95e23b, web:check:m95e20, web:check:m95e23c | web-lint | NEEDS_REVIEW |  | GPS |  | Owner or chain unclear |  |
+| invoiceCollectionRoutes.js | backend/src/routes/invoiceCollectionRoutes.js | backend |  | review | NEEDS_REVIEW |  | INVOICE-COLLECTION-ROUTES |  | Owner or chain unclear |  |
 | kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:securitykvkkfinal01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
+| live.driver.scope.continuation161.test.js | backend/src/routes/live.driver.scope.continuation161.test.js | backend |  | review | NEEDS_REVIEW |  | LIVE-DRIVER-SCOPE-CONTINUATION-161-TEST |  | Owner or chain unclear |  |
 | live.js | backend/src/routes/live.js | backend | backend:prisma:migrate:deploy, backend:prisma:migrate:status, backend:prisma:migration:acceptance, backend:prisma:migration:ci, mobile:check:m82.5, mobile:check:m95d, root:accept:databasemigrationbaselineandliveadoption01, root:accept:externalcostdataproviderfreshness01, root:check:ai03bsemanticvisiblelivematrix01, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:databasemigrationbaselineandliveadoption01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
-| me.js | backend/src/routes/me.js | backend | backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotcontextmemorytaskstate01, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:copilotofferrecommendation01, root:check:copilotshifttoagreementprep01, root:check:copilotuielementanchor01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:projectdocumentationarchitectureandcodebaseindex01, root:check:rolebasedsimplenavigationandtaskhome01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:copilotuielementanchor01, root:smoke:m98e4, root:smoke:rolebasedsimplenavigationandtaskhome01 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
+| me.js | backend/src/routes/me.js | backend | backend:check:company-budget-commitment-02, backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotcontextmemorytaskstate01, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:copilotofferrecommendation01, root:check:copilotshifttoagreementprep01, root:check:copilotuielementanchor01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:projectdocumentationarchitectureandcodebaseindex01, root:check:rolebasedsimplenavigationandtaskhome01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxroomagreements-p1, root:check:uxsuperadmincommercialflow01, root:smoke:copilotuielementanchor01, root:smoke:m98e4, root:smoke:rolebasedsimplenavigationandtaskhome01, root:smoke:uxroomagreements-p1, root:smoke:uxroomagreementstwo-controls | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
 | naturalCopilot.js | backend/src/routes/naturalCopilot.js | backend |  | review | NEEDS_REVIEW |  | NATURAL-COPILOT |  | Owner or chain unclear |  |
 | notifications.js | backend/src/routes/notifications.js | backend | mobile:check:m96b, mobile:check:m96bnotifications | review | NEEDS_REVIEW |  | NOTIFICATIONS |  | Owner or chain unclear |  |
 | observability.js | backend/src/routes/observability.js | backend | root:check:observabilitymonitoringalerting01 | review | NEEDS_REVIEW |  | OBSERVABILITY |  | Owner or chain unclear |  |
@@ -1781,6 +2237,7 @@ Repo: `servis-platform`
 | operationVerification.js | backend/src/routes/operationVerification.js | backend |  | review | NEEDS_REVIEW |  | OPERATION-VERIFICATION |  | Owner or chain unclear |  |
 | organization.js | backend/src/routes/organization.js | backend | root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | ORGANIZATION |  | Owner or chain unclear |  |
 | parent.js | backend/src/routes/parent.js | backend | mobile:check:m95d, mobile:check:m95e24b, root:check:cop04bfix03, root:check:cop04bfix08, root:check:uxparentpersonelliveerrorclarity01 | review | NEEDS_REVIEW |  | PARENT |  | Owner or chain unclear |  |
+| parentConsent.test.js | backend/src/routes/parentConsent.test.js | backend |  | review | NEEDS_REVIEW |  | PARENT-CONSENT-TEST |  | Owner or chain unclear |  |
 | passengerLinks.js | backend/src/routes/passengerLinks.js | backend |  | review | NEEDS_REVIEW |  | PASSENGER-LINKS |  | Owner or chain unclear |  |
 | penalties.js | backend/src/routes/penalties.js | backend |  | review | NEEDS_REVIEW |  | PENALTIES |  | Owner or chain unclear |  |
 | personelAccess.js | backend/src/routes/personelAccess.js | backend |  | review | NEEDS_REVIEW |  | PERSONEL-ACCESS |  | Owner or chain unclear |  |
@@ -1793,33 +2250,51 @@ Repo: `servis-platform`
 | reconciliation.js | backend/src/routes/reconciliation.js | backend | backend:m89check, root:accept:hakedisinvoicereconciliationpreview01, root:check:hakedisinvoicereconciliationpreview01, root:smoke:hakedisinvoicereconciliationpreview01 | review | NEEDS_REVIEW |  | RECONCILIATION |  | Owner or chain unclear |  |
 | reports.js | backend/src/routes/reports.js | backend |  | review | NEEDS_REVIEW |  | REPORTS |  | Owner or chain unclear |  |
 | requests.js | backend/src/routes/requests.js | backend |  | review | NEEDS_REVIEW |  | REQUESTS |  | Owner or chain unclear |  |
+| roomCostRoutes.js | backend/src/routes/roomCostRoutes.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COST-ROUTES |  | Owner or chain unclear |  |
+| roomCounterValidation.continuation176.test.js | backend/src/routes/roomCounterValidation.continuation176.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COUNTER-VALIDATION-CONTINUATION-176-TEST |  | Owner or chain unclear |  |
+| roomCounterValidation.js | backend/src/routes/roomCounterValidation.js | backend |  | review | NEEDS_REVIEW |  | ROOM-COUNTER-VALIDATION |  | Owner or chain unclear |  |
+| rooms.hub-audit.continuation165.test.js | backend/src/routes/rooms.hub-audit.continuation165.test.js | backend |  | review | NEEDS_REVIEW |  | ROOMS-HUB-AUDIT-CONTINUATION-165-TEST |  | Owner or chain unclear |  |
 | rooms.js | backend/src/routes/rooms.js | backend |  | review | NEEDS_REVIEW |  | ROOMS |  | Owner or chain unclear |  |
 | routeTemplates.js | backend/src/routes/routeTemplates.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-TEMPLATES |  | Owner or chain unclear |  |
 | schoolParentInvites.js | backend/src/routes/schoolParentInvites.js | backend |  | review | NEEDS_REVIEW |  | SCHOOL-PARENT-INVITES |  | Owner or chain unclear |  |
-| company.js | backend/src/routes/shifts/company.js | backend | root:check:companybudgetandservicecost01, root:check:cop04afix03, root:check:cop04bfix02, root:check:uxcompanyagreementsmobileparity01, root:check:uxcompanymobileactionclarity01, root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelsfinalpolish01, root:check:uxcompanypanelssmoke01, root:check:uxcompanypersonelaccessmobileparity01, root:check:uxcompanyqualitytabs01, root:check:uxcompanyshiftstabs01, root:check:uxroomcompanyshiftsmobilecardfix01 | review | NEEDS_REVIEW |  | COMPANY |  | Owner or chain unclear |  |
+| company.js | backend/src/routes/shifts/company.js | backend | backend:check:company-budget-commitment-02, backend:check:company-budget-part2a-browser, backend:check:company-budget-scope-01, root:check:companybudgetandservicecost01, root:check:cop04afix03, root:check:cop04bfix02, root:check:uxcompanyagreementsmobileparity01, root:check:uxcompanymobileactionclarity01, root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelsfinalpolish01, root:check:uxcompanypanelssmoke01, root:check:uxcompanypersonelaccessmobileparity01, root:check:uxcompanyqualitytabs01, root:check:uxcompanyshiftstabs01, root:check:uxroomcompanyshiftsmobilecardfix01 | review | NEEDS_REVIEW |  | COMPANY |  | Owner or chain unclear |  |
+| companyOfferPatch.js | backend/src/routes/shifts/companyOfferPatch.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-OFFER-PATCH |  | Owner or chain unclear |  |
+| companyOfferPatch.test.js | backend/src/routes/shifts/companyOfferPatch.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-OFFER-PATCH-TEST |  | Owner or chain unclear |  |
 | driver.js | backend/src/routes/shifts/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
 | helpers.js | backend/src/routes/shifts/helpers.js | backend |  | review | NEEDS_REVIEW |  | HELPERS |  | Owner or chain unclear |  |
 | index.js | backend/src/routes/shifts/index.js | backend | root:check:projectdocumentationarchitectureandcodebaseindex01 | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
+| participantReadSelects.js | backend/src/routes/shifts/participantReadSelects.js | backend |  | review | NEEDS_REVIEW |  | PARTICIPANT-READ-SELECTS |  | Owner or chain unclear |  |
+| participantReadSelects.test.js | backend/src/routes/shifts/participantReadSelects.test.js | backend |  | review | NEEDS_REVIEW |  | PARTICIPANT-READ-SELECTS-TEST |  | Owner or chain unclear |  |
 | people.js | backend/src/routes/shifts/people.js | backend |  | review | NEEDS_REVIEW |  | PEOPLE |  | Owner or chain unclear |  |
-| room.js | backend/src/routes/shifts/room.js | backend | backend:m97acheck, root:check:cop04bfix01, root:check:cop04bfix05, root:check:roomprofitabilityandquotefloor01, root:check:roomvehicledriveruppercase01, root:check:uxpremiumcriticalfixroom01, root:check:uxroomcompanyshiftsmobilecardfix01, root:check:uxroomdrivervehiclelinkdedup01, root:check:uxroomopspaneltabs01, root:check:uxroomopsrelationshippolish01, root:check:uxroompanelclarity01, root:check:uxroomshiftsdensitydedup01, root:check:uxroomshiftstabs01, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | ROOM |  | Owner or chain unclear |  |
+| personelAccess.test.js | backend/src/routes/shifts/personelAccess.test.js | backend |  | review | NEEDS_REVIEW |  | PERSONEL-ACCESS-TEST |  | Owner or chain unclear |  |
+| room.js | backend/src/routes/shifts/room.js | backend | backend:m97acheck, root:check:cop04bfix01, root:check:cop04bfix05, root:check:roomfinancesalaryroompolicy01, root:check:roomfinancialoperationstabs01, root:check:roomprofitabilityandquotefloor01, root:check:roomvehicledriveruppercase01, root:check:uxpremiumcriticalfixroom01, root:check:uxroomagreements-p1, root:check:uxroomcompanyshiftsmobilecardfix01, root:check:uxroomdrivervehiclelinkdedup01, root:check:uxroomopspaneltabs01, root:check:uxroomopsrelationshippolish01, root:check:uxroompanelclarity01, root:check:uxroomshiftsdensitydedup01, root:check:uxroomshiftstabs01, root:check:uxroomvehiclestelematicsfix, root:smoke:uxroomagreements-p1, root:smoke:uxroomagreementstwo-controls | review | NEEDS_REVIEW |  | ROOM |  | Owner or chain unclear |  |
 | roomReassignNotifications.js | backend/src/routes/shifts/roomReassignNotifications.js | backend |  | review | NEEDS_REVIEW |  | ROOM-REASSIGN-NOTIFICATIONS |  | Owner or chain unclear |  |
 | roomShared.js | backend/src/routes/shifts/roomShared.js | backend |  | review | NEEDS_REVIEW |  | ROOM-SHARED |  | Owner or chain unclear |  |
+| roomShared.test.js | backend/src/routes/shifts/roomShared.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-SHARED-TEST |  | Owner or chain unclear |  |
 | schemas.js | backend/src/routes/shifts/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |
+| schemas.test.js | backend/src/routes/shifts/schemas.test.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS-TEST |  | Owner or chain unclear |  |
 | shared.js | backend/src/routes/shifts/shared.js | backend |  | review | NEEDS_REVIEW |  | SHARED |  | Owner or chain unclear |  |
 | shiftsCompanyStopsRouter.js | backend/src/routes/shifts/shiftsCompanyStopsRouter.js | backend |  | review | NEEDS_REVIEW |  | SHIFTS-COMPANY-STOPS-ROUTER |  | Owner or chain unclear |  |
 | shiftsRoomDispatchRouter.js | backend/src/routes/shifts/shiftsRoomDispatchRouter.js | backend |  | review | NEEDS_REVIEW |  | SHIFTS-ROOM-DISPATCH-ROUTER |  | Owner or chain unclear |  |
 | ssotAlignment.js | backend/src/routes/ssotAlignment.js | backend |  | review | NEEDS_REVIEW |  | SSOT-ALIGNMENT |  | Owner or chain unclear |  |
 | telematics.js | backend/src/routes/telematics.js | backend | root:check:m44telematicst1t5, root:check:telematicsproviderhub01, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | TELEMATICS |  | Owner or chain unclear |  |
+| trustQuality.continuation325.test.js | backend/src/routes/trustQuality.continuation325.test.js | backend |  | review | NEEDS_REVIEW |  | TRUST-QUALITY-CONTINUATION-325-TEST |  | Owner or chain unclear |  |
 | trustQuality.js | backend/src/routes/trustQuality.js | backend |  | review | NEEDS_REVIEW |  | TRUST-QUALITY |  | Owner or chain unclear |  |
+| vehicles.create-audit.continuation164.test.js | backend/src/routes/vehicles.create-audit.continuation164.test.js | backend |  | review | NEEDS_REVIEW |  | VEHICLES-CREATE-AUDIT-CONTINUATION-164-TEST |  | Owner or chain unclear |  |
 | vehicles.js | backend/src/routes/vehicles.js | backend | backend:bench:gps:300:auto:panels, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | VEHICLES |  | Owner or chain unclear |  |
+| server.corrective.test.js | backend/src/server.corrective.test.js | backend |  | review | NEEDS_REVIEW |  | SERVER-CORRECTIVE-TEST |  | Owner or chain unclear |  |
 | server.js | backend/src/server.js | backend | backend:dev, backend:start | review | NEEDS_REVIEW |  | SERVER |  | Owner or chain unclear |  |
 | actionableEvents.js | backend/src/services/actionableEvents.js | backend |  | review | NEEDS_REVIEW |  | ACTIONABLE-EVENTS |  | Owner or chain unclear |  |
+| actionableEvents.test.js | backend/src/services/actionableEvents.test.js | backend |  | review | NEEDS_REVIEW |  | ACTIONABLE-EVENTS-TEST |  | Owner or chain unclear |  |
 | agreementBroadcast.js | backend/src/services/agreementBroadcast.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-BROADCAST |  | Owner or chain unclear |  |
 | agreementConflict.js | backend/src/services/agreementConflict.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-CONFLICT |  | Owner or chain unclear |  |
 | agreementConflictBatch.js | backend/src/services/agreementConflictBatch.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-CONFLICT-BATCH |  | Owner or chain unclear |  |
+| agreementConflictWiring.test.js | backend/src/services/agreementConflictWiring.test.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-CONFLICT-WIRING-TEST |  | Owner or chain unclear |  |
 | agreementCopy.js | backend/src/services/agreementCopy.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-COPY |  | Owner or chain unclear |  |
 | agreementListView.js | backend/src/services/agreementListView.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-LIST-VIEW |  | Owner or chain unclear |  |
 | agreementOfferCoverage.js | backend/src/services/agreementOfferCoverage.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-OFFER-COVERAGE |  | Owner or chain unclear |  |
+| agreementOperationEvidence.js | backend/src/services/agreementOperationEvidence.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-OPERATION-EVIDENCE |  | Owner or chain unclear |  |
+| agreementOperationEvidence.test.js | backend/src/services/agreementOperationEvidence.test.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-OPERATION-EVIDENCE-TEST |  | Owner or chain unclear |  |
 | agreementOpsBridge.js | backend/src/services/agreementOpsBridge.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-OPS-BRIDGE |  | Owner or chain unclear |  |
 | agreementRouteRefreshStore.js | backend/src/services/agreementRouteRefreshStore.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-ROUTE-REFRESH-STORE |  | Owner or chain unclear |  |
 | agreementShiftStats.js | backend/src/services/agreementShiftStats.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SHIFT-STATS |  | Owner or chain unclear |  |
@@ -1828,46 +2303,73 @@ Repo: `servis-platform`
 | agreementSourceShift.js | backend/src/services/agreementSourceShift.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SOURCE-SHIFT |  | Owner or chain unclear |  |
 | agreementSourceShiftGate.js | backend/src/services/agreementSourceShiftGate.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SOURCE-SHIFT-GATE |  | Owner or chain unclear |  |
 | authorizedProductAwareness.js | backend/src/services/authorizedProductAwareness.js | backend |  | review | NEEDS_REVIEW |  | AUTHORIZED-PRODUCT-AWARENESS |  | Owner or chain unclear |  |
+| authorizedProductAwareness.schoolOperations.test.js | backend/src/services/authorizedProductAwareness.schoolOperations.test.js | backend |  | review | NEEDS_REVIEW |  | AUTHORIZED-PRODUCT-AWARENESS-SCHOOL-OPERATIONS-TEST |  | Owner or chain unclear |  |
+| authorizedProductAwareness.scope.test.js | backend/src/services/authorizedProductAwareness.scope.test.js | backend |  | review | NEEDS_REVIEW |  | AUTHORIZED-PRODUCT-AWARENESS-SCOPE-TEST |  | Owner or chain unclear |  |
+| authorizedProductAwareness.selectedShift.test.js | backend/src/services/authorizedProductAwareness.selectedShift.test.js | backend |  | review | NEEDS_REVIEW |  | AUTHORIZED-PRODUCT-AWARENESS-SELECTED-SHIFT-TEST |  | Owner or chain unclear |  |
+| authorizedProductAwareness.serviceRequest.test.js | backend/src/services/authorizedProductAwareness.serviceRequest.test.js | backend |  | review | NEEDS_REVIEW |  | AUTHORIZED-PRODUCT-AWARENESS-SERVICE-REQUEST-TEST |  | Owner or chain unclear |  |
 | boardingChangeApplication.js | backend/src/services/boardingChangeApplication.js | backend |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-APPLICATION |  | Owner or chain unclear |  |
+| boardingChangeApplication.test.js | backend/src/services/boardingChangeApplication.test.js | backend |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-APPLICATION-TEST |  | Owner or chain unclear |  |
 | boardingChangeRequestView.js | backend/src/services/boardingChangeRequestView.js | backend |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-REQUEST-VIEW |  | Owner or chain unclear |  |
+| boardingChangeRequestView.test.js | backend/src/services/boardingChangeRequestView.test.js | backend |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-REQUEST-VIEW-TEST |  | Owner or chain unclear |  |
 | boardingChangeRouteRefresh.js | backend/src/services/boardingChangeRouteRefresh.js | backend |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-ROUTE-REFRESH |  | Owner or chain unclear |  |
+| boardingChangeRouteRefresh.test.js | backend/src/services/boardingChangeRouteRefresh.test.js | backend |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-ROUTE-REFRESH-TEST |  | Owner or chain unclear |  |
 | boardingRouteImpactPreview.js | backend/src/services/boardingRouteImpactPreview.js | backend |  | review | NEEDS_REVIEW |  | BOARDING-ROUTE-IMPACT-PREVIEW |  | Owner or chain unclear |  |
 | clusterStops.js | backend/src/services/clusterStops.js | backend |  | review | NEEDS_REVIEW |  | CLUSTER-STOPS |  | Owner or chain unclear |  |
+| companyBudgetAudit.js | backend/src/services/companyBudgetAudit.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-AUDIT |  | Owner or chain unclear |  |
+| companyBudgetAudit.test.js | backend/src/services/companyBudgetAudit.test.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-AUDIT-TEST |  | Owner or chain unclear |  |
+| companyBudgetScope.js | backend/src/services/companyBudgetScope.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-SCOPE |  | Owner or chain unclear |  |
 | companyShiftMutationTail.js | backend/src/services/companyShiftMutationTail.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-SHIFT-MUTATION-TAIL |  | Owner or chain unclear |  |
 | companyShiftValidation.js | backend/src/services/companyShiftValidation.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-SHIFT-VALIDATION |  | Owner or chain unclear |  |
 | dashboardBulk.js | backend/src/services/dashboardBulk.js | backend |  | review | NEEDS_REVIEW |  | DASHBOARD-BULK |  | Owner or chain unclear |  |
 | dispatchRepack.js | backend/src/services/dispatchRepack.js | backend |  | review | NEEDS_REVIEW |  | DISPATCH-REPACK |  | Owner or chain unclear |  |
+| financialOperationsLifecycle.companyBudgetAudit.test.js | backend/src/services/financialOperationsLifecycle.companyBudgetAudit.test.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-LIFECYCLE-COMPANY-BUDGET-AUDIT-TEST |  | Owner or chain unclear |  |
+| financialOperationsLifecycle.incomeChain.test.js | backend/src/services/financialOperationsLifecycle.incomeChain.test.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-LIFECYCLE-INCOME-CHAIN-TEST |  | Owner or chain unclear |  |
 | financialOperationsLifecycle.js | backend/src/services/financialOperationsLifecycle.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-LIFECYCLE |  | Owner or chain unclear |  |
+| financialOperationsLifecycle.reconciliation.test.js | backend/src/services/financialOperationsLifecycle.reconciliation.test.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-LIFECYCLE-RECONCILIATION-TEST |  | Owner or chain unclear |  |
 | geoState.js | backend/src/services/geoState.js | backend |  | review | NEEDS_REVIEW |  | GEO-STATE |  | Owner or chain unclear |  |
+| globalWriteFreeze.js | backend/src/services/globalWriteFreeze.js | backend |  | review | NEEDS_REVIEW |  | GLOBAL-WRITE-FREEZE |  | Owner or chain unclear |  |
+| globalWriteFreeze.test.js | backend/src/services/globalWriteFreeze.test.js | backend |  | review | NEEDS_REVIEW |  | GLOBAL-WRITE-FREEZE-TEST |  | Owner or chain unclear |  |
+| guidedBatchIdempotency.js | backend/src/services/guidedBatchIdempotency.js | backend |  | review | NEEDS_REVIEW |  | GUIDED-BATCH-IDEMPOTENCY |  | Owner or chain unclear |  |
+| guidedBatchIdempotency.test.js | backend/src/services/guidedBatchIdempotency.test.js | backend |  | review | NEEDS_REVIEW |  | GUIDED-BATCH-IDEMPOTENCY-TEST |  | Owner or chain unclear |  |
+| invoiceCollectionLedger.js | backend/src/services/invoiceCollectionLedger.js | backend |  | review | NEEDS_REVIEW |  | INVOICE-COLLECTION-LEDGER |  | Owner or chain unclear |  |
+| invoiceCollectionLedger.test.js | backend/src/services/invoiceCollectionLedger.test.js | backend |  | review | NEEDS_REVIEW |  | INVOICE-COLLECTION-LEDGER-TEST |  | Owner or chain unclear |  |
 | osrmMatch.js | backend/src/services/osrmMatch.js | backend |  | review | NEEDS_REVIEW |  | OSRM-MATCH |  | Owner or chain unclear |  |
 | osrmRoute.js | backend/src/services/osrmRoute.js | backend |  | review | NEEDS_REVIEW |  | OSRM-ROUTE |  | Owner or chain unclear |  |
 | osrmTable.js | backend/src/services/osrmTable.js | backend |  | review | NEEDS_REVIEW |  | OSRM-TABLE |  | Owner or chain unclear |  |
 | paymentBackbone.js | backend/src/services/paymentBackbone.js | backend |  | review | NEEDS_REVIEW |  | PAYMENT-BACKBONE |  | Owner or chain unclear |  |
 | paymentBackboneAccounts.js | backend/src/services/paymentBackboneAccounts.js | backend |  | review | NEEDS_REVIEW |  | PAYMENT-BACKBONE-ACCOUNTS |  | Owner or chain unclear |  |
 | paymentBackboneWriteGate.js | backend/src/services/paymentBackboneWriteGate.js | backend |  | review | NEEDS_REVIEW |  | PAYMENT-BACKBONE-WRITE-GATE |  | Owner or chain unclear |  |
+| personelImportIdentity.js | backend/src/services/personelImportIdentity.js | backend |  | review | NEEDS_REVIEW |  | PERSONEL-IMPORT-IDENTITY |  | Owner or chain unclear |  |
 | planSolve.js | backend/src/services/planSolve.js | backend |  | review | NEEDS_REVIEW |  | PLAN-SOLVE |  | Owner or chain unclear |  |
 | platformFeePreviewService.js | backend/src/services/platformFeePreviewService.js | backend |  | review | NEEDS_REVIEW |  | PLATFORM-FEE-PREVIEW-SERVICE |  | Owner or chain unclear |  |
 | publicLeadService.js | backend/src/services/publicLeadService.js | backend |  | review | NEEDS_REVIEW |  | PUBLIC-LEAD-SERVICE |  | Owner or chain unclear |  |
 | qualityPaymentBridgeService.js | backend/src/services/qualityPaymentBridgeService.js | backend |  | review | NEEDS_REVIEW |  | QUALITY-PAYMENT-BRIDGE-SERVICE |  | Owner or chain unclear |  |
 | queryPlanExecutor.js | backend/src/services/queryPlanExecutor.js | backend |  | review | NEEDS_REVIEW |  | QUERY-PLAN-EXECUTOR |  | Owner or chain unclear |  |
+| queryPlanExecutor.test.js | backend/src/services/queryPlanExecutor.test.js | backend |  | review | NEEDS_REVIEW |  | QUERY-PLAN-EXECUTOR-TEST |  | Owner or chain unclear |  |
 | reservationConflict.js | backend/src/services/reservationConflict.js | backend |  | review | NEEDS_REVIEW |  | RESERVATION-CONFLICT |  | Owner or chain unclear |  |
 | roomPoolPlanner.js | backend/src/services/roomPoolPlanner.js | backend |  | review | NEEDS_REVIEW |  | ROOM-POOL-PLANNER |  | Owner or chain unclear |  |
+| roomTestSimulatedService.js | backend/src/services/roomTestSimulatedService.js | backend |  | review | NEEDS_REVIEW |  | ROOM-TEST-SIMULATED-SERVICE |  | Owner or chain unclear |  |
+| roomTestSimulatedService.test.js | backend/src/services/roomTestSimulatedService.test.js | backend |  | review | NEEDS_REVIEW |  | ROOM-TEST-SIMULATED-SERVICE-TEST |  | Owner or chain unclear |  |
 | routeEtaService.js | backend/src/services/routeEtaService.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-ETA-SERVICE |  | Owner or chain unclear |  |
 | routeLearning.js | backend/src/services/routeLearning.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-LEARNING |  | Owner or chain unclear |  |
 | seferScoreService.js | backend/src/services/seferScoreService.js | backend |  | review | NEEDS_REVIEW |  | SEFER-SCORE-SERVICE |  | Owner or chain unclear |  |
 | shiftConflict.js | backend/src/services/shiftConflict.js | backend |  | review | NEEDS_REVIEW |  | SHIFT-CONFLICT |  | Owner or chain unclear |  |
 | shiftConflictBatch.js | backend/src/services/shiftConflictBatch.js | backend |  | review | NEEDS_REVIEW |  | SHIFT-CONFLICT-BATCH |  | Owner or chain unclear |  |
 | shiftPackage.js | backend/src/services/shiftPackage.js | backend |  | review | NEEDS_REVIEW |  | SHIFT-PACKAGE |  | Owner or chain unclear |  |
+| shiftPackage.test.js | backend/src/services/shiftPackage.test.js | backend |  | review | NEEDS_REVIEW |  | SHIFT-PACKAGE-TEST |  | Owner or chain unclear |  |
 | shiftRouteState.js | backend/src/services/shiftRouteState.js | backend |  | review | NEEDS_REVIEW |  | SHIFT-ROUTE-STATE |  | Owner or chain unclear |  |
+| userFacingOfferNote.js | backend/src/services/userFacingOfferNote.js | backend |  | review | NEEDS_REVIEW |  | USER-FACING-OFFER-NOTE |  | Owner or chain unclear |  |
 | hash.js | backend/src/telematics/hash.js | backend |  | review | NEEDS_REVIEW |  | HASH |  | Owner or chain unclear |  |
 | providers.js | backend/src/telematics/providers.js | backend |  | review | NEEDS_REVIEW |  | PROVIDERS |  | Owner or chain unclear |  |
 | service.js | backend/src/telematics/service.js | backend | backend:m63check, root:check:companybudgetandservicecost01, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
-| tr.js | backend/src/time/tr.js | backend | backend:check:changeimpactregistryv1, backend:check:checkownershipregistryv1, backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:accept:accountingexportcontract01, root:check:accountingexportcontract01, root:check:ai03bsemanticvisiblelivematrix01, root:check:auditlogandapprovaltrace01, root:check:boardingchangerequestentry01, root:check:cop04afix02, root:check:cop04afix04, root:check:copilotroletaskmatrix01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:lockedinvariantregistry01, root:check:uxcontractconversionopsbridgeclarity01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:smoke:accountingexportcontract01, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
+| tr.js | backend/src/time/tr.js | backend | backend:check:changeimpactregistryv1, backend:check:checkownershipregistryv1, backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:accept:accountingexportcontract01, root:check:accountingexportcontract01, root:check:ai03bsemanticvisiblelivematrix01, root:check:auditlogandapprovaltrace01, root:check:boardingchangerequestentry01, root:check:cop04afix02, root:check:cop04afix04, root:check:copilotroletaskmatrix01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:lockedinvariantregistry01, root:check:uxcontractconversionopsbridgeclarity01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:smoke:accountingexportcontract01, root:smoke:uxroomagreementstwo-controls, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
 | responseCache.js | backend/src/utils/responseCache.js | backend |  | review | NEEDS_REVIEW |  | RESPONSE-CACHE |  | Owner or chain unclear |  |
 | validators.js | backend/src/validators.js | backend |  | review | NEEDS_REVIEW |  | VALIDATORS |  | Owner or chain unclear |  |
-| scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
+| validators.test.js | backend/src/validators.test.js | backend |  | review | NEEDS_REVIEW |  | VALIDATORS-TEST |  | Owner or chain unclear |  |
+| scope.js | backend/src/ws/scope.js | backend | backend:check:company-budget-scope-01 | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
-| z.js | backend/src/z.js | backend | backend:check:pre18-round12-canonical-authorization-browser, backend:prisma:modularization:acceptance, backend:prisma:modularization:check, root:check:guardv2standardization01, root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
+| socketRelay.test.js | backend/src/ws/socketRelay.test.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY-TEST |  | Owner or chain unclear |  |
+| z.js | backend/src/z.js | backend | backend:check:pre18-round12-canonical-authorization-browser, backend:freeze:fixture, backend:freeze:fixture:check, backend:prisma:modularization:acceptance, backend:prisma:modularization:check, root:check:guardv2standardization01, root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1880,6 +2382,7 @@ Repo: `servis-platform`
 | web:check:web-mobile | web/package.json | web | node scripts/web_mobile_responsive_check.js | web-lint | ACTIVE_WEB_LINT |  | WEB-CHECK-WEB-MOBILE |  | Breaks frontend/web lint gate | web package |
 | web:lint | web/package.json | web | eslint . | web-lint | ACTIVE_WEB_LINT |  | WEB-LINT |  | Breaks frontend/web lint gate | web package |
 | web:preview | web/package.json | web | vite preview | env | REQUIRES_ENV | REQUIRES_ENV | WEB-PREVIEW |  | Fails without env or external service | web package |
+| .dlevel-vite.config.mjs | web/.dlevel-vite.config.mjs | web |  | review | NEEDS_REVIEW |  | DLEVEL-VITE-CONFIG |  | Owner or chain unclear |  |
 | eslint.config.js | web/eslint.config.js | web |  | review | NEEDS_REVIEW |  | ESLINT-CONFIG |  | Owner or chain unclear |  |
 | m47_4_mobile_readiness_web_pass_check.js | web/scripts/m47_4_mobile_readiness_web_pass_check.js | web |  | web-lint | ACTIVE_WEB_LINT |  | M-47-4-MOBILE-READINESS-WEB-PASS-CHECK |  | Owner or chain unclear | frontend/web script |
 | m48_5_room_company_tablet_readiness_check.js | web/scripts/m48_5_room_company_tablet_readiness_check.js | web |  | web-lint | ACTIVE_WEB_LINT |  | M-48-5-ROOM-COMPANY-TABLET-READINESS-CHECK |  | Owner or chain unclear | frontend/web script |
@@ -1889,10 +2392,43 @@ Repo: `servis-platform`
 | m98_e2c_personel_access_web_check.js | web/scripts/m98_e2c_personel_access_web_check.js | web | web:check:m98e2c | web-lint | ACTIVE_WEB_LINT |  | M-98-E-2-C-PERSONEL-ACCESS-WEB-CHECK |  | Owner or chain unclear | frontend/web script |
 | web_mobile_responsive_check.js | web/scripts/web_mobile_responsive_check.js | web | web:check:web-mobile | web-lint | ACTIVE_WEB_LINT |  | WEB-MOBILE-RESPONSIVE-CHECK |  | Owner or chain unclear | frontend/web script |
 | api.js | web/src/api.js | web | mobile:check:m95e2, mobile:check:m95e6, root:check:dbpoolandapiscaling01, root:check:etaosrm02 | review | NEEDS_REVIEW |  | API |  | Owner or chain unclear |  |
+| companyInvoicePaymentPanel.test.js | web/src/components/companyInvoicePaymentPanel.test.js | web |  | review | NEEDS_REVIEW |  | COMPANY-INVOICE-PAYMENT-PANEL-TEST |  | Owner or chain unclear |  |
 | SeferAbiWidgetState.js | web/src/components/copilot/SeferAbiWidgetState.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-WIDGET-STATE |  | Owner or chain unclear |  |
+| chatScrollbar.continuation91.test.js | web/src/components/copilot/chatScrollbar.continuation91.test.js | web |  | review | NEEDS_REVIEW |  | CHAT-SCROLLBAR-CONTINUATION-91-TEST |  | Owner or chain unclear |  |
+| chatScrollbar.js | web/src/components/copilot/chatScrollbar.js | web |  | review | NEEDS_REVIEW |  | CHAT-SCROLLBAR |  | Owner or chain unclear |  |
+| copilotLayerParity.test.js | web/src/components/copilot/copilotLayerParity.test.js | web |  | review | NEEDS_REVIEW |  | COPILOT-LAYER-PARITY-TEST |  | Owner or chain unclear |  |
+| drawerGeometry.continuation91.test.js | web/src/components/copilot/drawerGeometry.continuation91.test.js | web |  | review | NEEDS_REVIEW |  | DRAWER-GEOMETRY-CONTINUATION-91-TEST |  | Owner or chain unclear |  |
+| drawerGeometry.js | web/src/components/copilot/drawerGeometry.js | web |  | review | NEEDS_REVIEW |  | DRAWER-GEOMETRY |  | Owner or chain unclear |  |
+| routeContextTranscript.continuation181.test.js | web/src/components/copilot/routeContextTranscript.continuation181.test.js | web |  | review | NEEDS_REVIEW |  | ROUTE-CONTEXT-TRANSCRIPT-CONTINUATION-181-TEST |  | Owner or chain unclear |  |
+| seferAbiAvatarCanvas.js | web/src/components/copilot/seferAbiAvatarCanvas.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-AVATAR-CANVAS |  | Owner or chain unclear |  |
+| seferAbiAvatarMotion.js | web/src/components/copilot/seferAbiAvatarMotion.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-AVATAR-MOTION |  | Owner or chain unclear |  |
+| seferAbiAvatarMotion.test.js | web/src/components/copilot/seferAbiAvatarMotion.test.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-AVATAR-MOTION-TEST |  | Owner or chain unclear |  |
+| seferAbiAvatarRenderer.test.js | web/src/components/copilot/seferAbiAvatarRenderer.test.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-AVATAR-RENDERER-TEST |  | Owner or chain unclear |  |
+| seferAbiAvatarSizing.test.js | web/src/components/copilot/seferAbiAvatarSizing.test.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-AVATAR-SIZING-TEST |  | Owner or chain unclear |  |
+| seferAbiContextCue.js | web/src/components/copilot/seferAbiContextCue.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-CONTEXT-CUE |  | Owner or chain unclear |  |
+| seferAbiContextCue.test.js | web/src/components/copilot/seferAbiContextCue.test.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-CONTEXT-CUE-TEST |  | Owner or chain unclear |  |
+| seferAbiExpressionFrameCatalog.js | web/src/components/copilot/seferAbiExpressionFrameCatalog.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-EXPRESSION-FRAME-CATALOG |  | Owner or chain unclear |  |
+| seferAbiExpressionFrameCatalog.test.js | web/src/components/copilot/seferAbiExpressionFrameCatalog.test.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-EXPRESSION-FRAME-CATALOG-TEST |  | Owner or chain unclear |  |
+| seferAbiExpressionSprite.js | web/src/components/copilot/seferAbiExpressionSprite.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-EXPRESSION-SPRITE |  | Owner or chain unclear |  |
+| seferAbiExpressionSprite.test.js | web/src/components/copilot/seferAbiExpressionSprite.test.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-EXPRESSION-SPRITE-TEST |  | Owner or chain unclear |  |
+| seferAbiProactiveBubble.js | web/src/components/copilot/seferAbiProactiveBubble.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-PROACTIVE-BUBBLE |  | Owner or chain unclear |  |
+| seferAbiProactiveBubble.test.js | web/src/components/copilot/seferAbiProactiveBubble.test.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-PROACTIVE-BUBBLE-TEST |  | Owner or chain unclear |  |
+| seferAbiProactiveBubbleOverlay.test.js | web/src/components/copilot/seferAbiProactiveBubbleOverlay.test.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-PROACTIVE-BUBBLE-OVERLAY-TEST |  | Owner or chain unclear |  |
+| seferAbiSpriteBlink.js | web/src/components/copilot/seferAbiSpriteBlink.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-SPRITE-BLINK |  | Owner or chain unclear |  |
+| seferAbiSpriteBlink.test.js | web/src/components/copilot/seferAbiSpriteBlink.test.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-SPRITE-BLINK-TEST |  | Owner or chain unclear |  |
 | uiSurface.js | web/src/components/copilot/uiSurface.js | web |  | review | NEEDS_REVIEW |  | UI-SURFACE |  | Owner or chain unclear |  |
+| invoiceCollectionAmounts.js | web/src/components/invoiceCollectionAmounts.js | web |  | review | NEEDS_REVIEW |  | INVOICE-COLLECTION-AMOUNTS |  | Owner or chain unclear |  |
+| invoiceCollectionAmounts.test.js | web/src/components/invoiceCollectionAmounts.test.js | web |  | review | NEEDS_REVIEW |  | INVOICE-COLLECTION-AMOUNTS-TEST |  | Owner or chain unclear |  |
+| invoiceCollectionPanel.test.js | web/src/components/invoiceCollectionPanel.test.js | web |  | review | NEEDS_REVIEW |  | INVOICE-COLLECTION-PANEL-TEST |  | Owner or chain unclear |  |
+| planningFlowContext.js | web/src/components/planningFlowContext.js | web |  | review | NEEDS_REVIEW |  | PLANNING-FLOW-CONTEXT |  | Owner or chain unclear |  |
+| planningFlowContext.test.js | web/src/components/planningFlowContext.test.js | web |  | review | NEEDS_REVIEW |  | PLANNING-FLOW-CONTEXT-TEST |  | Owner or chain unclear |  |
+| planningFlowProgress.js | web/src/components/planningFlowProgress.js | web |  | review | NEEDS_REVIEW |  | PLANNING-FLOW-PROGRESS |  | Owner or chain unclear |  |
+| planningFlowProgress.test.js | web/src/components/planningFlowProgress.test.js | web |  | review | NEEDS_REVIEW |  | PLANNING-FLOW-PROGRESS-TEST |  | Owner or chain unclear |  |
+| reconciliationIncomeChainPresentation.js | web/src/components/reconciliationIncomeChainPresentation.js | web |  | review | NEEDS_REVIEW |  | RECONCILIATION-INCOME-CHAIN-PRESENTATION |  | Owner or chain unclear |  |
+| reconciliationIncomeChainPresentation.test.js | web/src/components/reconciliationIncomeChainPresentation.test.js | web |  | review | NEEDS_REVIEW |  | RECONCILIATION-INCOME-CHAIN-PRESENTATION-TEST |  | Owner or chain unclear |  |
 | stopTimelineUtils.js | web/src/components/stopTimelineUtils.js | web |  | review | NEEDS_REVIEW |  | STOP-TIMELINE-UTILS |  | Owner or chain unclear |  |
 | brand.js | web/src/config/brand.js | web | root:check:brand, root:check:docsbrandcleanup01, root:check:uxbrandloginpremium01 | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
+| guidedTargetState.continuation83.test.js | web/src/copilot/guidedTargetState.continuation83.test.js | web |  | review | NEEDS_REVIEW |  | GUIDED-TARGET-STATE-CONTINUATION-83-TEST |  | Owner or chain unclear |  |
 | guidedTargetState.js | web/src/copilot/guidedTargetState.js | web |  | review | NEEDS_REVIEW |  | GUIDED-TARGET-STATE |  | Owner or chain unclear |  |
 | routeContext.js | web/src/copilot/routeContext.js | web |  | review | NEEDS_REVIEW |  | ROUTE-CONTEXT |  | Owner or chain unclear |  |
 | screenRegistry.js | web/src/copilot/screenRegistry.js | web |  | review | NEEDS_REVIEW |  | SCREEN-REGISTRY |  | Owner or chain unclear |  |
@@ -1900,60 +2436,221 @@ Repo: `servis-platform`
 | vehicleMarkerC.js | web/src/lib/markers/vehicleMarkerC.js | web |  | review | NEEDS_REVIEW |  | VEHICLE-MARKER-C |  | Owner or chain unclear |  |
 | bus.js | web/src/live/bus.js | web |  | review | NEEDS_REVIEW |  | BUS |  | Owner or chain unclear |  |
 | useAutoReload.js | web/src/live/useAutoReload.js | web |  | review | NEEDS_REVIEW |  | USE-AUTO-RELOAD |  | Owner or chain unclear |  |
-| ws.js | web/src/live/ws.js | web | backend:check:pre18-round10-conversation-routing-browser, backend:check:pre18-round11-deterministic-conversation-browser, backend:check:pre18-round12-canonical-authorization-browser, backend:check:pre18-round7-query-plan-browser, backend:check:pre18-round9-final-execution-browser, root:smoke:accountingexportcontract01, root:smoke:copilotuielementanchor01, root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01, root:smoke:pre18premiumuipolish01, root:smoke:projectgapreadiness01, root:smoke:projectwideturkishterminology01, root:smoke:rolebasedsimplenavigationandtaskhome01, root:smoke:seferabicharactersafesnappolish01, root:smoke:seferabicostanalysisassistant01, root:smoke:seferabipremiumcharactercorrective01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
+| ws.js | web/src/live/ws.js | web | backend:check:company-budget-part2a-browser, backend:check:pre18-round10-conversation-routing-browser, backend:check:pre18-round11-deterministic-conversation-browser, backend:check:pre18-round12-canonical-authorization-browser, backend:check:pre18-round7-query-plan-browser, backend:check:pre18-round9-final-execution-browser, root:smoke:accountingexportcontract01, root:smoke:copilotuielementanchor01, root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01, root:smoke:pre18premiumuipolish01, root:smoke:projectgapreadiness01, root:smoke:projectwideturkishterminology01, root:smoke:rolebasedsimplenavigationandtaskhome01, root:smoke:seferabiavatarcanvasidle01, root:smoke:seferabicharactersafesnappolish01, root:smoke:seferabicostanalysisassistant01, root:smoke:seferabipremiumcharactercorrective01, root:smoke:uxroomagreements-p1, root:smoke:uxroomagreementstwo-controls | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
 | agreementWizardPacks.js | web/src/panels/company/agreementWizardPacks.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-WIZARD-PACKS |  | Owner or chain unclear |  |
+| checkinCopilotSelection.continuation82.test.js | web/src/panels/company/checkinCopilotSelection.continuation82.test.js | web |  | review | NEEDS_REVIEW |  | CHECKIN-COPILOT-SELECTION-CONTINUATION-82-TEST |  | Owner or chain unclear |  |
+| checkinCopilotSelection.js | web/src/panels/company/checkinCopilotSelection.js | web |  | review | NEEDS_REVIEW |  | CHECKIN-COPILOT-SELECTION |  | Owner or chain unclear |  |
+| commercialFlowNavigation.js | web/src/panels/company/commercialFlowNavigation.js | web |  | review | NEEDS_REVIEW |  | COMMERCIAL-FLOW-NAVIGATION |  | Owner or chain unclear |  |
+| commercialFlowRoleNavigation.continuation80.test.js | web/src/panels/company/commercialFlowRoleNavigation.continuation80.test.js | web |  | review | NEEDS_REVIEW |  | COMMERCIAL-FLOW-ROLE-NAVIGATION-CONTINUATION-80-TEST |  | Owner or chain unclear |  |
+| companyAgreementDecisionPresentation.js | web/src/panels/company/companyAgreementDecisionPresentation.js | web |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENT-DECISION-PRESENTATION |  | Owner or chain unclear |  |
+| companyAgreementDecisionPresentation.test.js | web/src/panels/company/companyAgreementDecisionPresentation.test.js | web |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENT-DECISION-PRESENTATION-TEST |  | Owner or chain unclear |  |
 | companyAgreementsPanelHelpers.js | web/src/panels/company/companyAgreementsPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENTS-PANEL-HELPERS |  | Owner or chain unclear |  |
+| companyAgreementsPanelHelpers.test.js | web/src/panels/company/companyAgreementsPanelHelpers.test.js | web |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENTS-PANEL-HELPERS-TEST |  | Owner or chain unclear |  |
+| companyAgreementsRefreshWiring.test.js | web/src/panels/company/companyAgreementsRefreshWiring.test.js | web |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENTS-REFRESH-WIRING-TEST |  | Owner or chain unclear |  |
+| companyHubCopilotSelection.continuation181.test.js | web/src/panels/company/companyHubCopilotSelection.continuation181.test.js | web |  | review | NEEDS_REVIEW |  | COMPANY-HUB-COPILOT-SELECTION-CONTINUATION-181-TEST |  | Owner or chain unclear |  |
+| companyShiftsCommercialPolicy.js | web/src/panels/company/companyShiftsCommercialPolicy.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-COMMERCIAL-POLICY |  | Owner or chain unclear |  |
+| companyShiftsCommercialPolicy.test.js | web/src/panels/company/companyShiftsCommercialPolicy.test.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-COMMERCIAL-POLICY-TEST |  | Owner or chain unclear |  |
 | companyShiftsPanelActions.js | web/src/panels/company/companyShiftsPanelActions.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-PANEL-ACTIONS |  | Owner or chain unclear |  |
 | companyShiftsPanelSelectors.js | web/src/panels/company/companyShiftsPanelSelectors.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-PANEL-SELECTORS |  | Owner or chain unclear |  |
 | companyShiftsPanelStateHelpers.js | web/src/panels/company/companyShiftsPanelStateHelpers.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-PANEL-STATE-HELPERS |  | Owner or chain unclear |  |
 | companyShiftsPanelUtils.js | web/src/panels/company/companyShiftsPanelUtils.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-PANEL-UTILS |  | Owner or chain unclear |  |
+| companyShiftsSelectionPersistence.continuation223.test.js | web/src/panels/company/companyShiftsSelectionPersistence.continuation223.test.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-SELECTION-PERSISTENCE-CONTINUATION-223-TEST |  | Owner or chain unclear |  |
+| guidedPlanBulkReorder.js | web/src/panels/company/guidedPlanBulkReorder.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-BULK-REORDER |  | Owner or chain unclear |  |
+| guidedPlanBulkReorder.test.js | web/src/panels/company/guidedPlanBulkReorder.test.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-BULK-REORDER-TEST |  | Owner or chain unclear |  |
+| guidedPlanDraftLoading.js | web/src/panels/company/guidedPlanDraftLoading.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-DRAFT-LOADING |  | Owner or chain unclear |  |
+| guidedPlanDraftLoading.test.js | web/src/panels/company/guidedPlanDraftLoading.test.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-DRAFT-LOADING-TEST |  | Owner or chain unclear |  |
 | guidedPlanModalActions.js | web/src/panels/company/guidedPlanModalActions.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-MODAL-ACTIONS |  | Owner or chain unclear |  |
+| guidedPlanModalActions.test.js | web/src/panels/company/guidedPlanModalActions.test.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-MODAL-ACTIONS-TEST |  | Owner or chain unclear |  |
+| guidedPlanModalContinuation02.test.js | web/src/panels/company/guidedPlanModalContinuation02.test.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-MODAL-CONTINUATION-02-TEST |  | Owner or chain unclear |  |
+| guidedPlanModalCoordinates.js | web/src/panels/company/guidedPlanModalCoordinates.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-MODAL-COORDINATES |  | Owner or chain unclear |  |
 | guidedPlanModalDestinationHelpers.js | web/src/panels/company/guidedPlanModalDestinationHelpers.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-MODAL-DESTINATION-HELPERS |  | Owner or chain unclear |  |
+| guidedPlanModalHydration.js | web/src/panels/company/guidedPlanModalHydration.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-MODAL-HYDRATION |  | Owner or chain unclear |  |
+| guidedPlanModalHydration.test.js | web/src/panels/company/guidedPlanModalHydration.test.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-MODAL-HYDRATION-TEST |  | Owner or chain unclear |  |
+| guidedPlanModalResumeCandidates.test.js | web/src/panels/company/guidedPlanModalResumeCandidates.test.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-MODAL-RESUME-CANDIDATES-TEST |  | Owner or chain unclear |  |
 | guidedPlanModalUtils.js | web/src/panels/company/guidedPlanModalUtils.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-MODAL-UTILS |  | Owner or chain unclear |  |
+| guidedPlanResumeSafety.js | web/src/panels/company/guidedPlanResumeSafety.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-RESUME-SAFETY |  | Owner or chain unclear |  |
+| guidedPlanResumeSafety.test.js | web/src/panels/company/guidedPlanResumeSafety.test.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-RESUME-SAFETY-TEST |  | Owner or chain unclear |  |
+| guidedPlanResumeStops.js | web/src/panels/company/guidedPlanResumeStops.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-RESUME-STOPS |  | Owner or chain unclear |  |
+| guidedPlanResumeStops.test.js | web/src/panels/company/guidedPlanResumeStops.test.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-RESUME-STOPS-TEST |  | Owner or chain unclear |  |
+| guidedPlanRoleCopy.js | web/src/panels/company/guidedPlanRoleCopy.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-ROLE-COPY |  | Owner or chain unclear |  |
+| guidedPlanUserCopy.js | web/src/panels/company/guidedPlanUserCopy.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-USER-COPY |  | Owner or chain unclear |  |
+| guidedPlanUserCopy.test.js | web/src/panels/company/guidedPlanUserCopy.test.js | web |  | review | NEEDS_REVIEW |  | GUIDED-PLAN-USER-COPY-TEST |  | Owner or chain unclear |  |
+| mapRefresh.continuation91.test.js | web/src/panels/company/mapRefresh.continuation91.test.js | web |  | review | NEEDS_REVIEW |  | MAP-REFRESH-CONTINUATION-91-TEST |  | Owner or chain unclear |  |
+| mapRefresh.js | web/src/panels/company/mapRefresh.js | web |  | review | NEEDS_REVIEW |  | MAP-REFRESH |  | Owner or chain unclear |  |
+| operationsRefreshRegression.test.js | web/src/panels/company/operationsRefreshRegression.test.js | web |  | review | NEEDS_REVIEW |  | OPERATIONS-REFRESH-REGRESSION-TEST |  | Owner or chain unclear |  |
+| passengerLinksCopilotSelection.continuation89.test.js | web/src/panels/company/passengerLinksCopilotSelection.continuation89.test.js | web |  | review | NEEDS_REVIEW |  | PASSENGER-LINKS-COPILOT-SELECTION-CONTINUATION-89-TEST |  | Owner or chain unclear |  |
+| passengerLinksCopilotSelection.js | web/src/panels/company/passengerLinksCopilotSelection.js | web |  | review | NEEDS_REVIEW |  | PASSENGER-LINKS-COPILOT-SELECTION |  | Owner or chain unclear |  |
+| personelAccessCopilotSelection.continuation180.test.js | web/src/panels/company/personelAccessCopilotSelection.continuation180.test.js | web |  | review | NEEDS_REVIEW |  | PERSONEL-ACCESS-COPILOT-SELECTION-CONTINUATION-180-TEST |  | Owner or chain unclear |  |
 | planBuilderPanelActions.js | web/src/panels/company/planBuilderPanelActions.js | web |  | review | NEEDS_REVIEW |  | PLAN-BUILDER-PANEL-ACTIONS |  | Owner or chain unclear |  |
 | planBuilderPanelUtils.js | web/src/panels/company/planBuilderPanelUtils.js | web |  | review | NEEDS_REVIEW |  | PLAN-BUILDER-PANEL-UTILS |  | Owner or chain unclear |  |
 | planBuilderPanelWorkflow.js | web/src/panels/company/planBuilderPanelWorkflow.js | web |  | review | NEEDS_REVIEW |  | PLAN-BUILDER-PANEL-WORKFLOW |  | Owner or chain unclear |  |
 | shiftPeopleTabActions.js | web/src/panels/company/shiftPeopleTabActions.js | web |  | review | NEEDS_REVIEW |  | SHIFT-PEOPLE-TAB-ACTIONS |  | Owner or chain unclear |  |
 | shiftPeopleTabUtils.js | web/src/panels/company/shiftPeopleTabUtils.js | web |  | review | NEEDS_REVIEW |  | SHIFT-PEOPLE-TAB-UTILS |  | Owner or chain unclear |  |
+| shiftPeopleTabUtils.test.js | web/src/panels/company/shiftPeopleTabUtils.test.js | web |  | review | NEEDS_REVIEW |  | SHIFT-PEOPLE-TAB-UTILS-TEST |  | Owner or chain unclear |  |
+| shiftPeopleTabWiring.test.js | web/src/panels/company/shiftPeopleTabWiring.test.js | web |  | review | NEEDS_REVIEW |  | SHIFT-PEOPLE-TAB-WIRING-TEST |  | Owner or chain unclear |  |
 | shiftsPanelOfferUtils.js | web/src/panels/company/shiftsPanelOfferUtils.js | web |  | review | NEEDS_REVIEW |  | SHIFTS-PANEL-OFFER-UTILS |  | Owner or chain unclear |  |
+| driverMapCopilotSelection.js | web/src/panels/driver/driverMapCopilotSelection.js | web |  | review | NEEDS_REVIEW |  | DRIVER-MAP-COPILOT-SELECTION |  | Owner or chain unclear |  |
+| driverMapCopilotSelection.test.js | web/src/panels/driver/driverMapCopilotSelection.test.js | web |  | review | NEEDS_REVIEW |  | DRIVER-MAP-COPILOT-SELECTION-TEST |  | Owner or chain unclear |  |
+| mapCopilotSelection.continuation161.test.js | web/src/panels/driver/mapCopilotSelection.continuation161.test.js | web |  | review | NEEDS_REVIEW |  | MAP-COPILOT-SELECTION-CONTINUATION-161-TEST |  | Owner or chain unclear |  |
+| pinChangeErrorMessage.js | web/src/panels/driver/pinChangeErrorMessage.js | web |  | review | NEEDS_REVIEW |  | PIN-CHANGE-ERROR-MESSAGE |  | Owner or chain unclear |  |
+| pinChangeErrorMessage.test.js | web/src/panels/driver/pinChangeErrorMessage.test.js | web |  | review | NEEDS_REVIEW |  | PIN-CHANGE-ERROR-MESSAGE-TEST |  | Owner or chain unclear |  |
+| routePanelBoardingChangeCopilotSelection.test.js | web/src/panels/driver/routePanelBoardingChangeCopilotSelection.test.js | web |  | review | NEEDS_REVIEW |  | ROUTE-PANEL-BOARDING-CHANGE-COPILOT-SELECTION-TEST |  | Owner or chain unclear |  |
+| todaySelectionLifecycle.js | web/src/panels/driver/todaySelectionLifecycle.js | web |  | review | NEEDS_REVIEW |  | TODAY-SELECTION-LIFECYCLE |  | Owner or chain unclear |  |
+| todaySelectionLifecycle.test.js | web/src/panels/driver/todaySelectionLifecycle.test.js | web |  | review | NEEDS_REVIEW |  | TODAY-SELECTION-LIFECYCLE-TEST |  | Owner or chain unclear |  |
+| parentConsentPolicy.js | web/src/panels/parent/parentConsentPolicy.js | web |  | review | NEEDS_REVIEW |  | PARENT-CONSENT-POLICY |  | Owner or chain unclear |  |
+| parentConsentPolicy.test.js | web/src/panels/parent/parentConsentPolicy.test.js | web |  | review | NEEDS_REVIEW |  | PARENT-CONSENT-POLICY-TEST |  | Owner or chain unclear |  |
+| parentLiveNavigation.js | web/src/panels/parent/parentLiveNavigation.js | web |  | review | NEEDS_REVIEW |  | PARENT-LIVE-NAVIGATION |  | Owner or chain unclear |  |
+| parentLiveNavigation.test.js | web/src/panels/parent/parentLiveNavigation.test.js | web |  | review | NEEDS_REVIEW |  | PARENT-LIVE-NAVIGATION-TEST |  | Owner or chain unclear |  |
+| notificationPresentation.js | web/src/panels/personel/notificationPresentation.js | web |  | review | NEEDS_REVIEW |  | NOTIFICATION-PRESENTATION |  | Owner or chain unclear |  |
+| notificationPresentation.test.js | web/src/panels/personel/notificationPresentation.test.js | web |  | review | NEEDS_REVIEW |  | NOTIFICATION-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| driverFilterSelection.js | web/src/panels/room/driverFilterSelection.js | web |  | review | NEEDS_REVIEW |  | DRIVER-FILTER-SELECTION |  | Owner or chain unclear |  |
+| driversPanelFilterSelection.continuation99.test.js | web/src/panels/room/driversPanelFilterSelection.continuation99.test.js | web |  | review | NEEDS_REVIEW |  | DRIVERS-PANEL-FILTER-SELECTION-CONTINUATION-99-TEST |  | Owner or chain unclear |  |
+| mapEtaPresentation.continuation175.test.js | web/src/panels/room/mapEtaPresentation.continuation175.test.js | web |  | review | NEEDS_REVIEW |  | MAP-ETA-PRESENTATION-CONTINUATION-175-TEST |  | Owner or chain unclear |  |
+| roomAgreementDisplay.js | web/src/panels/room/roomAgreementDisplay.js | web |  | review | NEEDS_REVIEW |  | ROOM-AGREEMENT-DISPLAY |  | Owner or chain unclear |  |
+| roomAgreementDisplay.test.js | web/src/panels/room/roomAgreementDisplay.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-AGREEMENT-DISPLAY-TEST |  | Owner or chain unclear |  |
 | roomAgreementsPanelHelpers.js | web/src/panels/room/roomAgreementsPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | ROOM-AGREEMENTS-PANEL-HELPERS |  | Owner or chain unclear |  |
+| roomAgreementsSelectionPersistence.continuation220.test.js | web/src/panels/room/roomAgreementsSelectionPersistence.continuation220.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-AGREEMENTS-SELECTION-PERSISTENCE-CONTINUATION-220-TEST |  | Owner or chain unclear |  |
+| roomCounterValidation.continuation176.test.js | web/src/panels/room/roomCounterValidation.continuation176.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-COUNTER-VALIDATION-CONTINUATION-176-TEST |  | Owner or chain unclear |  |
+| roomCounterValidation.js | web/src/panels/room/roomCounterValidation.js | web |  | review | NEEDS_REVIEW |  | ROOM-COUNTER-VALIDATION |  | Owner or chain unclear |  |
+| roomOperationsBoardCopilotSelection.test.js | web/src/panels/room/roomOperationsBoardCopilotSelection.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-OPERATIONS-BOARD-COPILOT-SELECTION-TEST |  | Owner or chain unclear |  |
+| roomPendingDriverScope.js | web/src/panels/room/roomPendingDriverScope.js | web |  | review | NEEDS_REVIEW |  | ROOM-PENDING-DRIVER-SCOPE |  | Owner or chain unclear |  |
 | roomShiftsPanelActions.js | web/src/panels/room/roomShiftsPanelActions.js | web |  | review | NEEDS_REVIEW |  | ROOM-SHIFTS-PANEL-ACTIONS |  | Owner or chain unclear |  |
 | roomShiftsPanelHelpers.js | web/src/panels/room/roomShiftsPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | ROOM-SHIFTS-PANEL-HELPERS |  | Owner or chain unclear |  |
+| roomShiftsPanelHelpers.test.js | web/src/panels/room/roomShiftsPanelHelpers.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-SHIFTS-PANEL-HELPERS-TEST |  | Owner or chain unclear |  |
 | roomShiftsPanelUtils.js | web/src/panels/room/roomShiftsPanelUtils.js | web |  | review | NEEDS_REVIEW |  | ROOM-SHIFTS-PANEL-UTILS |  | Owner or chain unclear |  |
 | roomShiftsPanelWorkflow.js | web/src/panels/room/roomShiftsPanelWorkflow.js | web |  | review | NEEDS_REVIEW |  | ROOM-SHIFTS-PANEL-WORKFLOW |  | Owner or chain unclear |  |
 | roomVehiclesPanelActions.js | web/src/panels/room/roomVehiclesPanelActions.js | web |  | review | NEEDS_REVIEW |  | ROOM-VEHICLES-PANEL-ACTIONS |  | Owner or chain unclear |  |
 | roomVehiclesPanelUtils.js | web/src/panels/room/roomVehiclesPanelUtils.js | web |  | review | NEEDS_REVIEW |  | ROOM-VEHICLES-PANEL-UTILS |  | Owner or chain unclear |  |
+| routeEvidenceReturn.js | web/src/panels/room/routeEvidenceReturn.js | web |  | review | NEEDS_REVIEW |  | ROUTE-EVIDENCE-RETURN |  | Owner or chain unclear |  |
+| routeEvidenceReturn.test.js | web/src/panels/room/routeEvidenceReturn.test.js | web |  | review | NEEDS_REVIEW |  | ROUTE-EVIDENCE-RETURN-TEST |  | Owner or chain unclear |  |
+| routeEvidenceTemplates.js | web/src/panels/room/routeEvidenceTemplates.js | web |  | review | NEEDS_REVIEW |  | ROUTE-EVIDENCE-TEMPLATES |  | Owner or chain unclear |  |
+| routeEvidenceTemplates.test.js | web/src/panels/room/routeEvidenceTemplates.test.js | web |  | review | NEEDS_REVIEW |  | ROUTE-EVIDENCE-TEMPLATES-TEST |  | Owner or chain unclear |  |
 | useRoomVehicleTelematics.js | web/src/panels/room/useRoomVehicleTelematics.js | web |  | review | NEEDS_REVIEW |  | USE-ROOM-VEHICLE-TELEMATICS |  | Owner or chain unclear |  |
+| vehicleStatusFilter.js | web/src/panels/room/vehicleStatusFilter.js | web |  | review | NEEDS_REVIEW |  | VEHICLE-STATUS-FILTER |  | Owner or chain unclear |  |
+| vehiclesPanelFilterSelection.continuation96.test.js | web/src/panels/room/vehiclesPanelFilterSelection.continuation96.test.js | web |  | review | NEEDS_REVIEW |  | VEHICLES-PANEL-FILTER-SELECTION-CONTINUATION-96-TEST |  | Owner or chain unclear |  |
+| parentInviteCopilotSelection.continuation201.test.js | web/src/panels/school/parentInviteCopilotSelection.continuation201.test.js | web |  | review | NEEDS_REVIEW |  | PARENT-INVITE-COPILOT-SELECTION-CONTINUATION-201-TEST |  | Owner or chain unclear |  |
+| parentInviteCopilotSelection.js | web/src/panels/school/parentInviteCopilotSelection.js | web |  | review | NEEDS_REVIEW |  | PARENT-INVITE-COPILOT-SELECTION |  | Owner or chain unclear |  |
 | boardingChangeUi.js | web/src/panels/shared/boardingChangeUi.js | web |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-UI |  | Owner or chain unclear |  |
+| boardingChangeUi.test.js | web/src/panels/shared/boardingChangeUi.test.js | web |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-UI-TEST |  | Owner or chain unclear |  |
+| companyBudgetAmountPresentation.js | web/src/panels/shared/companyBudgetAmountPresentation.js | web |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-AMOUNT-PRESENTATION |  | Owner or chain unclear |  |
+| companyBudgetAmountPresentation.test.js | web/src/panels/shared/companyBudgetAmountPresentation.test.js | web |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-AMOUNT-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| companyBudgetFinalSelection.test.js | web/src/panels/shared/companyBudgetFinalSelection.test.js | web |  | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| companyBudgetOfferComparison.test.js | web/src/panels/shared/companyBudgetOfferComparison.test.js | web |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-OFFER-COMPARISON-TEST |  | Owner or chain unclear |  |
+| companyBudgetOfferComparisonPresentation.js | web/src/panels/shared/companyBudgetOfferComparisonPresentation.js | web |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-OFFER-COMPARISON-PRESENTATION |  | Owner or chain unclear |  |
+| companyBudgetReconciliationPresentation.test.js | web/src/panels/shared/companyBudgetReconciliationPresentation.test.js | web |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-RECONCILIATION-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| companyBudgetUxCorrective01.test.js | web/src/panels/shared/companyBudgetUxCorrective01.test.js | web |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-UX-CORRECTIVE-01-TEST |  | Owner or chain unclear |  |
+| companyFinancialFocus.js | web/src/panels/shared/companyFinancialFocus.js | web |  | review | NEEDS_REVIEW |  | COMPANY-FINANCIAL-FOCUS |  | Owner or chain unclear |  |
+| companyOfferEvaluationPresentation.js | web/src/panels/shared/companyOfferEvaluationPresentation.js | web |  | review | NEEDS_REVIEW |  | COMPANY-OFFER-EVALUATION-PRESENTATION |  | Owner or chain unclear |  |
+| companyOfferEvaluationPresentation.test.js | web/src/panels/shared/companyOfferEvaluationPresentation.test.js | web |  | review | NEEDS_REVIEW |  | COMPANY-OFFER-EVALUATION-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| copilotContextRefresh.continuation183.test.js | web/src/panels/shared/copilotContextRefresh.continuation183.test.js | web |  | review | NEEDS_REVIEW |  | COPILOT-CONTEXT-REFRESH-CONTINUATION-183-TEST |  | Owner or chain unclear |  |
+| copilotGuideAction.continuation223.test.js | web/src/panels/shared/copilotGuideAction.continuation223.test.js | web |  | review | NEEDS_REVIEW |  | COPILOT-GUIDE-ACTION-CONTINUATION-223-TEST |  | Owner or chain unclear |  |
+| copilotPanelSelection.continuation59.test.js | web/src/panels/shared/copilotPanelSelection.continuation59.test.js | web |  | review | NEEDS_REVIEW |  | COPILOT-PANEL-SELECTION-CONTINUATION-59-TEST |  | Owner or chain unclear |  |
+| copilotReturnFocus.continuation205.test.js | web/src/panels/shared/copilotReturnFocus.continuation205.test.js | web |  | review | NEEDS_REVIEW |  | COPILOT-RETURN-FOCUS-CONTINUATION-205-TEST |  | Owner or chain unclear |  |
+| financeFocusContext.js | web/src/panels/shared/financeFocusContext.js | web |  | review | NEEDS_REVIEW |  | FINANCE-FOCUS-CONTEXT |  | Owner or chain unclear |  |
+| financeFocusContext.test.js | web/src/panels/shared/financeFocusContext.test.js | web |  | review | NEEDS_REVIEW |  | FINANCE-FOCUS-CONTEXT-TEST |  | Owner or chain unclear |  |
+| financeRiskPresentation.js | web/src/panels/shared/financeRiskPresentation.js | web |  | review | NEEDS_REVIEW |  | FINANCE-RISK-PRESENTATION |  | Owner or chain unclear |  |
+| financeRiskPresentation.test.js | web/src/panels/shared/financeRiskPresentation.test.js | web |  | review | NEEDS_REVIEW |  | FINANCE-RISK-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| financeUserFacingLabels.js | web/src/panels/shared/financeUserFacingLabels.js | web |  | review | NEEDS_REVIEW |  | FINANCE-USER-FACING-LABELS |  | Owner or chain unclear |  |
+| financeUserFacingLabels.test.js | web/src/panels/shared/financeUserFacingLabels.test.js | web |  | review | NEEDS_REVIEW |  | FINANCE-USER-FACING-LABELS-TEST |  | Owner or chain unclear |  |
+| financialOperationsCopilot.js | web/src/panels/shared/financialOperationsCopilot.js | web |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-COPILOT |  | Owner or chain unclear |  |
+| financialOperationsCopilot.test.js | web/src/panels/shared/financialOperationsCopilot.test.js | web |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-COPILOT-TEST |  | Owner or chain unclear |  |
 | financialOperationsPresentation.js | web/src/panels/shared/financialOperationsPresentation.js | web |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-PRESENTATION |  | Owner or chain unclear |  |
+| financialOperationsPresentation.test.js | web/src/panels/shared/financialOperationsPresentation.test.js | web |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| financialOperationsSections.js | web/src/panels/shared/financialOperationsSections.js | web |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SECTIONS |  | Owner or chain unclear |  |
+| financialOperationsSections.test.js | web/src/panels/shared/financialOperationsSections.test.js | web |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SECTIONS-TEST |  | Owner or chain unclear |  |
+| financialOverviewSummary.js | web/src/panels/shared/financialOverviewSummary.js | web |  | review | NEEDS_REVIEW |  | FINANCIAL-OVERVIEW-SUMMARY |  | Owner or chain unclear |  |
+| financialOverviewSummary.test.js | web/src/panels/shared/financialOverviewSummary.test.js | web |  | review | NEEDS_REVIEW |  | FINANCIAL-OVERVIEW-SUMMARY-TEST |  | Owner or chain unclear |  |
+| financialServiceCostContext.js | web/src/panels/shared/financialServiceCostContext.js | web |  | review | NEEDS_REVIEW |  | FINANCIAL-SERVICE-COST-CONTEXT |  | Owner or chain unclear |  |
+| offerAmountPresentation.js | web/src/panels/shared/offerAmountPresentation.js | web |  | review | NEEDS_REVIEW |  | OFFER-AMOUNT-PRESENTATION |  | Owner or chain unclear |  |
+| offerAmountPresentation.test.js | web/src/panels/shared/offerAmountPresentation.test.js | web |  | review | NEEDS_REVIEW |  | OFFER-AMOUNT-PRESENTATION-TEST |  | Owner or chain unclear |  |
 | operationsDigestUtils.js | web/src/panels/shared/operationsDigestUtils.js | web |  | review | NEEDS_REVIEW |  | OPERATIONS-DIGEST-UTILS |  | Owner or chain unclear |  |
+| planningPreviewContext.js | web/src/panels/shared/planningPreviewContext.js | web |  | review | NEEDS_REVIEW |  | PLANNING-PREVIEW-CONTEXT |  | Owner or chain unclear |  |
+| planningPreviewContext.test.js | web/src/panels/shared/planningPreviewContext.test.js | web |  | review | NEEDS_REVIEW |  | PLANNING-PREVIEW-CONTEXT-TEST |  | Owner or chain unclear |  |
+| reportsDownload.continuation90.test.js | web/src/panels/shared/reportsDownload.continuation90.test.js | web |  | review | NEEDS_REVIEW |  | REPORTS-DOWNLOAD-CONTINUATION-90-TEST |  | Owner or chain unclear |  |
+| reportsDownload.js | web/src/panels/shared/reportsDownload.js | web |  | review | NEEDS_REVIEW |  | REPORTS-DOWNLOAD |  | Owner or chain unclear |  |
+| roomCollectionSelection.js | web/src/panels/shared/roomCollectionSelection.js | web |  | review | NEEDS_REVIEW |  | ROOM-COLLECTION-SELECTION |  | Owner or chain unclear |  |
+| roomCollectionSelection.test.js | web/src/panels/shared/roomCollectionSelection.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-COLLECTION-SELECTION-TEST |  | Owner or chain unclear |  |
+| roomCostFormState.js | web/src/panels/shared/roomCostFormState.js | web |  | review | NEEDS_REVIEW |  | ROOM-COST-FORM-STATE |  | Owner or chain unclear |  |
+| roomCostFormState.test.js | web/src/panels/shared/roomCostFormState.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-COST-FORM-STATE-TEST |  | Owner or chain unclear |  |
+| roomCostLedgerFocus.js | web/src/panels/shared/roomCostLedgerFocus.js | web |  | review | NEEDS_REVIEW |  | ROOM-COST-LEDGER-FOCUS |  | Owner or chain unclear |  |
+| roomCostLedgerFocus.test.js | web/src/panels/shared/roomCostLedgerFocus.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-COST-LEDGER-FOCUS-TEST |  | Owner or chain unclear |  |
+| roomCostLedgerPresentation.js | web/src/panels/shared/roomCostLedgerPresentation.js | web |  | review | NEEDS_REVIEW |  | ROOM-COST-LEDGER-PRESENTATION |  | Owner or chain unclear |  |
+| roomCostLedgerPresentation.test.js | web/src/panels/shared/roomCostLedgerPresentation.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-COST-LEDGER-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| roomCostOwnership.mjs | web/src/panels/shared/roomCostOwnership.mjs | web |  | review | NEEDS_REVIEW |  | ROOM-COST-OWNERSHIP |  | Owner or chain unclear |  |
+| roomCostOwnership.test.js | web/src/panels/shared/roomCostOwnership.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-COST-OWNERSHIP-TEST |  | Owner or chain unclear |  |
+| roomFinanceContextUx.test.js | web/src/panels/shared/roomFinanceContextUx.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-FINANCE-CONTEXT-UX-TEST |  | Owner or chain unclear |  |
+| roomFinanceDefaultContext.js | web/src/panels/shared/roomFinanceDefaultContext.js | web |  | review | NEEDS_REVIEW |  | ROOM-FINANCE-DEFAULT-CONTEXT |  | Owner or chain unclear |  |
+| roomFinanceDefaultContext.test.js | web/src/panels/shared/roomFinanceDefaultContext.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-FINANCE-DEFAULT-CONTEXT-TEST |  | Owner or chain unclear |  |
+| roomFinanceOfferSelection.js | web/src/panels/shared/roomFinanceOfferSelection.js | web |  | review | NEEDS_REVIEW |  | ROOM-FINANCE-OFFER-SELECTION |  | Owner or chain unclear |  |
+| roomFinanceOfferSelection.test.js | web/src/panels/shared/roomFinanceOfferSelection.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-FINANCE-OFFER-SELECTION-TEST |  | Owner or chain unclear |  |
+| roomFinancePlatformReferenceUx.test.js | web/src/panels/shared/roomFinancePlatformReferenceUx.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-FINANCE-PLATFORM-REFERENCE-UX-TEST |  | Owner or chain unclear |  |
+| roomFinanceShell.js | web/src/panels/shared/roomFinanceShell.js | web |  | review | NEEDS_REVIEW |  | ROOM-FINANCE-SHELL |  | Owner or chain unclear |  |
+| roomFinanceShell.test.js | web/src/panels/shared/roomFinanceShell.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-FINANCE-SHELL-TEST |  | Owner or chain unclear |  |
+| roomMonthlyPriceReferencePresentation.test.js | web/src/panels/shared/roomMonthlyPriceReferencePresentation.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-MONTHLY-PRICE-REFERENCE-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| roomOfferQuoteReadiness.js | web/src/panels/shared/roomOfferQuoteReadiness.js | web |  | review | NEEDS_REVIEW |  | ROOM-OFFER-QUOTE-READINESS |  | Owner or chain unclear |  |
+| roomOfferQuoteReadiness.test.js | web/src/panels/shared/roomOfferQuoteReadiness.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-OFFER-QUOTE-READINESS-TEST |  | Owner or chain unclear |  |
+| roomOfferScopePresentation.js | web/src/panels/shared/roomOfferScopePresentation.js | web |  | review | NEEDS_REVIEW |  | ROOM-OFFER-SCOPE-PRESENTATION |  | Owner or chain unclear |  |
+| roomOfferScopePresentation.test.js | web/src/panels/shared/roomOfferScopePresentation.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-OFFER-SCOPE-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| roomProfitabilityPresentation.js | web/src/panels/shared/roomProfitabilityPresentation.js | web |  | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-PRESENTATION |  | Owner or chain unclear |  |
+| roomProfitabilityPresentation.test.js | web/src/panels/shared/roomProfitabilityPresentation.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| roomQuoteCostBreakdown.js | web/src/panels/shared/roomQuoteCostBreakdown.js | web |  | review | NEEDS_REVIEW |  | ROOM-QUOTE-COST-BREAKDOWN |  | Owner or chain unclear |  |
+| roomQuoteCostBreakdown.test.js | web/src/panels/shared/roomQuoteCostBreakdown.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-QUOTE-COST-BREAKDOWN-TEST |  | Owner or chain unclear |  |
+| roomQuoteRequestContext.js | web/src/panels/shared/roomQuoteRequestContext.js | web |  | review | NEEDS_REVIEW |  | ROOM-QUOTE-REQUEST-CONTEXT |  | Owner or chain unclear |  |
+| roomQuoteRequestContext.test.js | web/src/panels/shared/roomQuoteRequestContext.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-QUOTE-REQUEST-CONTEXT-TEST |  | Owner or chain unclear |  |
+| roomScenarioQuoteBinding.js | web/src/panels/shared/roomScenarioQuoteBinding.js | web |  | review | NEEDS_REVIEW |  | ROOM-SCENARIO-QUOTE-BINDING |  | Owner or chain unclear |  |
+| roomScenarioQuoteBinding.test.js | web/src/panels/shared/roomScenarioQuoteBinding.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-SCENARIO-QUOTE-BINDING-TEST |  | Owner or chain unclear |  |
+| roomServiceCostMissingInfo.js | web/src/panels/shared/roomServiceCostMissingInfo.js | web |  | review | NEEDS_REVIEW |  | ROOM-SERVICE-COST-MISSING-INFO |  | Owner or chain unclear |  |
+| roomServiceCostMissingInfo.test.js | web/src/panels/shared/roomServiceCostMissingInfo.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-SERVICE-COST-MISSING-INFO-TEST |  | Owner or chain unclear |  |
+| routePassagePresentation.js | web/src/panels/shared/routePassagePresentation.js | web |  | review | NEEDS_REVIEW |  | ROUTE-PASSAGE-PRESENTATION |  | Owner or chain unclear |  |
+| routePassagePresentation.test.js | web/src/panels/shared/routePassagePresentation.test.js | web |  | review | NEEDS_REVIEW |  | ROUTE-PASSAGE-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| serviceCostPeriodPresentation.js | web/src/panels/shared/serviceCostPeriodPresentation.js | web |  | review | NEEDS_REVIEW |  | SERVICE-COST-PERIOD-PRESENTATION |  | Owner or chain unclear |  |
+| serviceCostPeriodPresentation.test.js | web/src/panels/shared/serviceCostPeriodPresentation.test.js | web |  | review | NEEDS_REVIEW |  | SERVICE-COST-PERIOD-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| serviceCostPresentation.js | web/src/panels/shared/serviceCostPresentation.js | web |  | review | NEEDS_REVIEW |  | SERVICE-COST-PRESENTATION |  | Owner or chain unclear |  |
+| serviceCostPresentation.test.js | web/src/panels/shared/serviceCostPresentation.test.js | web |  | review | NEEDS_REVIEW |  | SERVICE-COST-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| shiftOfferPresentation.js | web/src/panels/shared/shiftOfferPresentation.js | web |  | review | NEEDS_REVIEW |  | SHIFT-OFFER-PRESENTATION |  | Owner or chain unclear |  |
+| shiftOfferPresentation.test.js | web/src/panels/shared/shiftOfferPresentation.test.js | web |  | review | NEEDS_REVIEW |  | SHIFT-OFFER-PRESENTATION-TEST |  | Owner or chain unclear |  |
+| OperationsPanel.test.js | web/src/panels/superadmin/OperationsPanel.test.js | web |  | review | NEEDS_REVIEW |  | OPERATIONS-PANEL-TEST |  | Owner or chain unclear |  |
 | commercialCorePanelActions.js | web/src/panels/superadmin/commercialCorePanelActions.js | web |  | review | NEEDS_REVIEW |  | COMMERCIAL-CORE-PANEL-ACTIONS |  | Owner or chain unclear |  |
 | commercialCorePanelOptionalStates.js | web/src/panels/superadmin/commercialCorePanelOptionalStates.js | web |  | review | NEEDS_REVIEW |  | COMMERCIAL-CORE-PANEL-OPTIONAL-STATES |  | Owner or chain unclear |  |
 | commercialCorePanelUtils.js | web/src/panels/superadmin/commercialCorePanelUtils.js | web |  | review | NEEDS_REVIEW |  | COMMERCIAL-CORE-PANEL-UTILS |  | Owner or chain unclear |  |
+| router.costScenarioParams.cont242.test.js | web/src/router.costScenarioParams.cont242.test.js | web |  | review | NEEDS_REVIEW |  | ROUTER-COST-SCENARIO-PARAMS-CONT-242-TEST |  | Owner or chain unclear |  |
 | router.js | web/src/router.js | web | root:check:m98e4b | review | NEEDS_REVIEW |  | ROUTER |  | Owner or chain unclear |  |
 | sessionContext.js | web/src/state/sessionContext.js | web |  | review | NEEDS_REVIEW |  | SESSION-CONTEXT |  | Owner or chain unclear |  |
 | agreementCopilotFacts.js | web/src/utils/agreementCopilotFacts.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-COPILOT-FACTS |  | Owner or chain unclear |  |
+| agreementCopilotRoute.integration.test.js | web/src/utils/agreementCopilotRoute.integration.test.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-COPILOT-ROUTE-INTEGRATION-TEST |  | Owner or chain unclear |  |
+| agreementCopilotRoute.js | web/src/utils/agreementCopilotRoute.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-COPILOT-ROUTE |  | Owner or chain unclear |  |
 | agreementLabels.js | web/src/utils/agreementLabels.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-LABELS |  | Owner or chain unclear |  |
 | agreementOriginLink.js | web/src/utils/agreementOriginLink.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-ORIGIN-LINK |  | Owner or chain unclear |  |
 | agreementPrefill.js | web/src/utils/agreementPrefill.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-PREFILL |  | Owner or chain unclear |  |
 | agreementUi.js | web/src/utils/agreementUi.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-UI |  | Owner or chain unclear |  |
 | apiContract.js | web/src/utils/apiContract.js | web |  | review | NEEDS_REVIEW |  | API-CONTRACT |  | Owner or chain unclear |  |
 | apiFallback.js | web/src/utils/apiFallback.js | web |  | review | NEEDS_REVIEW |  | API-FALLBACK |  | Owner or chain unclear |  |
+| checkinTerminology.continuation81.test.js | web/src/utils/checkinTerminology.continuation81.test.js | web |  | review | NEEDS_REVIEW |  | CHECKIN-TERMINOLOGY-CONTINUATION-81-TEST |  | Owner or chain unclear |  |
 | checkinToken.js | web/src/utils/checkinToken.js | web |  | review | NEEDS_REVIEW |  | CHECKIN-TOKEN |  | Owner or chain unclear |  |
 | companyDataHub.js | web/src/utils/companyDataHub.js | web |  | review | NEEDS_REVIEW |  | COMPANY-DATA-HUB |  | Owner or chain unclear |  |
 | copilotFacts.js | web/src/utils/copilotFacts.js | web |  | review | NEEDS_REVIEW |  | COPILOT-FACTS |  | Owner or chain unclear |  |
 | copilotPanelHelpers.js | web/src/utils/copilotPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | COPILOT-PANEL-HELPERS |  | Owner or chain unclear |  |
 | copilotSelection.js | web/src/utils/copilotSelection.js | web |  | review | NEEDS_REVIEW |  | COPILOT-SELECTION |  | Owner or chain unclear |  |
+| copilotSelection.test.js | web/src/utils/copilotSelection.test.js | web |  | review | NEEDS_REVIEW |  | COPILOT-SELECTION-TEST |  | Owner or chain unclear |  |
 | copilotSharedState.js | web/src/utils/copilotSharedState.js | web |  | review | NEEDS_REVIEW |  | COPILOT-SHARED-STATE |  | Owner or chain unclear |  |
 | dashboardBulk.js | web/src/utils/dashboardBulk.js | web |  | review | NEEDS_REVIEW |  | DASHBOARD-BULK |  | Owner or chain unclear |  |
+| dashboardBulk.test.js | web/src/utils/dashboardBulk.test.js | web |  | review | NEEDS_REVIEW |  | DASHBOARD-BULK-TEST |  | Owner or chain unclear |  |
+| dashboardBulkQuery.js | web/src/utils/dashboardBulkQuery.js | web |  | review | NEEDS_REVIEW |  | DASHBOARD-BULK-QUERY |  | Owner or chain unclear |  |
 | displayStatus.js | web/src/utils/displayStatus.js | web |  | review | NEEDS_REVIEW |  | DISPLAY-STATUS |  | Owner or chain unclear |  |
+| driverGpsStatus.test.js | web/src/utils/driverGpsStatus.test.js | web |  | review | NEEDS_REVIEW |  | DRIVER-GPS-STATUS-TEST |  | Owner or chain unclear |  |
 | etaSanity.js | web/src/utils/etaSanity.js | web |  | review | NEEDS_REVIEW |  | ETA-SANITY |  | Owner or chain unclear |  |
+| geoCoordinatePair.js | web/src/utils/geoCoordinatePair.js | web |  | review | NEEDS_REVIEW |  | GEO-COORDINATE-PAIR |  | Owner or chain unclear |  |
+| geoCoordinatePair.test.js | web/src/utils/geoCoordinatePair.test.js | web |  | review | NEEDS_REVIEW |  | GEO-COORDINATE-PAIR-TEST |  | Owner or chain unclear |  |
 | gpsSource.js | web/src/utils/gpsSource.js | web |  | review | NEEDS_REVIEW |  | GPS-SOURCE |  | Owner or chain unclear |  |
 | gpsSourceVisibility.js | web/src/utils/gpsSourceVisibility.js | web |  | review | NEEDS_REVIEW |  | GPS-SOURCE-VISIBILITY |  | Owner or chain unclear |  |
+| keyboardShortcutGuard.js | web/src/utils/keyboardShortcutGuard.js | web |  | review | NEEDS_REVIEW |  | KEYBOARD-SHORTCUT-GUARD |  | Owner or chain unclear |  |
+| keyboardShortcutGuard.test.js | web/src/utils/keyboardShortcutGuard.test.js | web |  | review | NEEDS_REVIEW |  | KEYBOARD-SHORTCUT-GUARD-TEST |  | Owner or chain unclear |  |
 | labels.js | web/src/utils/labels.js | web |  | review | NEEDS_REVIEW |  | LABELS |  | Owner or chain unclear |  |
 | listUi.js | web/src/utils/listUi.js | web |  | review | NEEDS_REVIEW |  | LIST-UI |  | Owner or chain unclear |  |
 | liveTrackingCopy.js | web/src/utils/liveTrackingCopy.js | web |  | review | NEEDS_REVIEW |  | LIVE-TRACKING-COPY |  | Owner or chain unclear |  |
 | navigation.js | web/src/utils/navigation.js | web | mobile:check:m95e22b, root:check:rolebasedsimplenavigationandtaskhome01, root:smoke:rolebasedsimplenavigationandtaskhome01 | review | NEEDS_REVIEW |  | NAVIGATION |  | Owner or chain unclear |  |
+| notificationEvidence.js | web/src/utils/notificationEvidence.js | web |  | review | NEEDS_REVIEW |  | NOTIFICATION-EVIDENCE |  | Owner or chain unclear |  |
+| notificationEvidence.test.js | web/src/utils/notificationEvidence.test.js | web |  | review | NEEDS_REVIEW |  | NOTIFICATION-EVIDENCE-TEST |  | Owner or chain unclear |  |
 | notificationV1.js | web/src/utils/notificationV1.js | web |  | review | NEEDS_REVIEW |  | NOTIFICATION-V-1 |  | Owner or chain unclear |  |
 | offerQualityRanking.js | web/src/utils/offerQualityRanking.js | web |  | review | NEEDS_REVIEW |  | OFFER-QUALITY-RANKING |  | Owner or chain unclear |  |
 | offlineQueue.js | web/src/utils/offlineQueue.js | web |  | review | NEEDS_REVIEW |  | OFFLINE-QUEUE |  | Owner or chain unclear |  |
@@ -1961,9 +2658,12 @@ Repo: `servis-platform`
 | planCenterOverlayLayer.js | web/src/utils/planCenterOverlayLayer.js | web |  | review | NEEDS_REVIEW |  | PLAN-CENTER-OVERLAY-LAYER |  | Owner or chain unclear |  |
 | providerScores.js | web/src/utils/providerScores.js | web |  | review | NEEDS_REVIEW |  | PROVIDER-SCORES |  | Owner or chain unclear |  |
 | publicBaseUrl.js | web/src/utils/publicBaseUrl.js | web |  | review | NEEDS_REVIEW |  | PUBLIC-BASE-URL |  | Owner or chain unclear |  |
+| reconciliationPresentation.js | web/src/utils/reconciliationPresentation.js | web |  | review | NEEDS_REVIEW |  | RECONCILIATION-PRESENTATION |  | Owner or chain unclear |  |
 | regionOwnership.js | web/src/utils/regionOwnership.js | web |  | review | NEEDS_REVIEW |  | REGION-OWNERSHIP |  | Owner or chain unclear |  |
 | roleNavigation.js | web/src/utils/roleNavigation.js | web |  | review | NEEDS_REVIEW |  | ROLE-NAVIGATION |  | Owner or chain unclear |  |
+| roleNavigation.test.js | web/src/utils/roleNavigation.test.js | web |  | review | NEEDS_REVIEW |  | ROLE-NAVIGATION-TEST |  | Owner or chain unclear |  |
 | routePreviewSummary.js | web/src/utils/routePreviewSummary.js | web |  | review | NEEDS_REVIEW |  | ROUTE-PREVIEW-SUMMARY |  | Owner or chain unclear |  |
+| routePreviewSummary.test.js | web/src/utils/routePreviewSummary.test.js | web |  | review | NEEDS_REVIEW |  | ROUTE-PREVIEW-SUMMARY-TEST |  | Owner or chain unclear |  |
 | safeDriveSummary.js | web/src/utils/safeDriveSummary.js | web |  | review | NEEDS_REVIEW |  | SAFE-DRIVE-SUMMARY |  | Owner or chain unclear |  |
 | safeParseJson.js | web/src/utils/safeParseJson.js | web |  | review | NEEDS_REVIEW |  | SAFE-PARSE-JSON |  | Owner or chain unclear |  |
 | shiftRoutePreview.js | web/src/utils/shiftRoutePreview.js | web |  | review | NEEDS_REVIEW |  | SHIFT-ROUTE-PREVIEW |  | Owner or chain unclear |  |
@@ -1971,6 +2671,7 @@ Repo: `servis-platform`
 | statusPalette.js | web/src/utils/statusPalette.js | web |  | review | NEEDS_REVIEW |  | STATUS-PALETTE |  | Owner or chain unclear |  |
 | stepUp.js | web/src/utils/stepUp.js | web | root:check:authstepupdevtoggle01, root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | STEP-UP |  | Owner or chain unclear |  |
 | terminology.js | web/src/utils/terminology.js | web | root:check:projectwideturkishterminology01, root:check:seferabiturkishterminology01, root:smoke:projectwideturkishterminology01 | review | NEEDS_REVIEW |  | TERMINOLOGY |  | Owner or chain unclear |  |
+| terminology.test.js | web/src/utils/terminology.test.js | web |  | review | NEEDS_REVIEW |  | TERMINOLOGY-TEST |  | Owner or chain unclear |  |
 | time.js | web/src/utils/time.js | web | mobile:check:m81.2, mobile:check:m95e18, root:check:copiloteblockruntimeanswerintegration01, root:check:m95export01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | TIME |  | Owner or chain unclear |  |
 | uiDataCache.js | web/src/utils/uiDataCache.js | web |  | review | NEEDS_REVIEW |  | UI-DATA-CACHE |  | Owner or chain unclear |  |
 | uiStatus.js | web/src/utils/uiStatus.js | web |  | review | NEEDS_REVIEW |  | UI-STATUS |  | Owner or chain unclear |  |
@@ -2359,6 +3060,9 @@ Repo: `servis-platform`
 | check_m71_room_title_hotfix_repo_contract.ps1 | tools/checks/living/hotfixes/check_m71_room_title_hotfix_repo_contract.ps1 | tools |  | release | ACTIVE_RELEASE_ONLY |  | CHECK-M-71-ROOM-TITLE-HOTFIX-REPO-CONTRACT |  | Owner or chain unclear | canonical living hotfix |
 | check_m71_workflow_loadsummary_hotfix_repo_contract.ps1 | tools/checks/living/hotfixes/check_m71_workflow_loadsummary_hotfix_repo_contract.ps1 | tools |  | release | ACTIVE_RELEASE_ONLY |  | CHECK-M-71-WORKFLOW-LOADSUMMARY-HOTFIX-REPO-CONTRACT |  | Owner or chain unclear | canonical living hotfix |
 | check_m72_georeview_token_hotfix_repo_contract.ps1 | tools/checks/living/hotfixes/check_m72_georeview_token_hotfix_repo_contract.ps1 | tools |  | release | ACTIVE_RELEASE_ONLY |  | CHECK-M-72-GEOREVIEW-TOKEN-HOTFIX-REPO-CONTRACT |  | Owner or chain unclear | canonical living hotfix |
+| cleanup_clean_demo_temp.ps1 | tools/cleanup_clean_demo_temp.ps1 | tools |  | review | NEEDS_REVIEW |  | CLEANUP-CLEAN-DEMO-TEMP |  | Owner or chain unclear |  |
+| cleanup_seferpakt_isolated_project.ps1 | tools/cleanup_seferpakt_isolated_project.ps1 | tools |  | review | NEEDS_REVIEW |  | CLEANUP-SEFERPAKT-ISOLATED-PROJECT |  | Owner or chain unclear |  |
+| deploy_clean_demo.ps1 | tools/deploy_clean_demo.ps1 | tools |  | review | NEEDS_REVIEW |  | DEPLOY-CLEAN-DEMO |  | Owner or chain unclear |  |
 | export_shareable_repo_bundle.ps1 | tools/export_shareable_repo_bundle.ps1 | tools |  | review | NEEDS_REVIEW |  | EXPORT-SHAREABLE-REPO-BUNDLE |  | Owner or chain unclear |  |
 | gate.cmd | tools/gate.cmd | tools | backend:m90b1check, mobile:check:m9, root:check:airesponsesemanticqualitygate01, root:check:paysafe01, root:check:qualitygatefinal01 | review | NEEDS_REVIEW |  | GATE |  | Owner or chain unclear |  |
 | gate.ps1 | tools/gate.ps1 | tools | backend:m90b1check, mobile:check:m9, root:check:airesponsesemanticqualitygate01, root:check:paysafe01, root:check:qualitygatefinal01 | review | NEEDS_REVIEW |  | GATE |  | Owner or chain unclear |  |
@@ -2708,6 +3412,8 @@ Repo: `servis-platform`
 
 | path | terms | status |
 | --- | --- | --- |
+| backend/prisma/m18ServiceEvaluationFixture.continuation325.test.js | Yer | NEEDS_REVIEW |
+| backend/prisma/seferpakt2026CanonicalDemoSeed.js | Hub, Yer | NEEDS_REVIEW |
 | backend/scripts/_m91_route_preview_checks.js | Hub | ACTIVE |
 | backend/scripts/_m91_smoke_helpers.js | Hub | ACTIVE |
 | backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js | Hub | NEEDS_REVIEW |
@@ -2718,6 +3424,8 @@ Repo: `servis-platform`
 | backend/scripts/boarding_ops_01b_apply_accepted_change_check.js | OperationProof, raw internal | NEEDS_REVIEW |
 | backend/scripts/boarding_ops_01c_driver_route_refresh_check.js | OperationProof | NEEDS_REVIEW |
 | backend/scripts/cache_coalescing_and_backoff_01_check.js | Hub | NEEDS_REVIEW |
+| backend/scripts/canonical_conversation_core_01_check.js | Hub, Yer | NEEDS_REVIEW |
+| backend/scripts/company_budget_and_service_cost_01_check.js | Yer | NEEDS_REVIEW |
 | backend/scripts/cop_01a_op_qlt_pay_copilot_guide_check.js | Yer | ACTIVE |
 | backend/scripts/cop_01c_real_context_bridge_check.js | Yer, OperationProof | ACTIVE |
 | backend/scripts/cop_03a_fix_02_visible_reply_chip_polish_check.js | Yer | ACTIVE |
@@ -2744,10 +3452,6 @@ Repo: `servis-platform`
 | backend/scripts/copilot_reasoning_answer_composer_01_check.js | Yer | NEEDS_REVIEW |
 | backend/scripts/copilot_rfq_prep_01_check.js | Hub | NEEDS_REVIEW |
 | backend/scripts/copilot_role_task_matrix_01_check.js | Hub | NEEDS_REVIEW |
-| backend/scripts/copilot_route_review_human_approval_01_check.js | Hub, Yer | NEEDS_REVIEW |
-| backend/scripts/copilot_stop_route_draft_01_check.js | Hub | NEEDS_REVIEW |
-| backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_browser.mjs | Hub, Yer | NEEDS_REVIEW |
-| backend/scripts/copilot_ui_element_anchor_and_guided_highlight_01_check.js | Hub, Yer, personel-access | NEEDS_REVIEW |
 
 ## 11) Cleanup Raporu
 

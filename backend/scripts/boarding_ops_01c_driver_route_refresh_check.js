@@ -80,7 +80,10 @@ function main() {
   const mapFactsSection = sectionBetween(copilotFacts, 'export function buildMapFacts', 'export function buildParentLiveNoVehicleFacts');
   const starterChipsSection = sectionBetween(copilotFacts, 'export function buildCopilotStarterChips', '');
 
-  const helpComposer = read('backend/src/ai/chat/helpComposer.js');
+  const helpComposer = [
+    read('backend/src/ai/chat/helpComposer.js'),
+    read('backend/src/ai/chat/helpComposerContext.js'),
+  ].join('\n');
   const helpLeadSection = sectionBetween(helpComposer, 'const boardingRouteVisibilityLead', 'const topicAdvice = {');
   const helpAdviceSection = sectionBetween(helpComposer, 'const topicAdvice = {', 'const topicLabel = topicLabelForContext(activeTopic);');
   const helpSwitchSection = sectionBetween(helpComposer, "case 'BOARDING_CHANGE_APPLICATION':\n        result = hasNegative", "case 'PAYMENT_READINESS':");

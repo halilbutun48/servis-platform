@@ -697,7 +697,7 @@ const INTEGRATION_CASES = [
     family: DIRECT_FAMILIES[0],
     surface: SURFACES[4],
     message: 'Önce neye bakayım?',
-    allowedQuestionTypes: ['SEMANTIC_PRIORITY'],
+    allowedQuestionTypes: ['SEMANTIC_PRIORITY', 'FIRST_CONTROL'],
     expectedMode: 'CONTEXTUAL_REASONING',
     fieldName: 'nextBestAction',
     replyMustAny: ['Plan', 'Vardiyalar'],

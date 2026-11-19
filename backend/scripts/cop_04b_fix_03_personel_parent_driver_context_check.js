@@ -154,13 +154,13 @@ must(parentLivePanelSource, 'badges', 'parent live panel keeps badges bridge');
 must(parentLivePanelSource, 'facts', 'parent live panel keeps facts bridge');
 mustAny(parentLivePanelSource, ['Araç konum sinyali', 'Sürücünün telefonundan konum sinyali'], 'parent live panel keeps current gps source labels');
 
-must(driverTodayPanelSource, 'setCopilotSelection(copilotSelection)', 'driver today panel keeps copilot selection push');
+must(driverTodayPanelSource, 'setCopilotSelection(nextSelection)', 'driver today panel keeps copilot selection push');
 must(driverTodayPanelSource, 'selectedFields', 'driver today panel keeps selected fields bridge');
 must(driverTodayPanelSource, 'selectedBadges', 'driver today panel keeps selected badges bridge');
 must(driverTodayPanelSource, 'structuredFacts', 'driver today panel keeps structured facts bridge');
 mustAny(driverTodayPanelSource, ['Operasyon kanıtı', 'Sürücünün telefon GPS’i', 'Araç GPS’i'], 'driver today panel keeps operational and gps labels');
 
-must(driverRoutePanelSource, 'setCopilotSelection(copilotSelection)', 'driver route panel keeps copilot selection push');
+must(driverRoutePanelSource, 'setCopilotSelection(activeCopilotSelection)', 'driver route panel keeps copilot selection push');
 must(driverRoutePanelSource, 'selectedFields', 'driver route panel keeps selected fields bridge');
 must(driverRoutePanelSource, 'selectedBadges', 'driver route panel keeps selected badges bridge');
 must(driverRoutePanelSource, 'structuredFacts', 'driver route panel keeps structured facts bridge');
@@ -302,7 +302,7 @@ const personelIntent = detectQuestionIntent(personelRequest.message, {
   entityType: 'screen',
   originalMessage: personelRequest.message,
 });
-must(personelIntent?.questionType || '', 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'personel live question preserves the current authorization boundary');
+must(personelIntent?.questionType || '', 'ROOT_CAUSE', 'personel live question preserves the current root-cause intent');
 mustNot(personelIntent?.questionType || '', 'LOCATION_HELP', 'personel live question does not infer location authority from screen context');
 const personelResponse = buildChatHelpResponse({
   entityType: parsedPersonelRequest.data.entityType,
@@ -399,7 +399,7 @@ const parentIntent = detectQuestionIntent(parentRequest.message, {
   entityType: 'screen',
   originalMessage: parentRequest.message,
 });
-must(parentIntent?.questionType || '', 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'parent live question preserves the current authorization boundary');
+must(parentIntent?.questionType || '', 'ROOT_CAUSE', 'parent live question preserves the current root-cause intent');
 mustNot(parentIntent?.questionType || '', 'LOCATION_HELP', 'parent live question does not infer location authority from screen context');
 const parentResponse = buildChatHelpResponse({
   entityType: parsedParentRequest.data.entityType,

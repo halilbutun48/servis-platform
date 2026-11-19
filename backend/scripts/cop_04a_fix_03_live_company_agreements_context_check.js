@@ -128,7 +128,8 @@ must(guide, 'check:cop04afix01', 'script guide keeps check:cop04afix01');
 must(guide, 'check:cop04a', 'script guide keeps check:cop04a');
 must(guide, 'check:cop03cfix03', 'script guide keeps check:cop03cfix03');
 
-must(panel, "screenPath: '/company/agreements'", 'company agreements panel keeps copilot screen path');
+must(panel, 'resolveAgreementCopilotRoute', 'company agreements panel resolves copilot screen path');
+must(panel, 'screenPath: agreementCopilotRoute', 'company agreements panel passes copilot screen path');
 must(panel, "screenTitle: 'Hizmet Alan Firma Sözleşmeleri'", 'company agreements panel keeps company title');
 ordered(panel, ['Kaynak vardiya', 'Üretilen vardiya', 'Son üretilen vardiya'], 'company agreements panel keeps bridge fields first');
 must(panel, 'selectedAgreementCopilotContext', 'company agreements panel keeps copilot context bridge');
@@ -270,7 +271,7 @@ const intent = detectQuestionIntent(question, {
   roleMode: 'OPERATIONS',
   originalMessage: question,
 });
-must(intent.questionType, 'SEMANTIC_OFF_TOPIC_SAFE', 'question intent preserves the current safe semantic route');
+must(intent.questionType, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'question intent preserves the current authorization boundary route');
 mustNot(intent.questionType, 'CONTRACT_TO_SHIFT', 'question intent does not revive the retired contract-to-shift route');
 mustNot(intent.questionType, 'CONTRACT_SHIFT_TODAY', 'question intent does not revive the retired contract-today route');
 mustNot(intent.questionType, 'READINESS_CHECK', 'question intent no longer prefers readiness check');

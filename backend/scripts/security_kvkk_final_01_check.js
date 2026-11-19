@@ -975,9 +975,18 @@ function inspectAcceptedPrismaManifest(evidence = collectAcceptedPrismaEvidence(
 }
 
 function mustAcceptedPrismaManifest(evidence = collectAcceptedPrismaEvidence()) {
-  void evidence;
   const currentPaths = gitLines(["diff", "--name-only", "--", "backend/prisma"]);
   const approved = new Map(CURRENT_HEAD_APPROVED_PRISMA_WORKTREE_ENTRIES.map((entry) => [normalizePath(entry.path), entry]));
+  if (currentPaths.length === 0) {
+    const uncommittedPaths = evidence.actual.filter((relativePath) => !currentPaths.includes(normalizePath(relativePath)));
+    must(uncommittedPaths.length === 0, `backend prisma uncommitted paths remain outside clean HEAD: ${uncommittedPaths.join(", ")}`);
+    const trackedHeadPaths = new Set(gitLines(["ls-tree", "-r", "--name-only", "HEAD", "--", "backend/prisma"]));
+    for (const [relativePath, entry] of approved.entries()) {
+      must(trackedHeadPaths.has(relativePath), `approved Prisma source is not tracked in clean HEAD: ${relativePath}`);
+      must(fileSha256(relativePath) === String(entry.sha256).toUpperCase(), `approved Prisma identity mismatch in clean HEAD: ${relativePath}`);
+    }
+    return;
+  }
   must(
     currentPaths.length === approved.size
       && currentPaths.every((relativePath) => approved.has(normalizePath(relativePath))),

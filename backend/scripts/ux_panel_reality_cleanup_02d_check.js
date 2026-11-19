@@ -145,6 +145,7 @@ function main() {
   mustContains(etaServer, "hesaplanamıyor", "backend ETA fallback wording remains");
 
   const roomAgreements = read("web/src/panels/room/AgreementsPanel.jsx");
+  const roomAgreementsHeader = read("web/src/panels/room/roomAgreementsPanelHeader.jsx");
   const roomAgreementsBridgeSection = read("web/src/panels/room/roomAgreementsBridgeSection.jsx");
   mustContains(roomAgreements, "PanelSegmentTabs", "Room AgreementsPanel uses segmented tabs");
   mustContains(roomAgreements, 'const [viewMode, setViewMode] = useState("bridge")', "Room AgreementsPanel keeps active tab state");
@@ -152,7 +153,7 @@ function main() {
   mustContains(roomAgreements, "Yeni rota güncelleme talebi var", "Room AgreementsPanel shows route refresh notice");
   mustContains(roomAgreements, "Karar bekleyen sözleşme teklifi var", "Room AgreementsPanel shows bridge notice");
   mustContains(roomAgreements, "Uzatma talebi geldi", "Room AgreementsPanel shows extend notice");
-  mustContains(roomAgreements, "setViewMode(roomAgreementsNotice.actionTab)", "Room AgreementsPanel info band routes to tab");
+  mustContains(roomAgreementsHeader, "setViewMode(roomAgreementsNotice.actionTab)", "Room AgreementsPanel info band routes to tab");
   mustContains(roomAgreements, "Operasyon Köprüsü", "Room AgreementsPanel includes operation bridge tab");
   mustContains(roomAgreements, "Rota Talepleri", "Room AgreementsPanel includes route requests tab");
   mustContains(roomAgreements, "Uygulanan Rota", "Room AgreementsPanel includes applied route tab");

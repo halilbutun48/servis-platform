@@ -72,8 +72,8 @@ must(has(smoke, "Bütçe kaynağı"), "smoke script checks company source Turkis
 must(has(smoke, "financeAssertions"), "smoke report keeps finance assertions");
 must(has(smoke, "runExternalReferenceDataAvailableAssertion"), "smoke script checks external reference available state");
 must(has(smoke, "externalReferenceAssertions"), "smoke report keeps external reference assertions");
-must(has(referenceCard, "Piyasa referansı henüz mevcut değil."), "reference card keeps honest no-data state");
-must(has(referenceCard, "Bu bilgi gerçek maliyetinizin veya sözleşme tutarınızın yerine geçmez."), "reference card keeps no-substitution authority note");
+must(has(referenceCard, "Yakıt fiyatı referansı henüz mevcut değil."), "reference card keeps honest no-data state");
+must(has(referenceCard, "Yakıt fiyatı referansı gerçek maliyetinizin veya sözleşme tutarınızın yerine geçmez."), "reference card keeps no-substitution authority note");
 must(has(smoke, "Tarayıcı doğrulama kaynağı"), "smoke checks isolated available reference fixture");
 must(has(smoke, '!["BLOCKER", "NOT-FOUND"].includes(row.status)'), "smoke command only fails on blocker and 404 outcomes");
 must(notHas(smoke, '!["BLOCKER", "AUTH-BLOCKED", "NOT-FOUND"].includes(row.status)'), "smoke command no longer fails on AUTH-BLOCKED alone");
@@ -133,17 +133,29 @@ for (const assertion of report.financeAssertions) {
   must(assertion.rawInternalCodeVisibleCount === 0, `${assertion.scope} finance advanced raw internal code count is zero for ${assertion.viewport}`);
   must(assertion.minorTokenVisibleCount === 0, `${assertion.scope} finance advanced minor token count is zero for ${assertion.viewport}`);
   must(assertion.bpsTokenVisibleCount === 0, `${assertion.scope} finance advanced bps token count is zero for ${assertion.viewport}`);
-  must(assertion.externalReferenceVisible === true, `${assertion.scope} external reference card is visible for ${assertion.viewport}`);
-  must(assertion.externalReferenceNoDataVisible === true || assertion.externalReferenceValueVisible === true, `${assertion.scope} external reference is honestly available or explicitly no-data for ${assertion.viewport}`);
-  must(assertion.externalReferenceRawTokensVisible?.length === 0, `${assertion.scope} external reference raw tokens are hidden for ${assertion.viewport}`);
+  if (assertion.scope === "COMPANY") {
+    must(assertion.externalReferenceNotApplicable === true, `${assertion.scope} external reference keeps role boundary for ${assertion.viewport}`);
+  } else if (assertion.selectionRequiredStateVisible === true) {
+    must(assertion.externalReferenceNotApplicable === true, `${assertion.scope} external reference records selection prerequisite for ${assertion.viewport}`);
+  } else {
+    must(assertion.externalReferenceVisible === true, `${assertion.scope} external reference card is visible for ${assertion.viewport}`);
+    must(assertion.externalReferenceNoDataVisible === true || assertion.externalReferenceValueVisible === true, `${assertion.scope} external reference is honestly available or explicitly no-data for ${assertion.viewport}`);
+    must(assertion.externalReferenceRawTokensVisible?.length === 0, `${assertion.scope} external reference raw tokens are hidden for ${assertion.viewport}`);
+  }
   must(assertion.consoleErrors?.length === 0, `${assertion.scope} finance advanced console errors are zero for ${assertion.viewport}`);
   must(assertion.pageErrors?.length === 0, `${assertion.scope} finance advanced page errors are zero for ${assertion.viewport}`);
 }
 must(Array.isArray(report.externalReferenceAssertions), "premium smoke report keeps external reference assertions");
 for (const assertion of report.externalReferenceAssertions) {
   must(assertion.passed === true, `${assertion.scope} external reference available-state assertion passes for ${assertion.viewport}`);
-  must(assertion.referenceRequests > 0, `${assertion.scope} external reference fixture was requested for ${assertion.viewport}`);
-  must(assertion.rawTokensVisible?.length === 0, `${assertion.scope} external reference available-state raw tokens are hidden for ${assertion.viewport}`);
+  if (assertion.scope === "COMPANY") {
+    must(assertion.externalReferenceNotApplicable === true, `${assertion.scope} external reference keeps role boundary for ${assertion.viewport}`);
+  } else if (assertion.selectionRequiredStateVisible === true) {
+    must(assertion.externalReferenceNotApplicable === true, `${assertion.scope} external reference records selection prerequisite for ${assertion.viewport}`);
+  } else {
+    must(assertion.referenceRequests > 0, `${assertion.scope} external reference fixture was requested for ${assertion.viewport}`);
+    must(assertion.rawTokensVisible?.length === 0, `${assertion.scope} external reference available-state raw tokens are hidden for ${assertion.viewport}`);
+  }
   must(assertion.consoleErrors?.length === 0, `${assertion.scope} external reference console errors are zero for ${assertion.viewport}`);
   must(assertion.pageErrors?.length === 0, `${assertion.scope} external reference page errors are zero for ${assertion.viewport}`);
 }

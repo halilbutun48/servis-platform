@@ -94,7 +94,10 @@ function main() {
   const requestsRoute = read('backend/src/routes/requests.js');
   const copilotFacts = read('web/src/utils/copilotFacts.js');
   const boardingFactsSection = sectionBetween(copilotFacts, 'export function buildBoardingRouteImpactCopilotFacts', 'export function buildMapFacts');
-  const helpComposer = read('backend/src/ai/chat/helpComposer.js');
+  const helpComposer = [
+    read('backend/src/ai/chat/helpComposer.js'),
+    read('backend/src/ai/chat/helpComposerContext.js'),
+  ].join('\n');
   const intentRouter = read('backend/src/ai/chat/intentRouter.js');
   const answerQualityPolicy = read('backend/src/ai/chat/answerQualityPolicy.js');
   const copilotPanel = read('web/src/panels/shared/CopilotPanel.jsx');
@@ -196,7 +199,11 @@ function main() {
   must(drawer, 'selectedEntitySet: Array.isArray(requestSelection?.entitySet)', 'drawer keeps selected entity set');
   must(drawer, 'selectedFields: Array.isArray(requestSelection?.fields)', 'drawer forwards selected fields');
   must(drawer, 'selectedBadges: Array.isArray(requestSelection?.badges)', 'drawer forwards selected badges');
-  must(drawer, 'structuredFacts: requestSelection?.facts', 'drawer forwards structured facts');
+  mustAny(drawer, [
+    'structuredFacts: requestSelection?.facts',
+    'const structuredFacts = requestSelection?.facts',
+    'structuredFacts,',
+  ], 'drawer forwards structured facts');
   must(drawer, 'screenPath', 'drawer keeps screenPath bridge');
 
   must(service, 'selectedFields: Array.isArray(screenContext?.selectedFields)', 'service preserves selected fields');

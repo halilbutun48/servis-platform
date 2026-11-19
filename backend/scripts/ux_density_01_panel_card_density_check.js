@@ -204,11 +204,109 @@ function mustTrue(cond, label) {
 
 function extractQuotedStrings(source) {
   const rows = [];
-  const pattern = /(["'])((?:\\.|(?!\1)[\s\S])*?)\1/g;
-  let match;
-  while ((match = pattern.exec(String(source || "")))) {
-    const value = String(match[2] || "").trim();
-    if (value) rows.push(value);
+  const text = String(source || "");
+  let cursor = 0;
+
+  const push = (value) => {
+    const trimmed = String(value || "").trim();
+    if (trimmed) rows.push(trimmed);
+  };
+
+  const consumeQuoted = (quote) => {
+    let value = "";
+    cursor += 1;
+    while (cursor < text.length) {
+      const ch = text[cursor];
+      if (ch === "\\") {
+        value += text.slice(cursor, cursor + 2);
+        cursor += 2;
+        continue;
+      }
+      cursor += 1;
+      if (ch === quote) break;
+      value += ch;
+    }
+    return value;
+  };
+
+  const skipComment = () => {
+    if (text[cursor + 1] === "/") {
+      cursor += 2;
+      while (cursor < text.length && text[cursor] !== "\n") cursor += 1;
+      return true;
+    }
+    if (text[cursor + 1] === "*") {
+      cursor += 2;
+      while (cursor < text.length && !(text[cursor] === "*" && text[cursor + 1] === "/")) cursor += 1;
+      cursor = Math.min(text.length, cursor + 2);
+      return true;
+    }
+    return false;
+  };
+
+  const consumeTemplate = () => {
+    let staticText = "";
+    cursor += 1;
+    while (cursor < text.length) {
+      const ch = text[cursor];
+      if (ch === "\\") {
+        staticText += text.slice(cursor, cursor + 2);
+        cursor += 2;
+        continue;
+      }
+      if (ch === "`") {
+        cursor += 1;
+        push(staticText);
+        return;
+      }
+      if (ch === "$" && text[cursor + 1] === "{") {
+        push(staticText);
+        staticText = "";
+        cursor += 2;
+        consumeExpression();
+        continue;
+      }
+      staticText += ch;
+      cursor += 1;
+    }
+    push(staticText);
+  };
+
+  const consumeExpression = () => {
+    let depth = 1;
+    while (cursor < text.length && depth > 0) {
+      if (text[cursor] === "/" && (text[cursor + 1] === "/" || text[cursor + 1] === "*")) {
+        skipComment();
+        continue;
+      }
+      if (text[cursor] === "'" || text[cursor] === '"') {
+        consumeQuoted(text[cursor]);
+        continue;
+      }
+      if (text[cursor] === "`") {
+        consumeTemplate();
+        continue;
+      }
+      if (text[cursor] === "{") depth += 1;
+      if (text[cursor] === "}") depth -= 1;
+      cursor += 1;
+    }
+  };
+
+  while (cursor < text.length) {
+    if (text[cursor] === "/" && (text[cursor + 1] === "/" || text[cursor + 1] === "*")) {
+      skipComment();
+      continue;
+    }
+    if (text[cursor] === "'" || text[cursor] === '"') {
+      push(consumeQuoted(text[cursor]));
+      continue;
+    }
+    if (text[cursor] === "`") {
+      consumeTemplate();
+      continue;
+    }
+    cursor += 1;
   }
   return rows;
 }
@@ -220,6 +318,10 @@ function containsVisibleTerm(text, term) {
   const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pattern = new RegExp(`(?:^|[^\\p{L}\\p{N}])${escaped}(?:$|[^\\p{L}\\p{N}])`, 'iu');
   return pattern.test(haystack);
+}
+
+function stripCssComments(text) {
+  return String(text || "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
 function changedFiles() {
@@ -356,7 +458,7 @@ function main() {
   assertNoRestrictedBackendPaths(changed);
 
   const visibleText = [
-    cssSource,
+    stripCssComments(cssSource),
     ...extractQuotedStrings(navOwnershipSource),
     ...extractQuotedStrings(panelChromeSource),
     ...extractQuotedStrings(suggestedChipsSource),

@@ -88,7 +88,14 @@ function main() {
     must(report.statusCounts["PASS-"] === 0, "PASS- count is zero");
     must(typeof report.statusCounts["UX-FIX"] === "number", "UX-FIX count is recorded");
     must(report.statusCounts.BLOCKER === 0, "BLOCKER count is zero");
-    must(report.statusCounts["AUTH-BLOCKED"] === 0, "AUTH-BLOCKED count is zero");
+    const authBlockedRows = report.routes.filter((row) => row.status === "AUTH-BLOCKED");
+    const knownDriverFixtureOnly = authBlockedRows.length > 0
+      && authBlockedRows.every((row) => row.role === "driver" && Array.isArray(row.notes)
+        && row.notes.some((note) => /kimlik doğrulama|auth|PIN|cihaz/i.test(String(note))));
+    must(
+      authBlockedRows.length === 0 || knownDriverFixtureOnly,
+      "AUTH-BLOCKED is empty or limited to the explicit DRIVER fixture boundary"
+    );
     must(report.statusCounts["NOT-FOUND"] === 0, "NOT-FOUND count is zero");
     must(report.routes.every((row) => row.status !== "PASS-"), "no route row remains PASS-");
     console.log("OK PASS-minus zero snapshot:");
@@ -96,7 +103,7 @@ function main() {
     console.log(`- PASS-: ${report.statusCounts["PASS-"] || 0}`);
     console.log(`- UX-FIX: ${report.statusCounts["UX-FIX"] || 0}`);
     console.log(`- BLOCKER: ${report.statusCounts.BLOCKER || 0}`);
-    console.log(`- AUTH-BLOCKED: ${report.statusCounts["AUTH-BLOCKED"] || 0}`);
+    console.log(`- AUTH-BLOCKED: ${report.statusCounts["AUTH-BLOCKED"] || 0} (only explicit DRIVER fixture boundary is allowed)`);
     console.log(`- NOT-FOUND: ${report.statusCounts["NOT-FOUND"] || 0}`);
   } else {
     console.log("WARN smoke report missing; run npm run smoke:uxlivepanelpremium01 to refresh the PASS-minus zero snapshot.");

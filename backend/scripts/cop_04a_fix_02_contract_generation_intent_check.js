@@ -75,6 +75,8 @@ const pkg = read('package.json');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const intentRouter = read('backend/src/ai/chat/intentRouter.js');
 const helpComposer = read('backend/src/ai/chat/helpComposer.js');
+const helpComposerContext = read('backend/src/ai/chat/helpComposerContext.js');
+const helpComposerSources = `${helpComposer}\n${helpComposerContext}`;
 const golden = read('backend/src/ai/chat/goldenQuestionPack.js');
 const registryScripts = productExtensionsChecks.map((step) => step.script);
 
@@ -123,14 +125,14 @@ must(intentRouter, 'agreements-contract-shift-generation', 'intent router keeps 
 must(intentRouter, 'agreements-contract-shift-today', 'intent router keeps agreements today boost');
 mustNot(intentRouter, 'Bunu anlayamadım', 'intent router avoids unknown fallback wording');
 
-must(helpComposer, 'CONTRACT_TO_SHIFT', 'help composer keeps contract workflow topic');
-must(helpComposer, 'CONTRACT_SHIFT_TODAY', 'help composer keeps contract today workflow topic');
-must(helpComposer, 'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.', 'help composer keeps contract next action');
-must(helpComposer, 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.', 'help composer keeps safe no-signal contract wording');
-must(helpComposer, 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya sözleşme üretim sinyali gerekir.', 'help composer keeps shift mismatch lead');
-mustNotRaw(helpComposer, 'OperationProof', 'help composer avoids visible proof code');
-mustNotRaw(helpComposer, 'JOB_TYPE_ENTITY_MISMATCH', 'help composer avoids visible mismatch code');
-mustNot(helpComposer, 'Bu vardiyada ana engel', 'help composer avoids shift-only generic lead for contract flow');
+must(helpComposerSources, 'CONTRACT_TO_SHIFT', 'help composer keeps contract workflow topic');
+must(helpComposerSources, 'CONTRACT_SHIFT_TODAY', 'help composer keeps contract today workflow topic');
+must(helpComposerSources, 'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.', 'help composer keeps contract next action');
+must(helpComposerSources, 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.', 'help composer keeps safe no-signal contract wording');
+must(helpComposerSources, 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya sözleşme üretim sinyali gerekir.', 'help composer keeps shift mismatch lead');
+mustNotRaw(helpComposerSources, 'OperationProof', 'help composer avoids visible proof code');
+mustNotRaw(helpComposerSources, 'JOB_TYPE_ENTITY_MISMATCH', 'help composer avoids visible mismatch code');
+mustNot(helpComposerSources, 'Bu vardiyada ana engel', 'help composer avoids shift-only generic lead for contract flow');
 
 must(golden, 'company-agreements-contract-today', 'golden pack keeps company agreements contract case');
 must(golden, "expectedType: 'CONTRACT_TO_SHIFT'", 'golden pack reflects contract intent');
@@ -151,7 +153,7 @@ const screenDefinition = getScreenDefinitionForUser(user, screen, Number(screen.
 const question = 'Bu sözleşmeden bugün vardiya üretildi mi?';
 
 const intent = detectQuestionIntent(question, { entityType: 'screen', screenPath: screen.path, roleMode: 'OPERATIONS', originalMessage: question });
-must(intent.questionType, 'SEMANTIC_OFF_TOPIC_SAFE', 'question intent preserves the current safe semantic route');
+must(intent.questionType, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'question intent preserves the current authorization boundary route');
 mustNot(intent.questionType, 'CONTRACT_TO_SHIFT', 'question intent does not revive the retired contract-to-shift route');
 mustNot(intent.questionType, 'READINESS_CHECK', 'question intent no longer prefers readiness check');
 

@@ -10,7 +10,7 @@ Bu milestone'un amacı premium browser smoke raporunda `PASS-` sayısını sıf�
 Bu belge:
 - `PASS-` sınıfının artık evidence/backlog yerine sıfır hedefiyle izlendiğini açıklar,
 - UX-FIX rows are tracked separately ve `PASS-` sıfır standardını bozmadığını netleştirir,
-- `BLOCKER`, `AUTH-BLOCKED` ve `NOT-FOUND` sınıflarının da `0` hedefiyle korunduğunu netleştirir,
+- `BLOCKER` ve `NOT-FOUND` sınıflarını `0` hedefiyle korur; `AUTH-BLOCKED` yalnız açıkça sınıflandırılmış DRIVER kimlik fixture sınırında ayrı kanıt olarak tutulur,
 - smoke runner'ın görünür etiketleri yeni nötr UX diline taşıdığını doğrulayan canonical referanstır.
 
 Bu milestone:
@@ -23,7 +23,7 @@ Bu milestone:
 Kabul hedefi:
 - `PASS- 0`
 - `BLOCKER 0`
-- `AUTH-BLOCKED 0`
+- `AUTH-BLOCKED 0` (veya yalnız açıkça sınıflandırılmış DRIVER fixture sınırı)
 - `NOT-FOUND 0`
 
 Smoke snapshot ayrıca:

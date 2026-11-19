@@ -668,7 +668,7 @@ async function main() {
     canonicalAcceptedRawSha256('backend/scripts/lib/guardSmokeEvidence.js'),
     'guard smoke evidence helper SHA matches canonical identity',
   );
-  mustNormalizedTextSha256('backend/scripts/ux_live_panel_premium_smoke_01_check.js', 'C82D81B94C35C7EDFD6D90A9FDEBB1CFF6EE6CB4BA3BFDAD6E35E2D346C884B6', 'premium smoke check normalized SHA matches');
+  mustNormalizedTextSha256('backend/scripts/ux_live_panel_premium_smoke_01_check.js', '67BDDD88F1BCD466D582F0C29B7A26385F5D8938FB9A398EFA9F7848F93C1B88', 'premium smoke check normalized SHA matches');
   mustFileSha256(
     'backend/scripts/current_head_scope_policy_01_check.js',
     activeMilestoneRawSha256('backend/scripts/current_head_scope_policy_01_check.js'),

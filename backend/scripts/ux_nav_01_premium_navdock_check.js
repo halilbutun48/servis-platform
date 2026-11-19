@@ -72,6 +72,7 @@ async function main() {
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const auditDoc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
 const navDockSource = read('web/src/layout/NavDock.jsx');
+const roleNavigationSource = read('web/src/utils/roleNavigation.js');
 const cssSource = read('web/src/index.css');
 const drawerSource = read('web/src/components/copilot/FloatingCopilotDrawer.jsx');
 const helperSource = read('web/src/utils/copilotFacts.js');
@@ -125,8 +126,8 @@ const appSource = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
   must(navDockSource, 'Okul Operasyon Paneli', 'nav dock keeps school operations item visible');
   must(navDockSource, 'Organizasyon Operasyon Paneli', 'nav dock keeps organization operations item visible');
   must(navDockSource, 'Operasyon Paneli', 'nav dock keeps company operations item visible');
-  must(navDockSource, 'Okul Merkezi', 'nav dock keeps school planning home item visible');
-  must(navDockSource, 'Gezi / Planlama Merkezi', 'nav dock keeps organization planning home item visible');
+  must(roleNavigationSource, 'homeLabel: "Planlama Merkezi"', 'role navigation keeps school planning home item visible');
+  must(roleNavigationSource, 'Organizasyon Planları', 'role navigation keeps organization planning home item visible');
   must(navDockSource, 'Planlama Merkezi', 'nav dock keeps company planning center item visible');
   must(navDockSource, 'Ticari Akış', 'nav dock keeps company commercial item visible');
   must(navDockSource, 'Hizmet Değerlendirme', 'nav dock keeps service evaluation item visible');

@@ -234,7 +234,7 @@ const intentProbe = detectQuestionIntent(question, {
   entityType: 'screen',
   originalMessage: question,
 });
-must(intentProbe?.questionType || '', 'SEMANTIC_OFF_TOPIC_SAFE', 'question intent preserves the current safe semantic route');
+must(intentProbe?.questionType || '', 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'question intent preserves the current authorization boundary route');
 mustNot(intentProbe?.questionType || '', 'CONTRACT_TO_SHIFT', 'question intent does not revive the retired contract-to-shift route');
 mustNot(intentProbe?.questionType || '', 'CONTRACT_SHIFT_TODAY', 'question intent does not revive the retired contract-today route');
 
