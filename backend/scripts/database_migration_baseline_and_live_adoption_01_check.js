@@ -72,6 +72,14 @@ function migrationNames() {
     .sort((left, right) => left.localeCompare(right));
 }
 
+function modelBlock(source, modelName) {
+  const start = source.indexOf(`model ${modelName} {`);
+  if (start < 0) return "";
+  const remainder = source.slice(start);
+  const end = remainder.indexOf("\n}");
+  return end >= 0 ? remainder.slice(0, end + 2) : "";
+}
+
 async function main() {
   const head = currentHead();
   const status = statusLines();
@@ -95,15 +103,21 @@ async function main() {
     && packageJson.scripts?.bootstrap?.includes("npm run prisma:migrate:deploy"));
   check("canonical migration owner uses explicit schema entrypoint", owner.includes('const canonicalSchema = "prisma/schema.prisma"') && owner.includes('"--schema", canonicalSchema'));
   check("live deployment requires approval, backup and change control", owner.includes('MIGRATION_APPROVAL !== "APPROVED"') && owner.includes("MIGRATION_BACKUP_ID") && owner.includes("MIGRATION_CHANGE_CONTROL_ID"));
-  check("exactly two authorized defaults are represented", (commercial.match(/updatedAt\s+DateTime\s+@default\(now\(\)\)\s+@updatedAt/g) || []).length === 2);
-  check("current migration chain has 56 SQL directories", migrations.length === 56, `found=${migrations.length}`);
+  const pre13AuthorizedDefaults = ["HakedisRecord", "InvoiceRecord"].every((modelName) => {
+    const model = modelBlock(commercial, modelName);
+    return /updatedAt\s+DateTime\s+@default\(now\(\)\)\s+@updatedAt/.test(model);
+  });
+  const currentCommercialDefaults = (commercial.match(/updatedAt\s+DateTime\s+@default\(now\(\)\)\s+@updatedAt/g) || []).length;
+  check("pre-#13 authorized defaults remain represented and current commercial defaults are complete", pre13AuthorizedDefaults && currentCommercialDefaults === 3,
+    `pre13=${pre13AuthorizedDefaults} currentCommercialDefaults=${currentCommercialDefaults}`);
+  check("current migration chain has 68 SQL directories", migrations.length === 68, `found=${migrations.length}`);
   check("no migration path is dirty", !status.some((line) => /backend\/prisma\/migrations\//.test(line)));
   check("protected runtime data is not staged", !status.some((line) => line[0] !== " " && line[0] !== "?" && protectedRuntimePaths.has(line.slice(3).trim())));
   check("acceptance is behavioral and uses isolated PostgreSQL", acceptance.includes('"migrate", "deploy"') && /startPostgres/.test(acceptance) && /physicalSchemaSnapshot/.test(acceptance));
   check("CI owner validates current migration history", /prisma:migration:ci/.test(workflow) || ci.includes("CI_MIGRATION_BASELINE_VALIDATION_PASS_COUNT"));
   check("current-head evidence is present", Boolean(evidence), `head=${evidence?.sourceHead || "missing"}`);
   check("current-head evidence is fresh", evidence?.sourceHead === head && evidence?.pass === true, `evidence=${evidence?.sourceHead || "missing"} head=${head}`);
-  check("corrected migration status sees all 56", statusResult.status === 0 && /56\s+migrations found/i.test(statusResult.output) && /up to date/i.test(statusResult.output));
+  check("corrected migration status sees all 68", statusResult.status === 0 && /68\s+migrations found/i.test(statusResult.output) && /up to date/i.test(statusResult.output));
 
   const requiredCounters = evidence?.mode === "CI_REAL"
     ? ["CI_MIGRATION_BASELINE_VALIDATION_PASS_COUNT", "CI_PRISMA_GENERATE_PASS_COUNT", "CI_GENERATED_CLIENT_INTEGRITY_PASS_COUNT"]

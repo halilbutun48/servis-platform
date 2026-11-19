@@ -88,13 +88,14 @@
     "verifyRepo": "PASS; package-ownership-delta 0 unowned / 0 unexplained; 1576 touched paths accepted",
     "verifyClosure": "PASS 14/14",
     "verifyFinal": "PASS; 124 PASS / 0 FAIL / 307 SKIP across the selected 205-step closure",
+    "prismaMigrationAcceptance": "PASS; 68/68 immutable migrations, fresh replay PASS, backup/restore rehearsal PASS, semantic parity PASS, migration-history PASS; canonical DB mutation 0",
     "snapshotHygiene": "PASS; failures 0, warnings 0",
     "productFlowButtonAudit": "PASS 18/18 on canonical local Chromium",
     "copilotOperationHealth": "PASS 125/125 runtime cases; 5313 assertions",
     "contextualSuggestions": "PASS; 199 golden scenarios; score 0.997",
     "premiumSmoke": "PASS 74; AUTH-BLOCKED 8; BLOCKER 0; NOT-FOUND 0",
     "runtimeBoundary": "Canonical DB env was injected only for read-only verification; generated repo-audit evidence remains commit-external",
-    "nextFrontier": "Stage only verified source/evidence files, create the candidate commit, then validate an independent clean checkout before normal branch/tag/remote delivery."
+    "nextFrontier": "Commit the bounded migration-acceptance reconciliation, then validate an independent clean checkout before normal branch/tag/remote delivery."
   },
   "currentIdentityPaths": [
     "backend/scripts/ai_response_semantic_quality_gate_01_check.js",
@@ -140,5 +141,5 @@
   ],
   "historicalArtifactsPreserved": true,
   "generatedLedgerNotSource": true,
-  "nextFrontier": "Candidate source is verification-green; proceed to staged source review, independent clean-checkout rebuild, and only then normal Git delivery."
+"nextFrontier": "Candidate source and migration acceptance are verification-green; proceed to staged source review, independent clean-checkout rebuild, and only then normal Git delivery."
 }

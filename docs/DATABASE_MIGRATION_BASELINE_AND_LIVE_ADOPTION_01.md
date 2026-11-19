@@ -3,10 +3,12 @@
 ## Canonical decision
 
 The current canonical database already contains the complete migration history:
-56 local migration directories correspond to 56 finished rows in
-`_prisma_migrations`, with matching checksums and no failed, rolled-back, or
-unfinished rows. The terminal migration is
-`20260829100000_external_reference_gasoline95_01`.
+68 local migration directories correspond to 68 successful distinct migration
+names in `_prisma_migrations`, with matching checksums and no failed or
+unfinished migration. The table retains one rolled-back history row for
+`20261115110000_guided_batch_idempotency_v1`; it is historical metadata, not a
+second source migration. The terminal migration is the current
+`20261115110000_guided_batch_idempotency_v1` entry.
 
 Therefore the #13 live-adoption action is:
 
@@ -53,7 +55,7 @@ The application does not silently establish a baseline at startup.
 
 For #13’s current state, step 5 is intentionally not executed because the
 metadata is already complete and the DB, corrected Prisma schema, and isolated
-56-migration replay are semantically identical.
+68-migration replay are semantically identical.
 
 ## Allowed and forbidden command boundaries
 
