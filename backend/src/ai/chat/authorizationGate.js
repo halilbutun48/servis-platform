@@ -22,6 +22,7 @@ function canonicalDomain(value) {
     PERSONNEL: "PERSONNEL",
     OFFER: "OFFERS",
     SERVICE_REQUEST: "SERVICE_REQUESTS",
+    NOTIFICATION: "NOTIFICATIONS",
   }[domain] || domain;
 }
 
@@ -47,6 +48,28 @@ function roleFor(user) {
     return String(user.companyKind).toUpperCase();
   }
   return role;
+}
+
+export function serviceRequestScopeForUser(user) {
+  const role = roleFor(user);
+  if (role === "SUPER_ADMIN") return {};
+  if (role === "ROOM") {
+    const roomId = integer(user?.roomId);
+    return roomId ? { shift: { is: { roomId } } } : { id: -1 };
+  }
+  if (["COMPANY", "SCHOOL", "ORGANIZATION"].includes(role)) {
+    const companyId = integer(user?.companyId);
+    return companyId ? { shift: { is: { companyId } } } : { id: -1 };
+  }
+  if (role === "DRIVER") {
+    const userId = integer(user?.id);
+    return userId ? { shift: { is: { driver: { is: { userId } } } } } : { id: -1 };
+  }
+  return { id: -1 };
+}
+
+export function serviceRequestEntityAccessRoles() {
+  return ["SUPER_ADMIN", "ROOM", "COMPANY", "SCHOOL", "ORGANIZATION", "DRIVER"];
 }
 
 export function normalizeAuthorizationEntityType(value) {
@@ -175,6 +198,13 @@ async function authorizedEntityIds(user, entity) {
     return rows.map((row) => row.id);
   }
   if (type === "serviceRequest") {
+    if (serviceRequestEntityAccessRoles().includes(role)) {
+      const rows = await prisma.pickupRequest.findMany({
+        where: { ...serviceRequestScopeForUser(user), id: { in: ids } },
+        select: { id: true },
+      });
+      return rows.map((row) => row.id);
+    }
     let personelIds = [];
     if (role === "PERSONEL") personelIds = await personelIdsForUser(user);
     if (role === "PARENT") personelIds = await parentPersonelIdsForUser(user);
@@ -183,6 +213,23 @@ async function authorizedEntityIds(user, entity) {
       where: { id: { in: ids }, personelId: { in: personelIds } },
       select: { id: true },
     });
+    return rows.map((row) => row.id);
+  }
+  if (type === "notification") {
+    const rawRole = String(user?.role || "").toUpperCase();
+    let notificationWhere = { id: -1 };
+    if (rawRole === "SUPER_ADMIN") notificationWhere = {};
+    else if (rawRole === "ROOM") notificationWhere = { scope: "ROOM", roomId: integer(user?.roomId) || -1 };
+    else if (["COMPANY", "SCHOOL", "ORGANIZATION"].includes(rawRole)) notificationWhere = { companyId: integer(user?.companyId) || -1 };
+    else if (rawRole === "PERSONEL") notificationWhere = {
+      OR: [{ userId: integer(user?.id) || -1 }, ...(integer(user?.companyId) ? [{ companyId: integer(user.companyId) }] : [])],
+    };
+    else if (rawRole === "PARENT") notificationWhere = { userId: integer(user?.id) || -1 };
+    else if (rawRole === "DRIVER") {
+      const driverIds = await driverIdsForUser(user);
+      notificationWhere = driverIds.length ? { scope: "DRIVER", driverId: { in: driverIds } } : { id: -1 };
+    }
+    const rows = await prisma.notification.findMany({ where: { ...notificationWhere, id: { in: ids } }, select: { id: true } });
     return rows.map((row) => row.id);
   }
   return [];
@@ -202,7 +249,12 @@ export async function authorizeSemanticRequest({ user, plan, request } = {}) {
       canonicalPolicy: "CANONICAL_REQUEST_VALIDATION_REQUIRED",
     });
   }
-  const semanticPlan = canonicalRequest ? plan?.plan || {} : plan || {};
+  // `authorizeSemanticRequest` receives either the planner result directly or
+  // an envelope containing it under `plan`.  Do not discard direct planner
+  // metadata when a canonical request is also present: cross-tenant scope is
+  // a canonical pre-retrieval decision and must not degrade into a record
+  // lookup fallback.
+  const semanticPlan = canonicalRequest ? plan?.plan || plan || {} : plan || {};
   const plannerState = plan?.plan || plan || {};
   const collectionRead = Boolean(
     canonicalRequest?.operation === "VIEW_AUTHORIZED_SURFACE"

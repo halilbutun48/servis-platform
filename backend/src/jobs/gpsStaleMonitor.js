@@ -5,16 +5,16 @@
 // - Notif sadece state transition'da (gateVehicleGpsState)
 //   LIVE->STALE, STALE->OFFLINE  (+ /api/gps recovery = TO_LIVE)
 
-import { prisma } from "../prisma.js";
+import { workerPrisma } from "../prisma.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { gateVehicleGpsState } from "../gps/gpsStateGate.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { buildNotifPayloadV1 } from "../notifications/payloadV1.js";
 import logger from "../lib/logger.js";
 
-async function isDbReadyOnce() {
+async function isDbReadyOnce(db) {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await db.$queryRaw`SELECT 1`;
     globalThis.__dbWarned = false;
     return true;
   } catch {
@@ -27,6 +27,8 @@ async function isDbReadyOnce() {
 }
 
 export function startGpsStaleMonitor(io, opts = {}) {
+  const db = opts.prismaClient || workerPrisma;
+  if (!db) return () => {};
   const intervalMs = opts.intervalMs ?? 15_000;
   const batchSize = opts.batchSize ?? 200;
 
@@ -37,7 +39,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
     running = true;
 
     try {
-      if (!(await isDbReadyOnce())) return;
+      if (!(await isDbReadyOnce(db))) return;
 
       const now = new Date();
       const nowMs = now.getTime();
@@ -49,7 +51,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
       // (gate ayrıca seenLiveAt şartı ile spam'i keser)
        
       while (true) {
-        const vehicles = await prisma.vehicle.findMany({
+        const vehicles = await db.vehicle.findMany({
           where: { id: { gt: lastId }, gpsLast: { isNot: null } },
           include: { gpsLast: true },
           take: batchSize,
@@ -80,7 +82,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
           // Not: LIVE status zaten gps ingest ile şirketlere gider; burada asıl kritik STALE/OFFLINE.
           if (uiStatus !== "LIVE") {
             try {
-              const rel = await prisma.shift.findMany({
+              const rel = await db.shift.findMany({
                 where: { vehicleId: v.id, status: { in: ["APPROVED", "ACTIVE"] } },
                 select: { companyId: true },
               });
@@ -99,19 +101,19 @@ export function startGpsStaleMonitor(io, opts = {}) {
           const desiredVehicleStatus = uiStatus === "LIVE" ? "ACTIVE" : "STALE";
 
           // gereksiz write olmasın diye "farklıysa update" (updateMany ile)
-          await prisma.gpsLast.updateMany({
+          await db.gpsLast.updateMany({
             where: { vehicleId: v.id, status: { not: desiredGpsLastStatus } },
             data: { status: desiredGpsLastStatus },
           });
 
-          await prisma.vehicle.updateMany({
+          await db.vehicle.updateMany({
             where: { id: v.id, status: { not: desiredVehicleStatus } },
             data: { status: desiredVehicleStatus },
           });
 
           // 3) ✅ SPAM'İ ASIL KESEN YER: gate + transition notif
           const gate = await gateVehicleGpsState({
-            prisma,
+            prisma: db,
             vehicleId: v.id,
             newUiStatus: uiStatus,
             now,
@@ -151,7 +153,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
           // ÖNEMLİ: findFirst orderBy olmadan farklı tick'lerde farklı SHIFT dönebilir
           // (özellikle aynı araçta hem APPROVED hem ACTIVE shift açık kalırsa).
           // Bu yüzden önce ACTIVE'ı, yoksa en yeni APPROVED'ı seçiyoruz.
-          const shActive = await prisma.shift.findFirst({
+          const shActive = await db.shift.findFirst({
             where: { vehicleId: v.id, status: "ACTIVE", driverId: { not: null } },
             orderBy: { id: "desc" },
             select: { id: true, driverId: true, roomId: true, companyId: true },
@@ -159,7 +161,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
 
           const sh =
             shActive ??
-            (await prisma.shift.findFirst({
+            (await db.shift.findFirst({
               where: { vehicleId: v.id, status: "APPROVED", driverId: { not: null } },
               orderBy: { id: "desc" },
               select: { id: true, driverId: true, roomId: true, companyId: true },
@@ -180,6 +182,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
               // dedupeKey ayrı ayrı (ROOM/DRIVER/COMPANY) tutulur.
               // NOTE: createAndEmitNotification 'dedupeKey' paramı bekler (meta değil).
               dedupeKey: dedupeKeyOf("ROOM"),
+              prismaClient: db,
               roomId: targetRoomId,
               companyId: targetCompanyId,
               vehicleId: v.id,
@@ -195,6 +198,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
               payload,
               // NOTE: createAndEmitNotification 'dedupeKey' paramı bekler (meta değil).
               dedupeKey: dedupeKeyOf("COMPANY"),
+              prismaClient: db,
               companyId: targetCompanyId,
               roomId: targetRoomId,
               vehicleId: v.id,
@@ -202,7 +206,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
           }
 
           if (sh?.driverId) {
-            const dUser = await prisma.driver.findUnique({
+            const dUser = await db.driver.findUnique({
               where: { id: sh.driverId },
               select: { userId: true },
             });
@@ -214,6 +218,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
               payload,
               // NOTE: createAndEmitNotification 'dedupeKey' paramı bekler (meta değil).
               dedupeKey: dedupeKeyOf("DRIVER"),
+              prismaClient: db,
               driverId: sh.driverId,
               userId: dUser?.userId ?? null,
               vehicleId: v.id,

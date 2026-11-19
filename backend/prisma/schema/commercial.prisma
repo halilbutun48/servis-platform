@@ -30,6 +30,11 @@ enum HakedisRecordStatus {
   CANCELLED
 }
 
+enum HakedisIncomePeriodCorrectionStatus {
+  ACTIVE
+  REVERSED
+}
+
 enum InvoiceRecordStatus {
   DRAFT
   ISSUED
@@ -118,11 +123,15 @@ model Agreement {
   driver  Driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull)
 
   // ✅ M18: agreement -> generated shifts
-  shifts            Shift[]
-  commercialSources CommercialSource[]
-  hakedisRecords    HakedisRecord[]
-  invoiceRecords    InvoiceRecord[]
+  shifts                  Shift[]
+  companyBudgetPlanScopes CompanyBudgetPlanAgreement[]
+  commercialSources       CommercialSource[]
+  hakedisRecords          HakedisRecord[]
+  invoiceRecords          InvoiceRecord[]
+  roomCostEntries         RoomCostEntry[]              @relation("AgreementRoomCostEntries")
+  roomCostAllocationLines RoomCostAllocationLine[]     @relation("AgreementRoomCostAllocationLines")
 
+  @@unique([roomId, id])
   @@index([companyId])
   @@index([roomId])
   @@index([vehicleId])
@@ -155,14 +164,40 @@ model HakedisRecord {
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @default(now()) @updatedAt
 
-  agreement Agreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
-  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  room      Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  createdBy User?     @relation("HakedisRecordCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  agreement               Agreement                       @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  company                 Company                         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  room                    Room                            @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdBy               User?                           @relation("HakedisRecordCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  incomePeriodCorrections HakedisIncomePeriodCorrection[]
 
   @@index([agreementId, periodStart, periodEnd, status])
   @@index([companyId, periodStart, periodEnd])
   @@index([roomId, periodStart, periodEnd])
+}
+
+model HakedisIncomePeriodCorrection {
+  id                    Int                                 @id @default(autoincrement())
+  hakedisId             Int
+  roomId                Int
+  sourcePeriodStart     DateTime                            @db.Date
+  sourcePeriodEnd       DateTime                            @db.Date
+  recognizedPeriodStart DateTime                            @db.Date
+  recognizedPeriodEnd   DateTime                            @db.Date
+  evidenceRef           String
+  reason                String
+  idempotencyKey        String                              @unique
+  status                HakedisIncomePeriodCorrectionStatus @default(ACTIVE)
+  version               Int                                 @default(1)
+  previousCorrectionId  Int?
+  createdByUserId       Int?
+  createdAt             DateTime                            @default(now())
+  updatedAt             DateTime                            @updatedAt
+
+  hakedis HakedisRecord @relation(fields: [hakedisId], references: [id], onDelete: Restrict)
+
+  @@index([hakedisId, status])
+  @@index([roomId, recognizedPeriodStart, recognizedPeriodEnd, status], map: "HakedisIncomePeriodCorrection_roomId_recognizedPeriodStart_reco")
+  @@index([previousCorrectionId])
 }
 
 model InvoiceRecord {
@@ -183,14 +218,73 @@ model InvoiceRecord {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @default(now()) @updatedAt
 
-  agreement Agreement? @relation(fields: [agreementId], references: [id], onDelete: SetNull)
-  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  room      Room?      @relation(fields: [roomId], references: [id], onDelete: SetNull)
-  createdBy User?      @relation("InvoiceRecordCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  agreement   Agreement?          @relation(fields: [agreementId], references: [id], onDelete: SetNull)
+  company     Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  room        Room?               @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  createdBy   User?               @relation("InvoiceRecordCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  collections InvoiceCollection[]
 
   @@index([agreementId, periodStart, periodEnd, status])
   @@index([companyId, periodStart, periodEnd])
   @@index([roomId, periodStart, periodEnd])
+}
+
+enum InvoiceCollectionStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+enum InvoiceCollectionDirection {
+  COLLECTION
+  REVERSAL
+}
+
+enum InvoiceCollectionPaymentMethod {
+  BANK_TRANSFER
+  CASH
+  CARD
+  OTHER
+}
+
+model InvoiceCollection {
+  id                Int                            @id @default(autoincrement())
+  invoiceId         Int
+  companyId         Int
+  roomId            Int
+  amountMinor       Int
+  currencyCode      String                         @default("TRY")
+  collectedAt       DateTime                       @db.Date
+  paymentMethod     InvoiceCollectionPaymentMethod
+  direction         InvoiceCollectionDirection     @default(COLLECTION)
+  status            InvoiceCollectionStatus        @default(DRAFT)
+  sourceRef         String?
+  note              String?
+  idempotencyKey    String
+  reversalOfId      Int?
+  version           Int                            @default(1)
+  createdByUserId   Int
+  confirmedByUserId Int?
+  cancelledByUserId Int?
+  confirmedAt       DateTime?
+  cancelledAt       DateTime?
+  createdAt         DateTime                       @default(now())
+  updatedAt         DateTime                       @default(now()) @updatedAt
+
+  invoice     InvoiceRecord       @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  company     Company             @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  room        Room                @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  createdBy   User                @relation("InvoiceCollectionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  confirmedBy User?               @relation("InvoiceCollectionConfirmedBy", fields: [confirmedByUserId], references: [id], onDelete: SetNull)
+  cancelledBy User?               @relation("InvoiceCollectionCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+  reversalOf  InvoiceCollection?  @relation("InvoiceCollectionReversal", fields: [reversalOfId], references: [id], onDelete: Restrict)
+  reversals   InvoiceCollection[] @relation("InvoiceCollectionReversal")
+
+  @@unique([roomId, idempotencyKey])
+  @@index([invoiceId, status])
+  @@index([roomId, invoiceId, status])
+  @@index([reversalOfId])
+  @@index([companyId, collectedAt])
 }
 
 enum CommercialSourceType {

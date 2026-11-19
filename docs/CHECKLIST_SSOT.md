@@ -42,6 +42,45 @@
 - Governance result: package ownership/current-head, M90C.6, onboarding audit, smart-chips audit, `verify:repo 32/32`, `verify:final PASS`, and `git diff --check PASS`.
 - This is final pre-staging evidence, not a commit/tag/push. M18 broad guided/menu acceptance remains distinct from the exhaustive integrated #39 E2E owner. #19 is not started.
 
+### M18 final frontend / brand / premium UX closure gate (additive)
+
+This gate is part of the existing #18 final acceptance and does not create a new
+milestone. It does not restart or split B-04 or the subsequent role-based tests;
+their current owner and order remain unchanged. Existing M18 functional, Finans
+11 and closed B/C evidence remains preserved.
+
+| Final gate area | Required acceptance evidence | Status |
+|---|---|---|
+| Brand source and visibility | Approved logo/emblem/favicon/app-icon provenance and current-build visibility in Login, AppShell, NavDock and mobile menu; internal #18 descriptions kept separate | NOT_PROVEN |
+| Eight-role UX | ROOM, COMPANY, SCHOOL, ORGANIZATION, DRIVER, PERSONEL, PARENT and SUPER_ADMIN task clarity and density | NOT_PROVEN |
+| Shared surfaces | Forms, tables, charts, maps, modals, drawers, notifications, keyboard and safe-area behavior | NOT_PROVEN |
+| Role-specific flows | ROOM finance/operations; `D-FIN-01` authorized request/offer selection in both `Araç Karşılaştır` and `Teklif ve Kârlılık`, cross-tab selection/vehicle synchronization, stale-context isolation, missing-data correction and Sefer Abi context; COMPANY/SCHOOL/ORGANIZATION budget/offer/service; DRIVER/PERSONEL/PARENT mobile | NOT_PROVEN |
+| Sefer Abi | Accepted character, placement, readability, states, suggestions and screen interaction | NOT_PROVEN |
+| Measured usability | Success, steps/clicks, manual entry, duration, errors/recovery and five-second comprehension | NOT_PROVEN |
+| Same-build safety | 1440/1024/390/320 Chromium, source/runtime parity, tenant/RBAC/KVKK and no unexpected business writes | NOT_PROVEN |
+
+Until every mandatory row has current real-browser evidence and regression
+reconciliation, the closure flags remain explicitly:
+
+```text
+M18_FRONTEND_BRAND_UX_FINAL_GATE = NOT_PROVEN
+FULL_D_LEVEL_CLOSED = FALSE
+SAFE_TO_PROMOTE = FALSE
+```
+
+No visual test is promoted to PASS by this documentation entry. This gate is a
+final closure dependency, not a reason to pause B-04, reopen closed acceptance,
+or start #19.
+
+`D-FIN-01` remains `NOT_PROVEN` until real Chromium demonstrates at least two
+authorized ROOM/tenant offers across both finance tabs, selection persistence,
+vehicle carry-over, complete replacement of the prior price/cost/period/vehicle
+context, clear separation of offer price/planning estimate/realized expense/
+proven profit, one-click missing-data correction, Sefer Abi awareness, tenant
+and RBAC negatives, audit behavior, responsive coverage, and a durable
+regression. A technical test PASS by itself does not close this user-acceptance
+criterion. The existing Finans 11 engine and canonical ledger remain unchanged.
+
 ## Kanonik komut hiyerarşisi (Tur 1)
 - Resmi günlük giriş: `npm run verify:repo`
 - Resmi kapanış girişi: `npm run verify:final`

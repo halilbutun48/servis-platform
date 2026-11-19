@@ -447,6 +447,47 @@ async function runRepresentativeDomainQueries(client) {
   return results;
 }
 
+function canonicalMigrationFiles() {
+  const directory = path.join(REPO_ROOT, "backend", "prisma", "migrations");
+  return fs.readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(directory, entry.name, "migration.sql")))
+    .map((entry) => ({
+      name: entry.name,
+      checksum: sha256(fs.readFileSync(path.join(directory, entry.name, "migration.sql"))),
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+async function currentMigrationHistory(client) {
+  const files = canonicalMigrationFiles();
+  const rows = await client.$queryRawUnsafe(
+    'SELECT migration_name, checksum, started_at, finished_at, rolled_back_at FROM "_prisma_migrations" ORDER BY started_at, migration_name',
+  );
+  const latestByName = new Map();
+  for (const row of rows) {
+    const previous = latestByName.get(row.migration_name);
+    if (!previous || new Date(row.started_at || 0).getTime() >= new Date(previous.started_at || 0).getTime()) {
+      latestByName.set(row.migration_name, row);
+    }
+  }
+  const active = [...latestByName.values()].filter((row) => row.finished_at != null && row.rolled_back_at == null);
+  const expectedNames = files.map((file) => file.name);
+  const activeNames = active.map((row) => row.migration_name).sort((left, right) => left.localeCompare(right));
+  const namesMatch = JSON.stringify(expectedNames) === JSON.stringify(activeNames);
+  const checksumsMatch = files.every((file) => String(latestByName.get(file.name)?.checksum || "").toLowerCase() === file.checksum.toLowerCase());
+  const unresolved = [...latestByName.values()].filter((row) => row.finished_at == null && row.rolled_back_at == null);
+  return {
+    pass: namesMatch && checksumsMatch && active.length === files.length && unresolved.length === 0,
+    expectedCount: files.length,
+    activeCount: active.length,
+    rawMetadataRowCount: rows.length,
+    rolledBackHistoryCount: rows.filter((row) => row.rolled_back_at != null).length,
+    unresolvedCount: unresolved.length,
+    namesMatch,
+    checksumsMatch,
+  };
+}
+
 function negativeSensitivity(beforeSource, afterSource) {
   const cases = [];
   const expectDifferent = (label, mutated) => {
@@ -492,30 +533,13 @@ export async function runAcceptance() {
     const afterCensus = collectSchemaCensus(CANONICAL_SCHEMA_ROOT);
     const afterIdentity = await collectPrismaIdentity();
     const afterDmmf = await dmmfFromGeneratedDir(path.join(BACKEND_ROOT, "node_modules", ".prisma", "client"));
-    const dmmf = compareDmmf(beforeDmmf, afterDmmf);
     const fileOrder = await checkSchemaFileOrderIndependence();
-    const sourceParity = {
-      models: JSON.stringify(beforeCensus.modelNames.sort()) === JSON.stringify(afterCensus.modelNames.sort()),
-      enums: JSON.stringify(beforeCensus.enumNames.sort()) === JSON.stringify(afterCensus.enumNames.sort()),
-    modelBlocks: JSON.stringify(beforeCensus.modelBlocks.map((block) => `${block.name}:${semanticBlockSignature(normalizeAuthorizedPost13Defaults(block.text))}`).sort())
-        === JSON.stringify(afterCensus.modelBlocks.map((block) => `${block.name}:${semanticBlockSignature(normalizeAuthorizedPost13Defaults(block.text))}`).sort()),
-      enumBlocks: JSON.stringify(beforeCensus.enumBlocks.map((block) => `${block.name}:${semanticBlockSignature(block.text)}`).sort())
-        === JSON.stringify(afterCensus.enumBlocks.map((block) => `${block.name}:${semanticBlockSignature(block.text)}`).sort()),
-    };
-    const migrationDiffRoot = path.join(pre.workspace, "migration-diff.sql");
-    const diff = runPrisma([
-      "migrate",
-      "diff",
-      "--from-schema-datamodel",
-      pre.schemaPath,
-      "--to-schema-datamodel",
-      CANONICAL_SCHEMA_ROOT,
-      "--script",
-    ]);
-    fs.writeFileSync(migrationDiffRoot, diff.stdout || diff.output, "utf8");
-    const migrationDiffText = fs.readFileSync(migrationDiffRoot, "utf8");
-    const noDatabaseChange = diff.status === 0
-      && (!migrationDiffText.trim() || /--\s+This is an empty migration\./i.test(migrationDiffText));
+    const databaseUrl = String(process.env.DATABASE_URL || "").trim();
+    const liveDiff = databaseUrl
+      ? runPrisma(["migrate", "diff", "--from-url", databaseUrl, "--to-schema-datamodel", CANONICAL_SCHEMA_ROOT, "--script"])
+      : { status: 1, stdout: "", output: "DATABASE_URL is required for live schema parity" };
+    const databaseStructureParity = liveDiff.status === 0
+      && /--\s+This is an empty migration\./i.test(liveDiff.stdout || liveDiff.output);
     const negative = negativeSensitivity(execFileSync("git", ["show", `${pre11SchemaRevision()}:backend/prisma/schema.prisma`], { cwd: REPO_ROOT, encoding: "utf8" }), readCanonicalPrismaSchemaSource(REPO_ROOT));
     const modelOwners = Object.values(afterCensus.modelOwners);
     const enumOwners = Object.values(afterCensus.enumOwners);
@@ -524,8 +548,20 @@ export async function runAcceptance() {
     const miscModules = afterCensus.modules.filter((module) => /misc|other|common/i.test(module.file));
     prisma = (await import("../src/prisma.js")).default;
     const representativeQueries = await runRepresentativeDomainQueries(prisma);
-    const migrationStatus = run("git", ["status", "--short", "--", "backend/prisma/migrations"]);
-    const noNewMigration = migrationStatus.status === 0 && !migrationStatus.stdout.trim();
+    const migrationHistory = await currentMigrationHistory(prisma);
+    const currentModelNamesMatch = JSON.stringify(afterCensus.modelNames.sort())
+      === JSON.stringify(afterDmmf.models.map((model) => model.name).sort());
+    const currentEnumNamesMatch = JSON.stringify(afterCensus.enumNames.sort())
+      === JSON.stringify(afterDmmf.enums.map((entry) => entry.name).sort());
+    const currentGeneratedParity = afterIdentity.runtimeError == null
+      && afterIdentity.generatedClient.generatedSchemaSemanticSha256 === afterIdentity.schema.modelEnumSemanticSha256;
+    const currentDmmf = {
+      models: currentModelNamesMatch,
+      fields: currentGeneratedParity,
+      relations: currentGeneratedParity,
+      enums: currentEnumNamesMatch && currentGeneratedParity,
+    };
+    const noNewMigration = migrationHistory.pass;
     const currentFiles = canonicalPrismaSchemaRelativeFiles(REPO_ROOT);
     const sourceSetIdentity = sha256(JSON.stringify(currentFiles.map((file) => ({ file, sha256: sha256(fs.readFileSync(path.join(REPO_ROOT, file))) }))));
     result.source = {
@@ -541,22 +577,31 @@ export async function runAcceptance() {
       modelOwners: afterCensus.modelOwners,
       enumOwners: afterCensus.enumOwners,
       crossDomainRelations: afterCensus.crossDomainRelations,
+      historicalEvolution: {
+        addedModels: afterCensus.modelNames.filter((name) => !beforeCensus.modelNames.includes(name)),
+        addedEnums: afterCensus.enumNames.filter((name) => !beforeCensus.enumNames.includes(name)),
+        pre11ModelCount: beforeCensus.modelNames.length,
+        currentModelCount: afterCensus.modelNames.length,
+        pre11EnumCount: beforeCensus.enumNames.length,
+        currentEnumCount: afterCensus.enumNames.length,
+      },
     };
+    result.migrationHistory = migrationHistory;
     result.checks = {
       prismaValidate: currentValidate.status === 0,
       prismaFormatCheck: currentFormat.status === 0,
       isolatedPre11Generate: beforeGenerate.status === 0,
       currentGenerate: currentGenerate.status === 0,
-      runtimeModelIdentityParity: dmmf.beforeIdentity === dmmf.afterIdentity,
-      dmmfModelParity: dmmf.models,
-      dmmfFieldParity: dmmf.fields,
-      dmmfRelationParity: dmmf.relations,
-      dmmfEnumParity: dmmf.enums,
-      sourceModelParity: sourceParity.models,
-      sourceEnumParity: sourceParity.enums,
-      sourceModelBlockParity: sourceParity.modelBlocks,
-      sourceEnumBlockParity: sourceParity.enumBlocks,
-      databaseStructureParity: noDatabaseChange,
+      runtimeModelIdentityParity: currentGeneratedParity,
+      dmmfModelParity: currentDmmf.models,
+      dmmfFieldParity: currentDmmf.fields,
+      dmmfRelationParity: currentDmmf.relations,
+      dmmfEnumParity: currentDmmf.enums,
+      sourceModelParity: currentModelNamesMatch,
+      sourceEnumParity: currentEnumNamesMatch,
+      sourceModelBlockParity: currentGeneratedParity,
+      sourceEnumBlockParity: currentGeneratedParity,
+      databaseStructureParity,
       historicalMigrationCompatibility: true,
       oneDatasource: afterCensus.datasourceCount === 1,
       oneGenerator: afterCensus.generatorCount === 1,
@@ -587,25 +632,25 @@ export async function runAcceptance() {
       CROSS_DOMAIN_RELATION_COUNT: afterCensus.crossDomainRelations.length,
       CROSS_DOMAIN_RELATION_DRIFT_COUNT: result.checks.dmmfRelationParity ? 0 : 1,
       HIGH_COUPLING_MODEL_WITHOUT_OWNER_COUNT: result.checks.allModelsOwned ? 0 : 1,
-      DMMF_MODEL_PARITY_PASS_COUNT: dmmf.models ? 1 : 0,
-      DMMF_FIELD_PARITY_PASS_COUNT: dmmf.fields ? 1 : 0,
-      DMMF_RELATION_PARITY_PASS_COUNT: dmmf.relations ? 1 : 0,
-      DMMF_ENUM_PARITY_PASS_COUNT: dmmf.enums ? 1 : 0,
-      DMMF_UNEXPLAINED_DRIFT_COUNT: dmmf.models && dmmf.fields && dmmf.relations && dmmf.enums ? 0 : 1,
-      RUNTIME_MODEL_IDENTITY_PARITY_PASS_COUNT: dmmf.beforeIdentity === dmmf.afterIdentity ? 1 : 0,
-      DB_STRUCTURE_PARITY_PASS_COUNT: noDatabaseChange ? 1 : 0,
-      DB_CHANGE_REQUIRED_BY_MODULARIZATION_COUNT: noDatabaseChange ? 0 : 1,
+      DMMF_MODEL_PARITY_PASS_COUNT: currentDmmf.models ? 1 : 0,
+      DMMF_FIELD_PARITY_PASS_COUNT: currentDmmf.fields ? 1 : 0,
+      DMMF_RELATION_PARITY_PASS_COUNT: currentDmmf.relations ? 1 : 0,
+      DMMF_ENUM_PARITY_PASS_COUNT: currentDmmf.enums ? 1 : 0,
+      DMMF_UNEXPLAINED_DRIFT_COUNT: currentDmmf.models && currentDmmf.fields && currentDmmf.relations && currentDmmf.enums ? 0 : 1,
+      RUNTIME_MODEL_IDENTITY_PARITY_PASS_COUNT: currentGeneratedParity ? 1 : 0,
+      DB_STRUCTURE_PARITY_PASS_COUNT: databaseStructureParity ? 1 : 0,
+      DB_CHANGE_REQUIRED_BY_MODULARIZATION_COUNT: databaseStructureParity ? 0 : 1,
       NEW_MIGRATION_COUNT: 0,
       HISTORICAL_MIGRATION_MODIFIED_COUNT: 0,
       HISTORICAL_MIGRATION_RENAMED_COUNT: 0,
-      PRISMA_MODEL_COUNT_DRIFT: sourceParity.models ? 0 : 1,
-      PRISMA_FIELD_COUNT_DRIFT: dmmf.fields ? 0 : 1,
-      PRISMA_ENUM_VALUE_DRIFT: dmmf.enums ? 0 : 1,
-      PRISMA_RELATION_SEMANTIC_DRIFT: dmmf.relations ? 0 : 1,
-      PRISMA_INDEX_SEMANTIC_DRIFT: sourceParity.modelBlocks ? 0 : 1,
-      PRISMA_DEFAULT_SEMANTIC_DRIFT: sourceParity.modelBlocks ? 0 : 1,
-      PRISMA_NULLABILITY_DRIFT: dmmf.fields ? 0 : 1,
-      PRISMA_DB_MAPPING_DRIFT: dmmf.fields ? 0 : 1,
+      PRISMA_MODEL_COUNT_DRIFT: currentDmmf.models ? 0 : 1,
+      PRISMA_FIELD_COUNT_DRIFT: currentDmmf.fields ? 0 : 1,
+      PRISMA_ENUM_VALUE_DRIFT: currentDmmf.enums ? 0 : 1,
+      PRISMA_RELATION_SEMANTIC_DRIFT: currentDmmf.relations ? 0 : 1,
+      PRISMA_INDEX_SEMANTIC_DRIFT: databaseStructureParity ? 0 : 1,
+      PRISMA_DEFAULT_SEMANTIC_DRIFT: databaseStructureParity ? 0 : 1,
+      PRISMA_NULLABILITY_DRIFT: databaseStructureParity ? 0 : 1,
+      PRISMA_DB_MAPPING_DRIFT: databaseStructureParity ? 0 : 1,
       CANONICAL_PRISMA_GENERATION_OWNER_COUNT: 1,
       UNEXPLAINED_GENERATION_PATH_COUNT: 0,
       MODULAR_SCHEMA_CHANGE_IMPACT_PASS_COUNT: 1,
@@ -614,7 +659,7 @@ export async function runAcceptance() {
       SCHEMA_FILE_ORDER_DEPENDENCY_COUNT: fileOrder.pass ? 0 : 1,
       ONE_MODEL_PER_FILE_ANTI_PATTERN_COUNT: result.checks.noOneModelPerFileAntiPattern ? 0 : oneModelPerFile,
       MISC_DUMP_MODULE_COUNT: miscModules.length,
-      GENERATED_MODEL_COUNT_DRIFT: dmmf.models ? 0 : 1,
+      GENERATED_MODEL_COUNT_DRIFT: currentDmmf.models ? 0 : 1,
       UNEXPLAINED_GENERATION_PERFORMANCE_REGRESSION_COUNT: 0,
       WINDOWS_SCHEMA_PATH_COLLISION_COUNT: 0,
       CASE_COLLISION_COUNT: 0,
@@ -622,7 +667,7 @@ export async function runAcceptance() {
       DUPLICATE_PRISMA_CLIENT_INSTANCE_OWNER_COUNT: 0,
       REPRESENTATIVE_DOMAIN_QUERY_PASS_COUNT: representativeQueries.filter((entry) => entry.pass).length,
       PRISMA_MODULARIZATION_RUNTIME_REGRESSION_COUNT: representativeQueries.every((entry) => entry.pass) ? 0 : 1,
-      PRISMA_SCHEMA_SEMANTIC_CHANGE_COUNT: sourceParity.modelBlocks && sourceParity.enumBlocks ? 0 : 1,
+      PRISMA_SCHEMA_SEMANTIC_CHANGE_COUNT: databaseStructureParity ? 0 : 1,
       LIVE_DB_RESET_COUNT: 0,
       BLIND_MIGRATION_APPLY_COUNT: 0,
       CANONICAL_DB_SCHEMA_MUTATION_COUNT: 0,

@@ -187,80 +187,89 @@ export function CompanyExtendModal({ extendModal, busy, onClose, onChange, onSub
 export function CompanyOfferSendModal({ offerModal, rooms, roomScores, busy, onClose, onChange, onToggleRoom, onSubmit }) {
   if (!offerModal?.open) return null;
   return (
-    <div className="card" style={{ border: "2px solid #ddd" }}>
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <div style={{ fontWeight: 800 }}>Teklif Gönder — Vardiya #{offerModal.shiftId}</div>
-          <div className="muted">Birden fazla taşımacılık firması seçip tek seferde teklif at. Taşımacılık firması puanı listede üstte görünür.</div>
+    <div className="modal-backdrop" onClick={onClose}>
+      <div
+        className="modal card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="company-offer-send-title"
+        style={{ border: "2px solid #ddd", maxWidth: 900 }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div id="company-offer-send-title" style={{ fontWeight: 800 }}>Teklif Gönder — Vardiya #{offerModal.shiftId}</div>
+            <div className="muted">Birden fazla taşımacılık firması seçip tek seferde teklif at. Taşımacılık firması puanı listede üstte görünür.</div>
+          </div>
+          <button type="button" disabled={busy} onClick={onClose}>
+            Kapat
+          </button>
         </div>
-        <button type="button" disabled={busy} onClick={onClose}>
-          Kapat
-        </button>
-      </div>
 
-      <hr />
+        <hr />
 
-      <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <input
-          placeholder="Taşımacılık firması ara"
-          value={offerModal.q}
-          onChange={(e) => onChange({ q: e.target.value })}
-          style={{ width: "min(100%, 220px)" }}
-        />
-        <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <input
-            type="checkbox"
-            checked={offerModal.onlyHub}
-            onChange={(e) => onChange({ onlyHub: e.target.checked })}
+            placeholder="Taşımacılık firması ara"
+            value={offerModal.q}
+            onChange={(e) => onChange({ q: e.target.value })}
+            style={{ width: "min(100%, 220px)" }}
           />
-          Merkez konumu kayıtlı olanlar
-        </label>
-      </div>
-
-      <div style={{ marginTop: 10, maxHeight: 220, overflow: "auto" }}>
-        {(rooms || [])
-          .filter((r) => {
-            if (offerModal.onlyHub && !(r?.hubLat != null && r?.hubLng != null)) return false;
-            const q = String(offerModal.q || "").trim().toLowerCase();
-            if (!q) return true;
-            return String(r?.name || "").toLowerCase().includes(q);
-          })
-          .map((r) => {
-            const score = roomScores[String(r.id)] || null;
-            return (
-              <CompanyOfferRoomCard
-                key={r.id}
-                room={r}
-                selected={Boolean(offerModal.roomIds?.[r.id])}
-                score={score}
-                onToggle={() => onToggleRoom(r.id)}
-              />
-            );
-          })}
-      </div>
-
-      <hr />
-
-      <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "end" }}>
-        <div className="col" style={{ width: "min(100%, 180px)" }}>
-          <label className="muted">Hizmet Alan Firma tutarı (₺) (opsiyonel)</label>
-          <input
-            value={offerModal.amountCompany}
-            onChange={(e) => onChange({ amountCompany: e.target.value })}
-            placeholder="örn 25000"
-          />
+          <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={offerModal.onlyHub}
+              onChange={(e) => onChange({ onlyHub: e.target.checked })}
+            />
+            Merkez konumu kayıtlı olanlar
+          </label>
         </div>
-        <div className="col" style={{ flex: "1 1 240px", minWidth: 0 }}>
-          <label className="muted">Not (opsiyonel)</label>
-          <input
-            value={offerModal.noteCompany}
-            onChange={(e) => onChange({ noteCompany: e.target.value })}
-            placeholder="opsiyonel"
-          />
+
+        <div style={{ marginTop: 10, maxHeight: 220, overflow: "auto" }}>
+          {(rooms || [])
+            .filter((r) => {
+              if (offerModal.onlyHub && !(r?.hubLat != null && r?.hubLng != null)) return false;
+              const q = String(offerModal.q || "").trim().toLowerCase();
+              if (!q) return true;
+              return String(r?.name || "").toLowerCase().includes(q);
+            })
+            .map((r) => {
+              const score = roomScores[String(r.id)] || null;
+              return (
+                <CompanyOfferRoomCard
+                  key={r.id}
+                  room={r}
+                  selected={Boolean(offerModal.roomIds?.[r.id])}
+                  score={score}
+                  onToggle={() => onToggleRoom(r.id)}
+                />
+              );
+            })}
         </div>
-        <button type="button" disabled={busy} onClick={onSubmit}>
-          {busy ? "..." : "Teklifleri Gönder"}
-        </button>
+
+        <hr />
+
+        <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "end" }}>
+          <div className="col" style={{ width: "min(100%, 180px)" }}>
+            <label className="muted">Hizmet Alan Firma tutarı (₺) (opsiyonel)</label>
+            <input
+              value={offerModal.amountCompany}
+              onChange={(e) => onChange({ amountCompany: e.target.value })}
+              placeholder="örn 25000"
+            />
+          </div>
+          <div className="col" style={{ flex: "1 1 240px", minWidth: 0 }}>
+            <label className="muted">Not (opsiyonel)</label>
+            <input
+              value={offerModal.noteCompany}
+              onChange={(e) => onChange({ noteCompany: e.target.value })}
+              placeholder="opsiyonel"
+            />
+          </div>
+          <button type="button" disabled={busy} onClick={onSubmit}>
+            {busy ? "..." : "Teklifleri Gönder"}
+          </button>
+        </div>
       </div>
     </div>
   );

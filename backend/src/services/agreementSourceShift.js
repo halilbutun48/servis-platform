@@ -9,10 +9,10 @@ function trMinutes(dateLike) {
   return shifted.getUTCHours() * 60 + shifted.getUTCMinutes();
 }
 
-async function loadShiftPayload(shiftId) {
+async function loadShiftPayload(shiftId, db = prisma) {
   const id = Number(shiftId || 0);
   if (id <= 0) return null;
-  const shift = await prisma.shift.findUnique({
+  const shift = await db.shift.findUnique({
     where: { id },
     include: {
       room: true,
@@ -26,9 +26,9 @@ async function loadShiftPayload(shiftId) {
   });
   if (!shift) return null;
   const [stops, people, assignments] = await Promise.all([
-    prisma.stop.findMany({ where: { shiftId: id }, orderBy: { order: "asc" } }),
-    prisma.shiftPersonel.findMany({ where: { shiftId: id }, select: { personelId: true, note: true } }),
-    prisma.stopAssignment.findMany({ where: { shiftId: id }, select: { stopId: true, personelId: true, walkM: true } }),
+    db.stop.findMany({ where: { shiftId: id }, orderBy: { order: "asc" } }),
+    db.shiftPersonel.findMany({ where: { shiftId: id }, select: { personelId: true, note: true } }),
+    db.stopAssignment.findMany({ where: { shiftId: id }, select: { stopId: true, personelId: true, walkM: true } }),
   ]);
   return { shift, stops, people, assignments };
 }
@@ -50,9 +50,9 @@ function scoreCandidate(candidate, agreement) {
   return score;
 }
 
-async function inferAgreementSourceShiftId(agreement) {
+async function inferAgreementSourceShiftId(agreement, db = prisma) {
   if (!agreement?.companyId || !agreement?.roomId) return null;
-  const candidates = await prisma.shift.findMany({
+  const candidates = await db.shift.findMany({
     where: {
       companyId: agreement.companyId,
       roomId: agreement.roomId,
@@ -92,10 +92,10 @@ async function inferAgreementSourceShiftId(agreement) {
   return Number(normalized[0]?.id || 0) || null;
 }
 
-export async function resolveAgreementSourceShiftPayload(agreementId) {
+export async function resolveAgreementSourceShiftPayload(agreementId, db = prisma) {
   const aid = Number(agreementId || 0);
   if (aid <= 0) return null;
-  const agreement = await prisma.agreement.findUnique({
+  const agreement = await db.agreement.findUnique({
     where: { id: aid },
     select: {
       id: true,
@@ -110,20 +110,20 @@ export async function resolveAgreementSourceShiftPayload(agreementId) {
   });
   if (!agreement) return null;
 
-  const source = await prisma.commercialSource.findFirst({
+  const source = await db.commercialSource.findFirst({
     where: { agreementId: aid, shiftRootId: { not: null } },
     select: { shiftRootId: true },
     orderBy: { id: "asc" },
   });
   const directId = Number(source?.shiftRootId || 0);
-  if (directId > 0) return loadShiftPayload(directId);
+  if (directId > 0) return loadShiftPayload(directId, db);
 
-  const inferredId = await inferAgreementSourceShiftId(agreement);
+  const inferredId = await inferAgreementSourceShiftId(agreement, db);
   if (!inferredId) return null;
-  return loadShiftPayload(inferredId);
+  return loadShiftPayload(inferredId, db);
 }
 
-export async function resolveAgreementSourceShiftId(agreementId) {
-  const payload = await resolveAgreementSourceShiftPayload(agreementId);
+export async function resolveAgreementSourceShiftId(agreementId, db = prisma) {
+  const payload = await resolveAgreementSourceShiftPayload(agreementId, db);
   return Number(payload?.shift?.id || 0) || null;
 }

@@ -7,6 +7,9 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
+import { composeCopilotReasoningAnswer } from '../src/ai/chat/copilotReasoningAnswerComposer.js';
+import { resolveCanonicalConversationRequest } from '../src/ai/chat/canonicalSemanticRequest.js';
+import { resolveSemanticIntent } from '../src/ai/chat/semanticIntentPlanner.js';
 import {
   buildSeferAbiReasoningAssistant,
   SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_VERSION,
@@ -34,6 +37,40 @@ const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
 const helperRel = 'backend/src/ai/chat/seferAbiReasoningAssistant.js';
 const docRel = 'docs/SEFER_ABI_REASONING_ASSISTANT_01.md';
+
+const AI_HOLDOUT_PROVENANCE_V1 = {
+  schemaVersion: 'AI_HOLDOUT_PROVENANCE_V1',
+  source: 'M18_PROJECT_EXECUTION_OS_ADOPTION',
+  behaviorClasses: [
+    { id: 'ACTIVE_CONTEXT_FAILURE_RECOVERY', unseen: 'buna basınca neden ilerlemiyor', oracle: 'contextual recovery' },
+    { id: 'LIVE_SURFACE_EXPLANATION', unseen: 'şimdiki alanın amacı ne', oracle: 'current live surface explanation' },
+    { id: 'CONTINUATION', unseen: 'bir sonraki parçayı açıklar mısın', oracle: 'next meaningful explanation unit' },
+    { id: 'TARGET_RESHOW', unseen: 'işlem durdu bunu yeniden göster', oracle: 'same authorized target recovery' },
+    { id: 'UNRELATED_NEGATIVE', unseen: 'bugün döviz kuru kaç', oracle: 'unrelated-domain control remains separate' },
+  ],
+  productionSources: [
+    'backend/src/ai/chat/canonicalConversationState.js',
+    'backend/src/ai/chat/canonicalSemanticRequest.js',
+    'backend/src/ai/chat/conversationRouting.js',
+    'backend/src/ai/chat/intentRouter.js',
+    'backend/src/ai/chat/semanticIntentPlanner.js',
+    'backend/src/ai/chat/helpComposer.js',
+    'backend/src/ai/service.js',
+  ],
+};
+
+function assertAiHoldoutProvenance() {
+  let phrasePatchCount = 0;
+  for (const sourcePath of AI_HOLDOUT_PROVENANCE_V1.productionSources) {
+    const source = normalize(read(sourcePath));
+    for (const item of AI_HOLDOUT_PROVENANCE_V1.behaviorClasses) {
+      if (source.includes(normalize(item.unseen))) phrasePatchCount += 1;
+    }
+  }
+  assert(phrasePatchCount === 0, `AI holdout PHRASE_PATCH_COUNT = ${phrasePatchCount}`);
+  ok('AI holdout provenance records unseen behavior classes without production phrase branches');
+  return { ...AI_HOLDOUT_PROVENANCE_V1, phrasePatchCount, result: 'UNPROVEN_UNTIL_RUNTIME_HOLDOUT_SWEEP' };
+}
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
@@ -343,6 +380,7 @@ async function main() {
   const helpComposerSource = read('backend/src/ai/chat/helpComposer.js');
   const qualityScorerSource = read('backend/src/ai/chat/qualityScorer.js');
   const cachedNames = gitCachedNames();
+  const holdoutProvenance = assertAiHoldoutProvenance();
   const helperMod = await loadModule(helperRel);
   const screenCatalogMod = await loadModule('backend/src/ai/jobGuide/screenCatalog.js');
   const getScreenDefinitionForUser = screenCatalogMod.getScreenDefinitionForUser;
@@ -425,6 +463,17 @@ async function main() {
 
   must(helpComposerSource, 'buildSeferAbiReasoningAssistant', 'help composer imports reasoning assistant');
   must(helpComposerSource, 'reasoningAssistant.reply || rawReply', 'help composer prefers reasoning assistant reply');
+
+  const safeRefusalAlreadyHasAlternative = composeCopilotReasoningAnswer({
+    role: 'ROOM',
+    effectiveRole: 'ROOM',
+    roleMode: 'OPERATIONS',
+    questionType: 'SCREEN_FOCUS',
+    mode: 'SAFE_REFUSAL_WITH_ALTERNATIVE',
+    rawReply: 'KVKK sınırı nedeniyle bu bilgiyi açamam. Önerilen güvenli adım: Görünür alanları kontrol et.',
+    safeAlternative: 'Görünür alanları kontrol et.',
+  });
+  assert((safeRefusalAlreadyHasAlternative.match(/Önerilen güvenli adım/gi) || []).length === 1, 'safe refusal does not duplicate an existing alternative');
   must(helpComposerSource, 'lastReasoningAssistantFingerprint', 'conversation state stores reasoning fingerprint');
   must(helpComposerSource, 'lastReasoningAssistantMode', 'conversation state stores reasoning mode');
   must(helpComposerSource, 'lastReasoningAssistantSummary', 'conversation state stores reasoning summary');
@@ -807,6 +856,19 @@ async function main() {
   };
   function buildDirectHelpResponse({ message, role, companyKind = '', screenPath = '/company/shifts', screenLabel = 'Company Shifts', screenDefinition = directHelpScreenDefinition, screenContext = directHelpScreenContext, roleMode = 'OPERATIONS' }) {
     const user = makeUser(role, companyKind);
+    const canonicalRequest = resolveCanonicalConversationRequest({
+      message,
+      user,
+      conversationState: { lastScreenPath: screenPath, recentMessages: [message] },
+      screenContext,
+    });
+    const semanticPlan = resolveSemanticIntent({
+      message,
+      user,
+      conversationState: { lastScreenPath: screenPath, recentMessages: [message] },
+      screenContext,
+      canonicalRequest,
+    });
     return buildChatHelpResponse({
       entityType: 'screen',
       entityId: 1,
@@ -821,6 +883,7 @@ async function main() {
       },
       screenContext,
       screenDefinition,
+      semanticPlan,
     });
   }
 
@@ -842,32 +905,33 @@ async function main() {
   must(roleExplanation.reply, 'Önce', 'role explanation gives first step');
   mustNot(roleExplanation.reply, 'bulamadım', 'role explanation drops the safe follow-up line');
 
+  const canonicalOperationsUser = makeUser('SUPER_ADMIN');
+  const canonicalOperations = getScreenDefinitionForUser(canonicalOperationsUser, { path: '/superadmin/operations' });
   const screenExplanation = buildDirectHelpResponse({
     message: 'Bu ekran ne işe yarar?',
     role: 'SUPER_ADMIN',
-    screenPath: '/superadmin/operations',
-    screenLabel: 'Süper Yönetici Operasyonlar',
-    screenDefinition: {
-      path: '/superadmin/operations',
-      label: 'Süper Yönetici Operasyonlar',
-      menuPurpose: 'Operasyon özetini gösterir',
-      plainSummary: 'Operasyon özetini gösterir',
-      summary: 'Operasyon özetini gösterir',
-      firstStep: 'Önce operasyon özetini aç.',
-      nextStep: 'Sonra kritik kayıtları incele.',
-    },
+    screenPath: canonicalOperations.path,
+    screenLabel: canonicalOperations.label,
+    screenDefinition: canonicalOperations,
     screenContext: {
       ...directHelpScreenContext,
-      path: '/superadmin/operations',
-      label: 'Süper Yönetici Operasyonlar',
-      selectedSummary: 'Operasyon özeti hazır.',
-      selectedRecordStatus: 'Operasyon özeti hazır.',
+      path: canonicalOperations.path,
+      label: canonicalOperations.label,
+      structuredFacts: {
+        reasoningLead: canonicalOperations.menuPurpose,
+        nextBestAction: canonicalOperations.firstStep,
+      },
     },
     roleMode: 'OPERATIONS',
   });
-  assert(screenExplanation.questionType === 'SCREEN_EXPLANATION_HELP', 'screen explanation routes to SCREEN_EXPLANATION_HELP');
-  must(screenExplanation.reply, 'Operasyon özetini gösterir', 'screen explanation uses screen purpose');
-  must(screenExplanation.reply, 'Şu an Süper Yönetici Operasyonlar ekranındaysan', 'screen explanation keeps screen context');
+  // SCREEN_PURPOSE is the canonical current-screen purpose family used by the
+  // all-roles owner; SCREEN_EXPLANATION_HELP is the legacy compatibility
+  // label.  Both carry the same semantic outcome here, so the owner check
+  // must validate the family rather than force one transport alias.
+  assert(['SCREEN_EXPLANATION_HELP', 'SCREEN_PURPOSE'].includes(screenExplanation.questionType), 'screen explanation stays in the canonical screen-purpose family');
+  must(screenExplanation.reply, 'sistem ve operasyon bandını izlemek', 'screen explanation keeps the canonical current purpose');
+  must(screenExplanation.reply, 'Canlı durum bandını aç', 'screen explanation keeps the canonical first action');
+  mustNot(screenExplanation.reply, 'Super Admin Operations ekranındaysan', 'screen explanation does not use the retired synthetic label');
   mustNot(screenExplanation.reply, 'bulamadım', 'screen explanation drops safe follow-up');
 
   const howToHelp = buildDirectHelpResponse({
@@ -1098,7 +1162,9 @@ async function main() {
         label: 'Super Admin Commercial Core',
       },
     });
-    assert(response.questionType === 'FIELD_BUTTON_HELP', `${caseItem.label} routes to FIELD_BUTTON_HELP`);
+    // Glossary definition prompts are TERM_HELP; FIELD_BUTTON_HELP remains
+    // reserved for concrete UI field/button questions below.
+    assert(response.questionType === 'TERM_HELP', `${caseItem.label} routes to TERM_HELP`);
     must(response.reply, caseItem.needle, `${caseItem.label} explanation is specific`);
     mustNot(response.reply, 'Şimdi:', `${caseItem.label} drops the robotic lead`);
   }
@@ -1111,6 +1177,10 @@ async function main() {
     screenDefinition: {
       ...directHelpScreenDefinition,
       buttonGuides: [{ label: 'Takip', purpose: 'Vardiya listesini açar.', whenToUse: 'Bir kayıt görmek istediğinde.', whatHappens: 'Vardiya listesi açılır.' }],
+    },
+    screenContext: {
+      ...directHelpScreenContext,
+      uiHints: { visibleButtons: [{ label: 'Takip', targetKey: 'company:shifts-follow' }] },
     },
   });
   assert(buttonHelp.questionType === 'FIELD_BUTTON_HELP', 'button question routes to FIELD_BUTTON_HELP');
@@ -1137,6 +1207,8 @@ async function main() {
     screenDefinition: { path: '/company/shifts', label: 'Company Shifts', firstStep: 'Önce vardiya satırını aç.' },
     screenContext: { path: '/company/shifts', label: 'Company Shifts', selectedSummary: 'Hazır' },
   }).assistantMilestone === SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_VERSION, 'assistant milestone marker exposed');
+
+  assert(holdoutProvenance.phrasePatchCount === 0, 'PHRASE_PATCH_COUNT = 0');
 
   assert(cachedNames.length === 0, 'stage stays empty');
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');

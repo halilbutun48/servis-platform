@@ -99,6 +99,14 @@ test("AI route current diff adds only a caller-scoped read projection and sessio
   assert.doesNotMatch(diff, /\.(?:create|createMany|update|updateMany|delete|deleteMany|upsert|executeRaw)\s*\(/u);
 });
 
+test("AI route exposes an authenticated, caller-scoped conversation clear", () => {
+  const aiRoute = source("backend/src/routes/ai.js");
+  assert.match(aiRoute, /clearCanonicalConversationState/u);
+  assert.match(aiRoute, /r\.post\(\s*["']\/conversation\/clear["']/u);
+  assert.match(aiRoute, /function authSessionIdForRequest\(req\)/u);
+  assert.match(aiRoute, /clearCanonicalConversationState\(copilotUser, authSessionIdForRequest\(req\)\)/u);
+});
+
 test("canonical conversation state separates every server-owned authorization dimension", () => {
   const base = canonicalUser();
   const key = canonicalStateKey(base, "server-session-A");

@@ -1,11 +1,11 @@
 import { createElement } from "react";
-import { agreementStatusPillLabel, agreementStatusText } from "../../utils/agreementLabels";
+import { agreementStatusPillLabel, agreementStatusText } from "../../utils/agreementLabels.js";
 
 export function moneyTry(v) {
   if (v == null || v === "") return "-";
   const n = Number(v);
   if (!Number.isFinite(n)) return String(v);
-  return `₺${n}`;
+  return `${new Intl.NumberFormat("tr-TR").format(n / 100)} ₺`;
 }
 
 export function daysLeftYmd(ymd) {

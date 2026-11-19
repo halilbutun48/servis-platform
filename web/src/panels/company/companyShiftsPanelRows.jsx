@@ -145,6 +145,11 @@ export function CompanyMarketRow({
   computePackageShiftIds,
 }) {
   const packageIds = computePackageShiftIds(shift);
+  const hasRoomOffer = shift?.roomOfferAmount != null
+    || Boolean(shift?.roomOfferVehicleId)
+    || Boolean(shift?.roomOfferNote)
+    || Boolean(shift?.roomOfferToDriver)
+    || Boolean(shift?.roomOfferDriverNote);
   return (
     <tr key={shift.id} onClick={() => onFocusShift(shift?.id)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(shift?.id || 0))}>
       <td>{shift.id}<AgreementBadge agreementId={shift.agreementId} /><CommercialReadonlySummary item={shift.commercialBackbone} compact /></td>
@@ -153,16 +158,21 @@ export function CompanyMarketRow({
       <td className="muted">{fmtTR(shift.endAt)}</td>
       <td>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" disabled={busy} onClick={() => onOpenOfferModal(shift.id)}>Teklif Gönder</button>
-          <button
-            type="button"
-            disabled={busy || packageIds.length < 2}
-            title={packageIds.length < 2 ? "Paket bulunamadı" : `Pakete uygula (${packageIds.length} shift)`}
-            onClick={() => onOpenOfferModal(shift.id, packageIds)}
-          >
-            Paket Teklif
-          </button>
-          <button type="button" disabled={busy} onClick={() => onOpenOffersModal(shift.id)}>Teklifler</button>
+          {hasRoomOffer ? (
+            <button type="button" disabled={busy} onClick={() => onOpenOffersModal(shift.id)}>Teklifleri Aç</button>
+          ) : (
+            <>
+              <button type="button" disabled={busy} onClick={() => onOpenOfferModal(shift.id)}>Teklif Gönder</button>
+              <button
+                type="button"
+                disabled={busy || packageIds.length < 2}
+                title={packageIds.length < 2 ? "Paket bulunamadı" : `Pakete uygula (${packageIds.length} shift)`}
+                onClick={() => onOpenOfferModal(shift.id, packageIds)}
+              >
+                Paket Teklif
+              </button>
+            </>
+          )}
         </div>
       </td>
     </tr>

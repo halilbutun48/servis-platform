@@ -18,7 +18,9 @@ const REPO_ROOT = path.resolve(path.dirname(__filename), "../..");
 const PRISMA_CLI = path.join(BACKEND_ROOT, "node_modules", "prisma", "build", "index.js");
 const EVIDENCE_DIR = path.join(BACKEND_ROOT, "artifacts", "data-integrity", "DATABASE_MIGRATION_BASELINE_AND_LIVE_ADOPTION_01");
 const EVIDENCE_PATH = path.join(EVIDENCE_DIR, "ci.json");
-const EXPECTED_MIGRATION_COUNT = 56;
+// Keep CI aligned with the canonical 68-entry migration chain.  The count is
+// deliberately explicit so missing or unexpected migrations fail closed.
+const EXPECTED_MIGRATION_COUNT = 68;
 const DEFAULT_DATABASE_URL = "postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public";
 
 function safeUrl(value) {

@@ -1,3 +1,5 @@
+import { financeUserFacingText } from "./financeUserFacingLabels.js";
+
 const ROLE_LABELS = Object.freeze({
   SUPER_ADMIN: "Süper yönetici",
   ROOM: "Turizm/Taşımacılık Firması",
@@ -118,6 +120,8 @@ const BASELINE_SOURCE_LABELS = Object.freeze({
   INCOMPLETE: "Eksik veri",
   BLOCKED: "Kilitli",
   READY: "Hazır",
+  COMPLETE: "Onaylı dönem planı",
+  CANONICAL_PERIOD_PLAN: "Onaylı dönem planı",
 });
 
 const SERVICE_COST_TAX_BASIS_LABELS = Object.freeze({
@@ -165,6 +169,7 @@ const FINANCE_FIELD_LABELS = Object.freeze({
   quoteFloorPerPassengerMinor: "Kişi başı teklif",
   baselineSource: "Taban kaynağı",
   calculationVersion: "Hesaplama sürümü",
+  "distance inputs": "Doğrulanmış rota mesafesi",
   serviceDistanceKm: "Servis mesafesi",
   routeDurationMinutes: "Rota süresi",
   passengerCount: "Yolcu sayısı",
@@ -281,6 +286,14 @@ export function lifecycleStateLabel(value) {
   return LIFECYCLE_LABELS[key] || "Bilinmiyor";
 }
 
+export function budgetLifecycleFeedbackLabel({ status = "", budgetApprovalState = "" } = {}) {
+  const normalizedStatus = normalizeToken(status);
+  if (normalizedStatus === "ACTIVE" || normalizedStatus === "ARCHIVED") {
+    return lifecycleStateLabel(normalizedStatus);
+  }
+  return budgetApprovalStateLabel(budgetApprovalState || normalizedStatus);
+}
+
 export function confidenceLabel(value) {
   return labelFromMap(value, CONFIDENCE_LABELS, "Bilinmiyor");
 }
@@ -295,6 +308,15 @@ export function modelStatusLabel(value) {
 
 export function modelStatusTone(value) {
   return MODEL_STATUS_TONES[normalizeToken(value)] || "muted";
+}
+
+export function fuelCalculationStatusLabel(value) {
+  return labelFromMap(value, {
+    ACTUAL_LEDGER: "Gerçekleşen yakıt gideri",
+    AUTO_REFERENCE_ESTIMATE: "Kaynaklı otomatik tahmin",
+    SCENARIO_INPUT_ESTIMATE: "Senaryo fiyatıyla tahmin",
+    INCOMPLETE_REFERENCE: "Eksik yakıt verisi",
+  }, "Yakıt hesabı bekliyor");
 }
 
 export function budgetSourceLabel(value) {
@@ -343,6 +365,85 @@ export function financeFieldLabels(values = []) {
     out.push(label);
   }
   return out;
+}
+
+const ROOM_SERVICE_COST_CATEGORY_GROUPS = Object.freeze({
+  FUEL: "FUEL",
+  ADBLUE: "FUEL",
+  MAINTENANCE: "MAINTENANCE",
+  REPAIR: "MAINTENANCE",
+  TIRE_RIM: "MAINTENANCE",
+  EMPLOYER_MONTHLY_COST: "DRIVER",
+  BASE_SALARY: "DRIVER",
+  BENEFIT: "DRIVER",
+  OVERTIME: "DRIVER",
+  PER_DIEM: "DRIVER",
+  RENT: "RENT",
+  LEASING: "RENT",
+});
+
+function nonNegativeMinor(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function selectedServiceLineMatches(line, selectedShiftId, selectedAgreementId) {
+  const lineShiftId = Number(line?.shiftId || 0);
+  const lineAgreementId = Number(line?.agreementId || 0);
+  return (selectedShiftId > 0 && lineShiftId === selectedShiftId)
+    || (selectedAgreementId > 0 && lineAgreementId === selectedAgreementId);
+}
+
+function serviceEntryAmountMinor(entry, selectedShiftId, selectedAgreementId) {
+  const explicitServiceAmount = nonNegativeMinor(entry?.serviceAllocatedAmountMinor);
+  if (explicitServiceAmount !== null) return explicitServiceAmount;
+
+  if (selectedServiceLineMatches(entry, selectedShiftId, selectedAgreementId)) {
+    return nonNegativeMinor(entry?.amountMinor ?? entry?.grossAmountMinor);
+  }
+
+  const allocationAmount = (Array.isArray(entry?.allocationLines) ? entry.allocationLines : [])
+    .filter((line) => selectedServiceLineMatches(line, selectedShiftId, selectedAgreementId))
+    .map((line) => nonNegativeMinor(line?.allocatedAmountMinor))
+    .filter((amount) => amount !== null)
+    .reduce((total, amount) => total + amount, 0);
+  return allocationAmount > 0 ? allocationAmount : null;
+}
+
+export function buildRoomServiceCostEvidence(preview = {}) {
+  const scope = preview?.serviceCostScope || {};
+  const selectedShiftId = Number(scope.selectedShiftId || preview?.serviceCostContext?.shiftId || 0);
+  const selectedAgreementId = Number(scope.selectedAgreementId || preview?.serviceCostContext?.agreementId || 0);
+  const contextMismatch = String(scope.allocationStatus || "").toUpperCase() === "CONTEXT_MISMATCH";
+  const categoryMap = new Map();
+
+  if (!contextMismatch) {
+    for (const entry of Array.isArray(preview?.serviceCostSourceEntries) ? preview.serviceCostSourceEntries : []) {
+      const amountMinor = serviceEntryAmountMinor(entry, selectedShiftId, selectedAgreementId);
+      const categoryKey = String(entry?.categoryKey || "").trim().toUpperCase();
+      if (!categoryKey || amountMinor === null || amountMinor <= 0) continue;
+      const groupKey = ROOM_SERVICE_COST_CATEGORY_GROUPS[categoryKey] || categoryKey;
+      const current = categoryMap.get(groupKey) || { categoryKey: groupKey, amountMinor: 0, entryCount: 0 };
+      current.amountMinor += amountMinor;
+      current.entryCount += 1;
+      categoryMap.set(groupKey, current);
+    }
+  }
+
+  const provenAmountMinor = contextMismatch ? null : nonNegativeMinor(scope.provenDistributedAmountMinor);
+  const grossAmountMinor = contextMismatch ? null : nonNegativeMinor(scope.grossAmountMinor);
+  const pendingAmountMinor = contextMismatch ? null : nonNegativeMinor(scope.pendingAmountMinor);
+  return {
+    selectedShiftId: selectedShiftId > 0 ? selectedShiftId : null,
+    selectedAgreementId: selectedAgreementId > 0 ? selectedAgreementId : null,
+    provenAmountMinor,
+    grossAmountMinor,
+    pendingAmountMinor,
+    hasEvidence: provenAmountMinor !== null && provenAmountMinor > 0,
+    categoryTotals: [...categoryMap.values()],
+    contextMismatch,
+  };
 }
 
 export function currencyCodeLabel(value) {
@@ -409,6 +510,32 @@ export function scopeLabel(scope) {
   return "Yüzey";
 }
 
+export function buyerRoleLabel(roleOrKind) {
+  const key = normalizeToken(roleOrKind);
+  if (key === "SCHOOL") return "Okul";
+  if (key === "ORGANIZATION") return "Organizasyon";
+  if (key === "COMPANY") return "Hizmet Alan Firma";
+  return "Hizmet Alan Firma";
+}
+
+export function buyerFinanceSurfaceTitle(roleOrKind) {
+  const key = normalizeToken(roleOrKind);
+  if (key === "SCHOOL") return "Okul Bütçe ve Servis Maliyeti";
+  if (key === "ORGANIZATION") return "Organizasyon Bütçe ve Servis Maliyeti";
+  return "Bütçe ve Servis Maliyeti";
+}
+
+export function buyerFinanceSurfaceSubtitle(roleOrKind) {
+  const key = normalizeToken(roleOrKind);
+  if (key === "SCHOOL") return "Okul bütçesi, öğrenci taşıma hizmetleri ve teklif karar desteği.";
+  if (key === "ORGANIZATION") return "Organizasyon bütçesi, etkinlik taşıma hizmetleri ve teklif karar desteği.";
+  return "Hizmet Alan Firma bütçe yaşam döngüsü, servis maliyeti ve karar desteği.";
+}
+
+export function buyerFinanceTablistLabel(roleOrKind) {
+  return `${buyerRoleLabel(roleOrKind)} finans bölümleri`;
+}
+
 export function preferredScopeTitle(scope) {
   const key = normalizeToken(scope);
   if (key === "ROOM") return "Teklif ve Kârlılık";
@@ -423,11 +550,17 @@ export function preferredScopeSubtitle(scope) {
   return "Finansal operasyon özeti.";
 }
 
+export function buildDecisionComponentKey(component = {}, index = 0) {
+  const label = String(component?.label || component?.categoryKey || "maliyet").trim();
+  const amount = component?.amountMinor == null ? "unknown" : String(component.amountMinor);
+  return `${label}-${amount}-${index}`;
+}
+
 export function normalizeFinanceVisibleText(value) {
   const text = String(value ?? "").trim();
   if (!text) return "";
 
-  return text
+  return financeUserFacingText(text, text)
     .replace(/\bOda\s*\/\s*şirket\s*etiketi\b/gi, "Firma rolü")
     .replace(/\bOda\s+teklifi\b/gi, "Taşımacılık Firması teklifi")
     .replace(/\bOda\s+kârlılığı\b/gi, "Taşımacılık Firması kârlılığı")
@@ -449,6 +582,7 @@ export function normalizeFinanceVisibleText(value) {
     .replace(/\bquote[-_\s]*floor\b/gi, "Önerilen minimum teklif")
     .replace(/\bread[-_\s]*only\b/gi, "salt okunur")
     .replace(/\bcanonical\b|\bkanonik\b/gi, "mevcut plan")
+    .replace(/\bdeterministic\b/gi, "tutarlı")
     .replace(/\bforecast\b/gi, "öngörü")
     .replace(/\bprojection\b/gi, "öngörü")
     .replace(/\bactual\b/gi, "gerçekleşen")
@@ -483,6 +617,8 @@ export function normalizeFinanceVisibleText(value) {
     .replace(/\bcontract_period\b/gi, "Sözleşme dönemi")
     .replace(/\bcurrent_period\b/gi, "Geçerli dönem")
     .replace(/\bpreview_period\b/gi, "Önizleme dönemi")
+    .replace(/\broute snapshot\b/gi, "rota kaydı")
+    .replace(/\brota\s+snapshot(?:['’]?[ıi])?(?=\s|$|[.,;:])/gi, "rota kaydı")
     .replace(/\bsnapshot\b/gi, "Hesaplama özeti")
     .replace(/\bpreview\b/gi, "Önizleme")
     .replace(/\bSnapshot\b/gi, "Hesaplama özeti")

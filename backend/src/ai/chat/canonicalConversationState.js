@@ -16,6 +16,13 @@ function numberOrNull(value) {
   return Number.isInteger(number) && number > 0 ? number : null;
 }
 
+function boundedInteger(value, { min = 0, max = Number.MAX_SAFE_INTEGER } = {}) {
+  if (value === null || value === undefined || (typeof value === "string" && value.trim() === "")) return null;
+  const number = Number(value);
+  if (!Number.isSafeInteger(number) || number < min || number > max) return null;
+  return number;
+}
+
 function factsFingerprint(values) {
   return createHash('sha256')
     .update(JSON.stringify(Array.isArray(values) ? values : []))
@@ -39,6 +46,7 @@ function entityType(value) {
   if (["driver", "surucu", "sürücü"].includes(type)) return "driver";
   if (["offer", "teklif", "rfq"].includes(type)) return "offer";
   if (["agreement", "sozlesme", "sözleşme", "contract"].includes(type)) return "agreement";
+  if (["notification", "bildirim", "uyari", "uyarı"].includes(type)) return "notification";
   // Keep semantic person types distinct in conversation state.  They share a
   // storage read model, but a follow-up must not turn a requested parent or
   // student into a generic personnel record before authorization/resolution.
@@ -144,6 +152,191 @@ function safeScreenContext(screenContext, user) {
       role: text(rawCurrentTarget.role).toUpperCase(),
     }
     : null;
+  // Preserve only bounded, user-visible selection facts for contextual
+  // explanation. These hints do not grant access or replace server-owned
+  // authorization/evidence checks.
+  const safeSelectedFields = Array.isArray(screenContext?.selectedFields)
+    ? screenContext.selectedFields.slice(0, 24).map((row) => ({
+      label: text(row?.label),
+      value: text(row?.value),
+    })).filter((row) => row.label)
+    : [];
+  const safeSelectedBadges = Array.isArray(screenContext?.selectedBadges)
+    ? screenContext.selectedBadges.slice(0, 16).map((row) => ({
+      label: text(row?.label),
+      value: text(row?.value),
+    })).filter((row) => row.label)
+    : [];
+  const rawFacts = screenContext?.structuredFacts && typeof screenContext.structuredFacts === "object"
+    ? screenContext.structuredFacts
+    : null;
+  const scenarioOverrideKeys = new Set([
+    "passengerCount",
+    "vehicleType",
+    "vehicleCount",
+    "vehicleCapacity",
+    "serviceDistanceKm",
+    "totalDistanceKm",
+    "emptyDistanceKm",
+    "routeDurationMinutes",
+    "serviceDayCount",
+    "shiftCount",
+    "tripCount",
+    "fuelConsumptionLitersPer100Km",
+    "fuelUnitPriceMinor",
+    "driverBasePerShiftMinor",
+    "maintenancePerKmMinor",
+    "useExternalFuelPrice",
+  ]);
+  const safeScenarioOverrides = rawFacts && rawFacts.selectedScenarioOverrides && typeof rawFacts.selectedScenarioOverrides === "object"
+    ? Object.fromEntries(
+      Object.entries(rawFacts.selectedScenarioOverrides)
+        .filter(([key]) => scenarioOverrideKeys.has(key))
+        .map(([key, value]) => {
+          if (key === "vehicleType") return [key, text(value).toUpperCase()];
+          if (key === "useExternalFuelPrice") return [key, value === true];
+          const number = Number(value);
+          return [key, Number.isFinite(number) && number >= 0 && number <= 1_000_000_000 ? number : null];
+        })
+        .filter(([, value]) => value !== null && value !== ""),
+    )
+    : {};
+  const safeScenarioStatus = ["READY", "INCOMPLETE", "NOT_PROVEN", "BLOCKED"].includes(text(rawFacts?.selectedScenarioStatus).toUpperCase())
+    ? text(rawFacts.selectedScenarioStatus).toUpperCase()
+    : "";
+  const safeSelectedScenarioPeriodPlanning = rawFacts?.selectedScenarioPeriodPlanning
+    && typeof rawFacts.selectedScenarioPeriodPlanning === "object"
+    ? Object.fromEntries(
+      [
+        "periodStart",
+        "periodEnd",
+        "weekMask",
+        "startMin",
+        "endMin",
+        "movementsPerDay",
+        "direction",
+        "pattern",
+        "scheduleSource",
+        "scopeStatus",
+        "periodCostReady",
+        "scheduledServiceDayCount",
+        "plannedMovementCount",
+        "observedLinkedShiftCount",
+        "knownRoutePlanningCostMinor",
+        "periodPlanningCostMinor",
+        "missing",
+        "assumptions",
+      ]
+        .filter((key) => Object.prototype.hasOwnProperty.call(rawFacts.selectedScenarioPeriodPlanning, key))
+        .map((key) => {
+          const value = rawFacts.selectedScenarioPeriodPlanning[key];
+          if (["periodStart", "periodEnd", "scheduleSource", "scopeStatus", "direction", "pattern"].includes(key)) {
+            return [key, text(value).slice(0, 96)];
+          }
+          if (["missing", "assumptions"].includes(key)) {
+            return [key, Array.isArray(value) ? value.slice(0, 12).map((item) => text(item)).filter(Boolean) : []];
+          }
+          if (key === "periodCostReady") return [key, value === true];
+          const number = Number(value);
+          return [key, Number.isSafeInteger(number) && number >= 0 && number <= 1_000_000_000 ? number : null];
+        })
+        .filter(([, value]) => value !== null && value !== ""),
+    )
+    : null;
+  const safeStructuredFacts = rawFacts
+    ? {
+      screenType: text(rawFacts.screenType),
+      activeTab: text(rawFacts.activeTab),
+      financeView: text(rawFacts.financeView),
+      // Finance assistant routing needs the currently visible service
+      // identity after the screen context is sanitized. Keep only positive
+      // record ids; the server still re-checks room/tenant ownership before
+      // reading any data.
+      selectedAgreementId: numberOrNull(rawFacts.selectedAgreementId),
+      // COMPANY/ROOM financial surfaces may select an invoice while keeping
+      // the agreement as the canonical entity. Preserve only the bounded
+      // positive identifiers needed to keep Sefer Abi on that read-only
+      // invoice context; the server still re-checks ownership before any
+      // evidence is loaded.
+      selectedInvoiceId: numberOrNull(rawFacts.selectedInvoiceId),
+      selectedHakedisId: numberOrNull(rawFacts.selectedHakedisId),
+      selectedShiftId: numberOrNull(rawFacts.selectedShiftId),
+      selectedVehicleId: numberOrNull(rawFacts.selectedVehicleId),
+      selectedVehicleLabel: text(rawFacts.selectedVehicleLabel || rawFacts.selectedVehiclePlate || rawFacts.vehiclePlate),
+      // Independent ROOM ledger questions may explicitly scope a read-only
+      // answer to the vehicle and period the user is currently viewing.
+      // Preserve only bounded identifiers/dates; these hints never grant
+      // access and the ledger query still applies the server-side room scope.
+      ledgerVehicleId: numberOrNull(rawFacts.ledgerVehicleId),
+      ledgerPeriodStart: /^\d{4}-\d{2}-\d{2}(?:T[^\s]+)?$/u.test(text(rawFacts.ledgerPeriodStart)) ? text(rawFacts.ledgerPeriodStart) : "",
+      ledgerPeriodEnd: /^\d{4}-\d{2}-\d{2}(?:T[^\s]+)?$/u.test(text(rawFacts.ledgerPeriodEnd)) ? text(rawFacts.ledgerPeriodEnd) : "",
+      // COMPANY budget context is a bounded, read-only selection hint. It is
+      // carried through the canonical state sanitizer so Sefer Abi can answer
+      // against the same plan the user is viewing; authorization and all
+      // financial evidence still come from the server-side plan lookup.
+      selectedBudgetPlanId: numberOrNull(rawFacts.selectedBudgetPlanId || rawFacts.budgetPlanId),
+      selectedAgreementIds: Array.isArray(rawFacts.selectedAgreementIds)
+        ? rawFacts.selectedAgreementIds.map(numberOrNull).filter(Boolean).slice(0, 32)
+        : [],
+      budgetAmountMinor: boundedInteger(rawFacts.budgetAmountMinor),
+      committedAmountMinor: boundedInteger(rawFacts.committedAmountMinor),
+      remainingBudgetMinor: Number.isSafeInteger(Number(rawFacts.remainingBudgetMinor))
+        ? Number(rawFacts.remainingBudgetMinor)
+        : null,
+      budgetStatus: text(rawFacts.budgetStatus).toUpperCase(),
+      budgetCurrencyCode: /^[A-Z]{3}$/u.test(text(rawFacts.budgetCurrencyCode).toUpperCase())
+        ? text(rawFacts.budgetCurrencyCode).toUpperCase()
+        : "",
+      // These are bounded, user-visible scope hints only. They never grant
+      // access or replace the server-owned decision period/source lineage.
+      periodStart: /^\d{4}-\d{2}-\d{2}(?:T[^\s]+)?$/u.test(text(rawFacts.periodStart)) ? text(rawFacts.periodStart) : "",
+      periodEnd: /^\d{4}-\d{2}-\d{2}(?:T[^\s]+)?$/u.test(text(rawFacts.periodEnd)) ? text(rawFacts.periodEnd) : "",
+      sourceEntryIds: Array.isArray(rawFacts.sourceEntryIds)
+        ? rawFacts.sourceEntryIds.map(numberOrNull).filter(Boolean).slice(0, 32)
+        : [],
+      // Decision-layer controls are bounded, read-only scenario hints. They
+      // are retained across the canonical state sanitizer so the assistant
+      // can explain the same server-owned preview the user is viewing, but
+      // they never grant access, authorize a write, or replace backend data.
+      manualBaselineOperationalCostMinor: boundedInteger(rawFacts.manualBaselineOperationalCostMinor),
+      targetContributionBps: boundedInteger(rawFacts.targetContributionBps, { max: 9999 }),
+      riskReserveBps: boundedInteger(rawFacts.riskReserveBps, { max: 9999 }),
+      quoteScenarioAmountMinor: boundedInteger(rawFacts.quoteScenarioAmountMinor),
+      reasoningLead: text(rawFacts.reasoningLead),
+      nextBestAction: text(rawFacts.nextBestAction),
+      selectedRecordStatus: text(rawFacts.selectedRecordStatus),
+      selectedRecordType: text(rawFacts.selectedRecordType),
+      selectedRecordLabel: text(rawFacts.selectedRecordLabel),
+      // Public review records use opaque lead keys (for example
+      // `lead-000001`) rather than numeric entity ids. Keep only this bounded
+      // route-owned key so selected lead follow-up questions survive the
+      // canonical conversation sanitizer without widening record access.
+      leadId: /^[A-Za-z0-9_-]{1,64}$/u.test(text(rawFacts.leadId)) ? text(rawFacts.leadId) : "",
+      selectedScenarioOverrides: safeScenarioOverrides,
+      selectedScenarioStatus: safeScenarioStatus,
+      selectedScenarioModelVersion: text(rawFacts.selectedScenarioModelVersion).slice(0, 96),
+      selectedScenarioId: text(rawFacts.selectedScenarioId).slice(0, 96),
+      selectedScenarioCostMinor: boundedInteger(rawFacts.selectedScenarioCostMinor),
+      selectedOfferMinor: boundedInteger(rawFacts.selectedOfferMinor),
+      selectedScenarioPeriodPlanning: safeSelectedScenarioPeriodPlanning,
+      kvkkAccess: rawFacts.kvkkAccess && typeof rawFacts.kvkkAccess === "object"
+        ? {
+          requiredCount: Math.max(0, Number(rawFacts.kvkkAccess.requiredCount || 0) || 0),
+          acceptedCount: Math.max(0, Number(rawFacts.kvkkAccess.acceptedCount || 0) || 0),
+          blocking: Boolean(rawFacts.kvkkAccess.blocking),
+        }
+        : null,
+      missing: Array.isArray(rawFacts.missing)
+        ? rawFacts.missing.slice(0, 12).map((value) => text(value)).filter(Boolean)
+        : [],
+      blockers: Array.isArray(rawFacts.blockers)
+        ? rawFacts.blockers.slice(0, 12).map((value) => text(value)).filter(Boolean)
+        : [],
+      evidence: Array.isArray(rawFacts.evidence)
+        ? rawFacts.evidence.slice(0, 12).map((value) => text(value)).filter(Boolean)
+        : [],
+    }
+    : null;
   return {
     id: numberOrNull(screenContext?.id),
     path: text(screenContext?.path),
@@ -162,11 +355,20 @@ function safeScreenContext(screenContext, user) {
     selectedRelatedEntityId: selectedRelated?.id || null,
     selectedLabel: text(screenContext?.selectedLabel || screenContext?.selectedRecordLabel),
     selectedEntitySet: uniqueSelectedEntitySet,
-    // UI labels and controls are hints. Protected facts never cross the
-    // client/server boundary as authoritative screen evidence.
+    selectedFields: safeSelectedFields,
+    selectedBadges: safeSelectedBadges,
+    structuredFacts: safeStructuredFacts,
+    // UI labels, controls and bounded display facts are hints. They never
+    // cross the client/server boundary as authoritative screen evidence.
     uiHints: screenContext?.uiHints && typeof screenContext.uiHints === "object"
       ? {
         drawerMode: text(screenContext.uiHints.drawerMode),
+        // The current starter chips are bounded UI hints used only to keep an
+        // explicitly clicked finance question on its selected-record owner.
+        // They never grant access or replace server-side authorization.
+        visibleSuggestions: Array.isArray(screenContext.uiHints.visibleSuggestions)
+          ? screenContext.uiHints.visibleSuggestions.slice(0, 8).map((value) => text(value)).filter(Boolean)
+          : [],
         activeTabs: Array.isArray(screenContext.uiHints.activeTabs)
           ? screenContext.uiHints.activeTabs.slice(0, 16).map((row) => typeof row === "string" ? text(row) : {
             label: text(row?.label),
@@ -203,7 +405,7 @@ function safeScreenContext(screenContext, user) {
             label: text(row?.label),
             targetKey: text(row?.targetKey || row?.semanticKey || row?.copilotTarget),
             semanticId: text(row?.semanticId),
-            identitySource: text(row?.identitySource) || "LEGACY_LABEL",
+            identitySource: text(row?.identitySource) || (text(row?.targetKey || row?.semanticKey || row?.copilotTarget || row?.semanticId) ? "CANONICAL" : "LEGACY_LABEL"),
             required: Boolean(row?.required),
             expanded: typeof row?.expanded === "boolean" ? row.expanded : null,
             invalid: Boolean(row?.invalid),
@@ -219,6 +421,16 @@ function safeScreenContext(screenContext, user) {
             controlSemanticIds: Array.isArray(row?.controlSemanticIds) ? row.controlSemanticIds.map((value) => text(value)).filter(Boolean).slice(0, 32) : [],
             source: text(row?.source || "LIVE_UI"),
           })).filter((row) => row.label && (row.blockKey || row.semanticId))
+          : [],
+        filterStates: Array.isArray(screenContext.uiHints.filterStates)
+          ? screenContext.uiHints.filterStates.slice(0, 8).map((row) => ({
+            scope: text(row?.scope),
+            value: text(row?.value),
+            visibleCount: Math.max(0, Number(row?.visibleCount || 0) || 0),
+            totalCount: Math.max(0, Number(row?.totalCount || 0) || 0),
+            clearTargetKey: text(row?.clearTargetKey),
+            source: text(row?.source || "LIVE_UI"),
+          })).filter((row) => row.scope && row.clearTargetKey)
           : [],
         workflowState,
         currentTarget,
@@ -239,6 +451,44 @@ function safeScreenContext(screenContext, user) {
           : null,
       }
       : {},
+  };
+}
+
+function liveAgreementDetailsTarget(screenContext, user, plan) {
+  const path = text(screenContext?.path);
+  const selectedType = entityType(screenContext?.selectedEntityType);
+  const selectedId = numberOrNull(screenContext?.selectedEntityId || screenContext?.selectedRecordId);
+  const family = text(plan?.family).toUpperCase();
+  if (path !== '/room/agreements' || selectedType !== 'agreement' || !selectedId
+    || !['RECORD_DETAILS', 'UI_GUIDANCE', 'EXPLAIN_CURRENT_TARGET'].includes(family)) return null;
+  const hints = screenContext?.uiHints && typeof screenContext.uiHints === 'object' ? screenContext.uiHints : {};
+  const rows = [
+    ...(Array.isArray(hints.visibleButtons) ? hints.visibleButtons : []),
+    ...(Array.isArray(hints.visibleMenus) ? hints.visibleMenus : []),
+    ...(Array.isArray(hints.semanticElements) ? hints.semanticElements : []),
+  ];
+  const targetKey = `room:agreements:agreement:${selectedId}:operation-bridge`;
+  const row = rows.find((candidate) => String(candidate?.targetKey || candidate?.semanticKey || candidate?.copilotTarget || '').trim() === targetKey)
+    || rows.find((candidate) => /kanıtlar|ayrıntılar|ayrintilar/iu.test(text(candidate?.label)));
+  if (!row) return null;
+  const semanticId = text(row?.semanticId) || `product:room:agreement:${selectedId}:operation-bridge`;
+  const label = text(row?.label) || 'Kanıtlar ve ayrıntılar';
+  return {
+    status: 'FOUND',
+    targetKind: 'CONTROL',
+    targetKey,
+    semanticId,
+    label,
+    semanticType: text(row?.semanticType) || 'button',
+    screenPath: path,
+    role: text(user?.role).toUpperCase(),
+    authorizedContext: { role: text(user?.role).toUpperCase(), screenPath: path, agreementId: selectedId },
+    safeAction: 'HIGHLIGHT',
+    anchor: { targetKind: 'CONTROL', targetKey, semanticId, recordType: 'AGREEMENT', recordId: selectedId },
+    locator: { targetKind: 'CONTROL', targetKey, semanticId, label, semanticType: text(row?.semanticType) || 'button' },
+    callout: { targetKind: 'CONTROL', targetKey, semanticId, label, identitySource: 'CANONICAL' },
+    criticalActionExecution: false,
+    reason: 'Seçili ve yetkili sözleşme ayrıntı hedefi canlı yüzeyde doğrulandı.',
   };
 }
 
@@ -265,6 +515,12 @@ function emptyState(authState, screenContext) {
     productTeachingState: null,
     activeGuidedTask: null,
     guidedTarget: null,
+    // Bounded, same-auth presentation/task history. This is deliberately
+    // separate from record history: it stores only previously verified
+    // product targets so BACK can restore a real prior UI step without
+    // inventing a record or crossing an authorization scope.
+    conversationStepHistory: [],
+    conversationForwardStep: null,
     authScopeVersion: authState.authScopeVersion,
     entityContext: { conversationEntities: [], selectedEntity: screenContext.selectedEntity, selectedRelatedEntity: screenContext.selectedRelatedEntity, referentConfidence: 0 },
     screenContext,
@@ -304,12 +560,20 @@ export function getCanonicalConversationState({ user, screenContext, authSession
     ? stored.activeComparisonSet.map(normalizeEntity).filter(Boolean)
     : [];
   const recentMessages = Array.isArray(stored.dialogueState?.recentMessages) ? stored.dialogueState.recentMessages.slice(-12) : [];
+  const previousScreen = stored.screenContext && typeof stored.screenContext === "object"
+    ? stored.screenContext
+    : null;
   return {
     authState,
     dialogueState: { ...(stored.dialogueState || {}), recentMessages },
     productContext: stored.productContext || { semanticPlan: null, screenPath: safeScreen.path, suspended: false },
     entityContext: { conversationEntities, selectedEntity, selectedRelatedEntity: safeScreen.selectedRelatedEntity || null, referentConfidence: Number(stored.entityContext?.referentConfidence || 0) },
     screenContext: safeScreen,
+    // Keep the prior committed surface separate from the live surface. The
+    // semantic context uses this only to suppress stale history after a
+    // route transition; it is never an authorization or record grant.
+    lastScreenPath: text(previousScreen?.path) || null,
+    lastScreenLabel: text(previousScreen?.label) || null,
     requestState: null,
     activeDomain: text(stored.activeDomain || stored.productContext?.semanticPlan?.requestedDomains?.[0]),
     activeEntitySet: activeComparisonSet.length ? activeComparisonSet : conversationEntities,
@@ -329,6 +593,10 @@ export function getCanonicalConversationState({ user, screenContext, authSession
     productTeachingState: stored.productTeachingState || null,
     activeGuidedTask: stored.activeGuidedTask || null,
     guidedTarget: stored.guidedTarget || null,
+    conversationStepHistory: Array.isArray(stored.conversationStepHistory)
+      ? stored.conversationStepHistory.slice(0, 8)
+      : [],
+    conversationForwardStep: stored.conversationForwardStep || null,
     authScopeVersion: authState.authScopeVersion,
     // Compatibility projection for the existing planner. These values are
     // server-owned and never copied from the request body.
@@ -347,6 +615,9 @@ export function getCanonicalConversationState({ user, screenContext, authSession
 export function commitCanonicalConversationState({ user, screenContext, message, payload, authSessionId = "" } = {}) {
   const current = getCanonicalConversationState({ user, screenContext, authSessionId });
   const plan = payload?.semanticPlan && typeof payload.semanticPlan === "object" ? payload.semanticPlan : null;
+  const roomCostConversationState = payload?.roomCostConversationState
+    || plan?.roomCostConversationState
+    || null;
   const route = text(payload?.conversationRoute || plan?.conversationRoute);
   const temporaryLeave = Boolean(plan?.suspendProductContext)
     || ["OFF_TOPIC_SAFE", "GENERAL_KNOWLEDGE", "LIVE_EXTERNAL_DATA"].includes(route);
@@ -485,9 +756,6 @@ export function commitCanonicalConversationState({ user, screenContext, message,
   const incomingAnalyticState = productPlan?.analyticStepState && typeof productPlan.analyticStepState === 'object'
     ? productPlan.analyticStepState
     : null;
-  const currentAnalyticState = current.lastSettledResult?.analyticStepState && typeof current.lastSettledResult.analyticStepState === 'object'
-    ? current.lastSettledResult.analyticStepState
-    : null;
   const currentFacts = Array.isArray(payload?.queryPlanExecution?.facts)
     ? payload.queryPlanExecution.facts
     : Array.isArray(payload?.retrievedFacts) ? payload.retrievedFacts : [];
@@ -545,6 +813,11 @@ export function commitCanonicalConversationState({ user, screenContext, message,
     ...(message ? [{ role: "user", text: text(message) }] : []),
     ...(payload?.reply ? [{ role: "assistant", text: text(payload.reply), semanticPlan: plan }] : []),
   ].slice(-12);
+  const effectiveGuidedTarget = payload?.guidedTarget
+    || liveAgreementDetailsTarget(safeScreen, user, plan)
+    || null;
+  const retainsCurrentGuidedTarget = ["CONTINUE_CURRENT_REASONING", "EXPLAIN_CURRENT_TARGET"].includes(String(productPlan?.family || ""))
+    || Boolean(payload?.conversationStepRestore || payload?.conversationStepForwardRestore);
   const next = {
     authState: current.authState,
     dialogueState: {
@@ -557,7 +830,17 @@ export function commitCanonicalConversationState({ user, screenContext, message,
     productContext: retainedProductPlan
       ? { semanticPlan: retainedProductPlan, screenPath: text(screenContext?.path), suspended: false }
       : { ...(current.productContext || {}), suspended: temporaryLeave },
-    lastSettledResult: nonSettlingTargetExplanation
+    lastSettledResult: roomCostConversationState && payload?.reply
+      ? {
+        authScopeVersion: current.authState.authScopeVersion,
+        reply: text(payload.reply),
+        summary: text(payload.summary || payload.reply),
+        semanticPlan: plan,
+        roomCostConversationState,
+        reasoning: text(payload.reasoning),
+        nextAction: text(payload.nextAction || payload.safeNextStep),
+      }
+      : nonSettlingTargetExplanation
       ? current.lastSettledResult || null
       : productPlan && payload?.reply
       ? {
@@ -569,6 +852,9 @@ export function commitCanonicalConversationState({ user, screenContext, message,
         retrievedFacts: Array.isArray(payload.retrievedFacts) ? payload.retrievedFacts.slice(0, 24) : [],
         reasoning: text(payload.reasoning),
         nextAction: text(payload.nextAction || payload.safeNextStep),
+        financialContinuationState: payload?.financialContinuationState
+          || productPlan?.financialContinuationState
+          || null,
         reasoningEntitySet: nextActiveReasoningEntitySet.slice(0, 16),
         domain: text(payload.authorizedDomain || payload.authorizedDomainMap?.[0]),
         // Presentation operations must remain reversible transformations of
@@ -583,9 +869,11 @@ export function commitCanonicalConversationState({ user, screenContext, message,
       : current.lastSettledResult || null,
     productTeachingState,
     activeGuidedTask,
-    guidedTarget: payload?.guidedTarget
-      ? payload.guidedTarget
-      : (current.guidedTarget && safeScreen.path === current.guidedTarget.screenPath ? current.guidedTarget : null),
+    guidedTarget: effectiveGuidedTarget
+      ? effectiveGuidedTarget
+      : (retainsCurrentGuidedTarget && current.guidedTarget && safeScreen.path === current.guidedTarget.screenPath
+        ? current.guidedTarget
+        : null),
     entityContext: {
       conversationEntities: presentationOperation && !entity.length ? current.entityContext?.conversationEntities || [] : entity,
       selectedEntity: safeScreen.selectedEntity || null,
@@ -615,6 +903,48 @@ export function commitCanonicalConversationState({ user, screenContext, message,
       comparisonSpec: plan.comparisonSpec || null,
       outputStyle: plan.answerMode || "SUMMARY",
     } : null,
+    conversationStepHistory: (() => {
+      const priorHistory = Array.isArray(current.conversationStepHistory)
+        ? current.conversationStepHistory.slice(0, 8)
+        : [];
+      const restoringPreviousStep = payload?.conversationStepRestore
+        && typeof payload.conversationStepRestore === 'object';
+      if (restoringPreviousStep) return priorHistory.slice(1);
+      const currentTarget = current.guidedTarget;
+      const nextTarget = effectiveGuidedTarget;
+      const currentPlan = current.lastSettledResult?.semanticPlan || current.productContext?.semanticPlan || null;
+      const targetChanged = currentTarget?.targetKey
+        && nextTarget?.targetKey
+        && currentTarget.targetKey !== nextTarget.targetKey;
+      if (!currentPlan || !currentTarget || !targetChanged
+        || currentTarget?.screenPath !== safeScreen.path
+        || !payload?.reply) return priorHistory;
+      const previousStep = {
+        authScopeVersion: current.authState.authScopeVersion,
+        screenPath: currentTarget.screenPath || safeScreen.path,
+        selectedEntity: current.entityContext?.selectedEntity || safeScreen.selectedEntity || null,
+        semanticPlan: currentPlan,
+        guidedTarget: currentTarget,
+        reply: current.lastSettledResult?.reply || '',
+        summary: current.lastSettledResult?.summary || current.lastSettledResult?.reply || '',
+        nextAction: current.lastSettledResult?.nextAction || '',
+        safeNextStep: current.lastSettledResult?.safeNextStep || '',
+      };
+      return [previousStep, ...priorHistory].slice(0, 8);
+    })(),
+    conversationForwardStep: (() => {
+      const restoringPreviousStep = payload?.conversationStepRestore
+        && typeof payload.conversationStepRestore === 'object';
+      const restoringForwardStep = payload?.conversationStepForwardRestore
+        && typeof payload.conversationStepForwardRestore === 'object';
+      if (restoringPreviousStep) {
+        return payload?.conversationStepForward && typeof payload.conversationStepForward === 'object'
+          ? payload.conversationStepForward
+          : null;
+      }
+      if (restoringForwardStep) return null;
+      return null;
+    })(),
     updatedAt: Date.now(),
   };
   stateByAuthScope.set(scopeKey(current.authState), next);

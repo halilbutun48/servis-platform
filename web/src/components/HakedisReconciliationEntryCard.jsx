@@ -1,6 +1,6 @@
 import ReconciliationPreviewCard from "./ReconciliationPreviewCard";
 
-export default function HakedisReconciliationEntryCard({ agreement, token, onOpenAgreement }) {
+export default function HakedisReconciliationEntryCard({ agreement, token, onOpenAgreement, collectionEnabled = false }) {
   const agreementId = Number(agreement?.id || 0);
 
   return (
@@ -16,7 +16,7 @@ export default function HakedisReconciliationEntryCard({ agreement, token, onOpe
 
       {agreementId > 0 ? (
         <>
-          <ReconciliationPreviewCard agreementId={agreementId} token={token} />
+          <ReconciliationPreviewCard agreementId={agreementId} token={token} collectionEnabled={collectionEnabled} />
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" className="btn primary" data-testid="hakedis-reconciliation-cta" onClick={onOpenAgreement}>
               Mutabakatı incele

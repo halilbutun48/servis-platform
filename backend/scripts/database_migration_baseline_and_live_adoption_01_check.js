@@ -83,9 +83,11 @@ async function main() {
   const workflow = read(".github/workflows/vardis_verification_visibility.yml");
   const evidence = readEvidence();
   const migrations = migrationNames();
+  const databaseUrl = String(process.env.DATABASE_URL || "").trim();
+  if (!databaseUrl) throw new Error("DATABASE_URL_REQUIRED: migration check requires an explicit canonical or isolated target");
   const statusResult = run(process.execPath, [PRISMA_CLI, "migrate", "status", "--schema", "prisma/schema.prisma"], {
     cwd: BACKEND_ROOT,
-    env: { DATABASE_URL: process.env.DATABASE_URL || "postgresql://servis:servispass@127.0.0.1:5433/servisdb?schema=public" },
+    env: { DATABASE_URL: databaseUrl, SEFERPAKT_DATABASE_MODE: process.env.SEFERPAKT_DATABASE_MODE || "canonical_demo" },
   });
 
   check("one canonical migration owner is wired", packageJson.scripts?.["prisma:migrate:deploy"] === "node scripts/database_migration_baseline_and_live_adoption_01_owner.mjs deploy"

@@ -23,7 +23,7 @@ import {
 } from "../region/index.js";
 import logger from "../lib/logger.js";
 
-export function gpsRouter(io) {
+export function gpsRouter(io, { writeFreezeController, workerPrisma } = {}) {
   const r = express.Router();
 
   // DRIVER: GPS ingest
@@ -444,10 +444,10 @@ export function gpsRouter(io) {
             regionContext,
           };
 
-          const queued = await enqueueAutoReachedTask(task);
+          const queued = await enqueueAutoReachedTask(task, { writeFreezeController, prismaClient: workerPrisma });
           if (!queued.ok) {
             logger.error("AUTO_REACHED enqueue failed:", queued.error || queued.reason || "unknown");
-            void processAutoReachedTask(io, task).catch((e) => {
+          void processAutoReachedTask(io, task, { writeFreezeController, prismaClient: workerPrisma }).catch((e) => {
               logger.error("AUTO_REACHED fallback error:", e);
             });
           }

@@ -86,10 +86,11 @@ function layer({ vehicleClass, sourceKind, source, capacity, range, authority, s
   };
 }
 
-export function resolveVehicleCapacityReference({ vehicleType, actualCapacity = null, canonicalCapacity = null } = {}) {
+export function resolveVehicleCapacityReference({ vehicleType, actualCapacity = null, canonicalCapacity = null, planningCapacity = null, planningReference = null } = {}) {
   const vehicleClass = normalizeClass(vehicleType);
   const actual = positiveCapacity(actualCapacity);
   const canonical = positiveCapacity(canonicalCapacity);
+  const planning = positiveCapacity(planningCapacity);
   const technicalSource = TECHNICAL_CAPACITY_REFERENCES[vehicleClass] || null;
   const technical = technicalSource
     ? layer({
@@ -120,17 +121,35 @@ export function resolveVehicleCapacityReference({ vehicleType, actualCapacity = 
     authority: "USER_OR_VEHICLE_ACTUAL",
     selectionReason: actual === null ? "Seçili araç için actual kapasite yok." : "Seçili aracın gerçek kapasitesi kullanıldı.",
   });
+  const planningLayer = layer({
+    vehicleClass,
+    sourceKind: "DEMO_PLANNING_ASSUMPTION",
+    source: {
+      sourceName: planningReference?.sourceName || "Kanonik araç planlama varsayımı",
+      sourceDate: planningReference?.sourceDate || null,
+      version: planningReference?.version || VERSION,
+      confidence: planningReference?.confidence || "MEDIUM",
+      geography: planningReference?.geography || null,
+      applicabilityLimits: planningReference?.applicabilityLimits || "Bu kapasite gerçekleşmiş araç kaydı değildir; karşılaştırmalı planlama varsayımıdır.",
+    },
+    capacity: planning,
+    range: planning === null ? null : { minCapacity: planning, maxCapacity: planning },
+    authority: "DEMO_PLANNING_ASSUMPTION",
+    selectionReason: planning === null ? "Bu aday için açık planlama kapasitesi yok." : "Aday araç için açık planlama kapasitesi kullanıldı; actual araç kapasitesi değildir.",
+  });
   const selected = actualLayer.available
     ? actualLayer
     : canonicalLayer.available
       ? canonicalLayer
-      : technical;
+      : planningLayer.available
+        ? planningLayer
+        : technical;
   return {
     vehicleClass,
     unit: UNIT,
     selected,
-    layers: [actualLayer, canonicalLayer, technical],
-    precedence: ["USER_OR_VEHICLE_ACTUAL", "CANONICAL_VEHICLE_MODEL", "TECHNICAL_CLASS_REFERENCE", "NO_DATA"],
+    layers: [actualLayer, canonicalLayer, planningLayer, technical],
+    precedence: ["USER_OR_VEHICLE_ACTUAL", "CANONICAL_VEHICLE_MODEL", "DEMO_PLANNING_ASSUMPTION", "TECHNICAL_CLASS_REFERENCE", "NO_DATA"],
     status: selected.available ? "RESOLVED" : "NO_DATA",
     referenceVersion: VERSION,
   };

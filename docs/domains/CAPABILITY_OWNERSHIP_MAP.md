@@ -33,7 +33,7 @@ This map points to actual implementation/check owners. Status is one of `IMPLEME
 
 ## Finance semantics
 
-The current finance owners deliberately distinguish `ACTUAL`, `ESTIMATE`, `PARTIAL`, `MARKET_REFERENCE`, and `DEMO_FIXTURE`. #1 owns Company budget/service cost, #2 external market/reference data, #3 reconciliation preview, #4 scenario forecast, #5 explanation, and #6 provider-independent export preparation. #5 is not an accounting calculator; #6 is not a posting engine.
+The current finance owners deliberately distinguish `ACTUAL`, `ESTIMATE`, `PARTIAL`, `MARKET_REFERENCE`, and `DEMO_FIXTURE`. #1 owns Company budget/service cost, #2 external market/reference data, #3 reconciliation preview, #4 scenario forecast, #5 explanation, and #6 provider-independent export preparation. ROOM routine cost-ledger writes, including driver employer cost, are owned by the canonical ROOM role plus the server-verified same `roomId`; `ROOM_FINANCE_SALARY` remains a domain/category key rather than a separate grant or TOTP gate. #5 is not an accounting calculator; #6 is not a posting engine.
 
 ## Contract-to-cash trace
 

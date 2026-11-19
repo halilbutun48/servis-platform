@@ -49,8 +49,8 @@ export async function invalidateShiftRouteSnapshot(shiftId, db = prisma) {
   });
 }
 
-export async function refreshShiftRouteSnapshot(shiftId) {
-  const shift = await prisma.shift.findUnique({
+export async function refreshShiftRouteSnapshot(shiftId, db = prisma) {
+  const shift = await db.shift.findUnique({
     where: { id: Number(shiftId) },
     include: { stops: { orderBy: { order: 'asc' } } },
   });
@@ -80,7 +80,7 @@ export async function refreshShiftRouteSnapshot(shiftId) {
     }
   }
 
-  await prisma.shift.update({
+  await db.shift.update({
     where: { id: shift.id },
     data: {
       routeSnapshotPolyline,
@@ -103,7 +103,7 @@ export async function refreshShiftRouteSnapshot(shiftId) {
 export async function rebuildShiftRouteState(shiftId, db = prisma) {
   await invalidateShiftRouteSnapshot(shiftId, db);
   clearShiftRoutePreviewCache(shiftId);
-  return refreshShiftRouteSnapshot(shiftId);
+  return refreshShiftRouteSnapshot(shiftId, db);
 }
 
 

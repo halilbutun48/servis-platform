@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
-import { hubLabel, personLabel } from "../../utils/labels";
+import { personLabel } from "../../utils/labels";
 import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
 import { formatDateTimeTR } from "../../utils/time";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
@@ -11,6 +11,7 @@ import { clearUiDataCache } from "../../utils/uiDataCache";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import PanelChrome from "../../components/PanelChrome";
 import OfferQualityRankingCard from "../shared/OfferQualityRankingCard";
+import { formatOfferAmountMinor } from "../shared/offerAmountPresentation";
 import { loadGuidedDraftCandidates } from "./guidedPlanModalActions";
 
 const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
@@ -62,10 +63,7 @@ function fmtTR(iso) {
 }
 
 function formatTRY(amount) {
-  if (amount == null) return "-";
-  const n = Number(amount);
-  if (!Number.isFinite(n)) return "-";
-  return new Intl.NumberFormat("tr-TR").format(n);
+  return formatOfferAmountMinor(amount);
 }
 
 function offerGapMeta(amountCompany, amountRoom) {
@@ -357,7 +355,6 @@ export default function WorkflowPanel() {
   const { token, me } = useSession();
   // School mode (Company.kind=SCHOOL) uses the same panel; copy/paste safe label.
   const who = personLabel(me);
-  const scopeHubLabel = hubLabel(me);
   const school = me?.companyKind === "SCHOOL";
   const organization = me?.companyKind === "ORGANIZATION";
 
@@ -670,6 +667,18 @@ export default function WorkflowPanel() {
     clearGuidedResume();
   }, [workflowBasePath]);
 
+  useEffect(() => {
+    function handlePlanningFlowOpen(event) {
+      const requestedStep = Number(event?.detail?.step);
+      setGuidedResumeStep(Number.isFinite(requestedStep) ? Math.max(0, Math.min(3, requestedStep)) : 0);
+      setGuidedResumeNonce(Date.now());
+      setGuidedOpen(true);
+    }
+
+    window.addEventListener("psv1:planning-flow-open", handlePlanningFlowOpen);
+    return () => window.removeEventListener("psv1:planning-flow-open", handlePlanningFlowOpen);
+  }, []);
+
   return (
     <div className="wrap wrap--fluid">
       <PanelChrome
@@ -677,11 +686,11 @@ export default function WorkflowPanel() {
         subtitle={
           organization ? (
             <>
-              Yeni iş kurmak için <b>Planlama Merkezi</b>, mevcut işi takip etmek için <b>Vardiyalar</b> kullanılır. Akış: <b>{scopeHubLabel}</b> → <b>Plan paketi</b> → <b>Kişi sayısı / gidilecek konumlar</b> → <b>Ön izleme / teklif</b>.
+              Yeni iş kurmak için <b>Planlama Merkezi</b>, mevcut işi takip etmek için <b>Vardiyalar</b> kullanılır. Sıra: <b>konum / bölge</b> → <b>çalışma günleri ve saatler</b> → <b>personel adresleri</b> → <b>duraklar</b> → <b>rota ve kapasite</b> → <b>bütçe / teklif</b> → <b>alıcı seçimi ve onaylı gönderim</b>.
             </>
           ) : (
             <>
-              Yeni iş kurmak için <b>Planlama Merkezi</b>, mevcut işi takip etmek için <b>Vardiyalar</b> kullanılır. Akış: <b>{scopeHubLabel}</b> → <b>Plan paketi</b> → <b>{who}/Durak</b> → <b>Ön izleme / teklif</b>.
+              Yeni iş kurmak için <b>Planlama Merkezi</b>, mevcut işi takip etmek için <b>Vardiyalar</b> kullanılır. Sıra: <b>konum / bölge</b> → <b>çalışma günleri ve saatler</b> → <b>{who} adresleri</b> → <b>duraklar</b> → <b>rota ve kapasite</b> → <b>bütçe / teklif</b> → <b>alıcı seçimi ve onaylı gönderim</b>.
             </>
           )
         }
@@ -736,11 +745,11 @@ export default function WorkflowPanel() {
         <div className="muted" style={{ marginTop: 4 }}>
           {organization ? (
             <>
-              Sade akış: <b>Toplanma Konumu</b> → <b>Plan paketi</b> → <b>Kişi sayısı / gidilecek konumlar</b> → <b>Ön izleme</b> → <b>Teklif oluştur</b>.
+              Sıralı akış: <b>toplanma konumu</b> → <b>çalışma günleri ve saatler</b> → <b>kişi adresleri</b> → <b>duraklar</b> → <b>rota / kapasite</b> → <b>bütçe / teklif</b> → <b>alıcı seçimi ve onaylı gönderim</b>.
             </>
           ) : (
             <>
-              Sade akış: <b>Hizmet Alan Firma Konumu</b> → <b>Plan paketi</b> → <b>{who}/Durak</b> → <b>Ön izleme</b> → <b>Teklif oluştur</b>.
+              Sıralı akış: <b>hizmet alanı konumu</b> → <b>çalışma günleri ve saatler</b> → <b>{who} adresleri</b> → <b>duraklar</b> → <b>rota / kapasite</b> → <b>bütçe / teklif</b> → <b>alıcı seçimi ve onaylı gönderim</b>.
             </>
           )}
         </div>
@@ -810,7 +819,7 @@ export default function WorkflowPanel() {
               <ChecklistRow
                 done={guide.offersOk}
                 title="3) Teklifler"
-                desc={guide.offersOk ? "Açık teklif yok (OK)" : "Açık teklif var: değerlendir"}
+                desc={guide.offersOk ? "Açık teklif yok (Hazır)" : "Açık teklif var: değerlendir"}
                 actionLabel={guide.offersOk ? "" : "Teklifleri aç"}
                 onAction={openOffers}
               />

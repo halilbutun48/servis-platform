@@ -3,6 +3,7 @@ import { displayStatusLabel } from "../../utils/displayStatus";
 import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
 import { roomLabel } from "./shiftsPanelOfferUtils";
 import { AgreementBadge } from "./companyShiftsPanelRows";
+import { isCommercialLifecycleRestricted } from "./companyShiftsCommercialPolicy";
 import {
   ShiftCardDetails,
   ShiftCardOtherActions,
@@ -211,8 +212,13 @@ export function CompanyMarketShiftCard({
   companyKind = "COMPANY",
 }) {
   const packageIds = computePackageShiftIds(shift);
+  const hasRoomOffer = shift?.roomOfferAmount != null
+    || Boolean(shift?.roomOfferVehicleId)
+    || Boolean(shift?.roomOfferNote)
+    || Boolean(shift?.roomOfferToDriver)
+    || Boolean(shift?.roomOfferDriverNote);
   const selected = Number(copilotShiftId || 0) === Number(shift?.id || 0);
-  const restricted = ["SCHOOL", "ORGANIZATION"].includes(String(companyKind || "").toUpperCase());
+  const restricted = isCommercialLifecycleRestricted(companyKind);
 
   return (
     <CardShell selected={selected} shiftId={shift?.id} companyKind={companyKind} onClick={() => onFocusShift(shift?.id)}>
@@ -243,22 +249,28 @@ export function CompanyMarketShiftCard({
         <div className="shiftCardActionNote">Bu hesap türünde ticari teklif ve sözleşme işlemleri kullanılamaz.</div>
       ) : (
         <>
-          <ShiftCardPrimaryAction label="Teklif Gönder" disabled={busy} onClick={(e) => { stopCardClick(e); onOpenOfferModal(shift.id); }} />
+          {hasRoomOffer ? (
+            <ShiftCardPrimaryAction label="Teklifleri Aç" disabled={busy} onClick={(e) => { stopCardClick(e); onOpenOffersModal(shift.id); }} />
+          ) : (
+            <ShiftCardPrimaryAction label="Teklif Gönder" disabled={busy} onClick={(e) => { stopCardClick(e); onOpenOfferModal(shift.id); }} />
+          )}
           <ShiftCardDetails>
             <CardSection title="Teklif / sözleşme özeti">
               <div className="shiftCardInfoBlock">
-                <div className="shiftCardInfoTitle">Market talebi</div>
-                <div className="shiftCardSubtle">Taşımacılık firması seçilmemiş talep. Teklif bu ekrandan taşımacılık firması havuzuna gönderilir.</div>
+                <div className="shiftCardInfoTitle">{hasRoomOffer ? "Mevcut taşımacılık firması teklifi" : "Market talebi"}</div>
+                <div className="shiftCardSubtle">{hasRoomOffer ? "Gelen teklif bu ekrandan açılır; aynı iş için yeni teklif oluşturulmaz." : "Taşımacılık firması seçilmemiş talep. Teklif bu ekrandan taşımacılık firması havuzuna gönderilir."}</div>
               </div>
             </CardSection>
             <CardSection title="Finansal ayrıntılar">
               <div className="shiftCardSubtle">Bu kartta ödeme sonucu oluşturulmadı. Hakediş bilgisi oluştuğunda Ticari Akış ekranından açılır.</div>
             </CardSection>
           </ShiftCardDetails>
-          <ActionGroup note={packageIds.length < 2 ? "Paket teklif için en az iki vardiya gerekir." : null}>
-            <button type="button" className="btn sm" disabled={busy || packageIds.length < 2} onClick={(e) => { stopCardClick(e); onOpenOfferModal(shift.id, packageIds); }} title={packageIds.length < 2 ? "Paket bulunamadı" : `Pakete uygula (${packageIds.length} vardiya)`}>Paket Teklif</button>
-            <button type="button" className="btn sm" disabled={busy} onClick={(e) => { stopCardClick(e); onOpenOffersModal(shift.id); }}>Teklifleri Aç</button>
-          </ActionGroup>
+          {!hasRoomOffer ? (
+            <ActionGroup note={packageIds.length < 2 ? "Paket teklif için en az iki vardiya gerekir." : null}>
+              <button type="button" className="btn sm" disabled={busy || packageIds.length < 2} onClick={(e) => { stopCardClick(e); onOpenOfferModal(shift.id, packageIds); }} title={packageIds.length < 2 ? "Paket bulunamadı" : `Pakete uygula (${packageIds.length} vardiya)`}>Paket Teklif</button>
+              <button type="button" className="btn sm" disabled={busy} onClick={(e) => { stopCardClick(e); onOpenOffersModal(shift.id); }}>Teklifleri Aç</button>
+            </ActionGroup>
+          ) : null}
         </>
       )}
     </CardShell>
@@ -285,7 +297,7 @@ export function CompanyPendingShiftCard({
   const canNegotiate = ["DRAFT", "REQUESTED"].includes(String(shift.status));
   const canExtend = ["APPROVED", "ACTIVE"].includes(String(shift.status || "").toUpperCase());
   const agreementMeta = buildAgreementConversionMeta(shift, agreementConversion);
-  const restricted = ["SCHOOL", "ORGANIZATION"].includes(String(companyKind || "").toUpperCase());
+  const restricted = isCommercialLifecycleRestricted(companyKind);
   const selected = Number(copilotShiftId || 0) === Number(shift?.id || 0);
   const extendRequested = Boolean(shift.extendRequestedEndAt && String(shift.extendDecision || "PENDING") === "PENDING");
   const primaryLabel = restricted
@@ -383,7 +395,7 @@ export function CompanyFinalShiftCard({
   const hasVehicle = !!(shift.vehicle?.plate || shift.vehicleId);
   const hasDriver = !!(shift.driver?.fullName || shift.driverId);
   const agreementMeta = buildAgreementConversionMeta(shift, agreementConversion);
-  const restricted = ["SCHOOL", "ORGANIZATION"].includes(String(companyKind || "").toUpperCase());
+  const restricted = isCommercialLifecycleRestricted(companyKind);
   const canReassign = ["APPROVED", "ACTIVE"].includes(String(shift.status || "").toUpperCase());
   const selected = Number(copilotShiftId || 0) === Number(shift?.id || 0);
   const extendRequested = Boolean(shift.extendRequestedEndAt && String(shift.extendDecision || "PENDING") === "PENDING");

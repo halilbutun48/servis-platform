@@ -1,23 +1,20 @@
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import { rowSelectionStyle } from "../../utils/listUi";
-import { agreementExtendStatusText } from "../../utils/agreementLabels";
+import { agreementExtendStatusText, agreementStatusText } from "../../utils/agreementLabels";
 import { buildDynamicSavingsPreview, routeDiffText, routeSummaryText } from "../../utils/routePreviewSummary";
 import AgreementRouteChangePreviewCard from "../shared/AgreementRouteChangePreviewCard";
 import DynamicSavingsPreviewCard from "../shared/DynamicSavingsPreviewCard";
+import { formatAgreementMoney, formatAgreementPriceImpact, friendlyAgreementNote } from "./roomAgreementDisplay";
 
-function moneyTry(v) {
-  if (v == null || v === "") return "-";
-  const n = Number(v);
-  if (!Number.isFinite(n)) return String(v);
-  return `₺${n}`;
-}
-
-export function OfferCell({ amount, note }) {
-  const a = moneyTry(amount);
-  const n = String(note || "").trim();
+export function OfferCell({ amount, note, secondaryAmount, secondaryNote, secondaryLabel = "Firma teklifi" }) {
+  const a = formatAgreementMoney(amount, note);
+  const n = friendlyAgreementNote(note);
+  const secondary = secondaryAmount == null ? null : formatAgreementMoney(secondaryAmount, secondaryNote);
+  const secondaryText = secondary == null ? "" : `${secondaryLabel}: ${secondary}`;
   return (
-    <div title={n || ""}>
+    <div title={[n, secondaryText].filter(Boolean).join(" • ") || ""}>
       <div style={{ fontWeight: 800 }}>{a}</div>
+      {secondaryText ? <div className="muted" style={{ fontSize: 12 }}>{secondaryText}</div> : null}
       {n ? <div className="muted" style={{ fontSize: 12 }}>{n}</div> : null}
     </div>
   );
@@ -36,11 +33,7 @@ function trDateTime(iso) {
 }
 
 function routePriceDiffText(currentAmount, nextAmount) {
-  const current = Number(currentAmount || 0);
-  const next = Number(nextAmount ?? currentAmount ?? 0);
-  const diff = next - current;
-  const fmt = (n) => new Intl.NumberFormat("tr-TR").format(Number(n || 0)) + " ₺";
-  return `${fmt(current)} → ${fmt(next)} (${diff > 0 ? "+" : ""}${fmt(diff)})`;
+  return formatAgreementPriceImpact(currentAmount, nextAmount);
 }
 
 function ymd(value) {
@@ -99,7 +92,7 @@ function RoomAgreementsRouteRefreshPendingCard({
     >
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontWeight: 900 }}>Sözleşme ID {agreementId} • Rota güncelleme ID {item.id}</div>
+          <div style={{ fontWeight: 900 }}>Sözleşme #{agreementId} • Rota güncelleme #{item.id}</div>
           <div className="muted" style={{ marginTop: 4 }}>
             {String(item?.startDate || "-").slice(0, 10)} → {String(item?.endDate || "-").slice(0, 10)} • {trDateTime(item?.createdAt)}
           </div>
@@ -112,9 +105,9 @@ function RoomAgreementsRouteRefreshPendingCard({
 
       <div style={{ marginTop: 12 }}>
         <AgreementRouteChangePreviewCard
-          summaryText={`Talep ID ${requestId} • ${String(item?.status || "-").toUpperCase()} • ${String(item?.startDate || "-").slice(0, 10)} → ${String(item?.endDate || "-").slice(0, 10)}`}
+          summaryText={`Talep #${requestId} • ${agreementStatusText(item?.status)} • ${String(item?.startDate || "-").slice(0, 10)} → ${String(item?.endDate || "-").slice(0, 10)}`}
           companyOfferNote={item?.initialCompanyOfferNote || item?.companyOfferNote || ""}
-          roomCounterText={roomAmount == null ? "" : `${moneyTry(roomAmount)}${item?.roomCounterNote ? ` — ${item.roomCounterNote}` : ""}`}
+          roomCounterText={roomAmount == null ? "" : `${formatAgreementMoney(roomAmount, item?.roomCounterNote)}${friendlyAgreementNote(item?.roomCounterNote) ? ` — ${friendlyAgreementNote(item.roomCounterNote)}` : ""}`}
           currentRouteLabel="Mevcut rota"
           proposedRouteLabel="Önerilen yeni rota"
           diffLabel="Kişi / durak / km / süre farkı"
@@ -139,8 +132,8 @@ function RoomAgreementsRouteRefreshPendingCard({
           proposedPreviewShiftId={draftShiftId}
           currentPreviewButtonLabel="Mevcut Rotayı Gör"
           proposedPreviewButtonLabel="Yeni Rotayı Önizle"
-          onOpenCurrentPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(sourceShiftId, { title: `Sözleşme ID ${agreementId} — Mevcut Rota` }); }}
-          onOpenProposedPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(draftShiftId, { title: `Sözleşme ID ${agreementId} — Önerilen Yeni Rota` }); }}
+          onOpenCurrentPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(sourceShiftId, { title: `Sözleşme #${agreementId} — Mevcut Rota` }); }}
+          onOpenProposedPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(draftShiftId, { title: `Sözleşme #${agreementId} — Önerilen Yeni Rota` }); }}
           actions={(
             <>
               <button type="button" className="btn sm ghost" disabled={busy} onClick={(e) => { e.stopPropagation(); onStartCounter(item); }}>
@@ -164,8 +157,8 @@ function RoomAgreementsRouteRefreshPendingCard({
         <div className="card" style={{ marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
           <div style={{ fontWeight: 900 }}>Rota güncelleme karşı teklifi</div>
           <div className="muted" style={{ marginTop: 6 }}>
-            Hizmet Alan Firma teklifi: <b>{moneyTry(item?.initialCompanyOfferAmount ?? item?.companyOfferAmount ?? agreement?.companyOfferAmount)}</b>
-            {item?.initialCompanyOfferNote ? <span> — {item.initialCompanyOfferNote}</span> : (item?.companyOfferNote ? <span> — {item.companyOfferNote}</span> : null)}
+            Hizmet Alan Firma teklifi: <b>{formatAgreementMoney(item?.initialCompanyOfferAmount ?? item?.companyOfferAmount ?? agreement?.companyOfferAmount, item?.initialCompanyOfferNote || item?.companyOfferNote)}</b>
+            {friendlyAgreementNote(item?.initialCompanyOfferNote || item?.companyOfferNote) ? <span> — {friendlyAgreementNote(item?.initialCompanyOfferNote || item?.companyOfferNote)}</span> : null}
           </div>
           <div className="fieldRow" style={{ marginTop: 12 }}>
             <div className="field">
@@ -291,7 +284,7 @@ function RoomAgreementsRouteRefreshAcceptedCard({
     >
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontWeight: 900 }}>Sözleşme ID {agreementId} • Uygulanan rota güncelleme ID {item.id}</div>
+          <div style={{ fontWeight: 900 }}>Sözleşme #{agreementId} • Uygulanan rota güncelleme #{item.id}</div>
           <div className="muted" style={{ marginTop: 4 }}>
             {String(item?.startDate || "-").slice(0, 10)} → {String(item?.endDate || "-").slice(0, 10)} • Uygulandı: {trDateTime(item?.decidedAt || item?.updatedAt)}
           </div>
@@ -305,9 +298,9 @@ function RoomAgreementsRouteRefreshAcceptedCard({
 
       <div style={{ marginTop: 12 }}>
         <AgreementRouteChangePreviewCard
-          summaryText={`Talep ID ${item?.id || '-'} • Uygulandı • ${String(item?.startDate || "-").slice(0, 10)} → ${String(item?.endDate || "-").slice(0, 10)}`}
+          summaryText={`Talep #${item?.id || '-'} • Uygulandı • ${String(item?.startDate || "-").slice(0, 10)} → ${String(item?.endDate || "-").slice(0, 10)}`}
           companyOfferNote={item?.finalAcceptedNote || item?.initialCompanyOfferNote || item?.companyOfferNote || ""}
-          roomCounterText={roomAmount == null ? "" : `${moneyTry(roomAmount)}${item?.roomCounterNote ? ` — ${item.roomCounterNote}` : ""}`}
+          roomCounterText={roomAmount == null ? "" : `${formatAgreementMoney(roomAmount, item?.roomCounterNote)}${friendlyAgreementNote(item?.roomCounterNote) ? ` — ${friendlyAgreementNote(item.roomCounterNote)}` : ""}`}
           currentRouteLabel="Önceki rota"
           proposedRouteLabel="Uygulanan yeni rota"
           diffLabel="Kişi / durak / km / süre farkı"
@@ -330,8 +323,8 @@ function RoomAgreementsRouteRefreshAcceptedCard({
           proposedPreviewShiftId={acceptedShiftId}
           currentPreviewButtonLabel="Önceki Rotayı Gör"
           proposedPreviewButtonLabel="Uygulanan Rotayı Gör"
-          onOpenCurrentPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(sourceShiftId, { title: `Sözleşme ID ${agreementId} — Önceki Rota` }); }}
-          onOpenProposedPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(acceptedShiftId, { title: `Sözleşme ID ${agreementId} — Uygulanan Yeni Rota` }); }}
+          onOpenCurrentPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(sourceShiftId, { title: `Sözleşme #${agreementId} — Önceki Rota` }); }}
+          onOpenProposedPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(acceptedShiftId, { title: `Sözleşme #${agreementId} — Uygulanan Yeni Rota` }); }}
         />
       </div>
       <div style={{ marginTop: 12 }}>

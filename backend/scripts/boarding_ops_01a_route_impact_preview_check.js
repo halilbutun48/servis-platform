@@ -85,6 +85,8 @@ function main() {
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const audit = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
   const docs = read('docs/BOARDING_OPS_01A_ROUTE_IMPACT_PREVIEW.md');
+  const service = read('backend/src/ai/service.js');
+  const conversationState = read('backend/src/ai/chat/canonicalConversationState.js');
 
   const boardingUi = read('web/src/panels/shared/boardingChangeUi.js');
   const previewCard = read('web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx');
@@ -186,10 +188,23 @@ function main() {
 
   must(copilotPanel, 'requestSelection', 'copilot panel keeps canonical selection bridge');
   must(copilotPanel, 'selectedEntityType: requestSelection?.entityType', 'copilot panel keeps selected entity type');
+  must(copilotPanel, 'selectedFields: Array.isArray(requestSelection?.fields)', 'copilot panel forwards selected fields');
+  must(copilotPanel, 'selectedBadges: Array.isArray(requestSelection?.badges)', 'copilot panel forwards selected badges');
+  must(copilotPanel, 'structuredFacts: requestSelection?.facts', 'copilot panel forwards structured facts');
 
   must(drawer, 'requestSelection', 'drawer keeps canonical selection bridge');
   must(drawer, 'selectedEntitySet: Array.isArray(requestSelection?.entitySet)', 'drawer keeps selected entity set');
+  must(drawer, 'selectedFields: Array.isArray(requestSelection?.fields)', 'drawer forwards selected fields');
+  must(drawer, 'selectedBadges: Array.isArray(requestSelection?.badges)', 'drawer forwards selected badges');
+  must(drawer, 'structuredFacts: requestSelection?.facts', 'drawer forwards structured facts');
   must(drawer, 'screenPath', 'drawer keeps screenPath bridge');
+
+  must(service, 'selectedFields: Array.isArray(screenContext?.selectedFields)', 'service preserves selected fields');
+  must(service, 'selectedBadges: Array.isArray(screenContext?.selectedBadges)', 'service preserves selected badges');
+  must(service, 'structuredFacts: screenContext?.structuredFacts', 'service preserves structured facts');
+  must(conversationState, 'selectedFields: safeSelectedFields', 'canonical state preserves bounded selected fields');
+  must(conversationState, 'selectedBadges: safeSelectedBadges', 'canonical state preserves bounded selected badges');
+  must(conversationState, 'structuredFacts: safeStructuredFacts', 'canonical state preserves bounded structured facts');
 
   must(companyOps, 'BoardingRouteImpactPreviewCard', 'company operations renders boarding preview card');
   must(companyOps, 'Rota etkisini önizle', 'company operations keeps preview button');

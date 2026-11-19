@@ -95,6 +95,176 @@ function buildWaitingOvertimeComponent(normalized) {
   });
 }
 
+function resolvePeriodicLedgerAmount(entry, normalized) {
+  const occurrenceKind = String(entry?.occurrenceKind || "").toUpperCase();
+  const componentKey = compactText(entry?.componentKey, "other_direct_cost");
+  const recordKind = String(entry?.recordKind || "").toUpperCase();
+  const sourceType = compactText(entry?.sourceType, "").toUpperCase();
+  const sourceRef = compactText(entry?.sourceRef, "").toUpperCase();
+  const isOfferScopedForecast = ["FORECAST", "BUDGET"].includes(recordKind)
+    && sourceType === "ROOM_QUOTE_FORECAST"
+    && sourceRef.startsWith("ROOM-QUOTE-FORECAST-OFFER-");
+  // An offer-scoped forecast is a one-job planning supplement, even when
+  // the generic cost form stored its occurrence kind as PERIODIC. Requiring
+  // monthly allocation here would silently turn a confirmed 2,000 TL quote
+  // forecast into zero without a valid allocation basis.
+  if (isOfferScopedForecast) {
+    return { amountMinor: entry?.amountMinor, missingFields: [], evidence: ["offer-scoped forecast doğrudan tek iş tahmini olarak eklendi"] };
+  }
+  const requiresAllocation = occurrenceKind === "PERIODIC"
+    || occurrenceKind === "RECURRING";
+  if (!requiresAllocation || !["driver_labor", "vehicle_fixed_allocated"].includes(componentKey)) {
+    return { amountMinor: entry?.amountMinor, missingFields: [], evidence: [] };
+  }
+
+  const monthlyTotal = Number.isSafeInteger(entry?.amountMinor) ? entry.amountMinor : null;
+  const mode = normalized.vehicleFixedCostAllocationMode
+    || (normalized.allocationShiftsPerMonth !== null || normalized.shiftCount !== null ? "per_shift" : "")
+    || (normalized.allocationServiceDaysPerMonth !== null || normalized.serviceDayCount !== null ? "per_service_day" : "");
+  if (monthlyTotal === null) return { amountMinor: 0, missingFields: ["roomCostLedgerInputs.amountMinor"], evidence: [] };
+
+  if (mode === "per_shift" && normalized.allocationShiftsPerMonth !== null && normalized.shiftCount !== null && normalized.allocationShiftsPerMonth > 0) {
+    return {
+      amountMinor: roundMinor((monthlyTotal * normalized.shiftCount) / normalized.allocationShiftsPerMonth),
+      missingFields: [],
+      evidence: [`${componentKey} monthly total ${monthlyTotal} minor / ${normalized.allocationShiftsPerMonth} shifts × ${normalized.shiftCount} shift`],
+    };
+  }
+  if (mode === "per_service_day" && normalized.allocationServiceDaysPerMonth !== null && normalized.serviceDayCount !== null && normalized.allocationServiceDaysPerMonth > 0) {
+    return {
+      amountMinor: roundMinor((monthlyTotal * normalized.serviceDayCount) / normalized.allocationServiceDaysPerMonth),
+      missingFields: [],
+      evidence: [`${componentKey} monthly total ${monthlyTotal} minor / ${normalized.allocationServiceDaysPerMonth} service day × ${normalized.serviceDayCount} day`],
+    };
+  }
+  if (mode === "per_month_fraction" && normalized.allocationMonthFraction !== null) {
+    return {
+      amountMinor: roundMinor(monthlyTotal * normalized.allocationMonthFraction),
+      missingFields: [],
+      evidence: [`${componentKey} monthly total ${monthlyTotal} minor × month fraction ${normalized.allocationMonthFraction}`],
+    };
+  }
+  return {
+    amountMinor: 0,
+    missingFields: ["allocation basis"],
+    evidence: [`${componentKey} periyodik tutar ${monthlyTotal} minor; açık vardiya/gün/ay oranı olmadan tek vardiyaya yüklenmedi`],
+  };
+}
+
+function buildRoomCostLedgerComponents(normalized, issues) {
+  const entries = Array.isArray(normalized.roomCostLedgerInputs) ? normalized.roomCostLedgerInputs : [];
+  if (!entries.length) return [];
+
+  const currencies = new Set(entries.map((entry) => entry.currencyCode).filter(Boolean));
+  if (currencies.size > 1) {
+    issues.blockers.push("room ledger mixed currency not allowed");
+  }
+
+  const grouped = new Map();
+  for (const entry of entries) {
+    const componentKey = compactText(entry.componentKey, "other_direct_cost");
+    const existing = grouped.get(componentKey) || {
+      componentKey,
+      categoryKeys: new Set(),
+      sourceRefs: new Set(),
+      amountMinor: 0,
+      actualAmountMinor: 0,
+      forecastAmountMinor: 0,
+      recordKinds: new Set(),
+      currencyCode: entry.currencyCode || normalized.currencyCode,
+      netRollupBlocked: false,
+      missingFields: new Set(),
+      allocationEvidence: [],
+    };
+    existing.categoryKeys.add(entry.categoryKey);
+    existing.recordKinds.add(String(entry.recordKind || "ACTUAL").toUpperCase());
+    if (entry.sourceRef) existing.sourceRefs.add(entry.sourceRef);
+    const resolvedAmount = resolvePeriodicLedgerAmount(entry, normalized);
+    if (Number.isSafeInteger(resolvedAmount.amountMinor)) {
+      existing.amountMinor += resolvedAmount.amountMinor;
+      if (String(entry.recordKind || "ACTUAL").toUpperCase() === "ACTUAL") {
+        existing.actualAmountMinor += resolvedAmount.amountMinor;
+      } else {
+        existing.forecastAmountMinor += resolvedAmount.amountMinor;
+      }
+    }
+    for (const field of resolvedAmount.missingFields) existing.missingFields.add(field);
+    existing.allocationEvidence.push(...resolvedAmount.evidence);
+    if (!entry.netEligible) existing.netRollupBlocked = true;
+    grouped.set(componentKey, existing);
+  }
+
+  return [...grouped.values()].map((group) => {
+    const warnings = [];
+    const blockers = [];
+    if (group.netRollupBlocked) {
+      warnings.push("KDV durumu bilinmeyen gerçek gider; brüt görünür, doğrulanmış net kârda kullanılamaz");
+      issues.warnings.push("room ledger actual includes VAT_UNKNOWN; net rollup is blocked");
+    }
+    if (currencies.size > 1) blockers.push("MIXED_CURRENCIES");
+    const component = finalizeComponent({
+      componentKey: group.componentKey,
+      labelTr: `Gerçek gider • ${group.categoryKeys.size ? [...group.categoryKeys].join(", ") : "Diğer"}`,
+      currencyCode: currencies.size === 1 ? group.currencyCode : null,
+      sourceFields: ["roomCostLedgerInputs"],
+      amountMinor: currencies.size === 1 ? group.amountMinor : 0,
+      relevant: true,
+      includedInBaseline: currencies.size === 1 && group.amountMinor > 0,
+      formula: "ROOM confirmed ACTUAL ledger component roll-up",
+      calculationEvidence: [
+        `sourceRef: ${[...group.sourceRefs].join(", ") || "eksik"}`,
+        ...group.allocationEvidence,
+        "mevcut operationalCostMath component sahibi kullanıldı",
+      ],
+      warnings,
+      blockers,
+      missingFields: group.amountMinor > 0 || group.missingFields.size > 0
+        ? [...group.missingFields]
+        : ["roomCostLedgerInputs.amountMinor"],
+      invalidFields: [],
+      doubleCountGuard: "ledger actual replaces formula component with the same componentKey",
+    });
+    return Object.freeze({
+      ...component,
+      actualAmountMinor: group.actualAmountMinor,
+      forecastAmountMinor: group.forecastAmountMinor,
+      ledgerHasActual: group.recordKinds.has("ACTUAL"),
+      ledgerRecordKinds: [...group.recordKinds],
+      netRollupBlocked: group.netRollupBlocked,
+    });
+  });
+}
+
+function mergeForecastLedgerSupplement(formulaComponent, ledgerComponent) {
+  const forecastAmountMinor = Number.isSafeInteger(ledgerComponent?.forecastAmountMinor)
+    ? ledgerComponent.forecastAmountMinor
+    : 0;
+  if (forecastAmountMinor <= 0) return ledgerComponent;
+  const baseAmountMinor = ledgerComponent.ledgerHasActual
+    ? (Number.isSafeInteger(ledgerComponent.actualAmountMinor) ? ledgerComponent.actualAmountMinor : 0)
+    : (formulaComponent.includedInBaseline ? formulaComponent.amountMinor : 0);
+  const sourceRefs = [...new Set([
+    ...(formulaComponent.sourceFields || []),
+    "roomCostLedgerInputs",
+  ])];
+  return finalizeComponent({
+    ...formulaComponent,
+    sourceFields: sourceRefs,
+    amountMinor: baseAmountMinor + forecastAmountMinor,
+    relevant: true,
+    includedInBaseline: true,
+    calculationEvidence: [
+      ...(formulaComponent.calculationEvidence || []),
+      `Teklif/plan tahmini ledger girdisi bir kez eklendi: ${forecastAmountMinor} minor`,
+      ...(ledgerComponent.calculationEvidence || []),
+    ],
+    warnings: [...new Set([...(formulaComponent.warnings || []), ...(ledgerComponent.warnings || [])])],
+    blockers: [...new Set([...(formulaComponent.blockers || []), ...(ledgerComponent.blockers || [])])],
+    missingFields: formulaComponent.includedInBaseline ? [] : formulaComponent.missingFields || [],
+    doubleCountGuard: "ACTUAL ledger formülün yerine geçer; FORECAST/BUDGET teklif tahmini formül üstüne bir kez eklenir",
+  });
+}
+
 function buildRouteFeesComponent(normalized, issues) {
   const specificFields = [
     ["tollMinor", normalized.tollMinor],
@@ -372,6 +542,11 @@ function summarizeComponent(component) {
     amountMinor: component.amountMinor,
     includedInBaseline: component.includedInBaseline,
     status: component.status,
+    formula: component.formula,
+    sourceFields: component.sourceFields,
+    calculationEvidence: component.calculationEvidence,
+    warnings: component.warnings,
+    doubleCountGuard: component.doubleCountGuard,
   };
 }
 
@@ -439,7 +614,7 @@ export function buildOperationalCostModel(input = {}) {
     issues.missingFields.push("distance inputs");
   }
 
-  const components = [
+  const formulaComponents = [
     buildFuelComponent(normalized),
     buildVehicleFixedComponent(normalized),
     buildVehicleVariableComponent(normalized, issues),
@@ -449,6 +624,17 @@ export function buildOperationalCostModel(input = {}) {
     buildOperationsOverheadComponent(normalized),
     buildOtherDirectCostComponent(normalized),
     buildExternalPreviewAdjustmentsComponent(normalized),
+  ];
+  const ledgerComponents = buildRoomCostLedgerComponents(normalized, issues);
+  const ledgerByKey = new Map(ledgerComponents.map((component) => [component.componentKey, component]));
+  const components = [
+    ...formulaComponents.map((component) => {
+      const ledgerComponent = ledgerByKey.get(component.componentKey);
+      if (!ledgerComponent) return component;
+      if (ledgerComponent.forecastAmountMinor > 0) return mergeForecastLedgerSupplement(component, ledgerComponent);
+      return ledgerComponent;
+    }),
+    ...ledgerComponents.filter((component) => !formulaComponents.some((formula) => formula.componentKey === component.componentKey)),
   ];
 
   const includedComponentTotalMinor = moneySum(
@@ -510,6 +696,7 @@ export function buildOperationalCostModel(input = {}) {
   });
 
   const componentSummaries = components.map(summarizeComponent);
+  const netRollupBlocked = components.some((component) => component.netRollupBlocked === true);
   const formulaTrace = [
     ...issues.formulaTrace,
     `baselineOperationalCostMinor = includedComponentTotalMinor = ${baselineOperationalCostMinor}`,
@@ -571,7 +758,13 @@ export function buildOperationalCostModel(input = {}) {
     includedComponentTotalMinor,
     externalPreviewAdjustmentsMinor,
     adjustedPreviewCostMinor,
+    netRollupBlocked,
     components: Object.freeze([...components]),
+    // The same canonical engine keeps the pre-ledger formula components
+    // available for a transparent actual-vs-estimated comparison. The
+    // public response still decides what may be shown; this is not a second
+    // calculator and is never persisted.
+    formulaComponents: Object.freeze([...formulaComponents]),
     componentSummaries: Object.freeze(componentSummaries),
     unitCosts,
     normalizedInput: Object.freeze({

@@ -632,7 +632,8 @@ function main() {
   check(component(incompleteResult, 'vehicle_variable').status === 'incomplete', 'incomplete case vehicle variable incomplete');
   check(component(incompleteResult, 'vehicle_variable').includedInBaseline === false, 'incomplete case vehicle variable excluded');
   check(incompleteResult.blockers.length === 0, 'incomplete case has no blockers');
-  check(incompleteResult.baselineOperationalCostMinor === 0, 'incomplete case zero baseline');
+  check(incompleteResult.baselineOperationalCostMinor === null, 'incomplete case does not fabricate zero baseline');
+  check(incompleteResult.unitCosts.costPerShiftMinor === null, 'incomplete case does not fabricate zero unit cost');
 
   runOperationalCostModelExpansionChecks(check, component);
 

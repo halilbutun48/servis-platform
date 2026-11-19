@@ -6,6 +6,7 @@ import {
   getQualityReviewDecisionSummary,
 } from "../../api";
 import { buildOfferQualityRanking } from "../../utils/offerQualityRanking";
+import { formatOfferAmountMinor } from "./offerAmountPresentation";
 
 function compactText(value, fallback = "") {
   const text = String(value ?? "")
@@ -77,10 +78,7 @@ function fmtPercent(value) {
 }
 
 function formatTRY(amount) {
-  if (amount == null || amount === "") return "-";
-  const n = Number(amount);
-  if (!Number.isFinite(n)) return "-";
-  return new Intl.NumberFormat("tr-TR").format(Math.trunc(n));
+  return formatOfferAmountMinor(amount);
 }
 
 function Pill({ label, value, tone = "neutral", title }) {

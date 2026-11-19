@@ -218,7 +218,9 @@ function nativeConnectionArgs(databaseUrl) {
 }
 
 function runDockerShell(container, script, options = {}) {
-  return runProcess("docker", ["exec", container, "sh", "-lc", script], options);
+  const dockerEnv = options.dockerEnv || {};
+  const envArgs = Object.entries(dockerEnv).flatMap(([key, value]) => ["-e", `${key}=${value}`]);
+  return runProcess("docker", ["exec", ...envArgs, container, "sh", "-lc", script], options);
 }
 
 function toolVersion() {
@@ -234,11 +236,26 @@ function toolVersion() {
 
 function runPgDump(databaseUrl) {
   if (executionMode() === "docker") {
-    const sourceDatabase = safeToken(parseDatabaseUrl(databaseUrl).identity.database, "source database name");
+    const { parsed, identity } = parseDatabaseUrl(databaseUrl);
+    const sourceDatabase = safeToken(identity.database, "source database name");
+    // The canonical Compose volume may have been initialized with a database
+    // role different from POSTGRES_USER. Prefer explicit backup credentials,
+    // then use the already-authorized DATABASE_URL credentials; never fall
+    // back to a misleading bootstrap role when the volume is persistent.
+    const backupUser = text(process.env.BACKUP_DOCKER_DB_USER) || decodeURIComponent(parsed.username || "");
+    const backupPassword = process.env.BACKUP_DOCKER_DB_PASSWORD ?? decodeURIComponent(parsed.password || "");
+    if (!backupUser || !backupPassword) throw new Error("BACKUP_DOCKER_CREDENTIALS_REQUIRED");
     const result = runDockerShell(
       dockerContainer(),
-      `set -eu; PGPASSWORD="\${POSTGRES_PASSWORD:-}" pg_dump --format=custom --compress=6 --no-owner --no-privileges -U "\${POSTGRES_USER:-postgres}" -d "${sourceDatabase}"`,
-      { timeout: 600_000, maxBuffer: 256 * 1024 * 1024 },
+      `set -eu; PGPASSWORD="\${BACKUP_DOCKER_DB_PASSWORD}" pg_dump --format=custom --compress=6 --no-owner --no-privileges -U "\${BACKUP_DOCKER_DB_USER}" -d "${sourceDatabase}"`,
+      {
+        timeout: 600_000,
+        maxBuffer: 256 * 1024 * 1024,
+        dockerEnv: {
+          BACKUP_DOCKER_DB_USER: backupUser,
+          BACKUP_DOCKER_DB_PASSWORD: backupPassword,
+        },
+      },
     );
     return result;
   }

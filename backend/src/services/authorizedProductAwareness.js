@@ -11,7 +11,13 @@ import { buildRoleHelpSummary, getScreenDefinitionForUser } from "../ai/jobGuide
 import { sanitizeUserFacingOfferNote } from "./userFacingOfferNote.js";
 import { buildOperationHealthState } from "../ai/chat/conversationOperationHealthEngine.js";
 import { getShiftSummary, getVehicleSummary, getDriverSummary } from "../lib/reports.js";
-import { buildRoomObservabilitySummary } from "../ops/observabilityManifest.js";
+import { buildRoomObservabilityIssues, buildRoomObservabilitySnapshot, buildRoomObservabilitySummary } from "../ops/observabilityManifest.js";
+import { gpsStatusFromAt } from "../gps/status.js";
+import { buildAgreementReconciliationPreview } from "../finance/hakedisInvoiceReconciliation.js";
+import { computeSeferScorePreview } from "./seferScoreService.js";
+import { buildBoardingChangeRequestView, loadBoardingChangeRequestAuditMap } from "./boardingChangeRequestView.js";
+import { hasSchoolOperationsStatusCue } from "../ai/chat/canonicalSemanticRequest.js";
+import { getCurrentFieldAcceptanceSession } from "../ops/fieldAcceptanceState.js";
 
 // Read-only, role-scoped product awareness. This is intentionally separate
 // from actionable-events-v1: the latter summarizes work, while this service
@@ -59,6 +65,34 @@ function normalize(value) {
     .trim();
 }
 
+function vehiclePlateCandidates(entities = []) {
+  return [...new Set(entities
+    .flatMap((entity) => [entity?.plate, String(entity?.plate || "").replace(/\s+/g, "")])
+    .map((plate) => String(plate || "").trim())
+    .filter(Boolean))];
+}
+
+export function buildSchoolOperationsStatusReply({ request = false, operationsFacts = [] } = {}) {
+  if (!request) return null;
+  const facts = Array.isArray(operationsFacts) ? operationsFacts.filter(Boolean) : [];
+  if (!facts.length) {
+    return "Güncel yetkili okul operasyon kaydı görünmüyor; geçmiş bir vardiyayı bugünkü aktif servis olarak kullanmıyorum.";
+  }
+  const approved = facts.filter((fact) => String(fact?.status || "").toUpperCase() === "APPROVED").length;
+  const active = facts.filter((fact) => String(fact?.status || "").toUpperCase() === "ACTIVE").length;
+  const assigned = facts.filter((fact) => String(fact?.vehiclePlate || fact?.vehicle || "").trim()).length;
+  return `Güncel yetkili okul operasyonunda ${facts.length} servis/vardiya kaydı görünüyor: ${active} aktif, ${approved} onaylı; ${assigned} kayıtta araç bağlantısı var. Ayrıntıyı aynı Operasyon Paneli ve Vardiyalar kapsamından inceleyebilirsin.`;
+}
+
+export function isUnselectedShiftRecordLookup({ user, message, screenContext } = {}) {
+  if (roleKey(user) !== "ROOM") return false;
+  if (normalizeScreenPath(screenContext?.path) !== "/room/shifts") return false;
+  if (integer(screenContext?.selectedEntityId || screenContext?.selectedRecordId)) return false;
+  const text = normalize(message);
+  if (!text || /sozlesmeden|bekleyen|listele|hepsi|tum vardiya/iu.test(text)) return false;
+  return /^(?:bu\s+)?vardiya(?:yi|yi|yı|yi|ya|nin|nin)?\s+(?:goster|ac|incele|detay(?:larini|larını)?\s+goster)\??$/iu.test(text);
+}
+
 function finiteMetric(value) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -83,11 +117,20 @@ async function readOperationHealthMetricContract({ user, screenContext, vehicleI
     dailyWindowFrom: String(projections.shiftWindowFrom || "").trim(),
     dailyWindowTo: String(projections.shiftWindowTo || "").trim(),
   };
+  const fallbackIssueRecords = Array.isArray(facts.issueRecords)
+    ? facts.issueRecords.filter((item) => item && typeof item === "object" && String(item.title || "").trim()).slice(0, 12)
+    : null;
   const roomId = Number(user?.roomId || 0) || 0;
   let authoritative = null;
+  let authoritativeIssueRecords = null;
   if (String(user?.role || "").toUpperCase() === "ROOM" && roomId > 0) {
     const today = new Date().toISOString().slice(0, 10);
     const reportQuery = { from: today, to: today };
+    try {
+      authoritativeIssueRecords = await buildRoomObservabilityIssues(user);
+    } catch {
+      authoritativeIssueRecords = null;
+    }
     try {
       const [summary, shiftSummary, vehicleSummary, driverSummary, dailyRequestTotal] = await Promise.all([
         buildRoomObservabilitySummary(user),
@@ -116,6 +159,7 @@ async function readOperationHealthMetricContract({ user, screenContext, vehicleI
   const trusted = authoritative || fallback;
   return {
     ...trusted,
+    issueRecords: authoritativeIssueRecords || fallbackIssueRecords,
     vehicleStaleGpsEvidence: finiteMetric(vehicleIssues?.count),
     agreementReviewEvidence: finiteMetric(agreements?.count),
     offerResponseEvidence: finiteMetric(offers?.count),
@@ -137,11 +181,25 @@ function buildOperationHealthMetricReply(mode, metric) {
   const gpsText = [
     metric.staleOrOfflineDrivers == null
       ? "Özetin sürücü canlılık sayısı bu turda okunamadı."
-      : `Özet, ${metric.staleOrOfflineDrivers} sürücü satırını stale/offline canlılık sinyali olarak sayıyor.`,
+      : `Özet, ${metric.staleOrOfflineDrivers} sürücü satırını güncel değil / çevrim dışı canlılık sinyali olarak sayıyor.`,
     metric.vehicleStaleGpsEvidence == null
       ? "Ayrı araç GPS kanıtı gözlenemedi."
       : `Ayrı yetkili araç/GPS okuması ${metric.vehicleStaleGpsEvidence} araçta güncel olmayan konum kanıtı bildiriyor; bu değer sürücü satırı sayısıyla otomatik olarak eşitlenmez.`,
   ].join(" ");
+  const severityLabels = { HIGH: "Yüksek", MEDIUM: "Orta", LOW: "Düşük" };
+  const issueRecords = Array.isArray(metric.issueRecords)
+    ? metric.issueRecords.filter((item) => item && String(item.title || "").trim()).slice(0, 12)
+    : [];
+  const issueText = issueRecords.length
+    ? ` Yetkili açık sorunlar: ${issueRecords.map((item) => {
+      const title = String(item.title).trim();
+      const severity = severityLabels[String(item.severity || "").toUpperCase()] || String(item.severity || "").trim();
+      const detail = String(item.detail || item.status || "").trim();
+      return `${title}${severity ? ` (${severity})` : ""}${detail ? ` — ${detail}` : ""}`;
+    }).join("; ")}.`
+    : metric.issueRecords
+      ? " Yetkili açık sorun kaydı bu turda görünmüyor."
+      : "";
   const followUpText = [
     metric.agreementReviewEvidence == null
       ? "İnceleme bekleyen sözleşme sayısı bu turda doğrulanamadı."
@@ -150,10 +208,10 @@ function buildOperationHealthMetricReply(mode, metric) {
       ? "Yanıt bekleyen teklif sayısı bu turda doğrulanamadı."
       : `Yanıt bekleyen ${metric.offerResponseEvidence} teklif fırsat/karar takibi bulgusudur; açık operasyon issue kategorisine eklenmez.`,
   ].join(" ");
-  if (mode === "GPS_ISSUE_SUBSET" || mode === "ISSUE_METRIC_SCOPE") return `${gpsText} ${openIssueText}`;
-  if (mode === "OPERATIONAL_CLASSIFICATION") return `${followUpText} ${openIssueText}`;
-  if (mode === "METRIC_DEFINITION") return `${openIssueText} Riskli cihaz ${metric.riskyDevices ?? "okunamadı"}, stale/offline sürücü ${metric.staleOrOfflineDrivers ?? "okunamadı"}; bunlar farklı operasyon-sağlığı göstergeleridir. ${dailyText}`;
-  return `${openIssueText} ${dailyText} Bu nedenle özet uyarısı ile günlük araç/vardiya raporu aynı projeksiyonu ölçmüyor. ${windowText} ${gpsText} ${followUpText}`;
+  if (mode === "GPS_ISSUE_SUBSET" || mode === "ISSUE_METRIC_SCOPE") return `${gpsText} ${openIssueText}${issueText}`;
+  if (mode === "OPERATIONAL_CLASSIFICATION") return `${followUpText} ${openIssueText}${issueText}`;
+  if (mode === "METRIC_DEFINITION") return `${openIssueText}${issueText} Riskli cihaz ${metric.riskyDevices ?? "okunamadı"}, güncel değil / çevrim dışı sürücü ${metric.staleOrOfflineDrivers ?? "okunamadı"}; bunlar farklı operasyon-sağlığı göstergeleridir. ${dailyText}`;
+  return `${openIssueText}${issueText} ${dailyText} Bu nedenle özet uyarısı ile günlük araç/vardiya raporu aynı projeksiyonu ölçmüyor. ${windowText} ${gpsText} ${followUpText}`;
 }
 
 function safeVisibleValue(value) {
@@ -232,6 +290,62 @@ function normalizeScreenPath(path) {
   return String(path || "").split("?")[0].trim().replace(/^#/, "").replace(/\/+$/, "") || "/";
 }
 
+export function resolveRoleScopedNavigationPath(role, currentPath, suffix) {
+  const normalizedPath = normalizeScreenPath(currentPath);
+  const roleKey = String(role || "").toUpperCase();
+  const roleRoot = normalizedPath.startsWith("/school/")
+    ? "/school"
+    : normalizedPath.startsWith("/organization/")
+      ? "/organization"
+      : normalizedPath.startsWith("/company/") || roleKey === "COMPANY"
+        ? "/company"
+        : roleKey === "SCHOOL"
+          ? "/school"
+          : roleKey === "ORGANIZATION"
+            ? "/organization"
+            : roleKey === "ROOM"
+              ? "/room"
+              : "/room";
+  const normalizedSuffix = String(suffix || "").startsWith("/") ? String(suffix) : `/${suffix}`;
+  return `${roleRoot}${normalizedSuffix}`;
+}
+
+export function buildRoleScopedShiftNavigationTarget(role, currentPath, shiftId) {
+  const id = integer(shiftId);
+  if (!id) return null;
+  return {
+    path: resolveRoleScopedNavigationPath(role, currentPath, "/shifts"),
+    label: "Vardiyalar",
+    routeParams: { focusShiftId: id },
+    recordType: "SHIFT",
+    recordId: id,
+  };
+}
+
+// DRIVER users do not own the buyer/ROOM "Vardiyalar" collection. When a
+// selected-shift follow-up asks which screen to open, the authorized product
+// surface is the driver's Rota screen. Keep the selected shift in the route
+// so the answer remains bound to the record the user is already viewing.
+export function buildDriverShiftNavigationTarget({ user, screenContext = null, shiftId = null } = {}) {
+  if (String(user?.role || "").toUpperCase() !== "DRIVER") return null;
+  const target = buildRoleHelpSummary(user).screens.find((screen) => screen.path === "/driver/route") || null;
+  if (!target) return null;
+  const selectedId = integer(shiftId)
+    || integer(screenContext?.selectedEntityId)
+    || integer(screenContext?.selectedRecordId)
+    || integer(screenContext?.selectedEntity?.id);
+  return {
+    ...target,
+    ...(selectedId
+      ? {
+        recordType: "SHIFT",
+        recordId: selectedId,
+        routeParams: { shift: selectedId },
+      }
+      : {}),
+  };
+}
+
 function isRoleHomeScreen(path) {
   return /^\/(?:room|company|school|organization|superadmin|driver|personel|parent)$/iu.test(normalizeScreenPath(path));
 }
@@ -292,6 +406,84 @@ function roleKey(user) {
     if (["SCHOOL", "ORGANIZATION"].includes(kind)) return kind;
   }
   return role;
+}
+
+// The parent live screen exposes an authorized selected service/vehicle. A
+// generic question such as "Çocuğumun bugün servisi var mı?" must stay bound
+// to that selected record; it must not fall through to a cross-domain count
+// query. Keep the cue narrow and require the live-screen selection so this
+// path cannot be used as a general parent-data lookup.
+export function isSelectedParentLiveStatusQuestion({ role, message, screenContext } = {}) {
+  if (String(role || "").toUpperCase() !== "PARENT") return false;
+  if (normalizeScreenPath(screenContext?.path) !== "/parent/live") return false;
+  if (!integer(screenContext?.selectedRecordId ?? screenContext?.selectedEntityId)) return false;
+  if (!String(screenContext?.selectedLabel || screenContext?.selectedRecordLabel || "").trim()) return false;
+  const text = normalize(message);
+  return /(?:cocugumun|cocugum|ogrencimin|ogrencim).*(?:bugun|simdi|aktif).*(?:servis|servisi).*(?:var mi|durumu|nerede)/iu.test(text)
+    || /(?:servis|servisi).*(?:durumu|aktif mi|var mi)/iu.test(text);
+}
+
+function selectedParentLiveStatusPlan(semanticPlan, screenContext) {
+  const vehicleId = integer(screenContext?.selectedRecordId ?? screenContext?.selectedEntityId);
+  const vehicleEntity = { type: "vehicle", id: vehicleId };
+  return {
+    ...semanticPlan,
+    family: "STATUS",
+    intentFamily: "STATUS",
+    planStatus: "READY",
+    temporalMode: "ACTIVE_NOW",
+    requestedDomains: ["OPERATIONS"],
+    requestedFields: [{ key: "STATUS", domain: "OPERATIONS" }],
+    entity: vehicleEntity,
+    entities: [vehicleEntity],
+    relationshipIntent: null,
+    typedRequest: {
+      ...(semanticPlan?.typedRequest || {}),
+      taskType: "STATUS",
+      targetEntityType: "STUDENT",
+      scopeTarget: "SELECTED_RECORD",
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+    },
+  };
+}
+
+async function buildSelectedParentLiveStatusAnswer({ user, role, message, screenContext, semanticPlan }) {
+  if (!isSelectedParentLiveStatusQuestion({ role, message, screenContext })) return null;
+  const scopedPlan = selectedParentLiveStatusPlan(semanticPlan, screenContext);
+  const operationResult = await readOperations(user, role, scopedPlan);
+  const fact = Array.isArray(operationResult?.facts) ? operationResult.facts[0] : null;
+  const selectedLabel = String(screenContext?.selectedLabel || screenContext?.selectedRecordLabel || "Seçili çocuk").trim();
+  const childLabel = selectedLabel.replace(/^#\d+\s*/u, "").trim() || "Seçili çocuk";
+  const authorizedDomainMap = resolveAuthorizedProductDomains(user).domains;
+  const records = Array.isArray(operationResult?.records) ? operationResult.records : [];
+  const reply = fact
+    ? `${childLabel} için bugün aktif servis var: Vardiya #${fact.shiftId || fact.id}, araç ${fact.vehicle || "atanmış araç yok"}${fact.driver ? `, sürücü ${fact.driver}` : ""}. ${fact.gpsStatus && !/konum sinyali yok/iu.test(fact.gpsStatus) ? `Konum durumu: ${fact.gpsStatus}.` : "Canlı konum ve ETA bilgisi yok; bu alanları uydurmuyorum."}`
+    : `${childLabel} için bugün yetkili aktif servis görünmüyor. Başka bir çocuğun kaydını veya geçmiş bir aracı bu yanıta eklemiyorum.`;
+  return {
+    role,
+    domain: "OPERATIONS",
+    authorizationBoundary: false,
+    authorizedDomainMap,
+    count: fact ? 1 : 0,
+    records,
+    reply,
+    nextAction: fact
+      ? "İstersen seçili servis için güvenli durum özetini veya yalnızca mevcut ekrandaki bir sonraki adımı sorabilirsin."
+      : "Seçili çocuk için yetkili canlı servis kaydı oluştuğunda aynı ekrandan yenileyebilirsin.",
+    source: "authorized-parent-live-selected-status-v1",
+    navigationTarget: null,
+    dataSources: ["PARENT canlı ekran seçimi", "yetkili PARENT operasyon ilişkisi", "güncel vardiya/araç okuması"],
+    retrievedFacts: [
+      `selected.vehicle.id=${Number(screenContext?.selectedRecordId ?? screenContext?.selectedEntityId)}`,
+      ...(Array.isArray(fact?.evidence) ? fact.evidence : []),
+      ...(fact?.gpsStatus ? [`gps.status=${fact.gpsStatus}`] : ["gps.status=unavailable"]),
+    ],
+    reasoning: "Seçili PARENT canlı kaydı, yalnızca bağlı ve güncel vardiya/araç ilişkisi üzerinden okundu; başka çocuk, geçmiş araç, GPS veya ETA varsayılmadı.",
+    priority: fact ? "Seçili aktif servis" : "Seçili çocuk için aktif servis yok",
+    semanticPlan: scopedPlan,
+    discourseEntities: authorizedDiscourseEntities({ domain: "OPERATIONS", facts: fact ? [fact] : [] }),
+  };
 }
 
 function dayWindow() {
@@ -433,7 +625,16 @@ function workflowGuidancePlan(semanticPlan) {
   return null;
 }
 
+function explicitRoomOperationHealthNavigationTarget(user, semanticPlan) {
+  if (roleKey(user) !== "ROOM") return null;
+  const message = normalize(semanticPlan?.normalizedText || semanticPlan?.canonicalRequest?.currentRequest?.normalizedMeaning || "");
+  if (!/operasyon\s+sagligi\p{L}*/iu.test(message)) return null;
+  return buildRoleHelpSummary(user).screens.find((screen) => screen.label === "Operasyon Sağlığı") || null;
+}
+
 function authorizedNavigationTarget(user, semanticPlan, screenContext = null) {
+  const explicitOperationHealthTarget = explicitRoomOperationHealthNavigationTarget(user, semanticPlan);
+  if (explicitOperationHealthTarget) return explicitOperationHealthTarget;
   const workflowPlan = workflowGuidancePlan(semanticPlan);
   if (!workflowPlan) return null;
   const role = String(user?.role || "").toUpperCase();
@@ -443,6 +644,17 @@ function authorizedNavigationTarget(user, semanticPlan, screenContext = null) {
   const currentPath = normalizeScreenPath(screenContext?.path);
   const currentScreen = roleScreens.find((screen) => normalizeScreenPath(screen.path) === currentPath) || null;
   const isContinuation = semanticPlan?.family === "CONTINUE_CURRENT_REASONING";
+  // COMPANY's combined service-request + incoming-offer wording is owned by
+  // the commercial offer flow.  The live commercial-flow screen already has
+  // the offer summary; sending it back to the generic planning home would
+  // hide the user's requested result and lose the active record context.
+  if (roleKey === "COMPANY"
+    && workflowPlan.workflowIntent === "OPEN_OFFER_SURFACE"
+    && currentPath === "/company/commercial-flow") {
+    return roleScreens.find((screen) => screen.label === "Vardiyalar")
+      || roleScreens.find((screen) => screen.label === "Ticari Akışım")
+      || null;
+  }
   // Once the user has safely moved into a related authorized surface, a
   // continuation must consume that live screen as the current target. Do not
   // replay the original CREATE_SHIFT home route as if the user were still
@@ -452,6 +664,30 @@ function authorizedNavigationTarget(user, semanticPlan, screenContext = null) {
     && workflowPlan.requestedDomains?.includes("SHIFTS")
     && currentScreen.label === "Vardiyalar") {
     return currentScreen;
+  }
+  if (workflowPlan.workflowIntent === "OPEN_MAP_SURFACE") {
+    return roleScreens.find((screen) => screen.path === "/room/map") || null;
+  }
+  if (workflowPlan.workflowIntent === "OPEN_REPORTS_SURFACE") {
+    const reportsPath = roleKey === "ROOM" ? "/room/reports" : `/${String(roleKey || "company").toLowerCase()}/reports`;
+    return roleScreens.find((screen) => screen.path === reportsPath) || null;
+  }
+  if (workflowPlan.workflowIntent === "OPEN_NOTIFICATIONS_SURFACE") {
+    return roleScreens.find((screen) => screen.path === "/shared/notifications") || null;
+  }
+  if (workflowPlan.workflowIntent === "OPEN_OPERATION_HEALTH_SURFACE") {
+    return roleScreens.find((screen) => screen.label === "Operasyon Sağlığı") || null;
+  }
+  if (workflowPlan.workflowIntent === "OPEN_OPERATIONS_PANEL_SURFACE") {
+    return roleScreens.find((screen) => screen.label === "Operasyon Paneli")
+      || roleScreens.find((screen) => normalizeScreenPath(screen.path).endsWith("/operations"))
+      || null;
+  }
+  if (workflowPlan.workflowIntent === "OPEN_PERSONNEL_ACCESS_SURFACE") {
+    return roleScreens.find((screen) => normalizeScreenPath(screen.path).endsWith("/personel-access")) || null;
+  }
+  if (workflowPlan.workflowIntent === "OPEN_PERSONNEL_LINKS_SURFACE") {
+    return roleScreens.find((screen) => normalizeScreenPath(screen.path).endsWith("/access-links")) || null;
   }
   if (workflowPlan.workflowIntent === "OPEN_SHIFT_SURFACE") {
     return roleScreens.find((screen) => screen.label === "Vardiyalar") || null;
@@ -485,7 +721,69 @@ function authorizedGuidanceSurface(user, domain) {
   return labels.map((label) => screens.find((screen) => screen.label === label)).find(Boolean) || null;
 }
 
-function explicitOfferRecordNavigationTarget(user, semanticPlan, authorizationDecision) {
+export function isCompanyOfferCollectionReadPlan({ role, semanticPlan } = {}) {
+  const typedTaskType = String(semanticPlan?.typedRequest?.taskType || semanticPlan?.taskType || "").toUpperCase();
+  return String(role || "").toUpperCase() === "COMPANY"
+    && semanticPlan?.requestedDomains?.includes("OFFERS")
+    && ["OPEN_OFFER_SURFACE", "VIEW_OFFER_SURFACE"].includes(String(semanticPlan?.workflowIntent || ""))
+    && ["SCREEN_CONTEXT", "OPEN_SURFACE", "VIEW", "COUNT"].includes(typedTaskType)
+    && !semanticPlan?.entity
+    && !(Array.isArray(semanticPlan?.entities) && semanticPlan.entities.length);
+}
+
+export function isSuperAdminFieldAcceptanceReadPlan({ role, message, screenContext } = {}) {
+  if (String(role || "").toUpperCase() !== "SUPER_ADMIN") return false;
+  if (normalizeScreenPath(screenContext?.path) !== "/superadmin/acceptance") return false;
+  const text = normalize(message);
+  if (!text) return false;
+  return /kabul|checklist|kontrol listesi|karar|oturum|saha|bekleyen|tamamlanan|durum/iu.test(text)
+    && !/yeni\s+oturum|oturumu\s+kaydet|karar[ıi]\s*(?:değiştir|degistir|ver)|madde(?:yi|yi)?\s*(?:güncelle|guncelle|kaydet)/iu.test(text);
+}
+
+export function buildFieldAcceptanceReadReply({ session } = {}) {
+  const current = session && typeof session === "object" ? session : {};
+  const checklist = Array.isArray(current.checklist) ? current.checklist : [];
+  const total = checklist.length;
+  const passed = checklist.filter((item) => String(item?.status || "").toUpperCase() === "PASS").length;
+  const pending = checklist.filter((item) => String(item?.status || "").toUpperCase() !== "PASS");
+  const decisionLabels = { GO: "Uygun", LIMITED_GO: "Sınırlı uygun", NO_GO: "Uygun değil" };
+  const decision = decisionLabels[String(current.decision || "").toUpperCase()] || "Belirsiz";
+  const firstPending = pending[0]?.label ? String(pending[0].label).trim() : "Açık kontrol maddesi yok";
+  const pendingText = pending.length
+    ? ` ${pending.length} madde bekliyor; ilk açık madde “${firstPending}”.`
+    : " Tüm kontrol maddeleri tamamlandı.";
+  return `Kabul Merkezi'nde ${passed}/${total} kontrol maddesi tamamlandı. Karar: ${decision}.${pendingText} Bu özet mevcut yetkili kabul oturumundan salt okunur olarak okundu; burada yeni oturum, karar veya checklist değişikliği başlatmadım.`;
+}
+
+function authorizedCrossMenuNavigationTarget(user, semanticPlan, screenContext = null) {
+  if (!semanticPlan || semanticPlan.authorizationDecision?.status === "DENY") return null;
+  const domains = Array.isArray(semanticPlan.requestedDomains)
+    ? semanticPlan.requestedDomains.map((domain) => String(domain || "").toUpperCase())
+    : [];
+  if (!domains.length) return null;
+  const roleScreens = buildRoleHelpSummary(user).screens;
+  const currentPath = normalizeScreenPath(screenContext?.path);
+  const role = String(user?.role || "").toUpperCase();
+  const preferredLabels = [
+    ["VEHICLES", "Araçlar"],
+    ["OFFERS", "Teklifler"],
+    ["AGREEMENTS", "Sözleşmeler"],
+    ["SHIFTS", "Vardiyalar"],
+    ["FINANCE", role === "ROOM" ? "Finansal Operasyonlar" : "Bütçe ve Servis Maliyeti"],
+    ["BUDGET", role === "ROOM" ? "Finansal Operasyonlar" : "Bütçe ve Servis Maliyeti"],
+    ["DRIVERS", "Sürücüler"],
+    ["OPERATIONS", "Operasyon Merkezi"],
+    ["NOTIFICATIONS", "Bildirimler"],
+  ];
+  for (const [domain, label] of preferredLabels) {
+    if (!domains.includes(domain)) continue;
+    const target = roleScreens.find((screen) => screen.label === label) || null;
+    if (target && normalizeScreenPath(target.path) !== currentPath) return target;
+  }
+  return null;
+}
+
+function explicitOfferRecordNavigationTarget(user, semanticPlan, authorizationDecision, { allowRecordDetails = false } = {}) {
   const request = semanticPlan?.canonicalRequest || null;
   const action = request?.semanticAction || null;
   const offerId = (Array.isArray(request?.candidateEntityRefs) ? request.candidateEntityRefs : [])
@@ -503,9 +801,41 @@ function explicitOfferRecordNavigationTarget(user, semanticPlan, authorizationDe
     String(semanticPlan?.typedRequest?.taskType || semanticPlan?.taskType || "").toUpperCase(),
   ) || (Array.isArray(semanticPlan?.requestedFields) && semanticPlan.requestedFields.length > 0);
   if (!authorized || !exactRecordView || !offerId) return null;
-  if (selectedOfferFieldLookup) return null;
+  if (selectedOfferFieldLookup && !allowRecordDetails) return null;
   const surface = authorizedGuidanceSurface(user, "OFFERS");
   return surface ? { ...surface, recordType: "OFFER", recordId: Math.trunc(Number(offerId)) } : null;
+}
+
+function explicitShiftRecordNavigationTarget(user, semanticPlan, authorizationDecision) {
+  const request = semanticPlan?.canonicalRequest || null;
+  const action = request?.semanticAction || null;
+  const shiftId = (Array.isArray(request?.candidateEntityRefs) ? request.candidateEntityRefs : [])
+    .find((candidate) => String(candidate?.type || "").toUpperCase() === "SHIFT" && Number(candidate?.id) > 0)?.id || null;
+  const authorized = String(authorizationDecision?.status || semanticPlan?.authorizationDecision?.status || "").toUpperCase() === "ALLOW";
+  const exactRecordView = ["VIEW_AUTHORIZED_SURFACE", "NAVIGATE_AUTHORIZED_SURFACE"].includes(
+    String(request?.operation || "").toUpperCase(),
+  )
+    && ["VIEW_SHIFTS", "OPEN_SHIFT_SURFACE"].includes(String(request?.capability || "").toUpperCase())
+    && ["VIEW", "NAVIGATE"].includes(String(action?.actionClass || "").toUpperCase())
+    && String(action?.objectClass || "").toUpperCase() === "SHIFT";
+  if (!authorized || !exactRecordView || !shiftId) return null;
+  const surface = buildRoleHelpSummary(user).screens.find((screen) => screen.label === "Vardiyalar") || null;
+  return surface
+    ? {
+      ...surface,
+      recordType: "SHIFT",
+      recordId: Math.trunc(Number(shiftId)),
+      routeParams: { focusShiftId: Math.trunc(Number(shiftId)) },
+    }
+    : null;
+}
+
+export function resolveAuthorizedReasoningNavigationTarget({ user, screenContext = null, message = "" } = {}) {
+  const role = roleKey(user);
+  const currentPath = normalizeScreenPath(screenContext?.path);
+  if (role !== "ROOM" || !/operasyon\s+sagligi|operasyon\s+sağlığı/iu.test(normalize(message))) return null;
+  const target = buildRoleHelpSummary(user).screens.find((screen) => screen.label === "Operasyon Sağlığı") || null;
+  return target && normalizeScreenPath(target.path) !== currentPath ? target : null;
 }
 
 function buildScreenContinuationAnswer({ user, semanticPlan, screenContext, role, domainMap } = {}) {
@@ -582,6 +912,94 @@ function buildCurrentScreenPurposeAnswer({ user, semanticPlan, screenContext, ro
   };
 }
 
+export function buildCurrentScreenNextActionAnswer({ user, semanticPlan, screenContext, role, domainMap } = {}) {
+  const typedRequest = semanticPlan?.typedRequest || {};
+  if (semanticPlan?.family !== "UI_GUIDANCE") return null;
+  if (String(typedRequest.taskType || semanticPlan?.taskType || "").toUpperCase() !== "NEXT_ACTION") return null;
+  if (!screenContext?.path) return null;
+  if (String(user?.role || "").toUpperCase() === "COMPANY"
+    && semanticPlan?.workflowIntent === "OPEN_OFFER_SURFACE"
+    && normalizeScreenPath(screenContext.path) === "/company/commercial-flow") {
+    return null;
+  }
+
+  const definition = getScreenDefinitionForUser(user, screenContext || {}, Number(screenContext?.id || 0) || null);
+  if (!definition) return null;
+
+  // A selected offer is a narrower authorized context than the surrounding
+  // offers surface.  Keep the screen catalog as the source of safe action
+  // wording, but do not erase the live selected-record identity by returning
+  // only generic surface help.
+  const selectedOffer = (Array.isArray(semanticPlan?.entities) ? semanticPlan.entities : [])
+    .find((entity) => String(entity?.type || '').toLowerCase() === 'offer' && Number(entity?.id) > 0)
+    || (String(screenContext?.selectedEntityType || '').toLowerCase() === 'offer' && Number(screenContext?.selectedEntityId) > 0
+      ? { type: 'offer', id: Number(screenContext.selectedEntityId) }
+      : null);
+  if (selectedOffer) {
+    const selectedLabel = String(
+      screenContext?.selectedRecordSummary
+      || screenContext?.selectedLabel
+      || `Teklif #${Number(selectedOffer.id)}`,
+    ).trim();
+    const recordLabel = /\bTeklif\s+#\d+/iu.test(selectedLabel)
+      ? selectedLabel.match(/\bTeklif\s+#\d+[^•]*/iu)?.[0]?.trim() || `Teklif #${Number(selectedOffer.id)}`
+      : `Teklif #${Number(selectedOffer.id)}`;
+    const nextAction = `${recordLabel} kartında bağlı vardiya, araç/sürücü ve saat bilgisini birlikte doğrula; kullanıcı onayı olmadan kabul, karşı teklif veya ödeme işlemi başlatmıyorum.`;
+    return {
+      role,
+      domain: 'OFFERS',
+      authorizationBoundary: false,
+      authorizedDomainMap: domainMap,
+      count: 1,
+      records: [recordLabel],
+      reply: `Şu anda ${recordLabel} seçili. Sıradaki güvenli adım: ${nextAction}`,
+      nextAction,
+      source: 'authorized-selected-offer-screen-context-v1',
+      navigationTarget: null,
+      dataSources: ['current live screen selection', 'authorized offers screen catalog', 'canonical semantic next-action'],
+      retrievedFacts: [`selected.entityType=offer`, `selected.entityId=${Number(selectedOffer.id)}`],
+      reasoning: 'Seçili teklif kimliği, yetkili canlı ekran bağlamından korundu; ekran-geneli rehber seçili kaydın yerine geçirilmedi ve yazma işlemi başlatılmadı.',
+      priority: 'Seçili teklif için güvenli sonraki adım',
+      semanticPlan,
+    };
+  }
+
+  const cleanSentence = (value, fallback) => String(value || fallback || "")
+    .replace(/[.!?]+$/u, "")
+    .trim();
+  const currentLabel = String(screenContext?.label || definition.label || screenContext.path).trim();
+  const purpose = cleanSentence(
+    definition.menuPurpose || definition.screenExplanation,
+    "Yetkili iş akışını bu yüzeyde incelemek için kullanılır",
+  );
+  const firstStep = cleanSentence(
+    definition.firstStep || definition.stepByStep?.[0],
+    "Önce ekrandaki yetkili durum özetini kontrol et",
+  );
+  const nextStep = cleanSentence(
+    definition.nextStep,
+    "Sonraki doğrulanabilir adımı mevcut ekran kanıtıyla kontrol et",
+  );
+
+  return {
+    role,
+    domain: "SCREEN_CONTEXT",
+    authorizationBoundary: false,
+    authorizedDomainMap: domainMap,
+    count: 0,
+    records: [],
+    reply: `${currentLabel} ekranındasın. ${purpose}. İlk güvenli adım: ${firstStep}. Sonraki güvenli adım: ${nextStep}.`,
+    nextAction: nextStep,
+    source: "authorized-screen-catalog-v1",
+    navigationTarget: null,
+    dataSources: ["authorized screen catalog", "current live screen route", "canonical semantic next-action"],
+    retrievedFacts: [`screen.path=${definition.path}`, `screen.label=${currentLabel}`],
+    reasoning: "Seçili ekrandaki NEXT_ACTION isteği, başka bir domainin kayıt özetiyle genişletilmeden mevcut yetkili ekran kataloğundan yanıtlandı.",
+    priority: "Mevcut ekranın güvenli sonraki adımı",
+    semanticPlan,
+  };
+}
+
 function isReasoningQuestion(message) {
   const text = normalize(message);
   return isCurrentSituationDiagnosticQuestion(text)
@@ -604,6 +1022,20 @@ function isPlatformRiskQuestion(message, role) {
 function isUnauthorizedCommercialQuestion(message, role) {
   if (!["SCHOOL", "ORGANIZATION"].includes(role)) return false;
   return /(teklif|rfq|ticari|fiyat|maliyet|sözleşme|sozlesme|anlaşma|anlasma|contract|agreement)/.test(normalize(message));
+}
+
+export function isSelectedAgreementReadContext({ role, screenContext, semanticPlan } = {}) {
+  const selectedAgreementId = Number(
+    screenContext?.selectedEntityId
+      || screenContext?.selectedRecordId
+      || 0,
+  ) || 0;
+  return ["SCHOOL", "ORGANIZATION"].includes(String(role || "").toUpperCase())
+    && String(screenContext?.selectedEntityType || screenContext?.selectedRecordType || "").trim().toLowerCase() === "agreement"
+    && selectedAgreementId > 0
+    && Array.isArray(semanticPlan?.requestedDomains)
+    && semanticPlan.requestedDomains.includes("AGREEMENTS")
+    && semanticPlan.requestedDomains.every((domain) => ["AGREEMENTS", "SHIFTS", "OPERATIONS"].includes(domain));
 }
 
 function roleIssueSummary(role, snapshot, vehicleIssues, shiftSnapshot) {
@@ -633,7 +1065,7 @@ function requiresVehicleSignalForPlan(plan, screenContext) {
   return /\/(?:map|live|vehicles|operation-health|route|today)\b/.test(path);
 }
 
-function buildReasoningTaskModel({ actionable, vehicleIssues, shiftSnapshot, offers, agreements, finance, preferShift = false }) {
+function buildReasoningTaskModel({ actionable, vehicleIssues, shiftSnapshot, offers, agreements, finance, operationHealthIssues = [], preferShift = false }) {
   const events = Array.isArray(actionable?.events) ? actionable.events : [];
   const problems = [];
   const opportunities = [];
@@ -655,7 +1087,19 @@ function buildReasoningTaskModel({ actionable, vehicleIssues, shiftSnapshot, off
       });
     }
   }
-  if (Number(vehicleIssues?.count || 0) > 0) {
+  if (Array.isArray(operationHealthIssues) && operationHealthIssues.length) {
+    for (const issue of operationHealthIssues.slice(0, 12)) {
+      const title = String(issue?.title || '').trim();
+      if (!title) continue;
+      problems.push({
+        kind: "PROBLEM",
+        title,
+        reason: String(issue?.detail || "Yetkili Operasyon Sağlığı issue kaydı açık durumda.").trim(),
+        next: "Operasyon Sağlığı ekranındaki Sürücü & Sorunlar sekmesinde bu kaydı açıp bağlı sürücü kanıtını doğrula.",
+      });
+    }
+  }
+  if (!operationHealthIssues.length && Number(vehicleIssues?.count || 0) > 0) {
     problems.push({
       kind: "PROBLEM",
       title: `${vehicleIssues.count} araçta konum/GPS güncel değil`,
@@ -919,7 +1363,12 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
       semanticPlan: authorizationBoundarySemanticPlan(semanticPlan, authorizationDecision),
     });
   }
-  if (semanticPlan.clarificationNeed && resolveFieldPrivacyPolicy({ user, message, plan: semanticPlan }).status !== "DENY") {
+  const selectedNotificationContext = Number(screenContext?.selectedEntityId || conversationState?.selectedEntityId || 0) > 0
+    && String(screenContext?.selectedEntityType || conversationState?.selectedEntityType || "").toLowerCase() === "notification"
+    && /(?:seçili|secili|bu)\s+(?:bildirim|uyarı|uyari|notification)|(?:bildirim|uyarı|uyari|notification).*\b(?:seçili|secili|bu)\b/iu.test(String(message || ""));
+  if (semanticPlan.clarificationNeed
+    && !selectedNotificationContext
+    && resolveFieldPrivacyPolicy({ user, message, plan: semanticPlan }).status !== "DENY") {
     return reasoningResult({
       role,
       domainMap,
@@ -951,10 +1400,41 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
       semanticPlan: privacyPlan,
     });
   }
+  if (isUnselectedShiftRecordLookup({ user, message, screenContext })) {
+    return reasoningResult({
+      role,
+      domainMap,
+      topic: "CLARIFICATION",
+      reply: "Birden fazla yetkili vardiya kaydı var; önce Vardiyalar listesinden incelemek istediğin vardiyayı seç. Seçim yapmadan ilk veya varsayılan vardiyayı göstermiyorum.",
+      nextAction: "Vardiyalar listesinden bir kayıt seçip tekrar sor.",
+      records: [],
+      dataSources: ["güncel yetkili vardiya listesi", "ROOM tenant kapsamı"],
+      retrievedFacts: ["selected shift is absent", "multiple shift records are visible"],
+      reasoning: "Birden fazla vardiya varken seçili kayıt yok; ilk satır veya eski konuşma bağlamı hedef olarak kullanılmadı.",
+      priority: "Netleştirme gerekli",
+      semanticPlan: { ...semanticPlan, family: "CLARIFICATION", intentFamily: "CLARIFICATION" },
+    });
+  }
   const typedTask = semanticPlan.typedRequest?.taskType;
-  if (typedTask === "SCREEN_CONTEXT" && screenContext?.path && !(semanticPlan.requestedDomains || []).length) {
-    const operationHealthIssueQuestion = /açık sorun|acik sorun|sorunları|sorunlari|riskli cihaz|konum sinyali|çevrim dışı|cevrim disi|canlılık|canlilik/i.test(String(message || ''));
+  const operationHealthIssueQuestion = /açık sorun|acik sorun|sorunları|sorunlari|riskli cihaz|konum sinyali|çevrim dışı|cevrim disi|canlılık|canlilik/i.test(String(message || ''));
+  const operationHealthIssueDomain = Array.isArray(semanticPlan.requestedDomains)
+    && semanticPlan.requestedDomains.length === 1
+    && semanticPlan.requestedDomains[0] === "OPERATIONS";
+  const operationHealthIssueScreenContext = screenContext?.path === "/room/operation-health"
+    && operationHealthIssueQuestion
+    && operationHealthIssueDomain;
+  if (typedTask === "SCREEN_CONTEXT" && screenContext?.path && (!(semanticPlan.requestedDomains || []).length || operationHealthIssueScreenContext)) {
     if (screenContext.path === "/room/operation-health" && operationHealthIssueQuestion) {
+      let authoritativeIssueRecords = [];
+      let authoritativeCounters = null;
+      try {
+        const snapshot = await buildRoomObservabilitySnapshot(user);
+        authoritativeIssueRecords = Array.isArray(snapshot?.issues) ? snapshot.issues : [];
+        authoritativeCounters = snapshot?.cards && typeof snapshot.cards === "object" ? snapshot.cards : null;
+      } catch {
+        authoritativeIssueRecords = [];
+        authoritativeCounters = null;
+      }
       const healthState = buildOperationHealthState({
         message,
         rawMessage: message,
@@ -968,6 +1448,8 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
         screenContext,
         sourceScreenContext: screenContext,
         entityType: "screen",
+        issueRecords: authoritativeIssueRecords,
+        authoritativeCounters,
       });
       if (healthState.shouldRespond && healthState.reply) {
         return reasoningResult({
@@ -1021,6 +1503,23 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
         semanticPlan,
       });
     }
+    if (selectedType === "notification") {
+      const notificationRead = await readNotifications(user, role, semanticPlan);
+      const selectedNotification = buildSelectedNotificationContextReply({ selectedId, notificationRead });
+      return reasoningResult({
+        role,
+        domainMap,
+        topic: "SELECTED_RECORD_CONTEXT",
+        reply: selectedNotification.reply,
+        nextAction: selectedNotification.nextAction,
+        records: selectedNotification.records,
+        dataSources: ["current live notification selection", "authorized notification record read"],
+        retrievedFacts: selectedNotification.retrievedFacts,
+        reasoning: "Seçili bildirim, canlı ekran kimliğiyle yetki kapsamına göre yeniden okundu; ham payload ve başka bildirim özeti kullanılmadı.",
+        priority: "Seçili bildirim bağlamı",
+        semanticPlan,
+      });
+    }
     const typeLabel = selectedType === "offer" ? "Teklif" : selectedType === "shift" ? "Vardiya" : selectedType === "vehicle" ? "Araç" : selectedType === "driver" ? "Sürücü" : selectedType === "agreement" ? "Sözleşme" : "Kayıt";
     const selectedLabel = String(screenContext?.selectedLabel || screenContext?.selectedRecordLabel || `${typeLabel} #${selectedId}`).trim();
     const currentScreenLabel = String(screenContext?.label || screenContext?.path || "ilgili").trim();
@@ -1051,10 +1550,16 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
   const visibleScreenFacts = serverScreenTruth?.available
     ? serverScreenTruth.visibleText
     : buildVisibleFactText(screenContext);
+  const shouldReadScreenIssueRecords = role === "ROOM"
+    && /\/room\/operation-health\b/i.test(String(screenContext?.path || ""))
+    && semanticPlan.family === "ISSUE_DIAGNOSTIC";
+  const screenIssueRecords = shouldReadScreenIssueRecords
+    ? await buildRoomObservabilityIssues(user).catch(() => [])
+    : [];
   if (screenScopedDecision && serverScreenTruth?.available) {
     const reply = serverScreenTruth.zeroState
-      ? screenScopedZeroStateReply(semanticPlan.family, role)
-      : screenScopedVisibleStateReply(semanticPlan.family, visibleScreenFacts, role);
+      ? screenScopedZeroStateReply(semanticPlan.family, role, screenIssueRecords)
+      : screenScopedVisibleStateReply(semanticPlan.family, visibleScreenFacts, role, screenIssueRecords);
     return reasoningResult({
       role,
       domainMap,
@@ -1089,8 +1594,8 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
   }
   if (screenScopedDecision && visibleScreenFacts) {
     const reply = screenStatesNoOpenIssue(screenContext)
-      ? screenScopedZeroStateReply(semanticPlan.family, role)
-      : screenScopedVisibleStateReply(semanticPlan.family, visibleScreenFacts, role);
+      ? screenScopedZeroStateReply(semanticPlan.family, role, screenIssueRecords)
+      : screenScopedVisibleStateReply(semanticPlan.family, visibleScreenFacts, role, screenIssueRecords);
     return reasoningResult({
       role,
       domainMap,
@@ -1138,7 +1643,8 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
     });
   }
   const text = normalize(message);
-  if (semanticPlan.family === "AUTHORIZATION_BOUNDARY" || isUnauthorizedCommercialQuestion(message, role)) {
+  if ((semanticPlan.family === "AUTHORIZATION_BOUNDARY" || isUnauthorizedCommercialQuestion(message, role))
+    && !isSelectedAgreementReadContext({ role, screenContext, semanticPlan })) {
     const deniedLabel = semanticPlan.deniedDomains.length
       ? semanticPlan.deniedDomains.map(domainLabel).join(", ")
       : "ticari Hizmet Alan Firma";
@@ -1164,6 +1670,9 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
     && Array.isArray(semanticPlan.entities)
     && semanticPlan.entities.length === 1
     && !semanticPlan.comparisonSpec
+    && !(semanticPlan.entities[0]?.type === "agreement"
+      && Array.isArray(semanticPlan.requestedFields)
+      && semanticPlan.requestedFields.some((field) => ["PAYMENT_MODE", "SOURCE_STATUS", "SEFER_SCORE", "SEFER_SCORE_MISSING"].includes(String(field?.key || "").toUpperCase())))
     && (
       semanticPlan.family === "RISK_RANKING"
       || ["NEXT_STEP", "PRIORITY", "ISSUE_DIAGNOSTIC", "CAUSE_WHY", "RESOLUTION_PLAN"].includes(semanticPlan.family)
@@ -1188,6 +1697,30 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
       retrievedFacts: [`selected.entityType=${selected?.type || ""}`, `selected.entityId=${selected?.id || ""}`, "selected-record risk signal unavailable"],
       reasoning: "SELECTED_RECORD kapsamı, dar kapsamlı NO_DATA terminal sonucu olarak ROLE_GLOBAL actionable-events geri dönüşünden önce bağlandı; doğrulanmamış global risk ikamesi yapılmadı.",
       priority: "Seçili kayıt için doğrulanmış risk yok",
+      semanticPlan,
+    });
+  }
+  // A visible risk suggestion on the ROOM offers surface must not silently
+  // fall through to the role-global route/cost snapshot when no offer is
+  // selected.  That would answer a different question (for example with a
+  // Vardiya route ranking) instead of preserving the current offers context.
+  const roomOffersRiskWithoutSelection = semanticPlan.scopeTarget === "CURRENT_SCREEN"
+    && semanticPlan.family === "RISK_RANKING"
+    && /\/room\/offers\b/i.test(String(screenContext?.path || ""))
+    && !(Array.isArray(semanticPlan.entities) && semanticPlan.entities.some((entity) => String(entity?.type || "").toLowerCase() === "offer" && Number(entity?.id) > 0))
+    && !Number(screenContext?.selectedEntityId || screenContext?.selectedRecordId || 0);
+  if (roomOffersRiskWithoutSelection) {
+    return reasoningResult({
+      role,
+      domainMap,
+      topic: "RISK_RANKING",
+      reply: "Riskleri teklif bazında karşılaştırmam için önce listeden bir teklif seçmelisin. Seçili teklif olmadan başka bir vardiyanın riskini bu ekrana taşımıyorum.",
+      nextAction: "Teklifler listesinden incelenecek teklifi seç; ardından riskleri yeniden sor.",
+      records: [],
+      dataSources: ["current live offers screen", "authorized selected-record boundary"],
+      retrievedFacts: ["selected offer unavailable", "role-global route risk substitution blocked"],
+      reasoning: "ROOM Teklifler ekranındaki RISK_RANKING isteği seçili teklif olmadan rol-geneli rota/maliyet kuyruğuna düşürülmedi; kullanıcıdan önce yetkili teklif seçmesi istendi.",
+      priority: "Seçili teklif gerekli",
       semanticPlan,
     });
   }
@@ -1218,7 +1751,12 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
     || ["CURRENT_SITUATION", "SCREEN_OR_SITUATION_SUMMARY", "ISSUE_DIAGNOSTIC", "RESOLUTION_PLAN", "PRIORITY", "NEXT_STEP", "CAUSE_WHY", "RISK_RANKING", "SERVICE_SUMMARY", "LOCATION_GPS", "ETA", "ENTITY_LOOKUP", "TEMPORAL_STATUS"].includes(semanticPlan.family)
     || semanticPlan.entity?.type === "shift";
   const includeVehicleSignals = requiresVehicleSignalForPlan(semanticPlan, screenContext);
-  const [actionable, vehicleIssues, shiftSnapshot, offers, agreements, finance, operations, drivers] = await Promise.all([
+  const canonicalOperationHealthDiagnostic = semanticPlan.family === "ISSUE_DIAGNOSTIC"
+    || semanticPlan.canonicalRequest?.operation === "DIAGNOSE_CURRENT_ISSUE";
+  const shouldReadOperationHealthIssues = role === "ROOM"
+    && /\/room\/operation-health\b/i.test(String(screenContext?.path || ""))
+    && canonicalOperationHealthDiagnostic;
+  const [actionable, vehicleIssues, shiftSnapshot, offers, agreements, finance, operations, drivers, operationHealthIssues] = await Promise.all([
     buildActionableEventsForUser(user),
     includeVehicleSignals && domainMap.domains.includes("VEHICLES") ? readVehicles(user, role, semanticPlan) : Promise.resolve({ domain: "VEHICLES", count: 0, records: [] }),
     domainMap.domains.includes("SHIFTS") ? readShifts(user, role, /atanmamis/.test(text), semanticPlan) : Promise.resolve({ domain: "SHIFTS", count: 0, records: [] }),
@@ -1227,6 +1765,7 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
     domainMap.domains.includes("FINANCE") || domainMap.domains.includes("BUDGET") ? readFinance(user, role, semanticPlan.family === "COST_TREND") : Promise.resolve({ domain: "FINANCE", count: 0, records: [] }),
     needsOperations && domainMap.domains.includes("OPERATIONS") ? readOperations(user, role, semanticPlan) : Promise.resolve({ domain: "OPERATIONS", count: 0, records: [] }),
     semanticPlan.requestedDomains.includes("DRIVERS") && domainMap.domains.includes("DRIVERS") ? readDrivers(user, role, semanticPlan) : Promise.resolve({ domain: "DRIVERS", count: 0, records: [] }),
+    shouldReadOperationHealthIssues ? buildRoomObservabilityIssues(user) : Promise.resolve([]),
   ]);
   const selectedFacts = screenContext ? visibleContextForReasoning(screenContext) : "";
   const causalGps = /çevrim dışı|cevrim disi|offline|konum sinyali yok|konum bilgisi güncel değil|konum bilgisi guncel degil|gps.*yok/i.test(`${selectedFacts} ${vehicleIssues.records.join(" ")}`);
@@ -1245,6 +1784,7 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
     offers,
     agreements,
     finance,
+    operationHealthIssues,
     preferShift: semanticPlan.family === "PRIORITY" && semanticPlan.requestedDomains.includes("SHIFTS"),
   });
   const followUpContext = priorMessages.length
@@ -1288,7 +1828,11 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
       semanticPlan,
     });
   }
-  if (["SCREEN_OR_SITUATION_SUMMARY", "ISSUE_DIAGNOSTIC", "RESOLUTION_PLAN", "PRIORITY", "NEXT_STEP", "CAUSE_WHY", "RISK_RANKING"].includes(semanticPlan.family)) {
+  const operationHealthDiagnosticTurn = canonicalOperationHealthDiagnostic
+    && role === "ROOM"
+    && /\/room\/operation-health\b/i.test(String(screenContext?.path || ""));
+  if (["SCREEN_OR_SITUATION_SUMMARY", "ISSUE_DIAGNOSTIC", "RESOLUTION_PLAN", "PRIORITY", "NEXT_STEP", "CAUSE_WHY", "RISK_RANKING"].includes(semanticPlan.family)
+    || operationHealthDiagnosticTurn) {
     if (operationHealthMetricIntent && semanticPlan.family === "ISSUE_DIAGNOSTIC") {
       const metric = await readOperationHealthMetricContract({ user, screenContext, vehicleIssues, agreements, offers });
       return reasoningResult({
@@ -1297,10 +1841,16 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
         topic: "ISSUE_DIAGNOSTIC",
         reply: buildOperationHealthMetricReply(semanticPlan.operationHealthMetricMode, metric),
         nextAction: "Özet issue kategorisini, ilgili GPS/sürücü satırını ve gerekiyorsa Kanıt sekmesini aynı ekran kapsamıyla kontrol et; ticari takip bulgularını operasyon arızası olarak işleme.",
-        records: [...vehicleIssues.records, ...agreements.records, ...offers.records].slice(0, 12),
-        dataSources: ["current authorized ROOM operation-health facts", "authorized vehicle/location records", "authorized agreement and offer records", "ROOM daily report projection facts"],
+        records: [
+          ...(Array.isArray(metric.issueRecords) ? metric.issueRecords.map((item) => `${item.title}${item.detail ? ` — ${item.detail}` : ""}`) : []),
+          ...vehicleIssues.records,
+          ...agreements.records,
+          ...offers.records,
+        ].slice(0, 12),
+        dataSources: ["current authorized ROOM operation-health facts", "authorized ROOM issue records", "authorized vehicle/location records", "authorized agreement and offer records", "ROOM daily report projection facts"],
         retrievedFacts: [
           metric.openIssues == null ? "openIssues unavailable" : `openIssues=${metric.openIssues}`,
+          ...(Array.isArray(metric.issueRecords) ? metric.issueRecords.map((item) => `issue=${item.title}${item.severity ? ` (${item.severity})` : ""}`) : []),
           metric.staleOrOfflineDrivers == null ? "staleOrOffline unavailable" : `staleOrOffline=${metric.staleOrOfflineDrivers}`,
           metric.dailyVehicleTotal == null ? "dailyVehicleTotal unavailable" : `dailyVehicleTotal=${metric.dailyVehicleTotal}`,
           metric.dailyShiftTotal == null ? "dailyShiftTotal unavailable" : `dailyShiftTotal=${metric.dailyShiftTotal}`,
@@ -1308,8 +1858,28 @@ export async function buildAuthorizedReasoningAnswer({ user, message, screenCont
           metric.agreementReviewEvidence == null ? "agreementReview unavailable" : `agreementReview=${metric.agreementReviewEvidence}`,
           metric.offerResponseEvidence == null ? "offerResponse unavailable" : `offerResponse=${metric.offerResponseEvidence}`,
         ],
-        reasoning: "Operation-health metric soruları yalnızca typed metric intent ile bu read-only metric contract yoluna alındı; issue kategorileri, günlük rapor projeksiyonları ve ticari takip bulguları eşitlenmeden ayrı kaynaklar olarak açıklanıyor.",
+        reasoning: "Operation-health metric soruları yalnızca typed metric intent ile bu read-only metric contract yoluna alındı; yetkili issue kayıtları başlık, önem ve detaylarıyla sayaçlardan ayrı korunurken günlük rapor projeksiyonları ve ticari takip bulguları eşitlenmeden ayrı kaynaklar olarak açıklanıyor.",
         priority: "Metric tanımı ve projeksiyon ayrımı",
+        semanticPlan,
+      });
+    }
+    if (canonicalOperationHealthDiagnostic
+      && role === "ROOM"
+      && /\/room\/operation-health\b/i.test(String(screenContext?.path || ""))
+      && Array.isArray(operationHealthIssues)
+      && operationHealthIssues.length) {
+      const issueReply = `Bu ekranda doğrulanmış açık sorunlar: ${formatScreenIssueRecords(operationHealthIssues)}.`;
+      return reasoningResult({
+        role,
+        domainMap,
+        topic: "ISSUE_DIAGNOSTIC",
+        reply: issueReply,
+        nextAction: "Sürücü & Sorunlar sekmesinde ilgili satırın kanıtını kontrol et; güncel veri gelmeden iş verisini değiştirmiyorum.",
+        records: operationHealthIssues.map((item) => `${item.title}${item.detail ? ` — ${item.detail}` : ""}`).slice(0, 12),
+        dataSources: ["current authorized operation-health issue records", "ROOM operation-health read-only scope"],
+        retrievedFacts: operationHealthIssues.map((item) => `issue=${item.title}${item.severity ? ` (${item.severity})` : ""}`).slice(0, 12),
+        reasoning: "Operasyon Sağlığı issue planı, görünür sayaç özeti yerine aynı yetkili ekranın doğrulanmış issue kayıtlarını korudu; başka ekrandan kayıt ikamesi yapılmadı.",
+        priority: "Operasyon Sağlığı açık sorunları",
         semanticPlan,
       });
     }
@@ -1499,19 +2069,45 @@ function screenStatesNoOpenIssue(screenContext) {
   return zeroBuckets && /acik\s+bir\s+sorun\s+veya\s+firsat\s+gorunmuyor/.test(text);
 }
 
-function screenScopedZeroStateReply(family, role) {
+function formatScreenIssueRecords(issueRecords = []) {
+  const severityLabels = { HIGH: "Yüksek", MEDIUM: "Orta", LOW: "Düşük" };
+  return (Array.isArray(issueRecords) ? issueRecords : [])
+    .filter((item) => item && String(item.title || "").trim())
+    .slice(0, 12)
+    .map((item) => {
+      const severity = severityLabels[String(item.severity || "").toUpperCase()] || String(item.severity || "").trim();
+      const detail = String(item.detail || "")
+        .replace(/\bstale\s*\/\s*offline\b/giu, "güncel değil / çevrim dışı")
+        .trim();
+      return `${String(item.title).trim()}${severity ? ` (önem: ${severity}, durum: açık)` : " (durum: açık)"}${detail ? ` — ${detail}` : ""}`;
+    })
+    .join("; ");
+}
+
+function screenScopedZeroStateReply(family, role, issueRecords = []) {
   const roleContext = roleActionContext(role);
   if (family === "RISK_RANKING") return `Bu ekranda doğrulanmış risk yok. Görünen kritik, bugün çözülmeli, takip ve fırsat sayaçları sıfır; başka bir ekrandaki sinyali bu ekranın riski olarak kullanmıyorum. Sonraki güvenli adım: ${roleContext}`;
   if (family === "SCREEN_OR_SITUATION_SUMMARY") return `Bu ekranda takip gerektiren açık sorun veya fırsat görünmüyor; görünür kritik, bugün çözülmeli, takip ve fırsat sayaçları sıfır. Güvenli izleme: ${roleContext}`;
-  if (family === "ISSUE_DIAGNOSTIC") return "Bu ekranda doğrulanmış açık sorun veya fırsat görünmüyor. Görünen sayaçlar sıfır olduğu için başka bir ekranın genel sinyalini burada sorun olarak göstermiyorum.";
+  if (family === "ISSUE_DIAGNOSTIC") {
+    if (Array.isArray(issueRecords) && issueRecords.length) {
+      return `Bu ekranda doğrulanmış açık sorunlar: ${formatScreenIssueRecords(issueRecords)}.`;
+    }
+    return "Bu ekranda doğrulanmış açık sorun veya fırsat görünmüyor. Görünen sayaçlar sıfır olduğu için başka bir ekranın genel sinyalini burada sorun olarak göstermiyorum.";
+  }
   if (family === "PRIORITY") return `Bu ekranda birinci öncelik gerektiren doğrulanmış kayıt yok. Gerekçe: görünür kritik, bugün çözülmeli, takip ve fırsat sayaçları sıfır. Sonraki güvenli adım: ${roleContext}`;
   return `Hemen sonraki güvenli adım: bu ekranda yeni bir uyarı veya kayıt oluşup oluşmadığını izlemek; doğrulanmış sorun yokken işlem başlatmamak. ${roleContext}`;
 }
 
-function screenScopedVisibleStateReply(family, visibleFacts, role) {
+function screenScopedVisibleStateReply(family, visibleFacts, role, issueRecords = []) {
   const roleContext = roleActionContext(role);
   if (family === "SCREEN_OR_SITUATION_SUMMARY") return `Bu ekranda görünen durum: ${visibleFacts}. En önemli takip noktası, bu görünür göstergelerde değişiklik olup olmadığını aynı ekran kapsamındaki yetkili kayıtlarla doğrulamaktır.`;
-  if (family === "ISSUE_DIAGNOSTIC" || family === "RISK_RANKING") return `Bu ekranda görünen sinyal: ${visibleFacts}. Bu ekran özeti tek başına belirli bir kayıt veya yeni bir risk nedeni göstermediği için başka ekrandan kayıt ikame etmiyorum. Sonraki güvenli adım: ${roleContext}`;
+  if (family === "ISSUE_DIAGNOSTIC") {
+    const issueText = Array.isArray(issueRecords) && issueRecords.length
+      ? ` Yetkili açık sorunlar: ${formatScreenIssueRecords(issueRecords)}.`
+      : "";
+    return `Bu ekranda görünen sinyal: ${visibleFacts}.${issueText} Bu ekran özeti tek başına belirli bir kayıt veya yeni bir risk nedeni göstermediği için başka ekrandan kayıt ikame etmiyorum. Sonraki güvenli adım: ${roleContext}`;
+  }
+  if (family === "RISK_RANKING") return `Bu ekranda görünen sinyal: ${visibleFacts}. Bu ekran özeti tek başına belirli bir kayıt veya yeni bir risk nedeni göstermediği için başka ekrandan kayıt ikame etmiyorum. Sonraki güvenli adım: ${roleContext}`;
   if (family === "PRIORITY") return `Bu ekranda önceliklendirme için görünen sinyal: ${visibleFacts}. Gerekçe: yalnızca bu ekranın görünür ve yetkili durumunu kullanıyorum. Sonraki güvenli adım: ${roleContext}`;
   return `Bu ekranda görünen durum: ${visibleFacts}. Hemen sonraki güvenli adım: ${roleContext}`;
 }
@@ -1642,6 +2238,7 @@ function statusText(value) {
     OPEN: "Açık",
     COUNTERED: "Karşı teklif bekliyor",
     REQUESTED: "İnceleme bekliyor",
+    ACCEPTED: "Kabul edildi",
     APPROVED: "Onaylandı",
     ACTIVE: "Aktif",
     DRAFT: "Taslak",
@@ -1662,8 +2259,7 @@ function statusText(value) {
 
 function amountText(value) {
   if (value === null || value === undefined || value === "") return "-";
-  const number = Number(value);
-  return Number.isFinite(number) ? new Intl.NumberFormat("tr-TR").format(number) : "-";
+  return formatMoneyMinor(value, "TL");
 }
 
 function offerQualityAndRisk(row) {
@@ -1689,16 +2285,17 @@ function offerQualityAndRisk(row) {
 }
 
 function staleGps(row) {
-  const state = normalize(row?.gpsState?.lastUiStatus || row?.gpsLast?.status || "");
-  if (["offline", "stale", "low_signal"].includes(state)) return true;
-  const at = row?.gpsLast?.at ? new Date(row.gpsLast.at).getTime() : NaN;
-  return !Number.isFinite(at) || Date.now() - at > 5 * 60 * 1000;
+  return canonicalGpsStatus(row) !== "LIVE";
 }
 
 function gpsFreshness(row) {
-  const at = row?.gpsLast?.at ? new Date(row.gpsLast.at).getTime() : NaN;
-  if (!Number.isFinite(at)) return "UNKNOWN";
-  return staleGps(row) ? "STALE" : "FRESH";
+  const status = canonicalGpsStatus(row);
+  if (!row?.gpsLast?.at) return "UNKNOWN";
+  return status === "LIVE" ? "FRESH" : status;
+}
+
+function canonicalGpsStatus(row) {
+  return gpsStatusFromAt(row?.gpsLast?.at).status;
 }
 
 function companyFilter(user) {
@@ -1899,8 +2496,41 @@ async function readAgreements(user, role, plan = null) {
     companyId: role === "ROOM" || role === "SUPER_ADMIN" ? null : integer(user?.companyId),
     roomId: role === "ROOM" ? integer(user?.roomId) : null,
   });
+  // Resolve quality suggestions from the same server-authorized preview that
+  // backs the selected agreement card. Collection reads stay lightweight.
+  const selectedAgreementIds = scopedAgreementEntities.length
+    ? rows.map((row) => Number(row.id)).filter((id) => id > 0)
+    : [];
+  const seferScoreByAgreementId = {};
+  if (selectedAgreementIds.length) {
+    const previews = await Promise.all(rows.map(async (row) => {
+      try {
+        return [Number(row.id), await computeSeferScorePreview({ agreement: row, agreementId: row.id })];
+      } catch {
+        return [Number(row.id), null];
+      }
+    }));
+    for (const [id, preview] of previews) {
+      if (id > 0 && preview) seferScoreByAgreementId[id] = preview;
+    }
+  }
+  const commercialSourceByAgreementId = {};
+  if (selectedAgreementIds.length) {
+    const sources = await prisma.commercialSource.findMany({
+      where: { agreementId: { in: selectedAgreementIds } },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      select: { id: true, agreementId: true, sourceType: true, shiftRootId: true, paymentModeSnapshot: true, settlementStatus: true },
+    });
+    for (const source of sources) {
+      const id = Number(source.agreementId || 0);
+      if (id > 0 && !commercialSourceByAgreementId[id]) commercialSourceByAgreementId[id] = source;
+    }
+  }
   const facts = rows.map((row) => {
     const bridge = agreementBridgeById[Number(row.id)] || null;
+    const seferScore = seferScoreByAgreementId[Number(row.id)] || null;
+    const commercialSource = commercialSourceByAgreementId[Number(row.id)] || null;
+    const paymentMode = String(commercialSource?.paymentModeSnapshot || "").toUpperCase();
     const linkedShift = row.shifts[0] || null;
     const relation = projectAgreementCanonicalRelation(row, bridge);
     const startTime = minuteText(row.startMin);
@@ -1942,6 +2572,36 @@ async function readAgreements(user, role, plan = null) {
       companyOfferAmountText: amountText(row.companyOfferAmount),
       roomOfferAmount: row.roomOfferAmount,
       roomOfferAmountText: amountText(row.roomOfferAmount),
+      seferScore: seferScore?.score ?? null,
+      seferScoreText: seferScore ? `${Number(seferScore.score).toFixed(2)} / ${Number(seferScore.scoreMax || 5).toFixed(0)}` : null,
+      seferScoreStatus: seferScore?.status || null,
+      seferScoreStatusText: seferScore?.status === "RISKY"
+        ? "Riskli"
+        : seferScore?.status === "NEEDS_MORE_PROOF"
+          ? "Daha fazla kanıt gerekli"
+          : seferScore?.status === "READY"
+            ? "Hazır"
+            : seferScore?.status === "INSUFFICIENT_DATA"
+              ? "Yetersiz veri"
+              : null,
+      seferScoreLevel: seferScore?.levelLabel || seferScore?.level || null,
+      seferScoreRiskReasons: Array.isArray(seferScore?.riskReasons) ? seferScore.riskReasons : [],
+      seferScoreMissingSignals: Array.isArray(seferScore?.missingSignals) ? seferScore.missingSignals : [],
+      seferScoreSummaryText: seferScore?.summaryText || null,
+      paymentModeSnapshot: paymentMode || null,
+      paymentModeText: paymentMode === "REQUIRED"
+        ? "Zorunlu"
+        : paymentMode === "OPTIONAL"
+          ? "İsteğe bağlı"
+          : paymentMode === "OFF"
+            ? "Kapalı"
+            : null,
+      paymentStatusText: commercialSource?.settlementStatus ? String(commercialSource.settlementStatus) : null,
+      sourceType: commercialSource?.sourceType || null,
+      sourceStatusText: commercialSource
+        ? `Kaynak kaydı mevcut${commercialSource.shiftRootId ? ` • kaynak vardiya #${commercialSource.shiftRootId}` : ""}`
+        : "Kaynak kaydı yok",
+      agreementSource: commercialSource ? "CANONICAL_AGREEMENT_SOURCE" : "NO_CANONICAL_SOURCE",
       reason: agreementReason(row),
       reasonText: agreementReason(row),
       text: `Sözleşme #${row.id} • ${statusText(row.status)}${startDate || endDate ? ` • ${[startDate, endDate].filter(Boolean).join(" – ")}` : ""}${agreementReason(row) ? ` • ${agreementReason(row)}` : ""}`,
@@ -1981,6 +2641,9 @@ async function readShifts(user, role, onlyMissingAssignment = false, plan = null
   const vehicleEntities = planEntities(plan, "vehicle");
   const relationShiftEntities = shiftEntities.filter((entity) => entity.source === "OFFER_RELATION");
   const directShiftEntities = shiftEntities.filter((entity) => entity.source !== "OFFER_RELATION");
+  const contractGeneratedShiftCollection = [plan?.relationshipIntent, plan?.relationSpec]
+    .filter(Boolean)
+    .some((relation) => relation?.kind === "AGREEMENT_TO_SHIFT_COLLECTION");
   const explicitShift = directShiftEntities.length > 0;
   let relatedOfferShiftIds = [];
   if (offerEntities.length) {
@@ -1997,8 +2660,27 @@ async function readShifts(user, role, onlyMissingAssignment = false, plan = null
   }
   const relationIds = relationShiftEntities.map((entity) => Number(entity.id)).filter((id) => relatedOfferShiftIds.includes(id));
   const relationOnly = relationIds.length > 0 && !explicitShift;
-  const temporal = explicitShift || relationIds.length || vehicleEntities.length ? {} : temporalWhere(plan?.temporalMode);
-  const scopedBase = relationOnly && role === "ROOM" ? {} : base;
+  const temporal = explicitShift || relationIds.length || vehicleEntities.length || contractGeneratedShiftCollection
+    ? {}
+    : temporalWhere(plan?.temporalMode);
+  const selectedRoomShiftScope = role === "ROOM" && explicitShift
+    ? buildRoomSelectedShiftScope(user?.roomId)
+    : null;
+  // The ROOM shifts screen also exposes agreement-backed shifts that do not
+  // carry roomId but are offered to this room through an active offer. Keep
+  // the same authorization boundary as /api/shifts?includeOffered=1 for the
+  // assistant's generated-shift collection lookup.
+  const scopedBase = selectedRoomShiftScope
+    || (relationOnly && role === "ROOM"
+    ? {}
+    : contractGeneratedShiftCollection && role === "ROOM"
+      ? {
+        OR: [
+          { roomId: integer(user?.roomId) || -1 },
+          { offers: { some: { roomId: integer(user?.roomId) || -1, status: { in: ["OPEN", "COUNTERED"] } } } },
+        ],
+      }
+      : base);
   const where = {
     ...scopedBase,
     ...(explicitShift ? { id: { in: directShiftEntities.map((entity) => entity.id) } } : relationIds.length ? { id: { in: relationIds } } : temporal),
@@ -2006,9 +2688,10 @@ async function readShifts(user, role, onlyMissingAssignment = false, plan = null
       vehicle: {
         is: vehicleEntities.some((entity) => entity.id)
           ? { id: { in: vehicleEntities.map((entity) => entity.id).filter(Boolean) } }
-          : { plate: { in: vehicleEntities.map((entity) => entity.plate).filter(Boolean) } },
+          : { plate: { in: vehiclePlateCandidates(vehicleEntities) } },
       },
     } : {}),
+    ...(contractGeneratedShiftCollection ? { agreementId: { not: null } } : {}),
     ...(onlyMissingAssignment ? { AND: [{ OR: [{ vehicleId: null }, { driverId: null }] }] } : {}),
   };
   let rows = await prisma.shift.findMany({
@@ -2023,15 +2706,56 @@ async function readShifts(user, role, onlyMissingAssignment = false, plan = null
       endAt: true,
       vehicleId: true,
       driverId: true,
+      routeSnapshotDistanceM: true,
+      routeSnapshotDurationSec: true,
+      routeSnapshotValidatedAt: true,
+      room: { select: { id: true, name: true } },
       vehicle: { select: { plate: true } },
       driver: { select: { fullName: true } },
+      people: {
+        select: {
+          personel: {
+            select: {
+              credentials: {
+                where: { status: "ACTIVE" },
+                select: { type: true },
+              },
+            },
+          },
+        },
+      },
+      stops: {
+        orderBy: { order: "asc" },
+        take: 10,
+        select: { name: true, order: true },
+      },
       checkinEvents: { select: { eventType: true } },
       _count: { select: { stops: true, people: true } },
     },
   });
-  const facts = rows.map((row) => ({
-    ...(() => {
-      const checkinEvents = Array.isArray(row.checkinEvents) ? row.checkinEvents : [];
+  const facts = rows.map((row) => {
+    const routeStops = Array.isArray(row.stops)
+      ? row.stops.map((stop) => String(stop?.name || "").trim()).filter(Boolean)
+      : [];
+    const routeDistanceM = Number(row.routeSnapshotDistanceM);
+    const routeDistanceKm = Number.isFinite(routeDistanceM) && routeDistanceM > 0
+      ? (routeDistanceM / 1000).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : null;
+    const routeText = routeStops.length || routeDistanceKm
+      ? [
+        routeStops.length ? `${routeStops.length} planlanan durak${routeStops.length <= 3 ? `: ${routeStops.join(", ")}` : ""}` : null,
+        routeDistanceKm ? `${routeDistanceKm} km planlanan yol ağı mesafesi` : null,
+        "gerçek GPS/sürüş kanıtı değil",
+      ].filter(Boolean).join(" • ")
+      : null;
+    const checkinEvents = Array.isArray(row.checkinEvents) ? row.checkinEvents : [];
+    const activeCredentials = (Array.isArray(row.people) ? row.people : [])
+      .flatMap((link) => Array.isArray(link?.personel?.credentials) ? link.personel.credentials : [])
+      .map((credential) => String(credential?.type || "").trim().toUpperCase())
+      .filter(Boolean);
+    const accessCredentialTypes = [...new Set(activeCredentials)];
+    return {
+      ...(() => {
       return {
         boardingCount: checkinEvents.filter((event) => String(event?.eventType || "").toUpperCase() === "BOARD").length,
         alightingCount: checkinEvents.filter((event) => String(event?.eventType || "").toUpperCase() === "ALIGHT").length,
@@ -2065,19 +2789,47 @@ async function readShifts(user, role, onlyMissingAssignment = false, plan = null
     ].join("; "),
     vehicleId: row.vehicleId,
     driverId: row.driverId,
+    roomId: row.room?.id || null,
+    roomName: row.room?.name || null,
     stopCount: Number(row._count?.stops || 0),
+    routeText,
+    plannedRouteText: routeText,
+    plannedRouteDistanceM: Number.isFinite(routeDistanceM) && routeDistanceM > 0 ? routeDistanceM : null,
+    plannedRouteDurationSec: Number(row.routeSnapshotDurationSec) > 0 ? Number(row.routeSnapshotDurationSec) : null,
+    plannedRouteValidatedAt: row.routeSnapshotValidatedAt || null,
     passengerCount: Number(row._count?.people || 0),
     personnelCount: Number(row._count?.people || 0),
     personelCount: Number(row._count?.people || 0),
+    accessCredentialActiveCount: activeCredentials.length,
+    accessCredentialTypes,
+    accessCredentialPersonelCount: (Array.isArray(row.people) ? row.people : [])
+      .filter((link) => Array.isArray(link?.personel?.credentials) && link.personel.credentials.length > 0)
+      .length,
     text: `Vardiya #${row.id} • ${temporalLabel(temporalState(row.startAt, row.endAt, row.status))} • ${statusText(row.status)} • ${row.vehicle?.plate ? `Araç ${row.vehicle.plate}` : "Araç eksik"} • ${row.driver?.fullName ? `Sürücü ${role === "SUPER_ADMIN" ? `#${row.driverId}` : row.driver.fullName}` : "Sürücü eksik"} • ${dateText(row.startAt)}`,
     evidence: [`shift.id=${row.id}`, `shift.vehicleId=${row.vehicleId || "none"}`, `shift.driverId=${row.driverId || "none"}`],
-  }));
+    };
+  });
   return {
     domain: "SHIFTS",
     count: rows.length,
     records: facts.slice(0, 5).map(factText),
     facts,
     nextAction: rows.length ? "Önce vardiya, araç ve sürücü bağını birlikte kontrol et." : "Bugün için yetkili vardiya kaydı görünmüyor.",
+  };
+}
+
+/**
+ * A ROOM may ask Sefer Abi about a market shift that is not assigned yet,
+ * but only when the same ROOM has an active offer on that shift. This mirrors
+ * the canonical shift read boundary and must never become a global shift read.
+ */
+export function buildRoomSelectedShiftScope(roomId) {
+  const scopedRoomId = integer(roomId) || -1;
+  return {
+    OR: [
+      { roomId: scopedRoomId },
+      { offers: { some: { roomId: scopedRoomId, status: { in: ["OPEN", "COUNTERED", "ACCEPTED"] } } } },
+    ],
   };
 }
 
@@ -2176,7 +2928,7 @@ async function readVehicles(user, role, plan = null) {
   }
   if (vehicleEntities.length) {
     const idFilter = vehicleEntities.map((entity) => entity.id).filter(Boolean);
-    const plateFilter = vehicleEntities.map((entity) => entity.plate).filter(Boolean);
+    const plateFilter = vehiclePlateCandidates(vehicleEntities);
     const entityFilter = idFilter.length ? { id: { in: idFilter } } : { plate: { in: plateFilter } };
     where = { AND: [where, entityFilter] };
   }
@@ -2189,23 +2941,40 @@ async function readVehicles(user, role, plan = null) {
   const issues = rows.filter(staleGps);
   const explicitVehicle = vehicleEntities.length > 0;
   const visibleRows = explicitVehicle ? rows : issues;
-  const facts = rows.map((row) => ({
-    id: row.id,
-    vehicleId: row.id,
-    plate: row.plate,
-    vehiclePlate: row.plate,
-    gpsStatus: row.gpsState?.lastUiStatus || row.gpsLast?.status || "UNKNOWN",
-    gpsAt: row.gpsLast?.at || null,
-    freshness: gpsFreshness(row),
-    freshnessAt: row.gpsLast?.at || null,
-    text: `Araç ${row.plate} • ${staleGps(row) ? "Konum bilgisi güncel değil" : "Konum bağlantısı güncel"}`,
-    evidence: [`vehicle.id=${row.id}`, `vehicle.plate=${row.plate}`],
-  }));
+  const facts = rows.map((row) => {
+    const statusBand = canonicalGpsStatus(row);
+    const statusText = statusBand === "OFFLINE"
+      ? "Konum bilgisi çevrim dışı veya sinyal yok"
+      : statusBand === "STALE"
+        ? "Konum bilgisi güncel değil"
+        : "Konum bağlantısı güncel";
+    return {
+      id: row.id,
+      vehicleId: row.id,
+      plate: row.plate,
+      vehiclePlate: row.plate,
+      gpsStatus: statusBand,
+      gpsAt: row.gpsLast?.at || null,
+      freshness: gpsFreshness(row),
+      statusBand,
+      freshnessAt: row.gpsLast?.at || null,
+      text: `Araç ${row.plate} • ${statusText}`,
+      evidence: [`vehicle.id=${row.id}`, `vehicle.plate=${row.plate}`],
+    };
+  });
   return {
     domain: "VEHICLES",
     count: explicitVehicle ? rows.length : issues.length,
     totalCount: rows.length,
-    records: visibleRows.slice(0, 5).map((row) => `Araç ${row.plate} • ${staleGps(row) ? "Konum bilgisi güncel değil" : "Konum bağlantısı güncel"}`),
+    records: visibleRows.slice(0, 5).map((row) => {
+      const statusBand = canonicalGpsStatus(row);
+      const statusText = statusBand === "OFFLINE"
+        ? "Konum bilgisi çevrim dışı veya sinyal yok"
+        : statusBand === "STALE"
+          ? "Konum bilgisi güncel değil"
+          : "Konum bağlantısı güncel";
+      return `Araç ${row.plate} • ${statusText}`;
+    }),
     facts: facts.filter((fact) => visibleRows.some((row) => row.id === fact.vehicleId)),
     nextAction: issues.length ? "Önce ilgili aracın konum bağlantısını ve son sinyal zamanını kontrol et." : "Yetkili araçlarda açık konum sorunu görünmüyor.",
   };
@@ -2256,6 +3025,7 @@ async function readOperations(user, role, plan = null) {
   }
   const personnelEntities = planEntities(plan, "personnel");
   const requestedPersonelIds = personnelEntities.map((entity) => Number(entity.id)).filter((id) => Number.isInteger(id) && id > 0);
+  const exposeSelectedShiftPeople = ["SCHOOL", "COMPANY", "ROOM"].includes(role);
   const shiftSelect = {
     id: true,
     vehicleId: true,
@@ -2263,10 +3033,17 @@ async function readOperations(user, role, plan = null) {
     startAt: true,
     endAt: true,
     status: true,
-    vehicle: { select: { plate: true, gpsLast: { select: { at: true, status: true, lat: true, lng: true, speed: true } }, gpsState: { select: { lastUiStatus: true } } } },
+    vehicle: { select: { id: true, plate: true, gpsLast: { select: { at: true, status: true, lat: true, lng: true, speed: true } }, gpsState: { select: { lastUiStatus: true } } } },
     driver: { select: { fullName: true } },
     stops: { orderBy: { order: "asc" }, take: 10, select: { id: true, name: true, order: true, state: true } },
-    _count: { select: { stops: true } },
+    _count: { select: { stops: true, people: true } },
+    ...(exposeSelectedShiftPeople ? {
+      people: {
+        orderBy: { personelId: "asc" },
+        take: 50,
+        select: { personelId: true, personel: { select: { id: true, fullName: true, kind: true } } },
+      },
+    } : {}),
     ...(scopedPersonelIds.length ? {
       assignments: {
         where: { personelId: { in: scopedPersonelIds } },
@@ -2283,13 +3060,22 @@ async function readOperations(user, role, plan = null) {
   const shiftEntities = planEntities(plan, "shift");
   const vehicleEntities = planEntities(plan, "vehicle");
   const driverEntities = planEntities(plan, "driver");
-  const temporal = shiftEntities.length ? {} : temporalWhere(plan?.temporalMode);
+  const vehicleToShiftRelation = plan?.relationshipIntent?.kind === "VEHICLE_TO_SHIFT";
+  // A selected vehicle relation is an authorized relationship lookup, not a
+  // current-day collection query. Keep the ROOM tenant boundary and active
+  // shift statuses, but include the next valid operation so a future
+  // agreement-backed shift is not incorrectly reported as missing.
+  const temporal = shiftEntities.length
+    ? {}
+    : vehicleToShiftRelation
+      ? { endAt: { gte: new Date() }, status: { in: ACTIVE_SHIFT_STATUSES } }
+      : temporalWhere(plan?.temporalMode);
   const entityWhere = shiftEntities.length
     ? { id: { in: shiftEntities.map((entity) => entity.id) } }
     : vehicleEntities.length
       ? { vehicle: { is: vehicleEntities.some((entity) => entity.id)
         ? { id: { in: vehicleEntities.map((entity) => entity.id).filter(Boolean) } }
-        : { plate: { in: vehicleEntities.map((entity) => entity.plate).filter(Boolean) } } } }
+        : { plate: { in: vehiclePlateCandidates(vehicleEntities) } } } }
       : driverEntities.length
         ? { driver: { is: { id: { in: driverEntities.map((entity) => entity.id) } } } }
         : {};
@@ -2318,8 +3104,10 @@ async function readOperations(user, role, plan = null) {
     return {
       id: row.id,
       shiftId: row.id,
+      vehicleId: row.vehicleId || row.vehicle?.id || null,
       personelId: requestedPersonelIds.length === 1 ? requestedPersonelIds[0] : null,
       status: row.status,
+      statusText: statusText(row.status),
       vehicle: plate === "Araç atanmadı" ? null : plate,
       vehiclePlate: plate === "Araç atanmadı" ? null : plate,
       driver: driverLabel,
@@ -2332,6 +3120,16 @@ async function readOperations(user, role, plan = null) {
       etaText: eta,
       nextStop,
       stopCount,
+      passengerCount: Number(row._count?.people || 0),
+      personnelCount: Number(row._count?.people || 0),
+      personelCount: Number(row._count?.people || 0),
+      passengers: exposeSelectedShiftPeople
+        ? (Array.isArray(row.people) ? row.people.map((person) => ({
+          personelId: person.personelId,
+          fullName: person.personel?.fullName || null,
+          kind: person.personel?.kind || null,
+        })) : [])
+        : [],
       text: `Vardiya #${row.id} • ${temporalLabel(state)} • Araç ${plate} • ${driverLabel ? `Sürücü ${driverLabel}` : "Sürücü atanmamış"} • Konum ${statusText(gps)} • ${eta} • ${stopCount} durak • Sıradaki ${nextStop}`,
       evidence: [`shift.id=${row.id}`, `shift.vehicle=${plate}`, `shift.driver=${role === "SUPER_ADMIN" ? (row.driverId ? `#${row.driverId}` : "none") : (row.driver?.fullName || "none")}`],
     };
@@ -2374,6 +3172,56 @@ async function readOperations(user, role, plan = null) {
   };
 }
 
+// A parent asking for the selected child's current status needs the
+// authorized person record and the authorized live-operation read model in
+// the same result. Previously PERSONNEL returned only the identity row; the
+// executor then correctly found the child but had no STATUS field and
+// incorrectly answered "yetkili kayıtta yok". Keep this merge scoped to an
+// already-authorized selected child and never synthesize an operation fact for
+// a child that was not found in the parent relationship.
+export function mergeParentSelectedPersonnelFacts(personnelResult, operationsResult) {
+  const personnelFacts = Array.isArray(personnelResult?.facts) ? personnelResult.facts : [];
+  if (!personnelFacts.length) return personnelResult;
+  const operationFacts = Array.isArray(operationsResult?.facts) ? operationsResult.facts : [];
+  const facts = personnelFacts.map((personFact) => {
+    const personelId = Number((personFact?.personelId ?? personFact?.id) || 0);
+    const operationFact = operationFacts.find((fact) => Number(fact?.personelId || 0) === personelId);
+    if (!operationFact) return personFact;
+    return {
+      ...personFact,
+      status: operationFact.status ?? personFact.status ?? null,
+      statusText: operationFact.statusText || personFact.statusText || null,
+      vehicle: operationFact.vehicle ?? personFact.vehicle ?? null,
+      vehiclePlate: operationFact.vehiclePlate ?? personFact.vehiclePlate ?? null,
+      vehicleState: operationFact.vehicleState ?? personFact.vehicleState ?? null,
+      noActiveVehicleText: operationFact.noActiveVehicleText ?? personFact.noActiveVehicleText ?? null,
+      noLiveVehicle: operationFact.noLiveVehicle ?? personFact.noLiveVehicle ?? false,
+      shiftId: operationFact.shiftId ?? personFact.shiftId ?? null,
+      text: [personFact.text, operationFact.statusText || operationFact.text].filter(Boolean).join(" • "),
+      evidence: [...new Set([
+        ...(Array.isArray(personFact.evidence) ? personFact.evidence : []),
+        ...(Array.isArray(operationFact.evidence) ? operationFact.evidence : []),
+      ])],
+    };
+  });
+  return {
+    ...personnelResult,
+    facts,
+    records: facts.slice(0, 5).map(factText),
+    nextAction: operationsResult?.nextAction || personnelResult?.nextAction,
+  };
+}
+
+export function buildPersonnelKindScope(role, semanticEntityType) {
+  // ParentChild is the authority boundary for PARENT. A linked child may be
+  // stored as STUDENT or PERSONEL; the parent relation must not be narrowed by
+  // the copilot's generic PERSONNEL semantic label.
+  if (role === "PARENT") return {};
+  if (semanticEntityType === "STUDENT") return { kind: "STUDENT" };
+  if (semanticEntityType === "PERSONNEL") return { kind: "PERSONEL" };
+  return {};
+}
+
 async function readDrivers(user, role, plan = null) {
   const base = role === "ROOM"
     ? { roomId: integer(user?.roomId) || -1 }
@@ -2382,6 +3230,9 @@ async function readDrivers(user, role, plan = null) {
     : role === "COMPANY" || role === "SCHOOL" || role === "ORGANIZATION"
       ? { shifts: { some: { companyId: integer(user?.companyId) || -1 } } }
       : { userId: integer(user?.id) || -1 };
+  const activeShiftWhere = { status: { in: ACTIVE_SHIFT_STATUSES } };
+  if (role === "ROOM") activeShiftWhere.roomId = integer(user?.roomId) || -1;
+  if (["COMPANY", "SCHOOL", "ORGANIZATION"].includes(role)) activeShiftWhere.companyId = integer(user?.companyId) || -1;
   const driverEntities = planEntities(plan, "driver");
   const shiftEntities = planEntities(plan, "shift");
   const where = driverEntities.length
@@ -2399,7 +3250,7 @@ async function readDrivers(user, role, plan = null) {
       userId: true,
       vehicles: { select: { id: true, plate: true, status: true } },
       shifts: {
-        where: { status: { in: ACTIVE_SHIFT_STATUSES } },
+        where: activeShiftWhere,
         orderBy: [{ startAt: "desc" }],
         take: 5,
         select: { id: true, status: true, vehicle: { select: { id: true, plate: true } } },
@@ -2445,8 +3296,7 @@ async function readPersonnel(user, role, plan = null) {
     const ids = personnelEntities.map((entity) => Number(entity.id)).filter((id) => Number.isInteger(id) && id > 0);
     where = { AND: [where, { id: { in: ids.length ? ids : [-1] } }] };
   }
-  if (plan?.semanticEntityType === "STUDENT") where = { ...where, kind: "STUDENT" };
-  if (plan?.semanticEntityType === "PERSONNEL") where = { ...where, kind: "PERSONEL" };
+  where = { ...where, ...buildPersonnelKindScope(role, plan?.semanticEntityType) };
   const rows = await prisma.personel.findMany({ where, take: 100, orderBy: { fullName: "asc" }, select: { id: true, fullName: true, kind: true } });
   const facts = rows.map((row) => ({
     personLabel: role === "SUPER_ADMIN" ? `${row.kind === "STUDENT" ? "Öğrenci" : "Personel"} #${row.id}` : row.fullName,
@@ -2488,6 +3338,8 @@ async function readParentLinks(user, role) {
 }
 
 async function readServiceRequests(user, role, plan = null) {
+  const requestEntities = planEntities(plan, "serviceRequest");
+  const requestIds = requestEntities.map((entity) => Number(entity.id)).filter((id) => Number.isInteger(id) && id > 0);
   let personelIds = [];
   if (role === "PERSONEL") {
     const personel = await prisma.personel.findFirst({ where: { userId: integer(user?.id) || -1 }, select: { id: true } });
@@ -2497,6 +3349,8 @@ async function readServiceRequests(user, role, plan = null) {
     personelIds = links.map((row) => Number(row.personelId)).filter((id) => Number.isInteger(id) && id > 0);
   }
   const roomId = integer(user?.roomId);
+  const companyId = integer(user?.companyId);
+  const driverUserId = integer(user?.id);
   const temporalMode = String(plan?.temporalMode || "UNKNOWN").toUpperCase();
   const roomWhere = role === "ROOM" && roomId
     ? {
@@ -2504,29 +3358,77 @@ async function readServiceRequests(user, role, plan = null) {
       ...(temporalMode === "ACTIVE_TODAY" ? { createdAt: { gte: istanbulDayWindow().start, lt: istanbulDayWindow().end } } : {}),
     }
     : null;
+  const companyWhere = ["COMPANY", "SCHOOL", "ORGANIZATION"].includes(role) && companyId
+    ? {
+      shift: { is: { companyId } },
+      ...(temporalMode === "ACTIVE_TODAY" ? { createdAt: { gte: istanbulDayWindow().start, lt: istanbulDayWindow().end } } : {}),
+    }
+    : null;
+  const driverWhere = role === "DRIVER" && driverUserId
+    ? { shift: { is: { driver: { is: { userId: driverUserId } } } } }
+    : null;
+  const entityWhere = requestIds.length ? { id: { in: requestIds } } : {};
+  const scopedWhere = roomWhere ? { ...roomWhere, ...entityWhere } : companyWhere ? { ...companyWhere, ...entityWhere } : driverWhere ? { ...driverWhere, ...entityWhere } : personelIds.length
+    ? { personelId: { in: personelIds }, ...entityWhere }
+    : role === "SUPER_ADMIN" ? entityWhere : { id: { in: [] } };
   const rows = roomWhere
     ? await prisma.pickupRequest.findMany({
-      where: roomWhere,
+      where: scopedWhere,
       orderBy: { createdAt: "desc" },
       take: 20,
-      select: { id: true, status: true, shiftId: true, createdAt: true },
+      select: { id: true, status: true, shiftId: true, personelId: true, createdAt: true, personel: { select: { fullName: true } } },
     })
-    : personelIds.length
+    : companyWhere || driverWhere || personelIds.length || role === "SUPER_ADMIN"
       ? await prisma.pickupRequest.findMany({
-        where: { personelId: { in: personelIds }, status: "OPEN" },
+        where: scopedWhere,
         orderBy: { createdAt: "desc" },
         take: 20,
-        select: { id: true, status: true, shiftId: true, createdAt: true },
+        select: { id: true, status: true, shiftId: true, personelId: true, createdAt: true, personel: { select: { fullName: true } } },
       })
       : [];
-  const facts = rows.map((row) => ({
-    id: row.id,
-    requestId: row.id,
-    shiftId: row.shiftId,
-    requestStatus: statusText(row.status),
-    text: `Servis talebi #${row.id} • Vardiya #${row.shiftId} • ${statusText(row.status)} • ${dateText(row.createdAt)}`,
-    evidence: [`pickupRequest.id=${row.id}`, `pickupRequest.shiftId=${row.shiftId}`],
-  }));
+  const auditMap = await loadBoardingChangeRequestAuditMap(prisma, rows.map((row) => row.id));
+  const facts = rows.map((row) => {
+    const view = buildBoardingChangeRequestView(
+      { ...row, personel: row.personel || null },
+      auditMap.get(row.id) || {},
+    );
+    const applicationStatus = view.boardingChangeApplicationStatus === "APPLIED"
+      ? "Uygulandı"
+      : view.boardingChangeApplicationStatus === "READY"
+        ? "Uygulamaya hazır"
+        : view.boardingChangeApplicationStatus === "BLOCKED"
+          ? "Uygulanamaz"
+          : "Karar bekliyor";
+    const changeTypeLabel = view.routeImpactPreview?.changeTypeLabel
+      || view.routeImpactPreview?.summaryLine
+      || (String(view.requestKind || "").toUpperCase() === "NO_SHOW" ? "Bugün binmeyecek" : null);
+    return {
+      id: row.id,
+      requestId: row.id,
+      shiftId: row.shiftId,
+      personelId: row.personelId,
+      personLabel: row.personel?.fullName || `Personel #${row.personelId}`,
+      requestKind: view.requestKind,
+      requestDate: view.requestDate || null,
+      requestStatus: statusText(row.status),
+      applicationStatus,
+      changeTypeLabel,
+      effectLabel: changeTypeLabel,
+      routeRefreshNote: view.boardingChangeRouteRefreshNote || null,
+      routeRefreshLabel: view.boardingChangeRouteRefreshLabel || null,
+      permanentRouteNote: "Kalıcı rota ve durak ataması değişmez.",
+      decisionAuditAction: auditMap.get(row.id)?.decisionAudit?.action || null,
+      applyAuditAction: auditMap.get(row.id)?.applyAudit?.action || null,
+      text: `Servis talebi #${row.id} • Vardiya #${row.shiftId} • ${statusText(row.status)} • ${changeTypeLabel || "Biniş değişikliği"} • ${applicationStatus} • ${dateText(row.createdAt)}`,
+      evidence: [
+        `pickupRequest.id=${row.id}`,
+        `pickupRequest.shiftId=${row.shiftId}`,
+        `pickupRequest.requestKind=${view.requestKind}`,
+        `pickupRequest.applicationStatus=${applicationStatus}`,
+        `pickupRequest.routeRefresh=${view.boardingChangeRouteRefreshState || "NONE"}`,
+      ],
+    };
+  });
   return {
     domain: "SERVICE_REQUESTS",
     count: rows.length,
@@ -2580,7 +3482,53 @@ async function readOrganizationPlans(user, plan = null) {
   };
 }
 
-async function readFinance(user, role, budgetOnly = false) {
+async function readRoomReconciliationSummary(user) {
+  const roomId = integer(user?.roomId) || -1;
+  const agreements = await prisma.agreement.findMany({
+    where: { roomId, status: "ACTIVE" },
+    orderBy: { id: "asc" },
+    take: 50,
+    select: { id: true },
+  });
+  const previews = await Promise.all(agreements.map(async (agreement) => {
+    const preview = await buildAgreementReconciliationPreview({ agreementId: agreement.id });
+    const data = preview?.data || {};
+    const status = String(data.status || "REVIEW_REQUIRED").toUpperCase();
+    const reasonText = Array.isArray(data.reasons)
+      ? data.reasons.map((item) => String(item?.label || "").trim()).filter(Boolean).join(" ")
+      : "";
+    const detail = status === "MATCHED"
+      ? "Sorun görünmüyor."
+      : reasonText || String(data.statusLabel || "İncelenmeli");
+    return {
+      agreementId: agreement.id,
+      status,
+      statusLabel: String(data.statusLabel || status),
+      detail,
+      text: `Sözleşme #${agreement.id} • ${String(data.statusLabel || status)} • ${detail}`,
+    };
+  }));
+  const records = previews.map((item) => item.text);
+  return {
+    domain: "FINANCE",
+    count: records.length,
+    records,
+    facts: records,
+    nextAction: records.length
+      ? "Sözleşme bazındaki mutabakat satırını açıp kanıtları yalnızca önizleme olarak incele; ödeme veya muhasebe işlemi başlatılmaz."
+      : "Yetkili aktif sözleşmeler için güncel mutabakat kaydı görünmüyor.",
+  };
+}
+
+async function readFinance(user, role, budgetOnly = false, semanticPlan = null) {
+  if (role === "ROOM"
+    && !budgetOnly
+    && semanticPlan?.canonicalRequest?.operation === "ASSESS_CURRENT_RISK"
+    && String(semanticPlan?.canonicalRequest?.domain || "").toUpperCase() === "FINANCE"
+    && Array.isArray(semanticPlan?.canonicalRequest?.candidateEntityRefs)
+    && semanticPlan.canonicalRequest.candidateEntityRefs.length === 0) {
+    return readRoomReconciliationSummary(user);
+  }
   const where = role === "ROOM" ? { roomId: integer(user?.roomId) || -1 } : role === "SUPER_ADMIN" ? {} : companyFilter(user);
   const [hakedis, invoices, budgets] = await Promise.all([
     prisma.hakedisRecord.findMany({ where: { ...where, status: "READY" }, take: 10, orderBy: { updatedAt: "desc" }, select: { id: true, reference: true, amountMinor: true, currencyCode: true } }),
@@ -2648,16 +3596,79 @@ async function readTenantAccess(user, role) {
   };
 }
 
-async function readNotifications(user, role) {
+function notificationScopeWhere(user, role) {
   const ids = { companyId: integer(user?.companyId), roomId: integer(user?.roomId), userId: integer(user?.id) };
-  const or = [{ userId: ids.userId }];
-  if (role === "DRIVER") {
-    const driver = await prisma.driver.findFirst({ where: { userId: ids.userId || -1 }, select: { id: true } });
-    if (driver?.id) or.push({ driverId: driver.id });
-  }
-  if (["COMPANY", "SCHOOL", "ORGANIZATION"].includes(role) && ids.companyId) or.push({ companyId: ids.companyId });
-  if (role === "ROOM" && ids.roomId) or.push({ roomId: ids.roomId });
-  const rows = await prisma.notification.findMany({ where: role === "SUPER_ADMIN" ? {} : { OR: or }, orderBy: { createdAt: "desc" }, take: 10, select: { id: true, type: true, createdAt: true } });
+  if (role === "SUPER_ADMIN") return {};
+  if (role === "ROOM") return { scope: "ROOM", roomId: ids.roomId || -1 };
+  if (["COMPANY", "SCHOOL", "ORGANIZATION"].includes(role)) return { companyId: ids.companyId || -1 };
+  if (role === "PERSONEL") return { OR: [{ userId: ids.userId || -1 }, ...(ids.companyId ? [{ companyId: ids.companyId }] : [])] };
+  if (role === "PARENT") return { userId: ids.userId || -1 };
+  return { id: -1 };
+}
+
+function notificationTypeLabel(type) {
+  return {
+    STOP_REACHED: "Durak tamamlandı",
+    MAINT_7D: "Bakım tarihi yaklaşıyor",
+    GPS_OFFLINE: "Konum sinyali çevrim dışı",
+    GPS_STALE: "Konum bilgisi güncel değil",
+    OFFER_RECEIVED: "Yeni teklif geldi",
+    AGREEMENT_REVIEW: "Sözleşme inceleme bekliyor",
+    AGREEMENT_CANCELLED: "Sözleşme iptal edildi",
+  }[String(type || "").toUpperCase()] || "Yeni bildirim";
+}
+
+function safeNotificationFact(row) {
+  const payload = row?.payloadJson && typeof row.payloadJson === "object" && !Array.isArray(row.payloadJson)
+    ? row.payloadJson
+    : {};
+  const title = String(payload.title || "").trim();
+  const message = String(payload.message || payload.summary || "").trim();
+  const kind = String(payload.kind || row?.type || "").trim();
+  return {
+    notificationId: Number(row.id),
+    type: kind,
+    label: title || notificationTypeLabel(row.type),
+    summary: message,
+    createdAt: row.createdAt,
+  };
+}
+
+export function buildSelectedNotificationContextReply({ selectedId, notificationRead } = {}) {
+  const id = integer(selectedId);
+  const facts = Array.isArray(notificationRead?.facts) ? notificationRead.facts : [];
+  const fact = facts[0] || null;
+  const selectedLabel = fact?.notificationId
+    ? `Bildirim #${fact.notificationId}${fact.label ? ` • ${fact.label}` : ""}`
+    : `Bildirim #${id || ""}`;
+  const reply = fact?.summary
+    ? `Seçili ${selectedLabel} bildirimi şu olayla ilgili: ${fact.summary}`
+    : fact
+      ? `Seçili ${selectedLabel} bildiriminin yetkili başlık ve tür bilgisi okundu; mesaj özeti bulunmuyor.`
+      : `Seçili Bildirim #${id || ""} bu oturumun yetkili kayıtlarında görünmüyor; başka tenant veya rol verisini açmıyorum.`;
+  return {
+    reply,
+    nextAction: fact ? notificationRead.nextAction : "Yetkili bildirim listesinden başka bir kayıt seç.",
+    records: fact ? notificationRead.records : [],
+    retrievedFacts: [
+      "selected.entityType=notification",
+      `selected.entityId=${id || ""}`,
+      ...(fact ? [`notification.type=${fact.type}`, `notification.summary=${fact.summary || ""}`] : ["selected notification unavailable in current authorization scope"]),
+    ],
+    hasAuthorizedRecord: Boolean(fact),
+  };
+}
+
+async function readNotifications(user, role, plan = null) {
+  const entity = plan?.entity || (Array.isArray(plan?.entities) ? plan.entities.find((item) => item?.type === "notification") : null);
+  const selectedId = entity?.type === "notification" ? integer(entity.id) : null;
+  const scope = notificationScopeWhere(user, role);
+  const rows = await prisma.notification.findMany({
+    where: { ...scope, ...(selectedId ? { id: selectedId } : {}) },
+    orderBy: { createdAt: "desc" },
+    take: selectedId ? 1 : 10,
+    select: { id: true, type: true, payloadJson: true, createdAt: true },
+  });
   const notificationTypeText = {
     STOP_REACHED: "Durak tamamlandı",
     MAINT_7D: "Bakım tarihi yaklaşıyor",
@@ -2666,11 +3677,23 @@ async function readNotifications(user, role) {
     OFFER_RECEIVED: "Yeni teklif geldi",
     AGREEMENT_REVIEW: "Sözleşme inceleme bekliyor",
   };
+  const facts = rows.map(safeNotificationFact);
+  const records = facts.map((fact) => [
+    `Bildirim #${fact.notificationId}`,
+    fact.label,
+    fact.summary,
+    fact.createdAt ? dateText(fact.createdAt) : "",
+  ].filter(Boolean).join(" • "));
   return {
     domain: "NOTIFICATIONS",
     count: rows.length,
-    records: rows.slice(0, 6).map((row) => `Bildirim #${row.id} • ${notificationTypeText[String(row.type || "").toUpperCase()] || "Yeni bildirim"} • ${dateText(row.createdAt)}`),
-    nextAction: rows.length ? "Önce en yeni bildirimi açıp bağlı kayıt ve gereken kullanıcı kararını kontrol et." : "Yetkili güncel bildirim görünmüyor.",
+    records: (records.length ? records : rows.slice(0, 6).map((row) => `Bildirim #${row.id} • ${notificationTypeText[String(row.type || "").toUpperCase()] || "Yeni bildirim"} • ${dateText(row.createdAt)}`)),
+    facts,
+    nextAction: selectedId
+      ? (facts[0]?.summary
+        ? `Seçili bildirim #${selectedId} bu olayı anlatıyor: ${facts[0].summary}`
+        : `Seçili bildirim #${selectedId} için güvenli başlık ve tür bilgisi okundu.`)
+      : rows.length ? "Önce en yeni bildirimi açıp bağlı kayıt ve gereken kullanıcı kararını kontrol et." : "Yetkili güncel bildirim görünmüyor.",
   };
 }
 
@@ -2701,6 +3724,19 @@ function factForPlanEntity(plan, facts = []) {
 }
 
 function taskReasonForFact(plan, fact) {
+  const requestedFields = Array.isArray(plan?.requestedFields) ? plan.requestedFields : [];
+  const asksSeferScore = plan?.entity?.type === "agreement"
+    && requestedFields.some((field) => ["SEFER_SCORE", "SEFER_SCORE_MISSING"].includes(String(field?.key || field || "").toUpperCase()));
+  if (asksSeferScore) {
+    const scoreStatus = fact?.seferScoreStatusText || fact?.seferScoreLevel || "durum doğrulanamadı";
+    const risks = Array.isArray(fact?.seferScoreRiskReasons) ? fact.seferScoreRiskReasons.filter(Boolean) : [];
+    const missing = Array.isArray(fact?.seferScoreMissingSignals) ? fact.seferScoreMissingSignals.filter(Boolean) : [];
+    const details = [
+      risks.length ? `risk nedenleri: ${risks.join("; ")}` : "",
+      missing.length ? `eksik sinyaller: ${missing.join(", ")}` : "",
+    ].filter(Boolean);
+    return `SeferPuanı durumu: ${scoreStatus}${details.length ? ` • ${details.join(" • ")}` : " • risk ve eksik sinyal ayrıntısı için doğrulanmış kanıt yok; kesin neden söylemiyorum"}.`;
+  }
   if (fact?.reasonText || fact?.reason) return String(fact.reasonText || fact.reason);
   if (plan?.entity?.type === "shift") {
     return [
@@ -2727,8 +3763,138 @@ function taskNextStepForFact(plan, fact) {
   return "İlgili yetkili kaydı açıp eksik bağı doğrula.";
 }
 
-function composeMultiPartExecutionReply({ plan, execution, baseReply }) {
+export function composeMultiPartExecutionReply({ plan, execution, baseReply, role = null }) {
   const slots = Array.isArray(plan?.requestedTaskSlots) ? plan.requestedTaskSlots : [];
+  const requestedDomains = Array.isArray(plan?.requestedDomains) ? plan.requestedDomains : [];
+  const serviceRequestEntity = plan?.entity?.type === "serviceRequest"
+    ? plan.entity
+    : plan?.entities?.find((entity) => entity?.type === "serviceRequest") || null;
+  const serviceRequestFields = Array.isArray(plan?.requestedFields)
+    ? plan.requestedFields.map((field) => String(field?.key || field || "").toUpperCase())
+    : [];
+  const serviceRequestItem = serviceRequestEntity
+    && requestedDomains.includes("SERVICE_REQUESTS")
+    ? execution?.items?.find((item) => item?.domain === "SERVICE_REQUESTS"
+      && item?.status === "RESOLVED"
+      && Number(item?.entity?.id || 0) === Number(serviceRequestEntity.id || 0))
+    : null;
+  const serviceRequestFact = serviceRequestItem?.facts?.find((fact) => Number(fact?.requestId ?? fact?.id ?? 0) === Number(serviceRequestEntity?.id || 0))
+    || serviceRequestItem?.facts?.[0]
+    || null;
+  const serviceRequestStatusFields = serviceRequestFields.some((field) => ["REQUEST_STATUS", "APPLICATION_STATUS"].includes(field));
+  const serviceRequestRouteFields = serviceRequestFields.some((field) => ["ROUTE", "STOP", "STOPS", "PERMANENT_ROUTE"].includes(field));
+  const serviceRequestDateFields = serviceRequestFields.some((field) => ["DATE_RANGE", "REQUEST_DATE", "EFFECTIVE_DATE"].includes(field));
+  if (serviceRequestEntity
+    && serviceRequestItem
+    && serviceRequestFact
+    && (serviceRequestStatusFields || serviceRequestRouteFields || serviceRequestDateFields)) {
+    const requestStatus = serviceRequestFact.requestStatus
+      ? statusText(serviceRequestFact.requestStatus)
+      : "yetkili kayıtta yok";
+    const applicationStatus = String(serviceRequestFact.applicationStatus || "yetkili kayıtta yok");
+    const shiftId = Number(serviceRequestFact.shiftId || 0);
+    const applied = String(serviceRequestFact.applicationStatus || "").toLocaleLowerCase("tr-TR") === "uygulandı";
+    const decision = String(serviceRequestFact.requestStatus || "").toLocaleLowerCase("tr-TR");
+    const accepted = decision.includes("accepted") || decision.includes("kabul");
+    const boundary = applied
+      ? "Kabul edilen değişiklik günlük atamaya uygulanmış."
+      : accepted
+        ? "Kabul edilen değişiklik henüz günlük atamaya uygulanmadı; bu adım ayrı yetkili uygulama işlemi gerektiriyor. Sürücü rotası henüz yenilenmedi."
+        : "Bu sonuç yalnızca talep kararını gösterir; günlük atama uygulaması ayrıca doğrulanmalıdır.";
+    const dailyEffect = serviceRequestFact.changeTypeLabel || serviceRequestFact.effectLabel || "günlük biniş etkisi doğrulanamadı";
+    const permanentRouteNote = serviceRequestFact.permanentRouteNote || serviceRequestFact.routeRefreshNote || "Kalıcı rota/durak değişikliği doğrulanmadı.";
+    return {
+      reply: `Servis talebi #${serviceRequestEntity.id} için istek durumu: ${requestStatus} • uygulama durumu: ${applicationStatus}${shiftId > 0 ? ` • bağlı vardiya #${shiftId}` : ""} • günlük etki: ${dailyEffect}. ${boundary} ${permanentRouteNote}`,
+      nextAction: applied
+        ? "Bağlı vardiya ve sürücü rotasında uygulama sonucunu kontrol et."
+        : accepted
+          ? "Ayrı yetkili uygulama adımını başlatmadan önce bağlı vardiya ve değişiklik önizlemesini doğrula."
+          : "Talep kararını ve bağlı vardiyayı yetkili ekrandan kontrol et.",
+    };
+  }
+  const selectedShiftPassengerListLookup = ["SCHOOL", "COMPANY", "ROOM"].includes(String(role || "").toUpperCase())
+    && String(plan?.entity?.type || "").toLowerCase() === "shift"
+    && Number(plan?.entity?.id || 0) > 0
+    && Array.isArray(plan?.requestedFields)
+    && plan.requestedFields.some((field) => String(field?.key || field || "").toUpperCase() === "PASSENGER_LIST");
+  if (selectedShiftPassengerListLookup) {
+    const shiftId = Number(plan.entity.id);
+    const operationItem = execution?.items?.find((item) => item?.domain === "OPERATIONS" && item?.status === "RESOLVED");
+    const fact = operationItem?.facts?.find((item) => Number(item?.shiftId || item?.id || 0) === shiftId) || operationItem?.facts?.[0] || null;
+    const passengers = Array.isArray(fact?.passengers) ? fact.passengers.filter((person) => person?.fullName) : [];
+    const passengerCount = Number(fact?.passengerCount ?? fact?.personnelCount ?? passengers.length) || 0;
+    const listText = passengers.length
+      ? passengers.map((person) => person.fullName).join(", ")
+      : passengerCount > 0
+        ? `${passengerCount} yetkili öğrenci/personel bağı var; isim listesi bu okumada gelmedi.`
+        : "yetkili öğrenci/personel bağı görünmüyor";
+    return {
+      reply: `Vardiya #${shiftId} için yetkili öğrenci/personel listesi: ${listText}. Bu bilgi seçili vardiyanın kendi tenant kaydından okundu.`,
+      nextAction: passengers.length || passengerCount > 0
+        ? "İstersen aynı vardiyanın araç, sürücü ve durak bilgisini de kontrol edebilirsin."
+        : "Vardiyanın kişi bağlantısını ve rota ayrıntısını yetkili ekrandan kontrol et.",
+    };
+  }
+  const selectedShiftPersonnelLookup = String(plan?.entity?.type || '').toLowerCase() === 'shift'
+    && Number(plan?.entity?.id || 0) > 0
+    && String(plan?.typedRequest?.targetEntityType || '').toUpperCase() === 'PERSONNEL'
+    && Array.isArray(plan?.requestedFields)
+    && plan.requestedFields.some((field) => String(field?.key || field || '').toUpperCase() === 'STATUS');
+  if (selectedShiftPersonnelLookup) {
+    const shiftId = Number(plan.entity.id);
+    return {
+      reply: `Vardiya #${shiftId} kartında personel listesi doğrudan görünmüyor; bu nedenle personel sayısı veya atama durumu hakkında kanıtsız bir sonuç vermiyorum. Kişi/personel bağlantısını aynı Vardiyalar ekranındaki “Eksik rota ve yolcu bilgisi” bölümünden açıp doğrulayabilirsin.`,
+      nextAction: 'Personel ve rota ayrıntısını aç; bu vardiyanın kullanım bölümünde kişi bağlantısını ve koordinat doğrulamasını kontrol et.',
+    };
+  }
+  // GPS freshness is a typed freshness/field read.  An explicit vehicle
+  // relationship lookup must remain owned by its relation result, even when
+  // the source vehicle also has an offline/stale telemetry fact.
+  const requestedFieldKeys = Array.isArray(plan?.requestedFields)
+    ? plan.requestedFields.map((field) => String(field?.key || field || "").toUpperCase())
+    : [];
+  const isVehicleFreshnessLookup = ["FRESHNESS_CHECK", "FIELD_LOOKUP"].includes(
+    String(plan?.typedRequest?.taskType || plan?.taskType || "").toUpperCase(),
+  )
+    && requestedDomains.includes("VEHICLES")
+    && !plan?.relationshipIntent;
+  const vehicleItem = Array.isArray(execution?.items)
+    ? execution.items.find((item) => item?.domain === "VEHICLES" && item?.status === "RESOLVED")
+    : null;
+  if (isVehicleFreshnessLookup && Array.isArray(vehicleItem?.facts) && vehicleItem.facts.length) {
+    const etaRequested = requestedFieldKeys.includes("ETA");
+    if (etaRequested) {
+      const etaLines = vehicleItem.facts.map((vehicle) => {
+        const label = vehicle.text || `Araç ${vehicle.plate || vehicle.vehiclePlate || vehicle.id}`;
+        const etaValue = safeVisibleValue(vehicle.eta ?? vehicle.etaText ?? vehicle.estimatedArrival);
+        const statusBand = String(vehicle.statusBand || vehicle.freshness || "UNKNOWN").toUpperCase();
+        if (etaValue) return `${label} • ETA: ${etaValue}`;
+        const freshnessText = statusBand === "OFFLINE"
+          ? "konum sinyali çevrim dışı"
+          : statusBand === "STALE"
+            ? "konum sinyali güncel değil"
+            : "güncel konum verisi yok";
+        return `${label} • ETA: tahmini süre hesaplanamıyor; ${freshnessText}`;
+      });
+      return {
+        reply: `${vehicleItem.count || etaLines.length} yetkili araç için ETA sonucu: ${etaLines.join(" ")} Güncel GPS/konum verisi olmadan tahmini süre üretmiyorum.`.trim(),
+        nextAction: "Araç cihazı ve konum bağlantısını kontrol et; güncel konum geldikten sonra tahmini süreyi yeniden doğrula.",
+      };
+    }
+    const vehicleLines = vehicleItem.facts.map((vehicle) => {
+      const statusBand = String(vehicle.statusBand || (vehicle.freshness === "LIVE" ? "LIVE" : "STALE")).toUpperCase();
+      const freshnessLabel = statusBand === "LIVE"
+        ? "güncel"
+        : statusBand === "STALE"
+          ? "güncel değil"
+          : "çevrim dışı veya sinyal yok";
+      return `${vehicle.text || `Araç ${vehicle.plate || vehicle.vehiclePlate || vehicle.id}`} • durum: ${statusBand} (${freshnessLabel})`;
+    });
+    return {
+      reply: `${vehicleItem.count} yetkili araçta GPS/konum bağlantısı güncel değil: ${vehicleLines.join(" ")} ${vehicleItem.nextAction || "Önce ilgili aracın konum bağlantısını ve son sinyal zamanını kontrol et."}`.trim(),
+      nextAction: vehicleItem.nextAction || "Önce ilgili aracın konum bağlantısını ve son sinyal zamanını kontrol et.",
+    };
+  }
   if (!slots.length || execution?.status === "UNAUTHORIZED") return { reply: baseReply, nextAction: execution?.recommendation };
   const fact = factForPlanEntity(plan, execution?.structuredFacts || []);
   const parts = [baseReply];
@@ -2752,6 +3918,445 @@ function composeMultiPartExecutionReply({ plan, execution, baseReply }) {
   const nextAction = slots.includes("NEXT_STEP") ? taskNextStepForFact(plan, fact) : execution?.recommendation;
   if (slots.includes("NEXT_STEP")) parts.push(`Sonraki güvenli adım: ${nextAction}`);
   return { reply: parts.join(" "), nextAction };
+}
+
+function selectedRoomEntity(screenContext = {}, semanticPlan = {}) {
+  const explicitEntity = semanticPlan?.entity?.source === "EXPLICIT_QUERY"
+    ? semanticPlan.entity
+    : null;
+  if (explicitEntity?.type && (integer(explicitEntity.id) || String(explicitEntity.plate || "").trim())) {
+    return {
+      type: String(explicitEntity.type).toLowerCase(),
+      ...(integer(explicitEntity.id) ? { id: integer(explicitEntity.id) } : {}),
+      ...(String(explicitEntity.plate || "").trim() ? { plate: String(explicitEntity.plate).trim() } : {}),
+    };
+  }
+  const entityType = String(
+    screenContext?.selectedEntityType
+      || screenContext?.selectedRecordType
+      || semanticPlan?.entity?.type
+      || "",
+  ).toLowerCase();
+  const entityId = integer(
+    screenContext?.selectedEntityId
+      || screenContext?.selectedRecordId
+      || semanticPlan?.entity?.id,
+  );
+  return entityType && entityId ? { type: entityType, id: entityId } : null;
+}
+
+function explicitRoomAgreementContextNavigationTarget({ user, message, screenContext, semanticPlan } = {}) {
+  if (roleKey(user) !== "ROOM") return null;
+  const selected = selectedRoomEntity(screenContext, semanticPlan);
+  if (!selected || selected.type !== "agreement") return null;
+  const currentPath = normalizeScreenPath(screenContext?.path);
+  const text = normalize(message);
+  const showVerb = /(?:goster|ac|incele|goru|gör|bak)/iu.test(text);
+  if (!showVerb) return null;
+  if (currentPath === "/room/agreements" && /ticari\s+(?:akis|akisi|calisma|çalisma)|commercial\s+flow/iu.test(text)) {
+    return {
+      path: "/room/commercial-flow",
+      label: "Ticari Çalışma Alanı",
+      purpose: "Seçili sözleşmenin yetkili ticari akış ve mutabakat önizlemesini aç.",
+      routeParams: { agreementId: selected.id, tab: "settlement" },
+      recordType: "AGREEMENT",
+      recordId: selected.id,
+    };
+  }
+  if (currentPath === "/room/commercial-flow" && /(?:sozlesme|anlasma|agreement|contract)/iu.test(text)) {
+    return {
+      path: "/room/agreements",
+      label: "Sözleşmeler",
+      purpose: "Seçili sözleşme kaydını yetkili ayrıntısıyla aç.",
+      routeParams: { focusAgreementId: selected.id },
+      recordType: "AGREEMENT",
+      recordId: selected.id,
+    };
+  }
+  return null;
+}
+
+function roomRelationPlan(semanticPlan, relationshipIntent, sourceEntity, requestedDomains) {
+  return {
+    ...semanticPlan,
+    family: "RELATION_LOOKUP",
+    intentFamily: "RELATION_LOOKUP",
+    clarificationNeed: null,
+    planStatus: "READY",
+    entity: sourceEntity,
+    entities: [sourceEntity],
+    requestedDomains,
+    relationshipIntent,
+  };
+}
+
+export function buildVehicleToShiftNavigationTarget(shiftId) {
+  const id = integer(shiftId);
+  if (!id) return null;
+  return {
+    path: "/room/shifts",
+    label: "Vardiyalar",
+    purpose: "Seçili araca bağlı yetkili operasyon kaydını aç.",
+    routeParams: { focusShiftId: id },
+    recordType: "SHIFT",
+    recordId: id,
+  };
+}
+
+async function buildRoomCrossSurfaceRelationResult({ user, role, message, screenContext, semanticPlan, domainMap } = {}) {
+  if (role !== "ROOM") return null;
+  const selected = selectedRoomEntity(screenContext, semanticPlan);
+  if (!selected) return null;
+  const currentPath = normalizeScreenPath(screenContext?.path);
+  const text = normalize(message);
+
+  if (currentPath === "/room/vehicles"
+    && selected.type === "vehicle"
+    && /(?:harita|konum|takip)/iu.test(text)
+    && /(?:goster|ac|incele|goru|bak)/iu.test(text)) {
+    const vehicle = await prisma.vehicle.findFirst({
+      where: {
+        roomId: integer(user?.roomId) || -1,
+        ...(integer(selected.id)
+          ? { id: integer(selected.id) }
+          : { plate: String(selected.plate || "").trim() }),
+      },
+      select: { id: true, plate: true },
+    });
+    if (!vehicle) {
+      return {
+        role,
+        domain: "RELATION_LOOKUP",
+        authorizationBoundary: false,
+        authorizedDomainMap: domainMap,
+        count: 0,
+        records: [],
+        reply: `Araç #${selected.id} için ROOM kapsamındaki gerçek kaydı doğrulayamadım; başka bir aracı veya eski ekran bağlamını göstermiyorum.`,
+        nextAction: "Yetkili araç kaydını seçip harita isteğini yeniden gönder.",
+        source: "authorized-room-vehicle-map-navigation-v1",
+        navigationTarget: null,
+        dataSources: ["ROOM tenant araç kaydı", "yetkili canlı ekran seçimi"],
+        retrievedFacts: [`vehicle.id=${selected.id}`, "vehicle.scope=unresolved"],
+        reasoning: "Seçili araç ROOM tenant kaynağında doğrulanamadığı için sahte harita hedefi üretilmedi.",
+        priority: "Yetkili kayıt doğrulaması gerekli",
+        semanticPlan,
+      };
+    }
+    const vehicleLabel = String(vehicle.plate || `Araç #${vehicle.id}`).trim();
+    return {
+      role,
+      domain: "UI_GUIDANCE",
+      authorizationBoundary: false,
+      authorizedDomainMap: domainMap,
+      count: 1,
+      records: [vehicleLabel],
+      reply: `Seçili araç ${vehicleLabel} için Canlı Takip haritasını açıyorum. Haritada bu aracın yetkili konum ve tazelik bilgisini kontrol edebilirsin.`,
+      nextAction: "Haritadaki seçili araç kartını ve son konum zamanını kontrol et.",
+      source: "authorized-room-vehicle-map-navigation-v1",
+      navigationTarget: {
+        path: "/room/map",
+        label: "Canlı Takip",
+        purpose: "Seçili yetkili aracı haritada göster.",
+        routeParams: { focusVehicleId: vehicle.id },
+        recordType: "VEHICLE",
+        recordId: vehicle.id,
+      },
+      dataSources: ["ROOM tenant araç kaydı", "yetkili canlı ekran seçimi"],
+      retrievedFacts: [`vehicle.id=${vehicle.id}`, `vehicle.plate=${vehicleLabel}`, "businessWrite=0"],
+      reasoning: "Açık araç→harita isteği, ROOM tenant kapsamındaki gerçek seçili araç kaydı doğrulanarak haritaya yönlendirildi.",
+      priority: "Yetkili araç haritası",
+      semanticPlan,
+    };
+  }
+
+  if (currentPath === "/room/vehicles"
+    && selected.type === "vehicle"
+    && /(?:vardiya|operasyon|ilgili|bagli|bağlı|kayit|kayıt)/iu.test(text)
+    && /(?:goster|ac|incele|goru|gör|bak)/iu.test(text)) {
+    const relationshipIntent = {
+      kind: "VEHICLE_TO_SHIFT",
+      fromEntity: { type: "vehicle", id: selected.id, source: "SCREEN_RECORD" },
+      toEntity: { type: "shift", id: null, source: "RELATION_FIELD_TARGET" },
+      requestedRelation: "shift",
+      source: "SCREEN_RECORD",
+    };
+    const plan = roomRelationPlan(semanticPlan, relationshipIntent, {
+      type: "vehicle",
+      ...(integer(selected.id) ? { id: integer(selected.id) } : {}),
+      ...(String(selected.plate || "").trim() ? { plate: String(selected.plate).trim() } : {}),
+      source: selected.plate ? "EXPLICIT_QUERY" : "SCREEN_RECORD",
+    }, ["VEHICLES"]);
+    const operationResult = await readOperations(user, role, plan);
+    const fact = (operationResult?.facts || []).find((item) => Number(item?.shiftId || item?.id || 0) > 0);
+    if (!fact) {
+      const plate = String(selected.plate || screenContext?.selectedLabel || `Araç #${selected.id || "?"}`).trim();
+      return {
+        role,
+        domain: "RELATION_LOOKUP",
+        authorizationBoundary: false,
+        authorizedDomainMap: domainMap,
+        count: 0,
+        records: [],
+        reply: `${plate} için yetkili ilişkili operasyon veya vardiya kaydı görünmüyor. Başka bir vardiyayı bu araca aitmiş gibi göstermiyorum.`,
+        nextAction: "Bu araç için yetkili operasyon bağı oluştuğunda ilgili kaydı yeniden iste.",
+        source: "authorized-room-relation-v1",
+        navigationTarget: null,
+        dataSources: ["yetkili araç ve operasyon ilişkisi", "ROOM tenant kapsamı"],
+        retrievedFacts: [
+          integer(selected.id) ? `vehicle.id=${integer(selected.id)}` : `vehicle.plate=${String(selected.plate || "").trim()}`,
+          "operation.relation=none",
+        ],
+        reasoning: "Seçili araç için yetkili ilişki bulunmadı; genel Operasyon Merkezi hedefiyle ikame yapılmadı.",
+        priority: "İlişki yok",
+        semanticPlan: plan,
+      };
+    }
+    const shiftId = Number(fact.shiftId || fact.id || 0);
+    return {
+      role,
+      domain: "RELATION_LOOKUP",
+      authorizationBoundary: false,
+      authorizedDomainMap: domainMap,
+      count: 1,
+      records: [`Vardiya #${shiftId}`],
+      reply: `${String(selected.plate || screenContext?.selectedLabel || `Araç #${selected.id || "?"}`).trim()} için bağlı yetkili operasyon kaydı Vardiya #${shiftId}. Bu kaydı açıyorum.`,
+      nextAction: "Vardiya detayında araç, sürücü ve rota bağını kontrol et.",
+      source: "authorized-room-relation-v1",
+      navigationTarget: buildVehicleToShiftNavigationTarget(shiftId),
+      dataSources: ["yetkili araç ve operasyon ilişkisi", "ROOM tenant kapsamı"],
+      retrievedFacts: [
+        integer(selected.id) ? `vehicle.id=${integer(selected.id)}` : `vehicle.plate=${String(selected.plate || "").trim()}`,
+        `shift.id=${shiftId}`,
+      ],
+      reasoning: "Açık araç→operasyon isteği, seçili aracın yetkili operasyon ilişkisi üzerinden çözüldü; yazma yapılmadı.",
+      priority: "Yetkili ilişki navigasyonu",
+      semanticPlan: plan,
+    };
+  }
+
+  if (currentPath === "/room/shifts"
+    && selected.type === "shift"
+    && /(?:arac|vehicle|plaka)/iu.test(text)
+    && /(?:harita|konum|takip)/iu.test(text)) {
+    const relationshipIntent = {
+      kind: "SHIFT_TO_VEHICLE",
+      fromEntity: { type: "shift", id: selected.id, source: "SCREEN_RECORD" },
+      toEntity: { type: "vehicle", id: null, source: "RELATION_FIELD_TARGET" },
+      requestedRelation: "vehicle",
+      source: "SCREEN_RECORD",
+    };
+    const plan = roomRelationPlan(semanticPlan, relationshipIntent, { type: "shift", id: selected.id, source: "SCREEN_RECORD" }, ["SHIFTS"]);
+    const operationResult = await readOperations(user, role, plan);
+    const fact = (operationResult?.facts || []).find((item) => Number(item?.shiftId || item?.id || 0) === selected.id);
+    if (!fact?.vehicleId) {
+      return {
+        role,
+        domain: "RELATION_LOOKUP",
+        authorizationBoundary: false,
+        authorizedDomainMap: domainMap,
+        count: 0,
+        records: [],
+        reply: `Vardiya #${selected.id} için yetkili bağlı araç kaydını doğrulayamadım; başka bir araç veya eski ekran bağlamı göstermiyorum.`,
+        nextAction: "Vardiya kaydındaki yetkili araç bağı oluştuğunda harita hedefini yeniden iste.",
+        source: "authorized-room-relation-v1",
+        navigationTarget: null,
+        dataSources: ["yetkili vardiya ve araç ilişkisi", "ROOM tenant kapsamı"],
+        retrievedFacts: [`shift.id=${selected.id}`, "vehicle.relation=unresolved"],
+        reasoning: "Seçili vardiyadan yetkili araç kimliği çıkmadığı için hayali harita veya araç hedefi üretilmedi.",
+        priority: "İlişki doğrulaması gerekli",
+        semanticPlan: plan,
+      };
+    }
+    const vehicleLabel = String(fact.vehiclePlate || fact.vehicle || `Araç #${fact.vehicleId}`).trim();
+    return {
+      role,
+      domain: "RELATION_LOOKUP",
+      authorizationBoundary: false,
+      authorizedDomainMap: domainMap,
+      count: 1,
+      records: [`Vardiya #${selected.id}`, vehicleLabel],
+      reply: `Vardiya #${selected.id} için bağlı yetkili araç ${vehicleLabel}. Haritadaki bu aracı seçili olarak açıyorum; konum sinyali ${String(fact.gpsStatus || fact.locationStatus || "doğrulanamadı").toLocaleLowerCase("tr-TR")}.`,
+      nextAction: "Haritadaki seçili araç kartında konum ve tazelik bilgisini kontrol et.",
+      source: "authorized-room-relation-v1",
+      navigationTarget: {
+        path: "/room/map",
+        label: "Canlı Takip",
+        purpose: "Vardiyaya bağlı yetkili aracı haritada seçili göster.",
+        routeParams: { focusVehicleId: fact.vehicleId },
+        recordType: "VEHICLE",
+        recordId: fact.vehicleId,
+      },
+      dataSources: ["yetkili vardiya ve araç ilişkisi", "ROOM tenant kapsamı"],
+      retrievedFacts: [`shift.id=${selected.id}`, `vehicle.id=${fact.vehicleId}`, `vehicle.plate=${vehicleLabel}`],
+      reasoning: "Yeni açık vardiya→araç→harita isteği, seçili vardiya kaydının yetkili ilişkisi üzerinden çözüldü; yazma yapılmadı.",
+      priority: "Yetkili ilişki navigasyonu",
+      semanticPlan: plan,
+    };
+  }
+
+  if (currentPath === "/room/map"
+    && selected.type === "vehicle"
+    && /(?:ilgili|bagli|bağlı|operasyon|vardiya|kayit|kayıt)/iu.test(text)
+    && /(?:operasyon|vardiya|kayit|kayıt)/iu.test(text)) {
+    const relationshipIntent = {
+      kind: "VEHICLE_TO_SHIFT",
+      fromEntity: { type: "vehicle", id: selected.id, source: "SCREEN_RECORD" },
+      toEntity: { type: "shift", id: null, source: "RELATION_FIELD_TARGET" },
+      requestedRelation: "shift",
+      source: "SCREEN_RECORD",
+    };
+    const plan = roomRelationPlan(semanticPlan, relationshipIntent, {
+      type: "vehicle",
+      ...(integer(selected.id) ? { id: integer(selected.id) } : {}),
+      ...(String(selected.plate || "").trim() ? { plate: String(selected.plate).trim() } : {}),
+      source: selected.plate ? "EXPLICIT_QUERY" : "SCREEN_RECORD",
+    }, ["VEHICLES"]);
+    const operationResult = await readOperations(user, role, plan);
+    const fact = (operationResult?.facts || []).find((item) => Number(item?.shiftId || item?.id || 0) > 0);
+    if (!fact) {
+      const plate = String(selected.plate || screenContext?.selectedLabel || `Araç #${selected.id || "?"}`).trim();
+      return {
+        role,
+        domain: "RELATION_LOOKUP",
+        authorizationBoundary: false,
+        authorizedDomainMap: domainMap,
+        count: 0,
+        records: [],
+        reply: `${plate} için yetkili ilişkili operasyon veya vardiya kaydı görünmüyor. Başka bir vardiyayı bu araca aitmiş gibi göstermiyorum.`,
+        nextAction: "Bu araç için yetkili operasyon bağı oluştuğunda ilgili kaydı yeniden iste.",
+        source: "authorized-room-relation-v1",
+        navigationTarget: null,
+        dataSources: ["yetkili araç ve operasyon ilişkisi", "ROOM tenant kapsamı"],
+        retrievedFacts: [`vehicle.id=${selected.id}`, "operation.relation=none"],
+        reasoning: "Seçili araç için yetkili ilişki bulunmadı; genel Operasyon Merkezi hedefiyle ikame yapılmadı.",
+        priority: "İlişki yok",
+        semanticPlan: plan,
+      };
+    }
+    const shiftId = Number(fact.shiftId || fact.id || 0);
+    return {
+      role,
+      domain: "RELATION_LOOKUP",
+      authorizationBoundary: false,
+      authorizedDomainMap: domainMap,
+      count: 1,
+      records: [`Vardiya #${shiftId}`],
+      reply: `${String(selected.plate || screenContext?.selectedLabel || `Araç #${selected.id || "?"}`).trim()} için bağlı yetkili operasyon kaydı Vardiya #${shiftId}. Bu kaydı açıyorum.`,
+      nextAction: "Vardiya detayında araç, sürücü ve rota bağını kontrol et.",
+      source: "authorized-room-relation-v1",
+      navigationTarget: {
+        ...buildVehicleToShiftNavigationTarget(shiftId),
+      },
+      dataSources: ["yetkili araç ve operasyon ilişkisi", "ROOM tenant kapsamı"],
+      retrievedFacts: [`vehicle.id=${selected.id}`, `shift.id=${shiftId}`],
+      reasoning: "Yeni açık araç→operasyon isteği, seçili aracın yetkili operasyon ilişkisi üzerinden çözüldü; yazma yapılmadı.",
+      priority: "Yetkili ilişki navigasyonu",
+      semanticPlan: plan,
+    };
+  }
+
+  return null;
+}
+
+function isPassengerLiveLinkStatusQuestion({ message, screenContext, semanticPlan, conversationState } = {}) {
+  const path = normalizeScreenPath(screenContext?.path || "");
+  if (!/\/access-links(?:\/|$)/iu.test(path)) return false;
+  const requestedFields = Array.isArray(semanticPlan?.requestedFields)
+    ? semanticPlan.requestedFields.map((field) => String(field?.key || field || "").toUpperCase())
+    : [];
+  if (requestedFields.includes("PASSENGER_LIVE_LINK_STATUS")) return true;
+  const text = normalize(message);
+  const directStatusCue = /\b(?:canli|canlı|erisim|erişim|baglanti|bağlantı|link|token)\p{L}*\b/iu.test(text)
+    && /\b(?:durum|aktif|gecerli|geçerli|iptal|suresi|süresi|sona)\p{L}*\b/iu.test(text);
+  if (directStatusCue || semanticPlan?.accessLinkStatusIntent === true) return true;
+
+  const priorPlans = [
+    conversationState?.lastSettledResult?.semanticPlan,
+    conversationState?.authorizedProductContext?.semanticPlan,
+    conversationState?.productContext?.semanticPlan,
+    conversationState?.lastSemanticPlan,
+  ].filter((plan) => plan && typeof plan === "object");
+  const priorLinkStatus = priorPlans.some((plan) => plan.accessLinkStatusIntent === true
+    || (Array.isArray(plan.requestedFields)
+      && plan.requestedFields.some((field) => String(field?.key || field || "").toUpperCase() === "PASSENGER_LIVE_LINK_STATUS")));
+  if (!priorLinkStatus) return false;
+
+  return /\b(?:bu|o|bunun|peki|halen|hala|h[aâ]l[a]|gecerli|geçerli|aktif|iptal|suresi|süresi|sona|baglanti|bağlantı|link|token)\p{L}*\b/iu.test(text)
+    && /\b(?:durum|gecerli|geçerli|aktif|iptal|suresi|süresi|sona|halen|hala|h[aâ]l[a])\p{L}*\b/iu.test(text);
+}
+
+async function buildSelectedPassengerLiveLinkStatusAnswer({ user, role, message, screenContext, semanticPlan, conversationState } = {}) {
+  if (!isPassengerLiveLinkStatusQuestion({ message, screenContext, semanticPlan, conversationState })) return null;
+  if (!['COMPANY', 'SCHOOL'].includes(String(role || '').toUpperCase())) return null;
+
+  const selectedShiftId = integer(
+    semanticPlan?.entity?.type === 'shift' ? semanticPlan.entity.id : null,
+  ) || integer(screenContext?.selectedEntityId || screenContext?.selectedRecordId);
+  const domainMap = resolveAuthorizedProductDomains(user);
+  if (!selectedShiftId) {
+    return {
+      role,
+      domain: 'CLARIFICATION',
+      authorizationBoundary: false,
+      authorizedDomainMap: domainMap.domains,
+      count: 0,
+      records: [],
+      reply: 'Canlı bağlantı durumunu söyleyebilmem için önce bu ekranda bir vardiya seçmelisin. Seçili vardiya veya kişi yokken ilk kaydı varsayılan almıyor ve bağlantı üretme ya da iptal etme işlemi başlatmıyorum.',
+      nextAction: 'Erişim bağlantıları ekranında vardiyayı seçip tekrar sor.',
+      source: 'authorized-passenger-live-link-status-v1',
+      dataSources: ['mevcut seçili vardiya', 'şirket/okul tenant kapsamındaki PassengerLiveLink kaydı'],
+      retrievedFacts: ['selected shift is absent', 'no link read or write was performed'],
+      reasoning: 'Seçili vardiya olmadığı için eski konuşma bağlamı veya ilk satır kullanılmadı; bağlantı durumu uydurulmadı.',
+      priority: 'Netleştirme gerekli',
+      semanticPlan,
+    };
+  }
+
+  const links = await prisma.passengerLiveLink.findMany({
+    where: {
+      shiftId: selectedShiftId,
+      shift: { companyId: integer(user?.companyId) || -1 },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+    select: { id: true, expiresAt: true, revokedAt: true, createdAt: true, lastViewedAt: true },
+  });
+  const now = Date.now();
+  const active = links.filter((link) => !link.revokedAt && new Date(link.expiresAt).getTime() > now);
+  const latest = links[0] || null;
+  let stateText;
+  if (active.length) {
+    const latestExpiry = active
+      .map((link) => new Date(link.expiresAt).getTime())
+      .filter(Number.isFinite)
+      .sort((a, b) => b - a)[0];
+    stateText = `${active.length} geçerli canlı takip bağlantısı var${latestExpiry ? `; en geç ${new Date(latestExpiry).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })} tarihine kadar geçerli` : ''}.`;
+  } else if (!links.length) {
+    stateText = 'Bu vardiya için canlı takip bağlantısı kaydı bulunmuyor.';
+  } else {
+    const latestState = latest?.revokedAt
+      ? 'son bağlantı iptal edilmiş'
+      : latest?.expiresAt && new Date(latest.expiresAt).getTime() <= now
+        ? 'son bağlantının süresi dolmuş'
+        : 'geçerli bağlantı bulunmuyor';
+    stateText = `Şu anda geçerli canlı takip bağlantısı yok; ${latestState}. İptal edilmiş veya süresi dolmuş tokenı geçerli saymıyorum.`;
+  }
+  return {
+    role,
+    domain: 'SHIFTS',
+    authorizationBoundary: false,
+    authorizedDomainMap: domainMap.domains,
+    count: active.length,
+    records: [`Vardiya #${selectedShiftId}: ${stateText}`],
+    reply: `Seçili Vardiya #${selectedShiftId} için bağlantı durumu: ${stateText} Token, gizli URL veya başka tenant kaydı paylaşmıyorum; bu soru yalnızca yetkili durum okuması yaptı ve bağlantı üretme/iptal etme işlemi başlatmadı.`,
+    nextAction: active.length ? 'Bağlantının son kullanma tarihini yetkili ekrandan kontrol et.' : 'Gerekirse Erişim bağlantıları ekranında yetkili formu kullanarak yeni bağlantı oluştur; bu konuşma işlem başlatmadı.',
+    source: 'authorized-passenger-live-link-status-v1',
+    dataSources: ['selected shift', 'tenant-scoped PassengerLiveLink read'],
+    retrievedFacts: [`shift.id=${selectedShiftId}`, `passengerLiveLink.rows=${links.length}`, `passengerLiveLink.active=${active.length}`],
+    reasoning: 'Access Links ekranındaki seçili vardiya, yalnız aynı tenant kapsamındaki PassengerLiveLink kayıtlarıyla okundu; token değeri açıklanmadı ve yazma işlemi yapılmadı.',
+    priority: 'Seçili bağlantı durumu',
+    semanticPlan,
+  };
 }
 
 export async function buildAuthorizedProductAwarenessAnswer({ user, message, screenContext = null, conversationState = null, semanticPlan: suppliedSemanticPlan = null }) {
@@ -2784,21 +4389,32 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       semanticPlan: privacyPlan,
     };
   }
-  if (semanticPlan.clarificationNeed) {
+  if (["UNSUPPORTED_COMPANY_ADMIN_SURFACE", "UNSPECIFIED_DISABLED_FIELD"].includes(String(semanticPlan.workflowIntent || ""))
+    && String(role || "").toUpperCase() === "COMPANY") {
+    const unspecifiedDisabledField = semanticPlan.workflowIntent === "UNSPECIFIED_DISABLED_FIELD";
     return {
       role,
-      domain: "CLARIFICATION",
+      domain: "AUTHORIZATION",
       authorizationBoundary: false,
       authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
       count: 0,
       records: [],
-      reply: "Birden fazla kayıt veya olası referans var; hangi kayıt ya da alanı kastettiğini netleştirir misin? Belirli kayıt kimliği olmadan varsayılan veya ilk satırı kullanmıyorum.",
-      nextAction: "Kayıt türü ve kimliğini açıkça belirt.",
-      source: "canonical-conversation-entity-state-v1",
-      dataSources: ["mevcut konuşma bağlamı"],
-      retrievedFacts: ["Belirsiz ifade için kayıt okunmadı"],
-      reasoning: "İfade tek bir kaydı güvenle göstermediği için önce netleştirme istendi.",
-      priority: "Netleştirme gerekli",
+      reply: unspecifiedDisabledField
+        ? "Hangi alanın kapalı olduğunu belirtirsen mevcut ekrandaki yetki veya eksik bilgi nedenini kontrol edebilirim. Şu an belirli bir alan seçili olmadığı için başka bir hedef açmıyor ve varsayım yapmıyorum."
+        : "Bu COMPANY hesabında firma ayarları veya kullanıcı yetkileri için ayrı bir yönetim ekranı bulunmuyor. Başka bir role ait ekranı açmıyor ve ayar değişikliği yapmıyorum.",
+      nextAction: unspecifiedDisabledField
+        ? "Kapalı görünen alanın adını veya bulunduğu ekranı belirt; doğrulanabilir bir hedef varsa yalnız onu göstereyim."
+        : "Yetkili bir ayar veya kullanıcı yetkisi yönetimi gerekiyorsa ürün yöneticisinin tanımladığı COMPANY yönetim yüzeyini bekle.",
+      source: "authorized-screen-catalog-v1",
+      navigationTarget: null,
+      dataSources: ["authorized screen catalog", "current role scope"],
+      retrievedFacts: unspecifiedDisabledField
+        ? ["Belirli bir kapalı alan seçilmedi", "yetkili hedef veya yazma işlemi üretilmedi"]
+        : ["COMPANY ayar/yetki yüzeyi mevcut değil", "yetkili hedef veya yazma işlemi üretilmedi"],
+      reasoning: unspecifiedDisabledField
+        ? "Belirli bir kapalı alan veya hedef kontrol görünmediği için güvenli açıklama istendi; başka bir ekran veya yetki varsayılmadı."
+        : "COMPANY screen catalog içinde ayar veya kullanıcı yetkisi yönetim yüzeyi bulunmadı; Planlama Merkezi gibi yakın bir yüzey yanlış ikame edilmedi.",
+      priority: "Ürün kapsamı sınırı",
       semanticPlan,
     };
   }
@@ -2819,6 +4435,98 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       reasoning: "Kullanıcı ve kayıt sahipliği doğrulanamadığı için korunan bilgiye erişilmedi.",
       priority: "Yetki sınırı",
       semanticPlan: authorizationBoundarySemanticPlan(semanticPlan, authorizationDecision),
+    };
+  }
+  if (isSuperAdminFieldAcceptanceReadPlan({ role, message, screenContext })) {
+    const session = await getCurrentFieldAcceptanceSession();
+    const checklist = Array.isArray(session?.checklist) ? session.checklist : [];
+    return {
+      role,
+      domain: "FIELD_ACCEPTANCE",
+      authorizationBoundary: false,
+      authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
+      count: checklist.length,
+      records: checklist.map((item) => `${item?.label || "Kontrol maddesi"}: ${item?.status || "PENDING"}`),
+      reply: buildFieldAcceptanceReadReply({ session }),
+      nextAction: checklist.some((item) => String(item?.status || "").toUpperCase() !== "PASS")
+        ? "Önce ilk açık kontrol maddesini incele; karar veya checklist değişikliği için ayrı yetkili işlem iste."
+        : "Karar ve oturum özetini son kez doğrula; yeni yazma işlemi başlatma.",
+      source: "authorized-field-acceptance-read-v1",
+      navigationTarget: null,
+      dataSources: ["canonical field-acceptance session", "SUPER_ADMIN yetki kapsamı"],
+      retrievedFacts: checklist.map((item) => `${item?.label || "Kontrol maddesi"}: ${item?.status || "PENDING"}`),
+      reasoning: "SUPER_ADMIN Kabul Merkezi sorusu, genel rol menüsü yerine canonical kabul oturumunun salt okunur checklist ve karar özetine bağlandı; değişiklik başlatılmadı.",
+      priority: "Kabul oturumu özeti",
+      semanticPlan,
+    };
+  }
+  const selectedPassengerLiveLinkStatusAnswer = await buildSelectedPassengerLiveLinkStatusAnswer({
+    user,
+    role,
+    message,
+    screenContext,
+    semanticPlan,
+    conversationState,
+  });
+  if (selectedPassengerLiveLinkStatusAnswer) return selectedPassengerLiveLinkStatusAnswer;
+  const selectedParentLiveStatusAnswer = await buildSelectedParentLiveStatusAnswer({
+    user,
+    role,
+    message,
+    screenContext,
+    semanticPlan,
+  });
+  if (selectedParentLiveStatusAnswer) return selectedParentLiveStatusAnswer;
+  const explicitAgreementContextTarget = explicitRoomAgreementContextNavigationTarget({ user, message, screenContext, semanticPlan });
+  if (explicitAgreementContextTarget) {
+    const targetPath = normalizeScreenPath(explicitAgreementContextTarget.path);
+    const currentPath = normalizeScreenPath(screenContext?.path);
+    const targetLabel = explicitAgreementContextTarget.label;
+    return {
+      role,
+      domain: "UI_GUIDANCE",
+      authorizationBoundary: false,
+      authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
+      count: 1,
+      records: [`Sözleşme #${explicitAgreementContextTarget.recordId}`],
+      reply: currentPath === targetPath
+        ? `Sözleşme #${explicitAgreementContextTarget.recordId} için ${targetLabel} görünümündesin; seçili yetkili kaydı açıyorum.`
+        : `Seçili Sözleşme #${explicitAgreementContextTarget.recordId} için ${targetLabel} ekranını açıyorum.`,
+      nextAction: `${targetLabel} ekranında seçili Sözleşme #${explicitAgreementContextTarget.recordId} ayrıntısını kontrol et.`,
+      source: "authorized-room-agreement-context-navigation-v1",
+      navigationTarget: explicitAgreementContextTarget,
+      dataSources: ["canlı seçili Sözleşme bağlamı", "ROOM tenant kapsamı"],
+      retrievedFacts: [`agreement.id=${explicitAgreementContextTarget.recordId}`, `target.path=${explicitAgreementContextTarget.path}`],
+      reasoning: "Açık sözleşme bağlamı isteği, yetkili canlı seçimi koruyarak ilişkili ROOM yüzeyine yönlendirildi; iş yazımı başlatılmadı.",
+      priority: "Seçili sözleşme navigasyonu",
+      semanticPlan,
+    };
+  }
+  const crossSurfaceRelationResult = await buildRoomCrossSurfaceRelationResult({
+    user,
+    role,
+    message,
+    screenContext,
+    semanticPlan,
+    domainMap: resolveAuthorizedProductDomains(user).domains,
+  });
+  if (crossSurfaceRelationResult) return crossSurfaceRelationResult;
+  if (semanticPlan.clarificationNeed) {
+    return {
+      role,
+      domain: "CLARIFICATION",
+      authorizationBoundary: false,
+      authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
+      count: 0,
+      records: [],
+      reply: "Birden fazla kayıt veya olası referans var; hangi kayıt ya da alanı kastettiğini netleştirir misin? Belirli kayıt kimliği olmadan varsayılan veya ilk satırı kullanmıyorum.",
+      nextAction: "Kayıt türü ve kimliğini açıkça belirt.",
+      source: "canonical-conversation-entity-state-v1",
+      dataSources: ["mevcut konuşma bağlamı"],
+      retrievedFacts: ["Belirsiz ifade için kayıt okunmadı"],
+      reasoning: "İfade tek bir kaydı güvenle göstermediği için önce netleştirme istendi.",
+      priority: "Netleştirme gerekli",
+      semanticPlan,
     };
   }
   if (semanticPlan.family === "STYLE") {
@@ -2907,6 +4615,30 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       semanticPlan,
     };
   }
+  const explicitOperationHealthTarget = explicitRoomOperationHealthNavigationTarget(user, semanticPlan);
+  if (explicitOperationHealthTarget) {
+    const currentPath = normalizeScreenPath(screenContext?.path);
+    const alreadyOnTarget = currentPath === normalizeScreenPath(explicitOperationHealthTarget.path);
+    return {
+      role,
+      domain: "OPERATIONS",
+      authorizationBoundary: false,
+      authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
+      count: 0,
+      records: [],
+      reply: alreadyOnTarget
+        ? "Şu anda Operasyon Sağlığı ekranındasın. GPS, riskli cihaz ve açık sorun satırlarını buradan kontrol edebilirsin."
+        : "Operasyon Sağlığı ekranını aç. GPS, riskli cihaz ve açık sorun satırlarını bu yetkili ekranda kontrol edebilirsin.",
+      nextAction: "Operasyon Sağlığı ekranındaki GPS ve açık sorun satırlarını aç.",
+      source: "authorized-operation-health-surface-v1",
+      navigationTarget: explicitOperationHealthTarget,
+      dataSources: ["authorized screen catalog", "canonical explicit surface request"],
+      retrievedFacts: [`screen.path=${explicitOperationHealthTarget.path}`, `screen.label=${explicitOperationHealthTarget.label}`],
+      reasoning: "Açık Operasyon Sağlığı yüzey isteği, mevcut seçili kayıttan önce yetkili ekran kataloğuna bağlandı; kayıt okuma veya yazma başlatılmadı.",
+      priority: "Açık yüzey isteği",
+      semanticPlan,
+    };
+  }
   const domainHowToGuidance = semanticPlan.family === "UI_GUIDANCE"
     && semanticPlan.typedRequest?.screenKnowledgeKind === "HOW_TO_USE"
     && semanticPlan.requestedDomains?.length > 0;
@@ -2941,6 +4673,53 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       semanticPlan,
     };
   }
+  // A COMPANY follow-up that asks which offers are waiting is a read of the
+  // authorized offer collection, not a request to open the planning home.
+  // The semantic planner can legitimately mark this as OPEN_OFFER_SURFACE
+  // because the user may want the related screen next, but answering with the
+  // screen catalog first loses the live offer facts and the current dialogue
+  // context. Keep this branch read-only and tenant-scoped; no offer decision
+  // or other business write is started here.
+  if (isCompanyOfferCollectionReadPlan({ role, semanticPlan })) {
+    const offerResult = await readOffers(user, role, semanticPlan);
+    const hasOffers = Number(offerResult?.count || 0) > 0;
+    const recordsText = Array.isArray(offerResult?.records) && offerResult.records.length
+      ? ` ${offerResult.records.join(" ")}`
+      : "";
+    const offerSurface = authorizedGuidanceSurface(user, "OFFERS");
+    return {
+      role,
+      domain: "OFFERS",
+      authorizationBoundary: false,
+      authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
+      count: Number(offerResult?.count || 0),
+      records: Array.isArray(offerResult?.records) ? offerResult.records : [],
+      reply: `${hasOffers
+        ? `${offerResult.count} yetkili bekleyen teklif kaydı bulundu.`
+        : "Yetkili güncel kayıtlarda bekleyen teklif görünmüyor."}${recordsText} ${offerResult?.nextAction || "Teklifler ekranındaki yetkili kayıtları kontrol et."}`.trim(),
+      nextAction: offerResult?.nextAction || "Teklifler ekranındaki yetkili kayıtları kontrol et.",
+      source: "authorized-product-read-v1",
+      navigationTarget: offerSurface || null,
+      dataSources: ["Yetkili teklif kayıtları", "rol/company-kind/tenant kapsamı"],
+      retrievedFacts: Array.isArray(offerResult?.records) ? offerResult.records : [],
+      reasoning: hasOffers
+        ? `${offerResult.count} yetkili teklif kaydı, konuşmadaki bekleyen teklif sorusu için salt okunur olarak okundu.`
+        : "Mevcut COMPANY tenant kapsamında bekleyen teklif kaydı bulunmadı.",
+      priority: hasOffers ? "Bekleyen teklif koleksiyonu" : "İzleme",
+      semanticPlan,
+      discourseEntities: authorizedDiscourseEntities({ domain: "OFFERS", facts: offerResult?.facts }),
+    };
+  }
+  const explicitRecordNavigationTarget = explicitOfferRecordNavigationTarget(user, semanticPlan, authorizationDecision)
+    || explicitShiftRecordNavigationTarget(user, semanticPlan, authorizationDecision);
+  const currentScreenNextActionAnswer = buildCurrentScreenNextActionAnswer({
+    user,
+    semanticPlan,
+    screenContext,
+    role,
+    domainMap: resolveAuthorizedProductDomains(user),
+  });
+  if (currentScreenNextActionAnswer && !explicitRecordNavigationTarget) return currentScreenNextActionAnswer;
   const currentScreenPurposeAnswer = buildCurrentScreenPurposeAnswer({
     user,
     semanticPlan,
@@ -2948,13 +4727,58 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
     role,
     domainMap: resolveAuthorizedProductDomains(user),
   });
-  if (currentScreenPurposeAnswer) return currentScreenPurposeAnswer;
-  const navigationTarget = authorizedNavigationTarget(user, semanticPlan, screenContext)
-    || explicitOfferRecordNavigationTarget(user, semanticPlan, authorizationDecision);
+  if (currentScreenPurposeAnswer && !explicitRecordNavigationTarget) return currentScreenPurposeAnswer;
+  const relationRecordRequest = semanticPlan?.family === "RELATION_LOOKUP"
+    && Boolean(semanticPlan?.relationshipIntent);
+  const navigationTarget = relationRecordRequest
+    ? null
+    : explicitRecordNavigationTarget
+      || authorizedNavigationTarget(user, semanticPlan, screenContext);
   if (navigationTarget) {
     const currentPath = String(screenContext?.path || "").replace(/\/+$/, "") || "/";
     const targetPath = String(navigationTarget.path || "").replace(/\/+$/, "") || "/";
     const alreadyOnTarget = currentPath === targetPath;
+    const typedTaskType = String(semanticPlan?.typedRequest?.taskType || semanticPlan?.taskType || "").toUpperCase();
+    const canonicalRequest = semanticPlan?.canonicalRequest || {};
+    const isRoomOfferCollectionView = role === "ROOM"
+      && alreadyOnTarget
+      && targetPath === "/room/offers"
+      && ["VIEW_AUTHORIZED_SURFACE", "NAVIGATE_AUTHORIZED_SURFACE"].includes(canonicalRequest.operation)
+      && ["VIEW_OFFER_SURFACE", "OPEN_OFFER_SURFACE"].includes(canonicalRequest.capability)
+      && semanticPlan?.requestedDomains?.includes("OFFERS")
+      && ["SCREEN_CONTEXT", "OPEN_SURFACE", "VIEW"].includes(typedTaskType)
+      && !semanticPlan?.entity
+      && !(Array.isArray(semanticPlan?.entities) && semanticPlan.entities.length);
+    if (isRoomOfferCollectionView) {
+      const offerResult = await readOffers(user, role, semanticPlan);
+      const hasOffers = Number(offerResult?.count || 0) > 0;
+      const recordsText = Array.isArray(offerResult?.records) && offerResult.records.length
+        ? ` ${offerResult.records.join(" ")}`
+        : "";
+      const reply = `${hasOffers
+        ? `${offerResult.count} yetkili teklif kaydı bulundu.`
+        : "Yetkili güncel kayıtlarda teklif alanında açık kayıt görünmüyor."}${recordsText} ${offerResult?.nextAction || "Teklifler ekranındaki yetkili kayıtları kontrol et."}`.trim();
+      return {
+        role,
+        domain: "OFFERS",
+        authorizationBoundary: false,
+        authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
+        count: Number(offerResult?.count || 0),
+        records: Array.isArray(offerResult?.records) ? offerResult.records : [],
+        reply,
+        nextAction: offerResult?.nextAction || "Teklifler ekranındaki yetkili kayıtları kontrol et.",
+        source: "authorized-product-read-v1",
+        navigationTarget: null,
+        dataSources: ["Yetkili teklif kayıtları", "rol/company-kind/tenant kapsamı"],
+        retrievedFacts: Array.isArray(offerResult?.records) ? offerResult.records : [],
+        reasoning: hasOffers
+          ? `${offerResult.count} yetkili teklif kaydı, mevcut Teklifler ekranındaki koleksiyon isteği için okundu.`
+          : "Mevcut ROOM tenant kapsamında yetkili açık teklif kaydı bulunmadı.",
+        priority: hasOffers ? "Yetkili teklif koleksiyonu" : "İzleme",
+        semanticPlan,
+        discourseEntities: authorizedDiscourseEntities({ domain: "OFFERS", facts: offerResult?.facts }),
+      };
+    }
     const continuationAction = String(semanticPlan?.continuationAction || "");
     const continuationDepth = Number(semanticPlan?.continuationDepth || 0);
     const currentStep = continuationAction === "RECOVER"
@@ -2982,6 +4806,7 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
     const navigationReply = alreadyOnTarget
       ? `Şu anda ${navigationTarget.label} ekranındasın. ${currentStep}`
       : `${navigationTarget.label} ekranını aç. ${navigationTarget.purpose || "Bu ekranda yetkili iş akışını takip edebilirsin."}`;
+    const recordTargetRequiresRouteState = Boolean(navigationTarget.recordType && Number(navigationTarget.recordId) > 0);
     return {
       role,
       domain: "UI_GUIDANCE",
@@ -2994,7 +4819,13 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
         ? "Vurgulanan güvenli kontrolü inceleyip bir sonraki adımı sor."
         : `${navigationTarget.label} ekranını açıp ihtiyacın olan kaydı seç.`,
       source: "authorized-screen-catalog-v1",
-      navigationTarget: alreadyOnTarget ? null : { path: navigationTarget.path, label: navigationTarget.label },
+      navigationTarget: alreadyOnTarget && !recordTargetRequiresRouteState ? null : {
+        path: navigationTarget.path,
+        label: navigationTarget.label,
+        ...(navigationTarget.routeParams ? { routeParams: navigationTarget.routeParams } : {}),
+        ...(navigationTarget.recordType ? { recordType: navigationTarget.recordType } : {}),
+        ...(navigationTarget.recordId ? { recordId: navigationTarget.recordId } : {}),
+      },
       dataSources: ["authorized screen catalog", "current role scope"],
       retrievedFacts: [`screen.path=${navigationTarget.path}`, `screen.label=${navigationTarget.label}`],
       reasoning: alreadyOnTarget
@@ -3005,6 +4836,37 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
     };
   }
   const navigationWorkflow = workflowGuidancePlan(semanticPlan);
+  if (role === "DRIVER" && String(navigationWorkflow?.workflowIntent || "") === "OPEN_SHIFT_SURFACE") {
+    const driverTarget = buildDriverShiftNavigationTarget({ user, screenContext });
+    if (driverTarget) {
+      const selectedId = integer(driverTarget.recordId);
+      return {
+        role,
+        domain: "UI_GUIDANCE",
+        authorizationBoundary: false,
+        authorizedDomainMap: resolveAuthorizedProductDomains(user).domains,
+        count: 0,
+        records: [],
+        reply: selectedId
+          ? `Bu vardiyanın durak sırasını ve görev ayrıntılarını görmek için Rota ekranını aç. Seçili Vardiya #${selectedId} bağlamını koruyorum.`
+          : "Bu vardiyanın durak sırasını ve görev ayrıntılarını görmek için Rota ekranını aç.",
+        nextAction: "Rota ekranını açıp seçili vardiyanın duraklarını kontrol et.",
+        source: "authorized-driver-route-guidance-v1",
+        navigationTarget: {
+          path: driverTarget.path,
+          label: driverTarget.label,
+          ...(driverTarget.routeParams ? { routeParams: driverTarget.routeParams } : {}),
+          ...(driverTarget.recordType ? { recordType: driverTarget.recordType } : {}),
+          ...(driverTarget.recordId ? { recordId: driverTarget.recordId } : {}),
+        },
+        dataSources: ["authorized DRIVER screen catalog", "selected shift context"],
+        retrievedFacts: ["screen.path=/driver/route", ...(selectedId ? [`shift.id=${selectedId}`] : [])],
+        reasoning: "DRIVER rolü Vardiyalar koleksiyonuna sahip değildir; seçili vardiya için yetkili operasyon yüzeyi Rota ekranıdır.",
+        priority: "Sürücü rota yönlendirmesi",
+        semanticPlan,
+      };
+    }
+  }
   if (["CREATE_SHIFT", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE"].includes(String(navigationWorkflow?.workflowIntent || ""))) {
     const requestedSurface = String(navigationWorkflow?.workflowIntent || "") === "OPEN_OFFER_SURFACE" ? "Teklifler" : "Vardiyalar";
     return {
@@ -3089,7 +4951,8 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
     || isUnauthorizedCommercialQuestion(message, role)
     || requestedDomains.some((domain) => ["OFFERS", "AGREEMENTS", "BUDGET", "FINANCE"].includes(domain));
   const deniedDomains = requestedDomains.filter((domain) => !allowed.includes(domain));
-  if (deniedDomains.length || (["SCHOOL", "ORGANIZATION"].includes(role) && commercialRequest && requestedDomains.some((domain) => ["OFFERS", "AGREEMENTS", "BUDGET", "FINANCE"].includes(domain)))) {
+  const selectedAgreementRead = isSelectedAgreementReadContext({ role, screenContext, semanticPlan });
+  if (deniedDomains.length || (["SCHOOL", "ORGANIZATION"].includes(role) && commercialRequest && requestedDomains.some((domain) => ["OFFERS", "AGREEMENTS", "BUDGET", "FINANCE"].includes(domain)) && !selectedAgreementRead)) {
     const roleLabel = role === "SCHOOL" ? "Okul" : "Organizasyon";
     const deniedLabel = deniedDomains.length ? deniedDomains.map(domainLabel).join(", ") : "ticari Hizmet Alan Firma";
     return {
@@ -3111,9 +4974,14 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
     };
   }
   const operationHealthIssueSurfaceView = role === "ROOM"
-    && screenContext?.path === "/room/operation-health"
-    && semanticPlan?.canonicalRequest?.operation === "VIEW_AUTHORIZED_SURFACE"
-    && semanticPlan?.canonicalRequest?.typedEvidence?.specificity?.issueSurfaceViewEvidence === true
+    && (
+      (
+        screenContext?.path === "/room/operation-health"
+        && semanticPlan?.canonicalRequest?.operation === "VIEW_AUTHORIZED_SURFACE"
+        && semanticPlan?.canonicalRequest?.typedEvidence?.specificity?.issueSurfaceViewEvidence === true
+      )
+      || semanticPlan?.canonicalRequest?.operation === "DIAGNOSE_CURRENT_ISSUE"
+    )
     && requestedDomains.includes("OPERATIONS");
   if (operationHealthIssueSurfaceView) {
     const [vehicleIssues, agreements, offers] = await Promise.all([
@@ -3129,6 +4997,9 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       offers,
     });
     if (metric.openIssues != null || metric.staleOrOfflineDrivers != null || metric.riskyDevices != null) {
+      const operationHealthTarget = buildRoleHelpSummary(user).screens.find((screen) => screen.label === "Operasyon Sağlığı") || null;
+      const currentPath = normalizeScreenPath(screenContext?.path);
+      const targetPath = normalizeScreenPath(operationHealthTarget?.path);
       return {
         role,
         domain: "OPERATIONS",
@@ -3139,6 +5010,7 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
         reply: buildOperationHealthMetricReply("", metric),
         nextAction: "Sorunlar sekmesindeki açık issue satırını ve gerekiyorsa Kanıt sekmesini incele; ticari takip bulgularını operasyon arızası olarak işleme.",
         source: "authorized-current-room-operation-health-metric-contract-v1",
+        navigationTarget: targetPath && targetPath !== currentPath ? operationHealthTarget : null,
         dataSources: ["SERVER_AUTHORIZED_ROOM_OPERATION_HEALTH_AND_REPORTS", "authorized vehicle/location records", "authorized agreement and offer records"],
         retrievedFacts: [
           `openIssues=${metric.openIssues ?? "unavailable"}`,
@@ -3160,11 +5032,22 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
     if (domain === "SHIFTS") return readShifts(user, role, false, scopedPlan);
     if (domain === "VEHICLES") return readVehicles(user, role, scopedPlan);
     if (domain === "DRIVERS") return readDrivers(user, role, scopedPlan);
-    if (domain === "PERSONNEL") return scopedPlan.semanticEntityType === "PARENT" ? readParentLinks(user, role) : readPersonnel(user, role, scopedPlan);
+    if (domain === "PERSONNEL") {
+      if (role === "PARENT"
+        && scopedPlan?.entity?.type === "personnel"
+        && Array.isArray(scopedPlan?.requestedFields)
+        && scopedPlan.requestedFields.some((field) => String(field?.key || field || "").toUpperCase() === "STATUS")) {
+        const personnelResult = await readPersonnel(user, role, scopedPlan);
+        if (!Number(personnelResult?.count || 0)) return personnelResult;
+        const operationResult = await readOperations(user, role, scopedPlan);
+        return mergeParentSelectedPersonnelFacts(personnelResult, operationResult);
+      }
+      return scopedPlan.semanticEntityType === "PARENT" ? readParentLinks(user, role) : readPersonnel(user, role, scopedPlan);
+    }
     if (domain === "SERVICE_REQUESTS") return readServiceRequests(user, role, scopedPlan);
-    if (domain === "BUDGET") return readFinance(user, role, true);
-    if (domain === "FINANCE") return readFinance(user, role, false);
-    if (domain === "NOTIFICATIONS") return readNotifications(user, role);
+    if (domain === "BUDGET") return readFinance(user, role, true, scopedPlan);
+    if (domain === "FINANCE") return readFinance(user, role, false, scopedPlan);
+    if (domain === "NOTIFICATIONS") return readNotifications(user, role, scopedPlan);
     if (domain === "OPERATIONS") return readOperations(user, role, scopedPlan);
     if (domain === "ORGANIZATION_PLANS") return readOrganizationPlans(user, scopedPlan);
     if (domain === "TENANT_ACCESS") return readTenantAccess(user, role);
@@ -3181,7 +5064,7 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       .filter((item) => item?.domain === "AGREEMENTS")
       .flatMap((item) => Array.isArray(item?.facts) ? item.facts : []);
     const hasUnauthorized = execution.unauthorizedFacts.length > 0;
-    const composedExecution = composeMultiPartExecutionReply({ plan: semanticPlan, execution, baseReply: execution.reply });
+    const composedExecution = composeMultiPartExecutionReply({ plan: semanticPlan, execution, baseReply: execution.reply, role });
     const requestedOfferEntity = semanticPlan.entity?.type === "offer"
       ? semanticPlan.entity
       : semanticPlan.entities?.find((entity) => entity?.type === "offer") || null;
@@ -3191,8 +5074,180 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
         && item?.entity?.type === "offer"
         && Number(item.entity.id) === Number(requestedOfferEntity.id));
     const recordNavigationTarget = resolvedRequestedOffer
-      ? explicitOfferRecordNavigationTarget(user, semanticPlan, authorizationDecision)
+      ? explicitOfferRecordNavigationTarget(user, semanticPlan, authorizationDecision, { allowRecordDetails: true })
       : null;
+    const crossMenuNavigationTarget = authorizedCrossMenuNavigationTarget(user, semanticPlan, screenContext);
+    const vehicleToDriverRelation = semanticPlan?.relationshipIntent?.kind === "VEHICLE_TO_DRIVER"
+      ? execution.items
+        .filter((item) => item?.domain === "DRIVERS")
+        .flatMap((item) => Array.isArray(item?.facts) ? item.facts : [])
+        .map((fact) => ({
+          id: Number(fact?.driverId || fact?.id || 0),
+          vehicleId: Number(fact?.vehicleId || 0),
+          vehiclePlate: String(fact?.vehiclePlate || "").replace(/\s+/g, "").toLocaleUpperCase("tr-TR"),
+        }))
+        .find((fact) => {
+          const fromEntity = semanticPlan.relationshipIntent?.fromEntity || {};
+          const sourceVehicleId = Number(fromEntity.id || 0);
+          const sourceVehiclePlate = String(fromEntity.plate || "").replace(/\s+/g, "").toLocaleUpperCase("tr-TR");
+          return fact.id > 0
+            && ((sourceVehicleId > 0 && fact.vehicleId === sourceVehicleId)
+              || (sourceVehiclePlate && fact.vehiclePlate === sourceVehiclePlate));
+        })
+      : null;
+    const vehicleToDriverNavigationTarget = vehicleToDriverRelation
+      ? {
+        path: "/room/drivers",
+        label: "Sürücüler",
+        routeParams: { focusDriverId: vehicleToDriverRelation.id },
+        recordType: "DRIVER",
+        recordId: vehicleToDriverRelation.id,
+      }
+      : null;
+    const resolvedExplicitShift = semanticPlan?.family === "RECORD_DETAILS"
+      && semanticPlan?.entity?.type === "shift"
+      ? execution.items.find((item) => item?.status === "RESOLVED"
+        && item?.entity?.type === "shift"
+        && Number(item?.entity?.id || 0) === Number(semanticPlan.entity.id || 0))
+      : null;
+    const explicitShiftNavigationTarget = resolvedExplicitShift
+      ? buildRoleScopedShiftNavigationTarget(role, screenContext?.path, resolvedExplicitShift.entity.id)
+      : null;
+    const relationCollectionNavigationTarget = semanticPlan?.relationshipIntent?.kind === "AGREEMENT_TO_SHIFT_COLLECTION"
+      ? execution.items
+        .filter((item) => item?.domain === "SHIFTS")
+        .flatMap((item) => Array.isArray(item?.facts) ? item.facts : [])
+        .map((fact) => ({ id: Number(fact?.id || fact?.shiftId || 0), agreementId: Number(fact?.agreementId || 0) }))
+        .find((fact) => fact.id > 0 && fact.agreementId > 0)
+      : null;
+    const relationOfferNavigationTarget = semanticPlan?.relationshipIntent?.kind === "SHIFT_TO_OFFER"
+      ? execution.items
+        .filter((item) => item?.domain === "OFFERS")
+        .flatMap((item) => Array.isArray(item?.facts) ? item.facts : [])
+        .map((fact) => ({ id: Number(fact?.offerId || fact?.id || 0), shiftId: Number(fact?.shiftId || 0) }))
+        .find((fact) => fact.id > 0 && fact.shiftId === Number(semanticPlan.relationshipIntent?.fromEntity?.id || 0))
+      : null;
+    const relationOfferShiftNavigationTarget = semanticPlan?.relationshipIntent?.kind === "OFFER_TO_SHIFT"
+      ? execution.items
+        .filter((item) => item?.domain === "OFFERS")
+        .flatMap((item) => Array.isArray(item?.facts) ? item.facts : [])
+        .map((fact) => ({
+          offerId: Number(fact?.offerId || fact?.id || 0),
+          shiftId: Number(fact?.shiftId || 0),
+        }))
+        .find((fact) => fact.offerId === Number(semanticPlan.relationshipIntent?.fromEntity?.id || 0) && fact.shiftId > 0)
+      : null;
+    const relationShiftAgreementNavigationTarget = semanticPlan?.relationshipIntent?.kind === "SHIFT_TO_AGREEMENT"
+      && Number(semanticPlan.relationshipIntent?.toEntity?.id || 0) > 0
+      ? {
+        path: "/company/agreements",
+        label: "Sözleşmeler",
+        routeParams: { focusAgreementId: Number(semanticPlan.relationshipIntent.toEntity.id) },
+        recordType: "AGREEMENT",
+        recordId: Number(semanticPlan.relationshipIntent.toEntity.id),
+      }
+      : null;
+    const selectedShiftPersonnelLookup = role === "COMPANY"
+      && normalizeScreenPath(screenContext?.path) === "/company/shifts"
+      && String(semanticPlan?.entity?.type || "").toLowerCase() === "shift"
+      && Number(semanticPlan?.entity?.id || 0) > 0
+      && String(semanticPlan?.typedRequest?.targetEntityType || "").toUpperCase() === "PERSONNEL"
+      && Array.isArray(semanticPlan?.requestedFields)
+      && semanticPlan.requestedFields.some((field) => String(field?.key || field || "").toUpperCase() === "STATUS");
+    const selectedShiftPersonnelNavigationTarget = selectedShiftPersonnelLookup
+      ? {
+        path: "/company/shifts",
+        label: "Personel ve rota ayrıntısı",
+        purpose: "Seçili vardiyanın salt-okunur kullanım/personel bağlantısı yüzeyini aç.",
+        routeParams: { focusShiftId: Number(semanticPlan.entity.id), focusTask: "usage" },
+        recordType: "SHIFT",
+        recordId: Number(semanticPlan.entity.id),
+      }
+      : null;
+    const navigationTarget = selectedShiftPersonnelNavigationTarget
+      ? selectedShiftPersonnelNavigationTarget
+      : vehicleToDriverNavigationTarget
+      ? vehicleToDriverNavigationTarget
+      : explicitShiftNavigationTarget
+      ? explicitShiftNavigationTarget
+      : relationOfferShiftNavigationTarget
+      ? {
+        path: resolveRoleScopedNavigationPath(role, screenContext?.path, "/shifts"),
+        label: "Vardiyalar",
+        routeParams: { focusShiftId: relationOfferShiftNavigationTarget.shiftId },
+        recordType: "SHIFT",
+        recordId: relationOfferShiftNavigationTarget.shiftId,
+      }
+      : relationCollectionNavigationTarget
+      ? {
+        path: resolveRoleScopedNavigationPath(role, screenContext?.path, "/shifts"),
+        label: "Sözleşmeden Üretilen vardiyalar",
+        routeParams: { focusShiftId: relationCollectionNavigationTarget.id },
+      }
+      : relationOfferNavigationTarget
+        ? {
+          path: "/room/offers",
+          label: "Teklifler",
+          routeParams: { offerId: relationOfferNavigationTarget.id },
+          recordType: "OFFER",
+          recordId: relationOfferNavigationTarget.id,
+        }
+      : relationShiftAgreementNavigationTarget
+        ? relationShiftAgreementNavigationTarget
+      : recordNavigationTarget || crossMenuNavigationTarget;
+    const operationalDiagnosticRequest = semanticPlan?.canonicalRequest?.operation === "DIAGNOSE_CURRENT_ISSUE"
+      && String(semanticPlan?.canonicalRequest?.domain || "").toUpperCase() === "OPERATIONS";
+    const operationalSituationRequest = semanticPlan?.canonicalRequest?.operation === "ASSESS_CURRENT_SITUATION"
+      && String(semanticPlan?.canonicalRequest?.domain || "").toUpperCase() === "OPERATIONS";
+    const operationalMissingInformationRequest = operationalDiagnosticRequest
+      && semanticPlan?.family === "SELECTED_RECORD_CONTEXT"
+      && Array.isArray(semanticPlan?.requestedTasks)
+      && semanticPlan.requestedTasks.includes("MISSING_DATA");
+    const liveOperationalSelection = Number(
+      screenContext?.selectedEntityId
+        || screenContext?.selectedRecordId
+        || semanticPlan?.entity?.id
+        || 0,
+    ) > 0;
+    const delayedEvidence = executionRecords.some((record) => /gecik|gecikmi[sş]|aksama|late/iu.test(String(record || "")));
+    const operationalNavigationTarget = (operationalDiagnosticRequest || operationalSituationRequest)
+      && role === "COMPANY"
+      && normalizeScreenPath(screenContext?.path) !== "/company/operations"
+      ? {
+        path: "/company/operations",
+        label: "Operasyon Paneli",
+        purpose: "Seçili servis veya vardiyanın operasyon durumunu ve varsa gecikme kanıtını incele.",
+      }
+      : null;
+    const operationalFacts = execution.items
+      .filter((item) => item?.domain === "OPERATIONS")
+      .flatMap((item) => Array.isArray(item?.facts) ? item.facts : []);
+    const approvedOperationalCount = operationalFacts.filter((fact) => String(fact?.status || "").toUpperCase() === "APPROVED").length;
+    const draftOperationalCount = operationalFacts.filter((fact) => String(fact?.status || "").toUpperCase() === "DRAFT").length;
+    const assignedVehicleCount = operationalFacts.filter((fact) => String(fact?.vehiclePlate || fact?.vehicle || "").trim()).length;
+    const offlineOperationalCount = operationalFacts.filter((fact) => ["OFFLINE", "STALE"].includes(String(fact?.freshness || "").toUpperCase())).length;
+    const operationalSituationReply = operationalSituationRequest
+      && role === "COMPANY"
+      && operationalFacts.length
+      ? `Yetkili kapsamda ${operationalFacts.length} servis/vardiya görünümü var: ${approvedOperationalCount} onaylı, ${draftOperationalCount} taslak. ${assignedVehicleCount} kayıtta araç/sürücü bağlantısı görünüyor; ${offlineOperationalCount} kayıtta konum sinyali güncel değil. Ayrıntıyı Operasyon Paneli ve Vardiyalar ekranında kayıt seçerek inceleyebilirsin.`
+      : null;
+    const operationalMissingInformationReply = operationalMissingInformationRequest
+      && role === "COMPANY"
+      && !liveOperationalSelection
+      ? "Bu ekranda seçili bir servis veya vardiya yok. Eksik bilgiyi doğru kayda bağlamak için önce Operasyon Paneli veya Vardiyalar listesinden incelemek istediğin kaydı seçmem gerekiyor; ilk kaydı varsayılan almıyorum. Seçimden sonra araç/sürücü, rota/durak, GPS ve durum bilgilerini tek tek gösterebilirim."
+      : null;
+    const operationalDiagnosticReply = operationalMissingInformationReply
+      || (operationalDiagnosticRequest
+      && role === "COMPANY"
+      && !liveOperationalSelection
+      && !delayedEvidence
+      ? "Bu ekranda seçili bir servis veya vardiya yok. Yetkili operasyon kayıtlarında doğrulanmış bir gecikme görünmüyor; görünen kayıtlar yaklaşan ya da henüz başlamamış durumda. İlgili kaydı Operasyon Paneli'nde seçerek gecikme kanıtını inceleyebilirsin."
+      : composedExecution.reply);
+    const effectiveOperationalReply = operationalSituationReply || operationalDiagnosticReply;
+    const schoolOperationsStatusReply = buildSchoolOperationsStatusReply({
+      request: hasSchoolOperationsStatusCue(message, screenContext),
+      operationsFacts: operationalFacts,
+    });
     return {
       role,
       domain: hasUnauthorized ? "AUTHORIZATION_BOUNDARY" : semanticPlan.requestedDomains.length > 1 ? "MULTI_DOMAIN" : semanticPlan.requestedDomains[0],
@@ -3200,8 +5255,12 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       authorizedDomainMap: allowed,
       count: execution.items.reduce((sum, item) => sum + Number(item.count || 0), 0),
       records: executionRecords.slice(0, 16),
-      reply: composedExecution.reply,
-      nextAction: composedExecution.nextAction,
+      reply: schoolOperationsStatusReply || effectiveOperationalReply,
+      nextAction: operationalMissingInformationRequest && !liveOperationalSelection
+        ? "Operasyon Paneli veya Vardiyalar listesinden ilgili servisi/vardiyayı seç; seçmeden ilk kaydı varsayılan almıyorum."
+        : operationalNavigationTarget
+        ? "Operasyon Paneli'ni açıp ilgili servis veya vardiyayı seç; gecikme kanıtı yoksa bunu gerçekleşmiş gecikme olarak yorumlama."
+        : composedExecution.nextAction,
       source: "authorized-query-plan-executor-v2",
       dataSources: semanticPlan.requestedDomains.map((domain) => `yetkili ${domainLabel(domain)} kayıtları`).concat("rol/company-kind/tenant kapsamı"),
       retrievedFacts: executionRecords.slice(0, 16),
@@ -3209,7 +5268,7 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       priority: hasUnauthorized ? "Yetki sınırı" : execution.status === "NO_DATA" ? "İzleme" : "Plan yürütme sonucu",
       semanticPlan,
       queryPlanExecution: execution,
-      navigationTarget: recordNavigationTarget,
+      navigationTarget: operationalNavigationTarget || navigationTarget,
       synthesis: {
         facts: execution.structuredFacts,
         missingFacts: execution.missingFacts,
@@ -3245,6 +5304,7 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
     const results = await Promise.all(requestedDomains.map(readDomain));
     const parts = results.map((result) => result.count ? `${result.count} yetkili ${domainLabel(result.domain)} kaydı var.` : `Yetkili ${domainLabel(result.domain)} kaydı görünmüyor.`);
     const records = results.flatMap((result) => result.records || []);
+    const navigationTarget = authorizedCrossMenuNavigationTarget(user, semanticPlan, screenContext);
     return {
       role,
       domain: "MULTI_DOMAIN",
@@ -3259,6 +5319,7 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       reasoning: `Kullanıcının açıkça istediği ${requestedDomains.join(", ")} alanları ayrı ayrı okunup tek yanıtta sentezlendi.`,
       priority: results.some((result) => result.count) ? "Çok alanlı inceleme" : "İzleme",
       semanticPlan,
+      navigationTarget,
     };
   }
   const domain = requestedDomains[0] || (hasCanonicalSemanticPlan ? "" : domainForQuestion(message, role));
@@ -3290,9 +5351,9 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
   else if (domain === "DRIVERS") result = await readDrivers(user, role, semanticPlan);
   else if (domain === "PERSONNEL") result = semanticPlan.semanticEntityType === "PARENT" ? await readParentLinks(user, role) : await readPersonnel(user, role, semanticPlan);
   else if (domain === "SERVICE_REQUESTS") result = await readServiceRequests(user, role, semanticPlan);
-  else if (domain === "BUDGET") result = await readFinance(user, role, true);
-  else if (domain === "FINANCE") result = await readFinance(user, role, false);
-  else if (domain === "NOTIFICATIONS") result = await readNotifications(user, role);
+  else if (domain === "BUDGET") result = await readFinance(user, role, true, semanticPlan);
+  else if (domain === "FINANCE") result = await readFinance(user, role, false, semanticPlan);
+  else if (domain === "NOTIFICATIONS") result = await readNotifications(user, role, semanticPlan);
   else if (domain === "OPERATIONS") result = await readOperations(user, role, semanticPlan);
   else if (domain === "ORGANIZATION_PLANS") result = await readOrganizationPlans(user, semanticPlan);
   else if (domain === "TENANT_ACCESS") result = await readTenantAccess(user, role);
@@ -3317,6 +5378,7 @@ export async function buildAuthorizedProductAwarenessAnswer({ user, message, scr
       : `Yetkili kapsamda açık ${label} kaydı bulunmadı; bu sonuç yalnızca mevcut okuma kapsamındaki kayıtlar için geçerlidir.`,
     priority: hasRecords ? "İnceleme gerektiren yetkili kayıt" : "İzleme",
     semanticPlan,
+    navigationTarget: authorizedCrossMenuNavigationTarget(user, semanticPlan, screenContext),
     discourseEntities: authorizedDiscourseEntities({ domain, facts: result?.facts }),
   };
 }

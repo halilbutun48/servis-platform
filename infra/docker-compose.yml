@@ -44,6 +44,7 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: development
+      SEFERPAKT_DATABASE_MODE: legacy
       LOCAL_MAINTENANCE_MODE: ${LOCAL_MAINTENANCE_MODE:-0}
       LOCAL_MAINTENANCE_SCOPE: ${LOCAL_MAINTENANCE_SCOPE:-}
       TZ: Europe/Istanbul
@@ -117,10 +118,42 @@ services:
     working_dir: /app/backend
     volumes:
       - ..:/app
-      - /app/backend/node_modules
+      # Legacy-only dependency cache. The canonical DEMO compose does not use this file.
+      # Keep one explicit owner instead of creating an anonymous volume per recreation.
+      - legacy_backend_node_modules:/app/backend/node_modules
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 12
 
     # ÖNEMLİ: normal start yalnızca API'yi açar; bootstrap ayrı npm run bootstrap ile çalıştırılır.
     command: ["sh", "-lc", "npm run dev"]
+
+  frontend:
+    build:
+      context: ../web
+      args:
+        SOURCE_REVISION: ${SEFERPAKT_SOURCE_REVISION:-workspace}
+        SOURCE_TREE_SHA256: ${SEFERPAKT_SOURCE_TREE_SHA256:-unrecorded}
+        SOURCE_MANIFEST_SHA256: ${SEFERPAKT_SOURCE_MANIFEST_SHA256:-unrecorded}
+        BUILD_TIMESTAMP: ${SEFERPAKT_BUILD_TIMESTAMP:-unrecorded}
+    image: ${SEFERPAKT_FRONTEND_IMAGE:-seferpakt-frontend:local}
+    container_name: personel_frontend
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health | grep -q '\"ok\":true'"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 12
+
   osrm:
     profiles: ["osrm"]
     image: osrm/osrm-backend:latest
@@ -152,6 +185,8 @@ services:
 
 volumes:
   pgdata:
+  legacy_backend_node_modules:
+    name: seferpakt_legacy_backend_node_modules
 
 
 

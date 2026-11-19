@@ -54,6 +54,8 @@ export const createVehicleSchema = z.object({
 
   // V1 meta (opsiyonel)
   type: z.enum(["MINIBUS", "MIDIBUS", "OTOBUS"]).optional(),
+  // Ruhsat/resmi tarife sınıfı; araç tipinden türetilmez.
+  hgsClass: z.number().int().min(1).max(6).optional().nullable(),
   brand: z.string().trim().min(1).optional(),
   model: z.string().trim().min(1).optional(),
   modelYear: z.number().int().min(1970).max(2100).optional(),

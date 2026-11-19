@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
+import { resolveCanonicalConversationRequest } from '../src/ai/chat/canonicalSemanticRequest.js';
+import { resolveSemanticIntent } from '../src/ai/chat/semanticIntentPlanner.js';
 import { getScreenDefinitionForUser } from '../src/ai/jobGuide/screenCatalog.js';
 import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
@@ -69,12 +71,55 @@ function makeResponse({ role, path: screenPath, message, selectedLabel = '', sel
   });
 }
 
+function makeCanonicalResponse({ role = 'ROOM', path: screenPath, message, structuredFacts = null }) {
+  const user = { role, companyId: 1, roomId: role === 'ROOM' ? 1 : undefined };
+  const screenContext = {
+    path: screenPath,
+    label: screenPath === '/shared/kvkk' ? 'KVKK' : 'ROOM surface',
+    role,
+    ...(structuredFacts ? { structuredFacts } : {}),
+  };
+  const canonical = resolveCanonicalConversationRequest({
+    message,
+    user,
+    selectedEntity: null,
+    conversationState: { recentMessages: [], activeGuidedTask: null, uiSurface: screenContext },
+    screenContext,
+    interpreterMode: 'DETERMINISTIC',
+  });
+  const semanticPlan = resolveSemanticIntent({
+    message,
+    user,
+    selectedEntity: null,
+    conversationState: null,
+    screenContext,
+    canonicalRequest: canonical.request,
+  });
+  semanticPlan.canonicalRequest = canonical.request;
+  semanticPlan.canonicalRequestEnvelope = canonical;
+  return buildChatHelpResponse({
+    entityType: 'screen',
+    entityId: 0,
+    user,
+    message,
+    context: screenContext,
+    entityLabel: screenContext.label,
+    scope: { roleMode: 'OPERATIONS', role },
+    conversationState: null,
+    semanticPlan,
+    screenContext,
+    screenDefinition: getScreenDefinitionForUser(user, screenContext),
+  });
+}
+
 console.log('=== COP-03A FIX-02 VISIBLE REPLY CHIP POLISH CHECK ===');
 
 const pkg = fs.readFileSync(path.join(root, 'package.json'), 'utf8');
 const helpComposer = fs.readFileSync(path.join(root, 'backend/src/ai/chat/helpComposer.js'), 'utf8');
 const intentRouter = fs.readFileSync(path.join(root, 'backend/src/ai/chat/intentRouter.js'), 'utf8');
 const catalog = fs.readFileSync(path.join(root, 'backend/src/ai/jobGuide/screenCatalog.roomCompany.js'), 'utf8');
+const roomCommercialFlow = fs.readFileSync(path.join(root, 'web/src/panels/room/CommercialFlowPanel.jsx'), 'utf8');
+const floatingCopilotDrawer = fs.readFileSync(path.join(root, 'web/src/components/copilot/FloatingCopilotDrawer.jsx'), 'utf8');
 const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must('check:cop03afix02 exists in package.json', pkg.includes('"check:cop03afix02": "node backend/scripts/cop_03a_fix_02_visible_reply_chip_polish_check.js"'));
@@ -94,6 +139,34 @@ must('intentRouter keeps driver chips', intentRouter.includes('Aktif sürücüle
 must('catalog keeps natural feedback copy', catalog.includes('Açık veya kritik kayıtları incele.'));
 must('catalog keeps natural notifications copy', catalog.includes('Bildirimin hangi olaya bağlı olduğunu incele.'));
 must('catalog keeps natural check-in copy', catalog.includes('Check-in yapılacak kayıt veya işi netle.'));
+must('room commercial flow maps internal negotiation label', roomCommercialFlow.includes('pazarlik: "Pazarlık"'));
+must('room commercial flow maps requested status label', roomCommercialFlow.includes('requested: "Bekliyor"'));
+must('room commercial flow maps open status label', roomCommercialFlow.includes('open: "Açık"'));
+must('room commercial flow maps separate agreement label', roomCommercialFlow.includes('"sozlesme (ayri akis)": "Sözleşme"'));
+must('room commercial flow renders action labels through visible mapper', roomCommercialFlow.includes('commercialFlowVisibleLabel(item.actionLabel || actionLabel)'));
+must('copilot drawer protects commercial workspace actions', floatingCopilotDrawer.includes('.roomCommercialWorkspaceFull button'));
+must('copilot drawer considers centered safe placement', floatingCopilotDrawer.includes('Math.round((viewportWidth - width) / 2)'));
+must('copilot drawer compacts short desktop viewports', floatingCopilotDrawer.includes('compactDesktopDrawer'));
+
+const kvkkAccessFacts = {
+  screenType: 'KVKK',
+  kvkkAccess: { requiredCount: 0, acceptedCount: 0, blocking: false },
+};
+for (const message of ['Erişim neden kapalı?', 'Bu KVKK görünürlüğü neden kısıtlı?']) {
+  const response = makeCanonicalResponse({
+    path: '/shared/kvkk',
+    message,
+    structuredFacts: kvkkAccessFacts,
+  });
+  const reply = normalize(response?.reply || '');
+  must(`KVKK access explanation is grounded for ${message}`, reply.includes(normalize('KVKK erişimi kapalı görünmüyor')));
+  must(`KVKK access explanation avoids generic root-cause fallback for ${message}`, !reply.includes(normalize('kesin sebebi veriyle doğrulamak gerekir')));
+}
+const kvkkOutsideResponse = makeCanonicalResponse({
+  path: '/room/shifts',
+  message: 'Erişim neden kapalı?',
+});
+must('KVKK access explanation does not leak onto non-KVKK surfaces', !normalize(kvkkOutsideResponse?.reply || '').includes(normalize('KVKK erişimi kapalı görünmüyor')));
 
 const roleScreenMatrix = [
   { role: 'SUPER_ADMIN', path: '/superadmin/commercial-core', message: 'burası ne' },

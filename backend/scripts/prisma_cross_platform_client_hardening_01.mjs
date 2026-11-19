@@ -357,7 +357,13 @@ export function runPrismaGenerate({ schemaPath = CANONICAL_SCHEMA_PATH, cwd = BA
 }
 
 function createIsolatedGenerationWorkspace() {
-  const workspaceRoot = fs.mkdtempSync(path.join(BACKEND_ROOT, ".prisma-hardening-"));
+  // Keep the temporary client beside the canonical output. In the supported
+  // Docker development runtime the worktree is a bind mount while
+  // backend/node_modules is a named volume; creating the replacement under
+  // BACKEND_ROOT would make the final directory swap cross devices (EXDEV).
+  const generationParent = path.dirname(CANONICAL_GENERATED_CLIENT_PATH);
+  fs.mkdirSync(generationParent, { recursive: true });
+  const workspaceRoot = fs.mkdtempSync(path.join(generationParent, ".prisma-hardening-"));
   const prismaDir = path.join(workspaceRoot, "prisma");
   const outputDir = path.join(workspaceRoot, "generated-client");
   fs.mkdirSync(prismaDir, { recursive: true });

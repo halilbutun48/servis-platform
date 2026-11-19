@@ -10,7 +10,7 @@ import { countBy, filterNotificationDigest, fmtTR, normalizeNotificationDigest, 
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildOperationsCopilotFacts } from "../../utils/copilotFacts";
 import { cachedGet } from "../../utils/uiDataCache";
-import { humanizeUserFacingText, userFacingRoleLabel } from "../../utils/terminology";
+import { humanizeUserFacingText, userFacingRoleLabel, userFacingStatusLabel } from "../../utils/terminology";
 
 // Compatibility wording for historical static checks: "Audit / Log Kayıtları" is now rendered as "Denetim / İşlem Kayıtları".
 const LOGIN_AUDIT_RE = /(LOGIN|SIGNIN|SIGN-IN|AUTH|STEP_UP|TOTP|PIN)/i;
@@ -140,6 +140,10 @@ function readableAuditAction(value) {
   if (key.includes("REJECT")) return "Reddedildi";
   if (key.includes("APPROVE")) return "Onaylandı";
   return "İşlem kaydı";
+}
+
+function readableAuditStatus(value) {
+  return userFacingStatusLabel(value);
 }
 
 function readableAuditEntity(value) {
@@ -441,7 +445,7 @@ export default function SuperAdminOperationsPanel() {
               </div>
               <div className="card" style={{ padding: 12, borderRadius: 8 }}>
                 <div className="panelMeta">Varsayılan karar</div>
-                <div style={{ fontWeight: 800, marginTop: 6 }}>{surface?.defaultStatus || "-"}</div>
+                <div style={{ fontWeight: 800, marginTop: 6 }}>{readableAuditStatus(surface?.defaultStatus)}</div>
               </div>
               <div className="card" style={{ padding: 12, borderRadius: 8 }}>
                 <div className="panelMeta">Kayıtlı kontrol</div>
@@ -464,7 +468,7 @@ export default function SuperAdminOperationsPanel() {
                     </span>
                   </div>
                   <div className="panelMeta" style={{ marginTop: 6 }}>
-                    Varsayılan karar: {role.defaultStatus || "-"}
+                    Varsayılan karar: {readableAuditStatus(role.defaultStatus)}
                   </div>
                 </div>
               )) : <div className="muted">Rol desteği bulunamadı.</div>}
@@ -603,7 +607,7 @@ export default function SuperAdminOperationsPanel() {
                 {repeatedActions.length ? repeatedActions.map((row) => (
                   <div key={row.key} className="card" style={{ padding: 10, borderRadius: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                      <div style={{ fontWeight: 700 }}>{row.key}</div>
+                      <div style={{ fontWeight: 700 }}>{readableAuditAction(row.key)}</div>
                       <span className="pill" data-status="COUNT">{row.count}</span>
                     </div>
                     <div className="panelMeta" style={{ marginTop: 4 }}>
@@ -619,7 +623,7 @@ export default function SuperAdminOperationsPanel() {
                 {loginAuditRows.length ? loginAuditRows.map((row) => (
                   <div key={row.id} className="card" style={{ padding: 10, borderRadius: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                      <div style={{ fontWeight: 700 }}>{row.action || row.entity || "-"}</div>
+                      <div style={{ fontWeight: 700 }}>{readableAuditAction(row.action || row.entity)}</div>
                       <span className="pill" data-status="COUNT">{fmtTR(row.createdAt)}</span>
                     </div>
                     <div className="panelMeta" style={{ marginTop: 4 }}>
@@ -634,7 +638,7 @@ export default function SuperAdminOperationsPanel() {
               <div style={{ display: "grid", gap: 8 }}>
                 <div className="card" style={{ padding: 10, borderRadius: 8 }}>
                   <div className="panelMeta">Varsayılan karar</div>
-                  <div style={{ fontWeight: 800, marginTop: 6 }}>{surface?.defaultStatus || "-"}</div>
+                  <div style={{ fontWeight: 800, marginTop: 6 }}>{readableAuditStatus(surface?.defaultStatus)}</div>
                 </div>
                 <div className="card" style={{ padding: 10, borderRadius: 8 }}>
                   <div className="panelMeta">Kayıtlı kontrol</div>

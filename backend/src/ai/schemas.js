@@ -68,6 +68,8 @@ const SHORT_FIRST_CONTROL_PHRASES = [
 const NEXT_BEST_ACTION_PHRASES = [
   "sıradaki doğru işlem ne",
   "siradaki dogru islem ne",
+  "sıradaki doğru kontrol ne",
+  "siradaki dogru kontrol ne",
   "bir sonraki doğru işlem ne",
   "bir sonraki dogru islem ne",
   "bir sonraki adım ne",

@@ -8,6 +8,10 @@ function minuteBounds(dateLike) {
   return { start: d, end };
 }
 
+export function isCommercialPackageShift(status) {
+  return String(status || "").toUpperCase() !== "DRAFT";
+}
+
 export async function findPackageShiftRowsBySeed(seedShift, { roomId = undefined } = {}) {
   const companyId = Number(seedShift?.companyId || 0);
   if (!companyId) return [];
@@ -16,6 +20,7 @@ export async function findPackageShiftRowsBySeed(seedShift, { roomId = undefined
   const where = {
     companyId,
     createdAt: { gte: bounds.start, lt: bounds.end },
+    status: { not: "DRAFT" },
   };
   if (roomId !== undefined) {
     where.roomId = roomId == null ? null : Number(roomId);

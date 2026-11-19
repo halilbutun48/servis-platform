@@ -20,7 +20,9 @@ function finiteId(value) {
 
 function safeEntity(value) {
   if (!value || typeof value !== "object") return null;
-  const type = text(value.type || value.entityType).toUpperCase();
+  const type = text(value.type || value.entityType)
+    .replace(/([a-z\d])([A-Z])/g, "$1_$2")
+    .toUpperCase();
   const id = finiteId(value.id || value.entityId);
   return type && id ? { type, id } : null;
 }
@@ -37,6 +39,7 @@ const SUPPORTED_SELECTION_TYPES = new Set([
   "ORGANIZATION_PLAN",
   "STUDENT",
   "PARENT",
+  "NOTIFICATION",
 ]);
 
 function selectionRoute(screenContext, conversationState) {
@@ -51,6 +54,15 @@ function selectionRoute(screenContext, conversationState) {
 // a record. Such a marker is authoritative for the current surface and must
 // suppress a historical record; it is never an authorization grant.
 export function resolveCurrentSelection({ screenContext, conversationState } = {}) {
+  const hasLiveSelectionEnvelope = Boolean(
+    screenContext
+    && typeof screenContext === "object"
+    && (
+      Object.prototype.hasOwnProperty.call(screenContext, "selectedEntity")
+      || Object.prototype.hasOwnProperty.call(screenContext, "selectedEntityType")
+      || Object.prototype.hasOwnProperty.call(screenContext, "selectedEntityId")
+    ),
+  );
   const liveEntity = safeEntity(screenContext?.selectedEntity)
     || safeEntity({ type: screenContext?.selectedEntityType, id: screenContext?.selectedEntityId });
   const liveType = text(screenContext?.selectedEntity?.type || screenContext?.selectedEntity?.entityType || screenContext?.selectedEntityType).toUpperCase();
@@ -72,7 +84,11 @@ export function resolveCurrentSelection({ screenContext, conversationState } = {
       routeChanged,
     });
   }
-  if (unsupportedLiveMarker || routeChanged) {
+  // The live UI envelope is authoritative even when it explicitly says that
+  // no record is selected. Without this distinction, a route that has been
+  // reopened with an empty selection can silently resurrect an agreement,
+  // offer, or shift from conversation history and answer a different screen.
+  if (unsupportedLiveMarker || routeChanged || hasLiveSelectionEnvelope) {
     return Object.freeze({
       entity: null,
       source: null,
@@ -104,6 +120,9 @@ function entityDomain(type) {
     OFFER: "OFFERS",
     ROUTE: "ROUTES",
     PERSONNEL: "PERSONNEL",
+    VEHICLE: "VEHICLES",
+    DRIVER: "DRIVERS",
+    NOTIFICATION: "NOTIFICATIONS",
   }[key] || "";
 }
 
@@ -118,7 +137,7 @@ function hasStaleMarker(value) {
     .some((item) => ["STALE", "INVALID", "EXPIRED", "SUPERSEDED", "REJECTED"].includes(upper(item)));
 }
 
-function taskIsStale(task, conversationState, currentPath) {
+function taskIsStale(task, conversationState) {
   const transition = upper(conversationState?.transition?.type || conversationState?.lastTransition?.type);
   return hasStaleMarker(task)
     || hasStaleMarker(task?.taskState)
@@ -135,15 +154,18 @@ function explicitInputEvidence(normalizedText, evidence) {
   const recoveryInput = /\b(?:bulam|yapam|acilam|a[cç][ıi]lam|calismiyor|çalışmıyor|baslatam|ba[sş]latam|tak[iı]lam|g[oö]rem)\p{L}*\b/iu.test(normalizedText)
     || /\b(?:dedi[gğ]in|s[oö]yledi[gğ]in)\s+yer\s+yok\b/iu.test(normalizedText);
   if (recoveryInput) return false;
-  const explicitDomain = /\b(?:vardiya|sefer|servis|operasyon|sozlesme|agreement|contract|teklif|offer|rota|guzergah|durak|personel|calisan)\p{L}*\b/iu.test(normalizedText);
-  const explicitAction = /\b(?:bak|gor|incele|listele|goster|olustur|baslat|planla|ac|git|anlat|acikla)\p{L}*\b/iu.test(normalizedText);
+  const explicitDomain = /\b(?:vardiya|sefer|servis|operasyon|sozlesme|agreement|contract|teklif|offer|rota|guzergah|durak|personel|calisan|arac|plaka|gps|konum|harita|bildirim|uyari|notification)\p{L}*\b/iu.test(normalizedText);
+  const explicitAction = /\b(?:bak|gor|incele|listele|goster|olustur|baslat|planla|ac|git|anlat|acikla|nerede|nerde|ne\s+zaman|neden|canli|eski|taze|guncel|gercekten)\p{L}*\b/iu.test(normalizedText);
   const explicitObject = evidence.object.some((item) => item !== "PRODUCT_OPERATIONAL_RECORD");
   return Boolean((explicitDomain && explicitAction) || explicitObject);
 }
 
 function selectedRecordReferenceInput(normalizedText, selectedEntity) {
   if (!selectedEntity) return false;
-  return /\b(?:bu|su|secil(?:i|en)?|aktif|baktigim)\s+(?:vardiya|sefer|teklif|arac|plaka|surucu|sofor|sozlesme|kayit)\p{L}*/iu.test(normalizedText)
+  if (String(selectedEntity.type || "").toUpperCase() === "SERVICE_REQUEST") {
+    return /\b(?:talebim|servis\s+talebim|bu\s+(?:servis\s+)?talep|seçili\s+(?:servis\s+)?talep|secil[iî]?\s+(?:servis\s+)?talep)\p{L}*/iu.test(normalizedText);
+  }
+  return /\b(?:bu|su|secil(?:i|en)?|aktif|baktigim)\s+(?:vardiya|sefer|teklif|arac|plaka|surucu|sofor|sozlesme|kayit|bildirim|uyari)\p{L}*/iu.test(normalizedText)
     || /^(?:bunun|sunun|onun)\b/iu.test(normalizedText)
     || /^(?:bu|su)\s+(?:tutar|deger|değer|detay|bilgi|kayit|kayıt)\p{L}*/iu.test(normalizedText);
 }
@@ -202,7 +224,7 @@ function buildContinuityProjection({ normalizedText, evidence, explicitInput: ex
   const explicitInput = typeof explicitInputOverride === "boolean"
     ? explicitInputOverride
     : explicitInputEvidence(normalizedText, evidence);
-  const taskStale = Boolean(activeTask && taskIsStale(activeTask, conversationState, currentPath));
+  const taskStale = Boolean(activeTask && taskIsStale(activeTask, conversationState));
   const taskStatus = !activeTask
     ? "ABSENT"
     : taskStale
@@ -322,6 +344,16 @@ function currentDomainFromSurface({ screenContext, conversationState, normalized
   if (/(teklif|offer|rfq)/u.test(surfaceText)) return "OFFERS";
   if (/(rota|durak|guzergah|güzergah)/u.test(surfaceText)) return "ROUTES";
   if (/(personel|calisan|çalışan|ogrenci|öğrenci)/u.test(surfaceText)) return "PERSONNEL";
+  if (/(bildirim|uyari|notification)/u.test(surfaceText)) return "NOTIFICATIONS";
+  const route = text(screenContext?.path).replace(/\/+$/, "");
+  if (route === "/room/map") {
+    const selectedType = text(screenContext?.selectedEntityType || screenContext?.selectedEntity?.type).toUpperCase();
+    return selectedType === "VEHICLE" ? "VEHICLES" : "SHIFTS";
+  }
+  if (route === "/room/vehicles") return "VEHICLES";
+  if (route === "/room/drivers") return "DRIVERS";
+  if (route === "/room/operation-health") return "OPERATIONS";
+  if (route === "/room/financial-operations") return "FINANCIAL";
   const storedDomain = text(conversationState?.activeDomain || conversationState?.productContext?.semanticPlan?.requestedDomains?.[0]).toUpperCase();
   if (allowStoredState && storedDomain) return storedDomain;
   const utterance = folded(normalizedText);
@@ -421,19 +453,22 @@ export function buildCanonicalSemanticContext({ message, user, screenContext, co
   const productEvidence = Boolean(observedCurrentDomain || evidence.object.length || evidence.action.length || screenContext?.path);
   const semanticPlan = conversationState?.productContext?.semanticPlan || conversationState?.lastSemanticPlan || null;
   const lastSettled = conversationState?.lastSettledResult || null;
-  const lastRequest = lastSettled?.semanticPlan?.canonicalRequest || semanticPlan?.canonicalRequest || null;
-  const lastResolvedIntent = lastRequest?.semanticAction?.actionClass || semanticPlan?.intentFamily || null;
-  const lastSemanticAction = lastRequest?.semanticAction || semanticPlan?.semanticAction || null;
   const uniqueReferent = safeEntity(conversationState?.uniqueDiscourseReferent);
   const freshUniqueReferent = uniqueReferent
     && !explicitInput
     && !conversationState?.revalidationRequired
     && !hasStaleMarker(conversationState?.uniqueDiscourseReferent)
     && !currentSelection.historicalSuppressed
+    // A live route-bound selection is the current product referent. Do not
+    // let a previous conversation entity override it after a record or route
+    // change; explicit previous-record requests still resolve separately.
+    && selectedEntitySource !== "SURFACE_CONTEXT"
     && (!observedCurrentDomain || !entityDomain(uniqueReferent.type) || entityDomain(uniqueReferent.type) === observedCurrentDomain)
     ? uniqueReferent
     : null;
-  const effectiveUniqueReferent = freshUniqueReferent || (selectedRecordReference ? effectiveSelectedEntity : null);
+  const effectiveUniqueReferent = selectedEntitySource === "SURFACE_CONTEXT"
+    ? (selectedRecordReference ? effectiveSelectedEntity : selectedEntity)
+    : (freshUniqueReferent || (selectedRecordReference ? effectiveSelectedEntity : null));
   const role = roleOf(user);
   const contextUsedEntries = [];
   if (role) contextUsedEntries.push(Object.freeze({
@@ -507,7 +542,12 @@ export function buildCanonicalSemanticContext({ message, user, screenContext, co
     recoveryState: { active: Boolean(!explicitInput && !activeTaskStale && (effectiveCurrentTarget || freshTarget(conversationState?.guidedTarget, currentSurface.path))), targetKey: !explicitInput && !activeTaskStale ? text(effectiveCurrentTarget?.targetKey || freshTarget(conversationState?.guidedTarget, currentSurface.path)?.targetKey) || null : null },
     recentSemanticTurns: buildRecentSemanticTurns(conversationState),
     foregroundInteraction: currentSurface.foreground,
-    referenceState: { selectedEntity: effectiveSelectedEntity, currentTarget: effectiveCurrentTarget, uniqueReferent: effectiveUniqueReferent },
+    referenceState: {
+      selectedEntity: effectiveSelectedEntity,
+      currentTarget: effectiveCurrentTarget,
+      uniqueReferent: effectiveUniqueReferent,
+      historicalSuppressed: Boolean(currentSelection.historicalSuppressed),
+    },
     contextUsed,
     continuity,
     temporalContext: evidence.temporal.includes("CURRENT_TIME_WINDOW") ? "CURRENT" : "UNKNOWN",
@@ -518,6 +558,7 @@ export function buildCanonicalSemanticContext({ message, user, screenContext, co
       target: Boolean(!explicitInput && (effectiveCurrentTarget || effectiveSelectedEntity)),
       currentDomain: explicitInput ? "EXPLICIT_INPUT" : Boolean(currentDomain),
       authScopeVersion: Number(conversationState?.authScopeVersion || 0) || null,
+      selectionHistoricalSuppressed: Boolean(currentSelection.historicalSuppressed),
     },
   };
   if (explicitInput) projectedContext.lastSemanticTarget = null;

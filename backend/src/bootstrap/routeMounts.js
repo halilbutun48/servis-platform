@@ -128,12 +128,14 @@ export function mountIoRoutes(app, io, routes) {
     checkinRouter,
     organizationRouter,
     aiRouter,
+    workerPrisma,
+    writeFreezeController,
   } = routes;
 
   app.use("/api/vehicles", vehiclesRouter(io));
   app.use("/api/drivers", driversRouter(io));
   app.use("/api/shifts", shiftsRouter(io));
-  app.use("/api/gps", gpsRouter(io));
+  app.use("/api/gps", gpsRouter(io, { writeFreezeController, workerPrisma }));
   app.use("/api/telematics", telematicsRouter(io));
   app.use("/api/requests", requestsRouter(io));
   app.use("/api/driver", driverRouter(io));

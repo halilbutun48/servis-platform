@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 
 export function getPath() {
   const h = (window.location.hash || "").replace(/^#/, "");
-  return h.startsWith("/") ? h : h ? `/${h}` : "/";
+  const routePath = h.split("?", 1)[0];
+  return routePath.startsWith("/") ? routePath : routePath ? `/${routePath}` : "/";
+}
+
+export function getHashQueryParams(hash = typeof window !== "undefined" ? window.location.hash : "") {
+  const raw = String(hash || "").replace(/^#/, "");
+  const query = raw.includes("?") ? raw.slice(raw.indexOf("?") + 1) : "";
+  return new URLSearchParams(query);
 }
 
 export function navigate(path) {

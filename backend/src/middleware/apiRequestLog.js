@@ -21,7 +21,7 @@ function tryUserFromReq(req) {
   }
 }
 
-export function apiRequestLog() {
+export function apiRequestLog({ writeFreezeController } = {}) {
   return (req, res, next) => {
     const t0 = Date.now();
 
@@ -43,6 +43,17 @@ export function apiRequestLog() {
 
           const durationMs = Date.now() - t0;
           const user = req.user || tryUserFromReq(req);
+
+          // A frozen system must not create a DB request-log side effect for
+          // an otherwise read-only request. Rejection evidence belongs to
+          // operational logs, not the canonical business database.
+          if (writeFreezeController) {
+            try {
+              await writeFreezeController.assertWritable({ operation: "API_REQUEST_LOG" });
+            } catch {
+              return;
+            }
+          }
 
           const xfwd = req.headers["x-forwarded-for"]?.toString() || "";
           const ip = req.edgeClientIp || xfwd.split(",")[0]?.trim() || req.socket?.remoteAddress || null;

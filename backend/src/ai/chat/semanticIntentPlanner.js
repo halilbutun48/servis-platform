@@ -1,5 +1,5 @@
 import { hasCrossTenantBoundarySignal, isExplicitRoleHelpIntent, isGenericProductHelpIntent, resolveConversationRoute } from "./conversationRouting.js";
-import { buildCanonicalTypedRequest, explicitShiftReferenceFromText, hasActiveWorkflowStepReference, hasLiveWorkflowGroundingReference, hasProductNoteLookupCue, inferCanonicalSemanticRequest, inferRoleScopedUiTarget, resolvePreviousRecordReference, resolveProductNoteFields, validateCanonicalTypedRequest } from "./canonicalSemanticRequest.js";
+import { buildCanonicalTypedRequest, explicitShiftReferenceFromText, explicitVehicleReferenceFromText, hasActiveWorkflowStepReference, hasContractShiftGenerationLookupCue, hasLiveWorkflowGroundingReference, hasProductNoteLookupCue, hasSelectedShiftPassengerListCue, inferCanonicalSemanticRequest, inferRoleScopedUiTarget, resolvePreviousRecordReference, resolveProductNoteFields, validateCanonicalTypedRequest } from "./canonicalSemanticRequest.js";
 import { resolveCurrentSelection } from "./canonicalSemanticContext.js";
 
 const INTENT_FAMILIES = [
@@ -25,19 +25,21 @@ const ROLE_DOMAIN_CAPABILITIES = {
   },
   COMPANY: {
     OFFERS: "ALLOW_READ", AGREEMENTS: "ALLOW_READ", SHIFTS: "ALLOW_READ", VEHICLES: "ALLOW_READ",
-    DRIVERS: "ALLOW_READ", PERSONNEL: "ALLOW_READ", OPERATIONS: "ALLOW_READ", BUDGET: "ALLOW_READ",
+    DRIVERS: "ALLOW_READ", PERSONNEL: "ALLOW_READ", SERVICE_REQUESTS: "ALLOW_READ", OPERATIONS: "ALLOW_READ", BUDGET: "ALLOW_READ",
     FINANCE: "ALLOW_READ", NOTIFICATIONS: "ALLOW_READ",
   },
   SCHOOL: {
     SHIFTS: "ALLOW_READ", AGREEMENTS: "ALLOW_READ", PERSONNEL: "ALLOW_READ", OPERATIONS: "ALLOW_READ", VEHICLES: "ALLOW_READ",
+    DRIVERS: "ALLOW_READ",
     FINANCE: "ALLOW_READ", NOTIFICATIONS: "ALLOW_READ", OFFERS: "DENY_READ", BUDGET: "DENY_READ",
   },
   ORGANIZATION: {
     ORGANIZATION_PLANS: "ALLOW_READ", SHIFTS: "ALLOW_READ", PERSONNEL: "ALLOW_READ", OPERATIONS: "ALLOW_READ",
-    VEHICLES: "ALLOW_READ", FINANCE: "ALLOW_READ", NOTIFICATIONS: "ALLOW_READ", OFFERS: "DENY_READ", AGREEMENTS: "DENY_READ", BUDGET: "DENY_READ",
+    VEHICLES: "ALLOW_READ", FINANCE: "ALLOW_READ", NOTIFICATIONS: "ALLOW_READ", OFFERS: "DENY_READ", AGREEMENTS: "CONDITIONAL_RECORD_SCOPE", BUDGET: "DENY_READ",
   },
   DRIVER: {
     SHIFTS: "CONDITIONAL_RECORD_SCOPE", VEHICLES: "CONDITIONAL_RECORD_SCOPE", DRIVERS: "CONDITIONAL_RECORD_SCOPE",
+    SERVICE_REQUESTS: "CONDITIONAL_RECORD_SCOPE",
     OPERATIONS: "CONDITIONAL_RECORD_SCOPE", NOTIFICATIONS: "CONDITIONAL_RECORD_SCOPE",
   },
   PERSONEL: {
@@ -53,6 +55,12 @@ const ROLE_DOMAIN_CAPABILITIES = {
 
 const FIELD_DEFINITIONS = [
   { key: "STATUS", domain: null, words: ["durumunu", "durumu", "statüsü", "statusu", "statü", "statu", "status", "durum", "karar", "kararı", "karari", "ne durumda"] },
+  { key: "ROOM", domain: "SHIFTS", words: [
+    "hangi taşımacılık firmasında", "hangi tasimacilik firmasinda",
+    "hangi taşımacılık firması", "hangi tasimacilik firmasi",
+    "taşımacılık firmasında", "tasimacilik firmasinda",
+    "taşımacılık firması", "tasimacilik firmasi",
+  ] },
   { key: "DATE_RANGE", domain: null, words: ["tarih aralığı", "tarih araligi", "tarihleri", "tarihlerini", "başlangıç-bitiş", "baslangic-bitis", "başlangıç bitiş", "baslangic bitis"] },
   { key: "TIME_RANGE", domain: null, words: ["vardiya saati", "vardiya saatini", "vardiya saatleri", "sefer saati", "sefer saatini", "shift time", "saat aralığı", "saat araligi", "zaman aralığı", "zaman araligi", "zaman dilimi", "zaman dilimini", "giriş çıkış", "giris cikis"] },
   { key: "DATE", domain: null, words: ["tarih alanı", "tarih alani", "tarih", "tarihini", "tarihi", "hangi gün", "hangi gun", "gün", "gun"] },
@@ -90,9 +98,14 @@ const FIELD_DEFINITIONS = [
   ] },
   { key: "NOTE", domain: "OFFERS", words: ["not", "notlar", "açıklama", "açıklaması", "açıklamaları", "aciklama", "aciklamasi", "aciklamalari"] },
   { key: "QUALITY_STATE", domain: "OFFERS", words: ["kalite", "kalite durumu", "veri kalitesi", "eksik veri"] },
+  { key: "SEFER_SCORE", domain: "AGREEMENTS", words: ["sefer puanı", "sefer puani", "seferpuanı", "seferpuani", "kalite puanı", "kalite puani", "tedarikçi puanı", "tedarikci puani", "sağlayıcı puanı", "saglayici puani"] },
+  { key: "SEFER_SCORE_MISSING", domain: "AGREEMENTS", words: ["eksik sinyal", "eksik sinyaller", "eksik kanıt", "eksik kanit"] },
+  { key: "SOURCE_STATUS", domain: "AGREEMENTS", words: ["kaynak durumu", "kaynak zinciri", "kaynak vardiyası", "kaynak vardiyasi"] },
+  { key: "PAYMENT_MODE", domain: "AGREEMENTS", words: ["ödeme modeli", "odeme modeli", "ödeme modu", "odeme modu", "ödeme hazırlığı", "odeme hazirligi"] },
   { key: "RISK_STATE", domain: "OFFERS", words: ["risk durumu", "risk seviyesi", "risk düzeyi", "risk duzeyi"] },
   { key: "OPERATION_STATUS", domain: "OPERATIONS", words: ["operasyon durumu", "operasyon durumunu", "operasyon durumunda", "uygunluk durumu", "uygunluk durumunu"] },
-  { key: "VEHICLE", domain: "VEHICLES", words: ["araç", "arac", "aracı", "araci", "aracını", "aracini", "aracının", "aracinin", "plaka", "vehicle", "bağlı araç", "bagli arac", "bağlı aracı", "bagli araci", "bağlı aracını", "bagli aracini"] },
+  { key: "PLATE", domain: "VEHICLES", words: ["plaka", "plakası", "plakasi", "plakanın", "plakanin"] },
+  { key: "VEHICLE", domain: "VEHICLES", words: ["araç", "arac", "araba", "arabada", "arabayı", "arabi", "aracı", "araci", "aracını", "aracini", "aracının", "aracinin", "vehicle", "bağlı araç", "bagli arac", "bağlı aracı", "bagli araci", "bağlı aracını", "bagli aracini"] },
   { key: "DRIVER", domain: "DRIVERS", words: ["sürücü", "surucu", "sürücüsü", "surucusu", "sürücünün", "surucunun", "sürücüyü", "surucuyu", "şoför", "sofor", "driver"] },
   { key: "ETA", domain: "OPERATIONS", words: ["eta", "tahmini süre", "tahmini sure", "kaç dakika", "kac dakika", "kaç dk", "kac dk"] },
   { key: "GPS", domain: "OPERATIONS", words: ["konum", "gps", "nerede", "takip"] },
@@ -101,10 +114,14 @@ const FIELD_DEFINITIONS = [
   { key: "PERSONNEL_COUNT", domain: "OPERATIONS", words: ["personel sayısı", "personel sayisi", "personel adedi", "kaç personel", "kac personel"] },
   { key: "OFFER", domain: "OFFERS", words: ["teklif", "offer", "rfq"] },
   { key: "AGREEMENT", domain: "AGREEMENTS", words: ["sözleşme", "sozlesme", "anlaşma", "anlasma", "agreement", "contract", "kontrat"] },
-  { key: "SHIFT", domain: "SHIFTS", words: ["vardiya", "sefer", "shift"] },
+  { key: "SHIFT", domain: "SHIFTS", words: ["vardiya", "vardilar", "sefer", "shift"] },
   { key: "PLAN", domain: "ORGANIZATION_PLANS", words: ["organizasyon plan", "servis plan", "gezi plan", "planım", "planim", "planlarım", "planlarim"] },
   { key: "SERVICE_REQUEST", domain: "SERVICE_REQUESTS", words: ["servis talebi", "talebim", "başvuru", "basvuru"] },
   { key: "COST", domain: "BUDGET", words: ["maliyet", "bütçe", "butce", "gider", "kârlılık", "karlilik", "gelir"] },
+  { key: "ACCESS_CREDENTIALS", domain: "PERSONNEL", words: [
+    "erişim kodu", "erisim kodu", "erişim kodları", "erisim kodlari",
+    "aktif erişim", "aktif erisim", "qr kodu", "nfc kodu",
+  ] },
   { key: "PARENT_ACCESS", domain: "PERSONNEL", words: ["veli erişimi", "veli erisimi", "ebeveyn erişimi", "ebeveyn erisimi"] },
 ];
 
@@ -121,6 +138,22 @@ function normalize(value) {
     .replace(/ç/g, "c")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function isSelectedShiftMissingDataQuestion(value) {
+  const text = normalize(value);
+  const explicitShiftReference = /\bvardiya\w*\b/.test(text)
+    && /\b(?:hangi|ne|neler|bilgi|alan|veri)\w*\b/.test(text)
+    && /\b(?:eksik|bos)\w*\b/.test(text);
+  const selectedOperationalFields = /\b(?:arac|surucu|durak|rota)\w*\b/.test(text)
+    && /\b(?:hangi|ne|neler|var)\w*\b/.test(text)
+    && /\b(?:eksik|bos|yok)\w*\b/.test(text);
+  return explicitShiftReference || selectedOperationalFields;
+}
+
+function isSelectedShiftSafeNextQuestion(value) {
+  const text = normalize(value);
+  return /^(?:siradaki guvenli islem ne|bu vardiya icin siradaki guvenli adim ne|simdi hangi guvenli adimi izlemeliyim|bu kayit icin sonraki guvenli adim ne)\??$/.test(text);
 }
 
 function roleKey(user) {
@@ -141,18 +174,30 @@ function cleanContextPath(value) {
 // planner receives semantic surface facts, never a second authorization input.
 function semanticResolutionContext(screenContext) {
   const source = screenContext?.semanticResolutionContext;
-  if (!source || typeof source !== "object") return null;
+  const fallback = source && typeof source === "object"
+    ? source
+    : screenContext && typeof screenContext === "object" && screenContext.path
+      ? {
+        requestEntityType: String(screenContext.selectedEntityType || "screen").toLowerCase(),
+        sourceScreenPath: screenContext.path,
+        effectiveScreenPath: screenContext.path,
+        sourceScreenLabel: screenContext.label,
+        effectiveScreenLabel: screenContext.label,
+        selectedEntityType: screenContext.selectedEntityType,
+      }
+      : null;
+  if (!fallback || typeof fallback !== "object") return null;
   return {
-    authorizedRole: String(source.authorizedRole || "").toUpperCase(),
-    requestEntityType: String(source.requestEntityType || "").toLowerCase(),
-    sourceScreenPath: cleanContextPath(source.sourceScreenPath),
-    effectiveScreenPath: cleanContextPath(source.effectiveScreenPath),
-    sourceScreenLabel: String(source.sourceScreenLabel || "").trim(),
-    effectiveScreenLabel: String(source.effectiveScreenLabel || "").trim(),
-    sourceScreenMenuPurpose: String(source.sourceScreenMenuPurpose || "").trim(),
-    effectiveScreenMenuPurpose: String(source.effectiveScreenMenuPurpose || "").trim(),
-    selectedEntityType: String(source.selectedEntityType || "").toLowerCase(),
-    planningSurfaceText: String(source.planningSurfaceText || "").trim(),
+    authorizedRole: String(fallback.authorizedRole || "").toUpperCase(),
+    requestEntityType: String(fallback.requestEntityType || "").toLowerCase(),
+    sourceScreenPath: cleanContextPath(fallback.sourceScreenPath),
+    effectiveScreenPath: cleanContextPath(fallback.effectiveScreenPath),
+    sourceScreenLabel: String(fallback.sourceScreenLabel || "").trim(),
+    effectiveScreenLabel: String(fallback.effectiveScreenLabel || "").trim(),
+    sourceScreenMenuPurpose: String(fallback.sourceScreenMenuPurpose || "").trim(),
+    effectiveScreenMenuPurpose: String(fallback.effectiveScreenMenuPurpose || "").trim(),
+    selectedEntityType: String(fallback.selectedEntityType || "").toLowerCase(),
+    planningSurfaceText: String(fallback.planningSurfaceText || "").trim(),
   };
 }
 
@@ -176,12 +221,19 @@ function isCompanyPlanningNextAction(text) {
   return /^(?:siradaki dogru islem|bir sonraki dogru islem|simdi ne yapayim|simdi ne yapmaliyim|simdi ne yapacagim|bundan sonra ne yapayim|bundan sonra ne yapmaliyim|nereden devam edeyim|hangi adima gececegim|devaminda ne var|burada siradaki adim hangisi|ne ile baslamaliyim|bir sonraki adim ne|burada once neyi tamamlayayim|bu kayit icin ne yapmam gerekiyor|sirada hangi islem var|burada devam etmek icin ne eksik|sonra ne olacak|simdi hangi butona basacagim|is akisinda siradaki adim nedir)\??$/.test(text);
 }
 
+function isParentLiveLocationHelpQuestion(path, text) {
+  return path === "/parent/live"
+    && /^(?:canli konum neden yok|canli konum neden gorunmuyor|canli konum gorunmuyor|cocugumun servisi nerede|ogrencimin servisi nerede)\??$/.test(text);
+}
+
 function contextualPublicTypeDecision({ message, context } = {}) {
   if (!context || !context.effectiveScreenPath) return null;
   const text = normalize(message);
   const path = context.effectiveScreenPath;
   const sourcePath = context.sourceScreenPath;
   const planningSurface = isCompanyPlanningSurface(context);
+  const selectedShiftContext = context.requestEntityType === "shift"
+    || context.selectedEntityType === "shift";
   const decision = (publicQuestionType, signal, taskVariant = publicQuestionType, guidedTaskMeta = null) => ({
     publicQuestionType,
     signal,
@@ -197,11 +249,51 @@ function contextualPublicTypeDecision({ message, context } = {}) {
     return decision("SCREEN_PURPOSE", "explicit-current-screen-purpose", "SCREEN_CONTEXT");
   }
 
+  // Usage/orientation questions are also about the active surface. Keep the
+  // cue structural so inflected Turkish variants do not fall into clarification
+  // merely because they use "nasıl kullanılır" instead of "ne işe yarar".
+  if (/(?:^|\b)(?:bu|su)\s+(?:ekran|sayfa|panel)\p{L}*\s+(?:(?:nasil)\s+(?:kullan|ilerle|basla)\p{L}*|nereden\s+basla\p{L}*)\b/iu.test(text)) {
+    return decision("SCREEN_PURPOSE", "explicit-current-screen-usage", "SCREEN_CONTEXT");
+  }
+
+  // Keep these short, surface-scoped questions on their established public
+  // guidance contracts instead of letting the broad next-action family win.
   if (
-    context.requestEntityType === "shift"
+    path === "/superadmin/operation-verification"
+    && /^(?:once neyi kontrol edeyim|once neye bakayim|ilk neyi kontrol edeyim|ilk neye bakayim)\??$/.test(text)
+  ) return decision("FIRST_CONTROL", "operation-verification-first-control");
+
+  if (
+    /\/room\/operation-health/.test(path)
+    && /^(?:neden|niye)\s+(?:sorunlu|riskli)\s+gorunuyor\??$/.test(text)
+  ) return decision("WHY_BLOCKED", "operation-health-why-risk");
+
+  if (
+    context.requestEntityType === "screen"
+    && /\/operation-health/.test(path)
+    && /^(?:eee|ee|hmm|h[ıi]m|\?)\??$/.test(text)
+  ) return decision("CLARIFYING_QUESTION", "operation-health-ambiguous-short-prompt");
+
+  if (
+    selectedShiftContext
     && /\/room\/shifts/.test(path)
-    && /(?:bu kayitta|secili kayitta|ayni kayitta|ayni satirda|bu satirda).*(?:ne eksik|eksigi ne|eksik ne var|hangi alan bos|eksik alan|eksik veri|hangi veri eksik|burda ne eksik|burada ne eksik)/.test(text)
+    && /^(?:eksik vardiya bilgilerini|eksik vardiya verisini|vardiyadaki eksik bilgileri)\s+(?:goster|acikla|listele)\??$/.test(text)
+  ) return decision("MISSING_DATA_HELP", "selected-shift-missing-data-chip");
+
+  if (
+    selectedShiftContext
+    && /\/room\/shifts/.test(path)
+    && (
+      /(?:bu kayitta|secili kayitta|ayni kayitta|ayni satirda|bu satirda).*(?:ne eksik|eksigi ne|eksik ne var|hangi alan bos|eksik alan|eksik veri|hangi veri eksik|burda ne eksik|burada ne eksik)/.test(text)
+      || isSelectedShiftMissingDataQuestion(text)
+    )
   ) return decision("MISSING_DATA_HELP", "selected-record-missing-data");
+
+  if (
+    selectedShiftContext
+    && /\/room\/shifts/.test(path)
+    && isSelectedShiftSafeNextQuestion(text)
+  ) return decision("SAFE_NEXT_STEP", "selected-shift-safe-next-step");
 
   if (
     path === "/superadmin/commercial-core"
@@ -218,6 +310,11 @@ function contextualPublicTypeDecision({ message, context } = {}) {
     path === "/company"
     && /(?:konum|adres|lokasyon|harita|gps).*(?:duzelt|eksik|yanlis|guncelle)|(?:eksik|yanlis).*(?:konum|adres|lokasyon|harita|gps)/.test(text)
   ) return decision("LOCATION_HELP", "company-location-correction");
+
+  // Parent live chips are authorized, screen-scoped help requests.  Keep
+  // these questions on the existing LOCATION_HELP composer path instead of
+  // letting the generic GPS field lookup produce a context-free answer.
+  if (isParentLiveLocationHelpQuestion(path, text)) return decision("LOCATION_HELP", "parent-live-location-help");
 
   if (
     path === "/room/shifts"
@@ -294,8 +391,14 @@ function contextualPublicTypeDecision({ message, context } = {}) {
   return null;
 }
 
-function buildContextualPublicTypeSemanticPlan({ role, text, canonicalShape, conversationRoute, decision } = {}) {
+function buildContextualPublicTypeSemanticPlan({ role, text, canonicalShape, conversationRoute, decision, selectedEntity = null } = {}) {
   const requestedDomains = canonicalShape?.domain ? [canonicalShape.domain] : [];
+  const contextualConversationRoute = decision?.signal === "parent-live-location-help"
+    ? "RETURN_TO_PRODUCT_TASK"
+    : conversationRoute?.route || "PRODUCT_CONTEXT";
+  const typedSelectedEntity = selectedEntity?.entityType && Number(selectedEntity?.entityId) > 0
+    ? { type: String(selectedEntity.entityType).toLowerCase(), id: Number(selectedEntity.entityId) }
+    : null;
   const typedRequest = buildCanonicalTypedRequest({
     shape: {
       ...(canonicalShape || {}),
@@ -304,7 +407,7 @@ function buildContextualPublicTypeSemanticPlan({ role, text, canonicalShape, con
     },
     family: "CONTEXTUAL_PUBLIC_TYPE",
     domains: requestedDomains,
-    entities: [],
+    entities: typedSelectedEntity ? [typedSelectedEntity] : [],
     requestedFields: [],
     clarificationNeed: null,
   });
@@ -320,9 +423,9 @@ function buildContextualPublicTypeSemanticPlan({ role, text, canonicalShape, con
     requestedDomains,
     deniedDomains: [],
     conditionalDomains: [],
-    entities: [],
-    entity: null,
-    explicitEntity: null,
+    entities: typedSelectedEntity ? [typedSelectedEntity] : [],
+    entity: typedSelectedEntity,
+    explicitEntity: typedSelectedEntity,
     requestedFields: [],
     requestedTaskSlots: [],
     relationshipTraversal: [],
@@ -342,7 +445,7 @@ function buildContextualPublicTypeSemanticPlan({ role, text, canonicalShape, con
     followUp: false,
     previousIntentFamily: null,
     dialogueTopic: "PRODUCT",
-    conversationRoute: conversationRoute?.route || "PRODUCT_CONTEXT",
+    conversationRoute: contextualConversationRoute,
     routingReason: decision.signal,
     crossTenantRequested: false,
     signals: {
@@ -451,7 +554,8 @@ function entityKey(entity) {
 
 function typeForSelected(selectedType) {
   const type = String(selectedType || "").toLowerCase();
-  return type.includes("shift") || type.includes("vardiya") ? "shift"
+  return type.includes("notification") || type.includes("bildirim") || type.includes("uyari") ? "notification"
+    : type.includes("shift") || type.includes("vardiya") ? "shift"
     : type.includes("vehicle") || type.includes("arac") ? "vehicle"
       : type.includes("driver") || type.includes("surucu") ? "driver"
         : type.includes("offer") || type.includes("teklif") ? "offer"
@@ -490,6 +594,22 @@ function parseExplicitEntities(message) {
   if (numericFirstShift) {
     add({ ...numericFirstShift, type: "shift", token: text });
   }
+  collectTypedList(/\b(?:arac|vehicle)\s*#?\s*(\d+)(?:['’]?(?:in|ın|un|ün|i|ı|u|ü|e|a|de|da|den|dan))?\b((?:\s*(?:ve|ile|,|\/)\s*#?\s*\d+)*)/gu, "vehicle");
+  const numericFirstVehicle = explicitVehicleReferenceFromText(text);
+  if (numericFirstVehicle) {
+    add({ ...numericFirstVehicle, type: "vehicle", token: text });
+  }
+  // Fleet identifiers may be alphanumeric (for example E2EUSAGE123), not
+  // only Turkish visual plate forms. When the user names such an identifier
+  // next to a vehicle/GPS request, preserve it as the explicit target so a
+  // selected vehicle cannot silently replace the requested record.
+  if (/\b(?:araç|arac|vehicle|plaka)\p{L}*\b/iu.test(text)) {
+    for (const match of original.matchAll(/\b(?=[A-Z0-9]{5,}\b)(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*\d)[A-Z0-9]+\b/giu)) {
+      const plate = String(match[0] || "").trim().toUpperCase();
+      if (!plate || /^\d{2}[A-ZÇĞİÖŞÜ]{1,3}\d{2,4}$/iu.test(plate)) continue;
+      add({ type: "vehicle", plate, source: "EXPLICIT_QUERY", token: match[0] });
+    }
+  }
   const plates = original.matchAll(/\b(\d{2})\s*([A-ZÇĞİÖŞÜ]{1,3})\s*(\d{2,4})\b/giu);
   for (const match of plates) {
     // Turkish comparison particles ("35 mi 34 mü") match the visual plate
@@ -515,7 +635,7 @@ function parseExplicitEntities(message) {
 }
 
 function domainForEntityType(type) {
-  return { shift: "SHIFTS", vehicle: "VEHICLES", driver: "DRIVERS", offer: "OFFERS", agreement: "AGREEMENTS", personnel: "PERSONNEL", student: "PERSONNEL", parent: "PERSONNEL", organizationPlan: "ORGANIZATION_PLANS", serviceRequest: "SERVICE_REQUESTS" }[type] || "";
+  return { shift: "SHIFTS", vehicle: "VEHICLES", driver: "DRIVERS", offer: "OFFERS", agreement: "AGREEMENTS", personnel: "PERSONNEL", student: "PERSONNEL", parent: "PERSONNEL", organizationPlan: "ORGANIZATION_PLANS", serviceRequest: "SERVICE_REQUESTS", notification: "NOTIFICATIONS" }[type] || "";
 }
 
 function entityDomainsCompatible(type, requestedDomains = []) {
@@ -530,6 +650,7 @@ function entityDomainsCompatible(type, requestedDomains = []) {
     parent: ["PERSONNEL"],
     organizationPlan: ["ORGANIZATION_PLANS", "SHIFTS", "OPERATIONS"],
     serviceRequest: ["SERVICE_REQUESTS", "SHIFTS", "OPERATIONS"],
+    notification: ["NOTIFICATIONS"],
   };
   if (!requestedDomains.length) return true;
   return (allowed[type] || [domainForEntityType(type)]).some((domain) => requestedDomains.includes(domain));
@@ -586,12 +707,25 @@ function parseEntity(message, selected, conversationState, screenContext, reques
   const explicit = parseExplicitEntities(message);
   if (explicit.length) return explicit[0];
   const normalizedMessage = normalize(message);
+  const explicitObjectType = hasAny(normalizedMessage, ["bildirim", "uyarı", "uyari", "notification"])
+    ? "notification"
+    : hasAny(normalizedMessage, ["vardiya", "vardılar", "vardilar", "sefer", "shift"])
+    ? "shift"
+    : hasAny(normalizedMessage, ["araç", "arac", "araba", "vehicle", "plaka"])
+      ? "vehicle"
+      : hasAny(normalizedMessage, ["sözleşme", "sozlesme", "agreement", "contract"])
+        ? "agreement"
+        : hasAny(normalizedMessage, ["teklif", "offer", "rfq"])
+          ? "offer"
+          : "";
   const selectedId = Number(selected?.entityId || 0);
   const selectedType = typeForSelected(selected?.entityType);
   const selectedRecordTerms = selectedType === "vehicle"
     ? ["araç", "arac", "plaka", "eta", "konum", "gps", "durak", "rota", "takip", "durum"]
     : selectedType === "shift"
       ? ["eta", "konum", "gps", "durak", "dura", "rota", "takip", "durum", "vardiya", "vardiyanın", "vardiyanin", "araç", "arac", "plaka", "sürücü", "surucu"]
+    : selectedType === "notification"
+      ? ["bildirim", "uyarı", "uyari", "notification", "olay", "kaynak", "durum", "tür", "tur", "başlık", "baslik", "içerik", "icerik"]
       : selectedType === "driver"
         ? ["sürücü", "surucu", "şoför", "sofor", "driver"]
       : ["araç", "arac", "plaka", "sürücü", "surucu", "eta", "konum", "gps", "durak", "rota", "teklif", "sözleşme", "sozlesme", "karar", "durum", "tarih", "tarihleri", "tarihlerini", "saat", "saatler", "zaman", "başlangıç", "baslangic", "bitiş", "bitis", "bedel", "tutar", "rakam", "fiyat", "para", "hizmet alan", "hizmet alanı", "hizmet alani", "alıcı", "alici", "firma", "müşteri", "musteri", "karşı taraf", "karsi taraf", "taşımacı", "tasimaci", "taşıyıcı", "tasiyici", "taşımacılık firması", "tasimacilik firmasi", "kalite", "risk", "vardiya", "vardiyanın", "vardiyasi", "bağlı", "bagli", "ilişkili", "iliskili", "kayıt", "kayit"];
@@ -599,12 +733,12 @@ function parseEntity(message, selected, conversationState, screenContext, reques
   // "bu teklifin riski" and "bunun sonraki adımı" bind the selected
   // record as an entity referent. They do not ask for the selected record's
   // identity, and must stay bound even when the operation is diagnostic.
-  const selectedEntityReference = /\b(?:bu|su|secil(?:i|en)?|aktif|baktigim)\s+(?:teklif|vardiya|sefer|arac|plaka|surucu|sofor|sozlesme|kayit)\p{L}*/iu.test(normalizedMessage)
-    || (selectedId > 0 && /^(?:bu|bunun|su|sunun|onun|o)\b/iu.test(normalizedMessage));
+  const selectedEntityReference = /\b(?:bu|su|secil(?:i|en)?|aktif|baktigim)\s+(?:teklif|vardiya|sefer|arac|plaka|surucu|sofor|sozlesme|kayit|bildirim|uyari)\p{L}*/iu.test(normalizedMessage)
+    || (selectedId > 0 && /^(?:(?:peki|simdi|şimdi)(?:\s+de)?[,\s]+)?(?:bu|bunun|su|sunun|onun|o)\b/iu.test(normalizedMessage));
   const selectedRecordReference = selectedRecordIdentityReference || selectedEntityReference;
   const selectedRelationReference = hasAny(normalizedMessage, [
     "bağlı", "bagli", "bağlı kayıt", "bagli kayit", "ilişkili", "iliskili", "vardiya", "vardiyası", "vardiyasi",
-    "sözleşme", "sozlesme", "aracı", "araci", "sürücüsü", "surucusu",
+    "sözleşme", "sozlesme", "aracı", "araci", "sürücüsü", "surucusu", "bildirim", "uyarı", "uyari",
   ]);
   const aggregateDiagnosticRequest = /(?:sorun|problem|sıkıntı|sikinti|risk|aksak|aksayan|ters gidiyor|ters giden)/iu.test(normalizedMessage)
     && !selectedRecordReference;
@@ -613,6 +747,11 @@ function parseEntity(message, selected, conversationState, screenContext, reques
     || /^(?:vardiyanın|vardiyanin|seferin|aracın|aracin|sürücünün|surucunun)\b/iu.test(normalizedMessage);
   const screenId = Number(screenContext?.selectedEntityId || 0);
   const screenType = typeForSelected(screenContext?.selectedEntityType);
+  const explicitLiveScreenReference = selectedEntityReference
+    && Number.isInteger(screenId)
+    && screenId > 0
+    && screenType
+    && entityDomainsCompatible(screenType, requestedDomains);
   const referential = isReferentialRequest(message);
   const discourseEntityReference = isDiscourseEntityReference(message);
   const numericReferent = normalizedMessage.match(/^#?(\d+)\s+(?:acikla|açıkla|detay(?:landir|landır)?|anlat)\p{L}*\s*$/iu);
@@ -620,6 +759,13 @@ function parseEntity(message, selected, conversationState, screenContext, reques
   const inherited = conversationEntities.length === 1 ? conversationEntities[0] : null;
   if (numericReferent && inherited && Number(inherited.id) === Number(numericReferent[1]) && entityDomainsCompatible(inherited.type, requestedDomains)) {
     return { ...inherited, source: "FOLLOW_UP_CONTEXT" };
+  }
+  // A live record selected on the current authorized surface outranks a
+  // retained discourse record, including polite follow-ups such as
+  // “Peki bunun tarihi nedir?”. The visible selection changes independently
+  // of the prior conversation turn and must not be shadowed by history.
+  if (explicitLiveScreenReference) {
+    return { type: screenType, id: screenId, source: "SCREEN_RECORD" };
   }
   // "Onun/şunun" and named discourse references identify what was being
   // discussed. They must not silently bind to a UI card that happens to stay
@@ -632,10 +778,16 @@ function parseEntity(message, selected, conversationState, screenContext, reques
     }
     if (conversationEntities.length !== 1) return null;
   }
-  if ((selectedRecordReference || selectedRelationReference) && Number.isInteger(screenId) && screenId > 0 && screenType && entityDomainsCompatible(screenType, requestedDomains)) {
+  if ((selectedRecordReference || selectedRelationReference)
+    && (!explicitObjectType || explicitObjectType === screenType)
+    && Number.isInteger(screenId)
+    && screenId > 0
+    && screenType
+    && entityDomainsCompatible(screenType, requestedDomains)) {
     return { type: screenType, id: screenId, source: "SCREEN_RECORD" };
   }
-  const relationTargetType = hasAny(normalizedMessage, ["vardiya", "sefer", "shift"]) ? "shift"
+  const relationTargetType = hasAny(normalizedMessage, ["bildirim", "uyarı", "uyari", "notification"]) ? "notification"
+    : hasAny(normalizedMessage, ["vardiya", "sefer", "shift"]) ? "shift"
     : hasAny(normalizedMessage, ["araç", "arac", "vehicle"]) ? "vehicle"
       : hasAny(normalizedMessage, ["sürücü", "surucu", "şoför", "sofor"]) ? "driver"
         : hasAny(normalizedMessage, ["sözleşme", "sozlesme", "agreement"]) ? "agreement"
@@ -650,7 +802,9 @@ function parseEntity(message, selected, conversationState, screenContext, reques
   if ((referential || referencesSelectedRecord) && inherited && entityDomainsCompatible(inherited.type, requestedDomains)) {
     return { ...inherited, source: "FOLLOW_UP_CONTEXT" };
   }
-  if (relationContextSource && entityDomainsCompatible(relationContextSource.type, requestedDomains)) {
+  if (relationContextSource
+    && (!explicitObjectType || explicitObjectType === relationContextSource.type)
+    && entityDomainsCompatible(relationContextSource.type, requestedDomains)) {
     return { ...relationContextSource, source: "RELATION_CONTEXT" };
   }
   if (referencesSelectedRecord && requestedDomains.includes("OFFERS") && contextualOffer.length === 1) {
@@ -732,6 +886,14 @@ function resolveEntities(message, selected, conversationState, screenContext, re
     screenContext,
     requestedDomains,
   });
+  const liveScreenType = typeForSelected(screenContext?.selectedEntityType);
+  const liveVehicleDiagnostic = liveScreenType === "vehicle"
+    && requestedDomains.includes("VEHICLES")
+    && /(?:gps|konum|güncel|guncel|çalış|calis|gör(?:ün|un)m|gor(?:un)m|nerede)/iu.test(normalize(message));
+  // A live vehicle GPS/status question is owned by the currently rendered
+  // vehicle.  Previous-record recovery is useful for an explicit historical
+  // reference, but must not replace a valid live selection with an old shift.
+  if (liveVehicleDiagnostic && entity) return [entity];
   if (previousRecord && entityKey(previousRecord) !== entityKey(entity)) return [previousRecord];
   if (!entity) return [];
   const contextualRelated = conversationEntitiesFor(conversationState).find((candidate) => candidate && entityKey(candidate) !== entityKey(entity) && ["shift", "vehicle", "driver", "agreement"].includes(candidate.type));
@@ -755,27 +917,54 @@ function resolveEntities(message, selected, conversationState, screenContext, re
 
 function resolveRelationshipIntent(text, entities, selected, conversationState, screenContext, requestedFields = []) {
   if (hasExplicitComparisonIntent(text)) return null;
+  const contractGeneratedShiftRelation = hasContractShiftGenerationLookupCue(text);
+  const explicitAgreementSource = parseExplicitEntities(text).some((entity) => entity?.type === 'agreement')
+    || String(selected?.entityType || selected?.type || '').toLowerCase() === 'agreement'
+    || String(screenContext?.selectedEntityType || screenContext?.selectedRecordType || '').toLowerCase() === 'agreement';
+  const currentShiftsContractCollection = contractGeneratedShiftRelation
+    && /\/room\/shifts(?:$|[?#])/.test(String(screenContext?.path || ''))
+    // A prior conversation entity is not a live selection.  Only an
+    // explicitly named agreement or the current screen's selected agreement
+    // may narrow the visible generated-shift collection.
+    && !explicitAgreementSource;
+  // On the Vardiyalar surface this wording can address the visible
+  // contract-produced collection, even when no single agreement is selected.
+  // Keep it typed as a relation lookup, but give the executor a collection
+  // source instead of falling through to the generic missing-relation reply.
+  if (currentShiftsContractCollection) {
+    return {
+      kind: 'AGREEMENT_TO_SHIFT_COLLECTION',
+      fromEntity: { type: 'agreement', id: null, source: 'CURRENT_SCREEN_COLLECTION' },
+      toEntity: { type: 'shift', id: null, source: 'RELATION_COLLECTION' },
+      requestedRelation: 'shift',
+      source: 'CURRENT_SCREEN_COLLECTION',
+    };
+  }
   const source = entities.find((entity) => ["offer", "agreement", "shift", "vehicle", "driver", "serviceRequest"].includes(entity.type)) || null;
   if (!source) return null;
-  const relationWords = ["bağlı", "bagli", "bağını", "bagini", "ait", "ilişkili", "iliskili", "ilişkilendir", "iliskilendir", "sürücüsü", "surucusu", "aracı", "araci", "vardiyası", "vardiyasi", "sözleşmesi", "sozlesmesi", "bağlantısı", "baglantisi", "kaynak", "eşleş", "esles"];
+  const relationWords = ["bağlı", "bagli", "bağını", "bagini", "ait", "ilgili", "ilgi", "ilişkili", "iliskili", "ilişkilendir", "iliskilendir", "sürücüsü", "surucusu", "aracı", "araci", "vardiyası", "vardiyasi", "sözleşmesi", "sozlesmesi", "bağlantısı", "baglantisi", "atama", "ataması", "atamasi", "kaynak", "eşleş", "esles"];
   const directFieldCue = hasAny(text, ["durum", "statü", "statu", "status", "karar", "tarih", "saat", "risk", "kalite", "konum", "rota", "durak"]);
-  const explicitRelationCue = hasAny(text, ["bağlı", "bagli", "bağını", "bagini", "ait", "ilişkili", "iliskili", "ilişkilendir", "iliskilendir", "bağlantısı", "baglantisi", "sürücüsü kim", "surucusu kim", "aracı", "araci", "vardiyası", "vardiyasi"])
+  const explicitRelationCue = hasAny(text, ["bağlı", "bagli", "bağını", "bagini", "ait", "ilgili", "ilgi", "ilişkili", "iliskili", "ilişkilendir", "iliskilendir", "bağlantısı", "baglantisi", "atama", "ataması", "atamasi", "sürücüsü kim", "surucusu kim", "aracı", "araci", "vardiyası", "vardiyasi"])
     || /\b(?:hangi\s+vardiyan\p{L}*|vardiya\s+(?:ilisk|bag)\p{L}*)\b/iu.test(text);
   if (directFieldCue && !explicitRelationCue) return null;
   const relationTarget = hasAny(text, [
-    "vardiya", "sefer", "shift", "araç", "arac", "vehicle", "sürücü", "surucu", "şoför", "sofor", "sözleşme", "sozlesme",
+    "vardiya", "sefer", "shift", "teklif", "offer", "rfq", "araç", "arac", "vehicle", "sürücü", "surucu", "şoför", "sofor", "sözleşme", "sozlesme",
     "agreement", "bağlı kayıt", "bagli kayit", "ilişkili kayıt", "iliskili kayit", "kayıt", "kayit",
-  ]) || /\bkay(?:it|d)\p{L}*/iu.test(text);
+  ]) || /\bkay(?:it|d)\p{L}*/iu.test(text)
+    || (["vehicle", "driver"].includes(String(source.type || "")) && explicitRelationCue);
   const relationGrammar = /(?:bagl\p{L}*|ait\p{L}*|ilisk\p{L}*|baglanti\p{L}*|esles\p{L}*|kayn\p{L}*)/iu.test(text)
     || /\bhangi\s+vardiyan\p{L}*/iu.test(text)
     || /(?:hangi|ne|numarasi|no|id)\s+(?:vardiya|sefer|shift|arac\p{L}*|surucu\p{L}*|sofor\p{L}*|sozlesme\p{L}*|kayit\p{L}*)/iu.test(text)
     || /(?:vardiya|sefer|shift|arac\p{L}*|surucu\p{L}*|sofor\p{L}*|sozlesme\p{L}*|kayit\p{L}*).{0,24}(?:hangisi|kim|ne|numarasi|no|id)/iu.test(text);
-  if (!relationTarget || (!hasAny(text, relationWords) && !relationGrammar)) return null;
-  const contextualTarget = conversationEntitiesFor(conversationState).find((candidate) => candidate && entityKey(candidate) !== entityKey(source) && ["shift", "vehicle", "driver", "agreement"].includes(candidate.type));
+  const contractGeneratedShiftRelationForSource = source.type === "agreement"
+    && hasContractShiftGenerationLookupCue(text);
+  if (!relationTarget || (!hasAny(text, relationWords) && !relationGrammar && !contractGeneratedShiftRelationForSource)) return null;
+  const contextualTarget = conversationEntitiesFor(conversationState).find((candidate) => candidate && entityKey(candidate) !== entityKey(source) && ["shift", "vehicle", "driver", "offer", "agreement"].includes(candidate.type));
   const selectedRelatedType = typeForSelected(selected?.relatedEntityType || conversationState?.selectedRelatedEntityType || screenContext?.selectedRelatedEntityType);
   const selectedRelatedId = Number(selected?.relatedEntityId || conversationState?.selectedRelatedEntityId || screenContext?.selectedRelatedEntityId || 0);
   const mentionedRelationTypes = [
     hasAny(text, ["vardiya", "sefer", "shift"]) ? "shift" : "",
+    hasAny(text, ["teklif", "offer", "rfq"]) ? "offer" : "",
     hasAny(text, ["araç", "arac", "vehicle"]) ? "vehicle" : "",
     hasAny(text, ["sürücü", "surucu", "şoför", "sofor"]) ? "driver" : "",
     hasAny(text, ["sözleşme", "sozlesme", "agreement"]) ? "agreement" : "",
@@ -783,9 +972,15 @@ function resolveRelationshipIntent(text, entities, selected, conversationState, 
   // The selected source is often named possessively ("vardiyanın sürücüsü").
   // Prefer another explicitly mentioned type as the traversal target instead
   // of treating the source noun as both sides of the relation.
+  const implicitTargetType = source.type === "vehicle"
+    ? "shift"
+    : source.type === "driver"
+      ? (hasAny(text, ["araç", "arac", "vehicle", "plaka"]) ? "vehicle" : "shift")
+      : "";
   const targetType = mentionedRelationTypes.find((type) => type !== source.type)
     || selectedRelatedType
     || (source.type === "offer" && selectedRelatedId > 0 ? "shift" : "")
+    || implicitTargetType
     || contextualTarget?.type
     || "";
   if (!targetType || targetType === source.type) return null;
@@ -819,7 +1014,17 @@ function resolveRelationshipIntent(text, entities, selected, conversationState, 
     && fieldTargetType === derivedTargetType
     && derivedTargetType !== source.type
     && derivedTargetType !== "agreement";
-  const resolvedTarget = target || (canUseDerivedRelationField
+  const contractGeneratedShiftTarget = contractGeneratedShiftRelationForSource && derivedTargetType === "shift";
+  const selectedAssignmentRelationTarget = ["vehicle", "driver"].includes(source.type)
+    && explicitRelationCue
+    && ["shift", "vehicle", "driver"].includes(derivedTargetType)
+    && derivedTargetType !== source.type;
+  const selectedOfferRelationTarget = source.type === "offer"
+    && explicitRelationCue
+    && derivedTargetType === "shift";
+  const resolvedTarget = target || (canUseDerivedRelationField || contractGeneratedShiftTarget
+    || selectedAssignmentRelationTarget
+    || selectedOfferRelationTarget
     ? { type: derivedTargetType, id: null, source: "RELATION_FIELD_TARGET" }
     : null);
   if (!resolvedTarget) return null;
@@ -838,7 +1043,7 @@ function resolveRelationshipIntent(text, entities, selected, conversationState, 
 function resolveTemporalMode(text) {
   if (hasAny(text, ["arşiv", "arsiv"])) return "ARCHIVED";
   if (hasAny(text, ["geçmiş", "gecmis", "önceki", "onceki", "dün", "dun"])) return "HISTORICAL";
-  if (hasAny(text, ["bekleyen", "bekliyor", "onay bek", "inceleme bek"])) return "PENDING";
+  if (hasAny(text, ["bekleyen", "bekliyor", "beklemede", "onay bek", "inceleme bek"])) return "PENDING";
   if (hasAny(text, ["sıradaki", "siradaki", "yaklaşan", "yaklasan", "geliyor", "gelecek"])) return "UPCOMING";
   if (hasAny(text, ["şu an", "su an", "şimdi", "simdi", "aktif", "canlı", "canli"])) return "ACTIVE_NOW";
   if (hasAny(text, ["bugün", "bugun", "bugünkü", "bugunku", "günlük", "gunluk"])) return "ACTIVE_TODAY";
@@ -846,10 +1051,16 @@ function resolveTemporalMode(text) {
   return "UNKNOWN";
 }
 
+function isCompanyOfferBridgeRequest(text, role) {
+  return role === "COMPANY"
+    && hasAny(text, ["gelen teklif", "gelen teklifler", "teklifler", "teklif"])
+    && hasAny(text, ["servis talebi", "talebim", "talep"]);
+}
+
 function resolveDomains(text, role) {
   const domains = [];
   if (hasAny(text, ["teklif", "rfq", "fiyat teklifi"])) domains.push("OFFERS");
-  if (hasAny(text, ["sözleşme", "sozlesme", "anlaşma", "anlasma", "contract", "agreement", "kontrat"])) domains.push("AGREEMENTS");
+  if (hasAny(text, ["sözleşme", "sozlesme", "anlaşma", "anlasma", "contract", "agreement", "kontrat", "mutabakat", "reconciliation"])) domains.push("AGREEMENTS");
   if (hasAny(text, ["vardiya", "sefer", "shift", "görev", "gorev"])) domains.push("SHIFTS");
   if (hasAny(text, ["araç", "arac", "plaka", "vehicle"])) domains.push("VEHICLES");
   if (hasAny(text, ["sürücü", "surucu", "şoför", "sofor", "driver"])) domains.push("DRIVERS");
@@ -863,11 +1074,20 @@ function resolveDomains(text, role) {
   if (hasAny(text, ["servis plan", "servisim", "servis durumu", "service plan", "service status"])) domains.push("OPERATIONS", "SHIFTS");
   if (hasAny(text, ["konum", "gps", "rota", "durak", "dura", "takip", "operasyon", "gecik", "sorun", "risk"]) || hasEtaSignal(text) || hasWord(text, "nerede")) domains.push("OPERATIONS");
   if (hasAny(text, ["maliyet", "bütçe", "butce", "gider", "kârlılık", "karlilik", "gelir"])) domains.push("BUDGET");
-  if (hasAny(text, ["finans", "fatura", "hakediş", "hakedis", "tahsilat", "ödeme", "odeme"])) domains.push("FINANCE");
+  if (hasAny(text, ["finans", "fatura", "hakediş", "hakedis", "tahsilat", "ödeme", "odeme", "mutabakat", "reconciliation"])) domains.push("FINANCE");
   if (hasAny(text, ["bildirim", "uyarı", "uyari"])) domains.push("NOTIFICATIONS");
   if (hasAny(text, ["tenant erişim", "tenant erisim", "tenant sağlığı", "tenant sagligi"])) domains.push("TENANT_ACCESS");
   if (hasAny(text, ["tüm domain", "tum domain"])) domains.push(...ALL_READ_DOMAINS);
   if (role === "ORGANIZATION" && hasAny(text, ["plan", "gezi"])) domains.push("ORGANIZATION_PLANS");
+  // COMPANY's commercial workflow calls unassigned service requests
+  // "market" items and exposes the incoming offers for them. Keep the
+  // standalone service-request domain fail-closed, but do not let the
+  // combined user wording "servis talebi + gelen teklifler" block the
+  // authorized offer/market read surface.
+  const companyOfferBridge = isCompanyOfferBridgeRequest(text, role)
+    && domains.includes("SERVICE_REQUESTS")
+    && domains.includes("OFFERS");
+  if (companyOfferBridge) return unique(domains.filter((domain) => domain !== "SERVICE_REQUESTS"));
   return unique(domains);
 }
 
@@ -877,6 +1097,7 @@ function resolveScreenDomains(screenContext, role) {
   if (/\/offers\b|commercial-flow/.test(path)) return ["OFFERS"];
   if (/\/shifts\b|\/route\b|\/map\b|\/live\b|\/today\b/.test(path)) return ["SHIFTS", "OPERATIONS"];
   if (/\/vehicles\b/.test(path)) return ["VEHICLES", "OPERATIONS"];
+  if (/\/shared\/notifications\b|\/notifications\b/.test(path)) return ["NOTIFICATIONS"];
   if (/\/drivers\b/.test(path)) return ["DRIVERS", "OPERATIONS"];
   if (/\/plans\b|\/organization\b/.test(path)) return role === "ORGANIZATION" ? ["ORGANIZATION_PLANS", "OPERATIONS"] : ["OPERATIONS"];
   if (/\/operations\b|\/company\b|\/room\b|\/school\b|\/personel\b|\/parent\b|\/driver\b/.test(path)) return ["OPERATIONS", "SHIFTS"];
@@ -1063,9 +1284,11 @@ function isCollectionStatusDistributionRequest(text, { screenContext = null, can
   if (explicitSingleRecord) return false;
   const statusWord = /\b(?:durum|statu|status)\p{L}*\b/iu.test(value);
   const distributionWord = /\b(?:dagilim|dagilimi|dagilimini|hangi\s+durum|durumlar\p{L}*|durum\w*\s+(?:ozet|acikla|anlat))\b/iu.test(value);
+  const pendingReviewWord = /\b(?:bekleyen|bekliyor|beklemede|inceleme)\p{L}*\b/iu.test(value);
   const pluralAgreement = /\b(?:sozlesme|anlasma|agreement|contract|kontrat)(?:ler|lar|lerin|larin|lerim|larim|lerimin|larimin|lerimizin|larimizin)\b/iu.test(value);
   const multipleStatusQuestions = (value.match(/\bkac(?:i|ı)\b/giu) || []).length >= 2;
   return distributionWord
+    || pendingReviewWord
     || (pluralAgreement && statusWord)
     || (multipleStatusQuestions && (statusWord || agreementScope));
 }
@@ -1187,9 +1410,100 @@ function resolveComparisonSpec(family, entities, fields, text) {
 
 function resolveClarification(text, entities, fields, domains) {
   const numericChoice = /(?:^|\s)#?\d+\s*(?:mi|mı|mu|mü)\s*#?\d+\s*(?:mi|mı|mu|mü)?(?=$|\s|[^\p{L}\p{N}])/iu.test(text);
-  if (entities.length > 1 && !numericChoice && !hasAny(text, ["fark", "karşılaştır", "karsilastir", "hangisi", "arasındaki", "arasindaki", "biri mi", "iki taraf", "iki kaydı", "iki kaydi", "yan yana", "ve", "ile", "hangi"])) return "COMPARISON_TARGET_UNCLEAR";
+  // Selected-record context can arrive from both the explicit UI selection
+  // and the live screen context. They are the same authorized record when
+  // their canonical type/id pair matches; treating those duplicate evidence
+  // refs as two records incorrectly asks the user to choose a comparison.
+  const distinctEntities = new Map();
+  for (const entity of Array.isArray(entities) ? entities : []) {
+    const key = entityKey(entity);
+    if (key && !distinctEntities.has(key)) distinctEntities.set(key, entity);
+  }
+  if (distinctEntities.size > 1 && !numericChoice && !hasAny(text, ["fark", "karşılaştır", "karsilastir", "hangisi", "arasındaki", "arasindaki", "biri mi", "iki taraf", "iki kaydı", "iki kaydi", "yan yana", "ve", "ile", "hangi"])) return "COMPARISON_TARGET_UNCLEAR";
   if (!entities.length && fields.length === 0 && domains.length === 0 && text.length > 0) return "DOMAIN_OR_ENTITY_UNCLEAR";
   return null;
+}
+
+function financialContinuationTarget(screenContext) {
+  const currentTarget = screenContext?.uiHints?.currentTarget;
+  if (currentTarget?.status === 'FOUND' && String(currentTarget?.label || '').trim()) {
+    return {
+      label: String(currentTarget.label).trim(),
+      targetKey: String(currentTarget.targetKey || currentTarget.semanticId || '').trim() || null,
+    };
+  }
+  const visibleButtons = Array.isArray(screenContext?.uiHints?.visibleButtons)
+    ? screenContext.uiHints.visibleButtons
+    : [];
+  const target = visibleButtons
+    .map((item) => typeof item === 'string' ? { label: item } : item)
+    .map((item) => ({
+      label: String(item?.label || '').trim(),
+      targetKey: String(item?.targetKey || item?.semanticId || '').trim() || null,
+    }))
+    .filter((item) => item.label && /(?:fark|hakediş|hakedis|fatura|mutabakat|ödeme|odeme|önizleme|onizleme)/iu.test(item.label))
+    .sort((left, right) => /fark/iu.test(left.label) ? -1 : /fark/iu.test(right.label) ? 1 : 0);
+  return target[0] || null;
+}
+
+function buildFinancialContinuationState({ previousState, action, agreementId, target } = {}) {
+  const prior = previousState && Number(previousState.agreementId) === Number(agreementId)
+    ? previousState
+    : null;
+  const hasTarget = Boolean(target?.label);
+  const priorStepKey = String(prior?.stepKey || '').trim().toUpperCase();
+  const normalizedAction = String(action || 'CONTINUE').toUpperCase();
+  let stepKey = priorStepKey || 'EXPLAIN_RESULT';
+  let stepIndex = prior?.stepIndex === 2 ? 2 : 1;
+  let previousStepKey = prior?.stepKey || null;
+  let blockedReason = null;
+
+  if (normalizedAction === 'BACK') {
+    if (stepIndex > 1) {
+      stepKey = 'EXPLAIN_RESULT';
+      stepIndex = 1;
+      previousStepKey = 'INSPECT_DIFFERENCE';
+    } else {
+      stepKey = 'EXPLAIN_RESULT';
+      stepIndex = 1;
+      previousStepKey = null;
+      blockedReason = 'NO_PRIOR_FINANCIAL_STEP';
+    }
+  } else if (normalizedAction === 'CONTINUE' || normalizedAction === 'NEXT' || normalizedAction === 'EXPAND') {
+    if (!prior) {
+      stepKey = 'EXPLAIN_RESULT';
+      stepIndex = 1;
+      previousStepKey = null;
+    } else if (stepIndex === 1 && hasTarget) {
+      stepKey = 'INSPECT_DIFFERENCE';
+      stepIndex = 2;
+      previousStepKey = 'EXPLAIN_RESULT';
+    } else if (stepIndex === 1) {
+      blockedReason = 'NO_PROVEN_NEXT_FINANCIAL_STEP';
+    } else {
+      blockedReason = 'NO_PROVEN_NEXT_FINANCIAL_STEP';
+    }
+  }
+
+  const isInspectStep = stepKey === 'INSPECT_DIFFERENCE';
+  const nextStepKey = stepKey === 'EXPLAIN_RESULT' && hasTarget ? 'INSPECT_DIFFERENCE' : null;
+  return {
+    guideId: 'ROOM_FINANCIAL_AGREEMENT_RECONCILIATION',
+    agreementId: Number(agreementId),
+    domain: 'FINANCE',
+    scope: 'SELECTED_RECORD',
+    stepKey,
+    stepIndex,
+    stepLabel: isInspectStep ? 'Farkı inceleme' : 'Finansal açıklama',
+    previousStepKey,
+    nextStepKey,
+    targetKey: target?.targetKey || prior?.targetKey || null,
+    targetLabel: target?.label || prior?.targetLabel || null,
+    targetStatus: hasTarget || prior?.targetStatus === 'FOUND' ? 'FOUND' : 'NOT_PROVEN',
+    action: normalizedAction,
+    transitionProven: Boolean(prior ? stepKey !== prior.stepKey || normalizedAction === 'BACK' : false),
+    blockedReason,
+  };
 }
 
 export function getRoleDomainCapabilities(userOrRole) {
@@ -1197,15 +1511,43 @@ export function getRoleDomainCapabilities(userOrRole) {
   return { role, capabilities: { ...(ROLE_DOMAIN_CAPABILITIES[role] || {}) } };
 }
 
+function isLiveCompanyGuidedWorkflowScreen(screenContext) {
+  const path = String(screenContext?.path || '').split('?')[0];
+  const workflowState = screenContext?.uiHints?.workflowState && typeof screenContext.uiHints.workflowState === 'object'
+    ? screenContext.uiHints.workflowState
+    : screenContext?.workflowState && typeof screenContext.workflowState === 'object'
+      ? screenContext.workflowState
+      : null;
+  return path === '/company' && workflowState?.workflowId === 'COMPANY_GUIDED_NEW_PLAN';
+}
+
+function isStaleCompanyGuidedWorkflowPlan(plan, screenContext) {
+  const workflowIntent = String(plan?.workflowIntent || plan?.continuationBasePlan?.workflowIntent || '').toUpperCase();
+  return workflowIntent === 'CREATE_SHIFT' && !isLiveCompanyGuidedWorkflowScreen(screenContext);
+}
+
 function buildContinuationSemanticPlan({ role, text, conversationRoute, conversationState, screenContext, previousPlan, selectedEntity, canonicalShape } = {}) {
   const priorContinuationDepth = Math.max(
     previousPlan?.family === "CONTINUE_CURRENT_REASONING" ? Number(previousPlan.continuationDepth || 0) : 0,
     Number(conversationState?.activeGuidedTask?.continuationDepth || 0),
   );
-  let basePlan = previousPlan || null;
+  const priorFinancialContinuationState = previousPlan?.financialContinuationState
+    || conversationState?.lastSettledResult?.financialContinuationState
+    || conversationState?.lastSettledResult?.semanticPlan?.financialContinuationState
+    || null;
+  let basePlan = isStaleCompanyGuidedWorkflowPlan(previousPlan, screenContext) ? null : (previousPlan || null);
   for (let depth = 0; depth < 6 && basePlan && ["STYLE", "CONTINUE_CURRENT_REASONING"].includes(basePlan.family); depth += 1) {
     basePlan = basePlan.family === "STYLE" ? basePlan.styleTargetPlan || null : basePlan.continuationBasePlan || null;
   }
+  // A persisted CREATE_SHIFT guidance result may be stale as a live target
+  // after the user leaves the guided modal.  Continuation still needs the
+  // workflow identity for an honest explanation, but must not revive the old
+  // target or workflow model.  Preserve only this non-authorizing metadata.
+  const preservedWorkflowIntent = !basePlan
+    && String(previousPlan?.family || '').toUpperCase() === 'UI_GUIDANCE'
+    && String(previousPlan?.workflowIntent || '').toUpperCase() === 'CREATE_SHIFT'
+    ? previousPlan.workflowIntent
+    : null;
   const workflowModel = basePlan?.workflowModel || canonicalShape?.workflowModel || null;
   const workflowAction = canonicalShape?.continuationAction || "CONTINUE";
   const analyticFamily = ["RISK_RANKING", "COMPARISON", "PRIORITY", "CAUSE_WHY"].includes(String(basePlan?.family || ""))
@@ -1255,7 +1597,17 @@ function buildContinuationSemanticPlan({ role, text, conversationRoute, conversa
   let workflowProgressionAction = workflowAction;
   let workflowCompletionVerified = false;
   let workflowPreconditionBlocked = false;
-  if (workflowModel && !explicitWorkflowStep) {
+  const requestedWorkflowStepOrdinal = explicitWorkflowStep || baseWorkflowStep;
+  if (workflowModel && actualUiStepOrdinal && actualUiStepOrdinal < requestedWorkflowStepOrdinal) {
+    // A capability question may name a later workflow step (for example
+    // Excel import in Step 3) while the live modal is still on an earlier
+    // step. Preserve the requested capability for explanation, but mark the
+    // progression as blocked so the response cannot present future controls
+    // as if they were currently available.
+    workflowStepOrdinal = boundedWorkflowStep(requestedWorkflowStepOrdinal);
+    workflowProgressionAction = "BLOCKED_PRECONDITION";
+    workflowPreconditionBlocked = true;
+  } else if (workflowModel && !explicitWorkflowStep) {
     if (workflowAction === "BACK") {
       // BACK is a presentation transition over the settled workflow, not a
       // claim that the live UI moved.  Explain the immediately preceding
@@ -1297,14 +1649,39 @@ function buildContinuationSemanticPlan({ role, text, conversationRoute, conversa
     : selectedEntity?.entityId && selectedEntity?.entityType
       ? [{ type: typeForSelected(selectedEntity.entityType), id: Number(selectedEntity.entityId), source: "SELECTED_RECORD" }]
       : screenEntity;
-  const requestedDomains = unique(basePlan?.requestedDomains || (screenContext?.path ? resolveScreenDomains(screenContext, role) : []));
+  const selectedFinancialContinuation = String(canonicalShape?.domain || '').toUpperCase() === 'FINANCE'
+    && String(screenContext?.selectedEntityType || selectedEntity?.entityType || '').toLowerCase() === 'agreement'
+    && Number(screenContext?.selectedEntityId || selectedEntity?.entityId || 0) > 0;
+  const financialContinuationState = selectedFinancialContinuation
+    ? buildFinancialContinuationState({
+      previousState: priorFinancialContinuationState,
+      action: workflowAction,
+      agreementId: Number(screenContext?.selectedEntityId || selectedEntity?.entityId || 0),
+      target: financialContinuationTarget(screenContext),
+    })
+    : null;
+  const requestedDomains = unique(
+    Array.isArray(basePlan?.requestedDomains) && basePlan.requestedDomains.length
+      ? basePlan.requestedDomains
+      : selectedFinancialContinuation
+        ? ['FINANCE']
+        : (screenContext?.path ? resolveScreenDomains(screenContext, role) : []),
+  );
   const requestedFields = Array.isArray(basePlan?.requestedFields) ? basePlan.requestedFields : [];
   const comparisonSpec = basePlan?.comparisonSpec || null;
   const recentMessages = Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages : [];
   const previousAnswerText = [...recentMessages].reverse().find((item) => item?.role === "assistant" && item?.text)?.text || "";
   const continuationOfFamily = basePlan?.continuationOfFamily || basePlan?.family || null;
   const continuationDepth = priorContinuationDepth > 0 ? priorContinuationDepth + 1 : 1;
-  const hasGroundedBase = Boolean(basePlan && (
+  const currentScreenHasCanonicalContext = Boolean(
+    screenContext?.path
+      && (
+        (screenContext?.selectedEntityId && screenContext?.selectedEntityType)
+        || screenContext?.uiHints?.visibleButtons?.length
+        || screenContext?.uiHints?.visibleTabs?.length
+      ),
+  );
+  const hasGroundedBase = Boolean(selectedFinancialContinuation || currentScreenHasCanonicalContext || basePlan && (
     basePlan.dialogueTopic === "PRODUCT"
     || basePlan.requestedDomains?.length
     || basePlan.entities?.length
@@ -1318,11 +1695,12 @@ function buildContinuationSemanticPlan({ role, text, conversationRoute, conversa
     targetEntityType: entities[0]?.type ? String(entities[0].type).toUpperCase() : null,
     continuationIntent: true,
     continuationAction: workflowAction,
-    workflowIntent: basePlan?.workflowIntent || canonicalShape?.workflowIntent || null,
+    workflowIntent: basePlan?.workflowIntent || canonicalShape?.workflowIntent || preservedWorkflowIntent || null,
     capabilityIntent: basePlan?.capabilityIntent || canonicalShape?.capabilityIntent || null,
     workflowModel,
     workflowStepReference,
     workflowStepIntent: Boolean(workflowStepReference),
+    financialContinuationState,
     explicitUserTarget: hasGroundedBase,
     confidence: hasGroundedBase ? 0.98 : 0.45,
   };
@@ -1363,7 +1741,7 @@ function buildContinuationSemanticPlan({ role, text, conversationRoute, conversa
     continuationOfFamily,
     continuationDepth,
     continuationAction: workflowAction,
-    workflowIntent: basePlan?.workflowIntent || canonicalShape?.workflowIntent || null,
+    workflowIntent: basePlan?.workflowIntent || canonicalShape?.workflowIntent || preservedWorkflowIntent || null,
     capabilityIntent: basePlan?.capabilityIntent || canonicalShape?.capabilityIntent || null,
     workflowModel,
     workflowStepReference,
@@ -1378,8 +1756,11 @@ function buildContinuationSemanticPlan({ role, text, conversationRoute, conversa
     workflowActualUiState: actualUiState,
     workflowCompletionVerified,
     workflowPreconditionBlocked,
+    financialContinuationState,
     analyticStepState,
-    continuationBasePlan: basePlan,
+    continuationBasePlan: basePlan || (preservedWorkflowIntent
+      ? { family: 'UI_GUIDANCE', workflowIntent: preservedWorkflowIntent }
+      : null),
     previousAnswerText,
     requestedStyle: "",
     styleOnlyRequest: false,
@@ -1503,6 +1884,16 @@ function buildExplainCurrentTargetSemanticPlan({ role, text, conversationRoute, 
   const requestedDomains = unique(basePlan?.requestedDomains || (screenContext?.path ? resolveScreenDomains(screenContext, role) : []));
   const workflowModel = basePlan?.workflowModel || canonicalShape?.workflowModel || null;
   const workflowStepReference = canonicalShape?.workflowStepReference || basePlan?.workflowStepReference || null;
+  const workflowActualUiState = canonicalShape?.workflowActualUiState
+    || screenContext?.uiHints?.workflowState
+    || null;
+  const workflowActualUiStepOrdinal = Number(workflowActualUiState?.activeStepOrdinal || 0) || 0;
+  const workflowPreconditionBlocked = Boolean(
+    workflowModel
+      && workflowStepReference?.ordinal
+      && workflowActualUiStepOrdinal > 0
+      && workflowActualUiStepOrdinal < Number(workflowStepReference.ordinal),
+  );
   const liveWorkflowActive = Boolean(
     canonicalShape?.workflowActualUiState?.workflowId
       || workflowStepReference?.ordinal,
@@ -1624,7 +2015,17 @@ function buildExplainCurrentTargetSemanticPlan({ role, text, conversationRoute, 
     workflowStepIntent: Boolean(workflowStepReference),
     workflowStepReference,
     workflowStepOrdinal: workflowStepReference?.ordinal || basePlan?.workflowStepOrdinal || null,
-    workflowActualUiState: canonicalShape?.workflowActualUiState || activeTaskPlan?.workflowActualUiState || null,
+    workflowActualUiState,
+    workflowPreconditionBlocked,
+    workflowProgression: workflowPreconditionBlocked
+      ? {
+        action: "BLOCKED_PRECONDITION",
+        fromOrdinal: workflowActualUiStepOrdinal,
+        toOrdinal: Number(workflowStepReference?.ordinal || 0) || null,
+        preconditionSatisfied: false,
+        blockedByPrecondition: true,
+      }
+      : null,
     typedRequest,
     typedRequestValidation: validateCanonicalTypedRequest(typedRequest),
     screenContext: {
@@ -1882,14 +2283,27 @@ function buildRoleExplanationSemanticPlan({ text, role } = {}) {
 export function toPublicQuestionType(semanticPlan) {
   const family = String(semanticPlan?.family || "");
   if (family === "CONTEXTUAL_PUBLIC_TYPE") return String(semanticPlan?.publicQuestionType || "");
+  // A selected route field is a read-only location/route lookup.  Keep it on
+  // the existing location-help response contract so the composer returns the
+  // authorized next-stop/freshness facts instead of the generic next-action
+  // guide.  This is a public adapter decision, not a second semantic owner.
+  if (family === "ENTITY_LOOKUP"
+    && Array.isArray(semanticPlan?.requestedFields)
+    && semanticPlan.requestedFields.some((field) => String(field?.key || field || "").toUpperCase() === "ROUTE")
+    && Array.isArray(semanticPlan?.requestedDomains)
+    && semanticPlan.requestedDomains.includes("OPERATIONS")) {
+    return "LOCATION_HELP";
+  }
   if (family === "GENERIC_PRODUCT_HELP") return "PRODUCT_OVERVIEW_HELP";
   if (family === "ROLE_EXPLANATION_HELP") return "ROLE_EXPLANATION_HELP";
   if (family === "EXPLAIN_CURRENT_TARGET") return "EXPLAIN_CURRENT_TARGET";
   if (family === "UNCLEAR_OR_AMBIGUOUS") return "CLARIFYING_QUESTION";
+  if (semanticPlan?.screenKnowledgeKind === "KVKK_VISIBILITY") return "KVKK_VISIBILITY";
   if (family === "SCREEN_CONTEXT" && semanticPlan?.screenKnowledgeIntent) {
     return semanticPlan.screenKnowledgeKind === "NEXT_STEP" ? "NEXT_STEP"
       : semanticPlan.screenKnowledgeKind === "TERM_DEFINITION" ? "TERM_HELP"
       : semanticPlan.screenKnowledgeKind === "BUTTON_HELP" ? "FIELD_BUTTON_HELP"
+      : semanticPlan.screenKnowledgeKind === "KVKK_VISIBILITY" ? "KVKK_VISIBILITY"
       : semanticPlan.screenKnowledgeKind === "SCREEN_PURPOSE" ? "SCREEN_PURPOSE"
       : semanticPlan.screenKnowledgeKind === "SCREEN_RISK" ? "RISK_LIST"
       : semanticPlan.screenKnowledgeKind === "NEXT_ACTION" ? "NEXT_BEST_ACTION"
@@ -2040,20 +2454,42 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
   const roomRequestBoundarySignal = roomRequestDomainSignal || roomServiceProcurementSignal;
   const collectionStatusDistributionIntent = role === "ROOM"
     && isCollectionStatusDistributionRequest(text, { screenContext });
+  // Operation Health suggestions are screen-scoped diagnostics.  A prior
+  // selected agreement may remain in the conversation state, but it is not
+  // the target of a screen-level device/GPS/problem question.  Keep this
+  // distinction in the planner so stale discourse entities cannot override
+  // the canonical CURRENT_SCREEN request.
+  const operationHealthSurfaceIssue = role === "ROOM"
+    && (
+      /\/room\/operation-health\b/iu.test(String(screenContext?.path || ""))
+      || /(?:satir|sıra|sorun|problem|riskli\s+cihaz|acik\s+sorun|açık\s+sorun)/iu.test(text)
+    )
+    && /(?:riskli\s+cihaz|gps|konum\s+sinyali|cevrim\s+disi|çevrim\s+dışı|acik\s+sorun|açık\s+sorun|problem)/iu.test(text);
   const currentSelection = resolveCurrentSelection({ screenContext, conversationState });
+  const selectedShiftPassengerListRequest = hasSelectedShiftPassengerListCue(text, {
+    selectedType: currentSelection.entity?.type || incomingSelectedEntity?.entityType || "",
+  });
   // A current non-record surface or route transition invalidates a retained
   // record. The server authorization layer still decides whether any live
   // typed record may be read; this projection only prevents stale inheritance.
-  const selectedEntity = currentSelection.entity
+  const selectedEntity = operationHealthSurfaceIssue
+    ? null
+    : currentSelection.entity
     ? { entityType: currentSelection.entity.type.toLowerCase(), entityId: currentSelection.entity.id }
     : currentSelection.historicalSuppressed
       ? null
       : incomingSelectedEntity || null;
+  const liveSurfaceTeachingRequest = Boolean(
+    screenContext?.path
+      && /\b(?:ad[ıi]m|adim)\s+(?:ad[ıi]m|adim)\s+(?:anlat|a[cç][ıi]kla|g[oö]ster)\p{L}*\b/iu.test(text),
+  );
   // Evaluate the one context-free public-product rule before canonical shape
   // inference, because the latter intentionally receives persisted discourse
   // state for genuine contextual follow-ups.
   if (!hasCanonicalEnvelope && !collectionStatusDistributionIntent && isGenericProductHelpIntent(message, { roleContext: role })
+    && !selectedShiftPassengerListRequest
     && !roomRequestBoundarySignal
+    && !liveSurfaceTeachingRequest
     && !inferRoleScopedUiTarget(text)
     && !hasActiveWorkflowStepReference(message, conversationState)
     && !hasLiveWorkflowGroundingReference(message, screenContext, conversationState)) {
@@ -2061,7 +2497,9 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
   }
   if (!hasCanonicalEnvelope
     && isExplicitRoleHelpIntent(message, { roleContext: role })
+    && !selectedShiftPassengerListRequest
     && !roomRequestBoundarySignal
+    && !liveSurfaceTeachingRequest
     // A live guided UI is the stronger authority for deictic/how-to follow-ups.
     // Keep the context-free role-help shortcut from swallowing a current
     // workflow block, target, or step explanation before canonical composition.
@@ -2070,6 +2508,25 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
     return buildRoleExplanationSemanticPlan({ text, role });
   }
   let canonicalShape = canonicalInput.shape || inferCanonicalSemanticRequest({ message, screenContext, conversationState });
+  const shiftCreationNavigationQuestion = hasAny(text, [
+    "vardiya oluşturma yerini bulamadım",
+    "vardiya olusturma yerini bulamadim",
+    "vardiya oluşturma ekranını bulamadım",
+    "vardiya olusturma ekranini bulamadim",
+  ]);
+  if (shiftCreationNavigationQuestion && canonicalShape.taskType === "EXPLAIN_CURRENT_TARGET") {
+    canonicalShape = {
+      ...canonicalShape,
+      taskType: "UI_GUIDANCE",
+      primaryTask: "CREATE_SHIFT",
+      domain: canonicalShape.domain || "SHIFTS",
+      workflowIntent: canonicalShape.workflowIntent || "CREATE_SHIFT",
+      explicitUiGuidance: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      scopeTarget: canonicalShape.scopeTarget || "CURRENT_SCREEN",
+    };
+  }
   if (collectionStatusDistributionIntent) {
     canonicalShape = {
       ...canonicalShape,
@@ -2200,9 +2657,53 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
     };
   }
   const transportedContext = semanticResolutionContext(screenContext);
-  const contextualDecision = hasCanonicalEnvelope || hasCrossTenantBoundarySignal(message)
+  const transportedSelectedShift = transportedContext?.requestEntityType === "shift"
+    || transportedContext?.selectedEntityType === "shift";
+  const canonicalSelectedShiftMissingData = hasCanonicalEnvelope
+    && transportedSelectedShift
+    && /\/room\/shifts/.test(transportedContext?.effectiveScreenPath || "")
+    && (
+      /^(?:eksik vardiya bilgilerini|eksik vardiya verisini|vardiyadaki eksik bilgileri)\s+(?:goster|acikla|listele)\??$/.test(normalize(message))
+      || isSelectedShiftMissingDataQuestion(message)
+    );
+  const canonicalSelectedShiftSafeNext = hasCanonicalEnvelope
+    && transportedSelectedShift
+    && /\/room\/shifts/.test(transportedContext?.effectiveScreenPath || "")
+    && isSelectedShiftSafeNextQuestion(message);
+  // A step-by-step follow-up on a live guided surface is still scoped to the
+  // current structural block.  The canonical request parser intentionally
+  // classifies the same wording as broad screen help; preserve the live block
+  // before the broader UI_GUIDANCE family can consume the turn.
+  const liveWorkflowWalkthroughOwnsBlock = liveSurfaceTeachingRequest
+    && hasLiveCanonicalBlock(screenContext)
+    && blockLevelTargetIntent(message, canonicalShape, screenContext);
+  if (liveWorkflowWalkthroughOwnsBlock && canonicalShape.taskType !== "EXPLAIN_CURRENT_TARGET") {
+    canonicalShape = {
+      ...canonicalShape,
+      taskType: "EXPLAIN_CURRENT_TARGET",
+      currentTargetExplanationIntent: true,
+      explicitTaskIntent: true,
+      explicitUserTarget: true,
+      explicitUiGuidance: true,
+      domain: canonicalShape.domain || "SHIFTS",
+      targetEntityType: canonicalShape.targetEntityType || "SHIFT",
+    };
+  }
+  // A live, authorized workflow block owns deictic purpose questions such as
+  // “Burası ne işe yarıyor?”.  The contextual public-type adapter is a
+  // broader route-level projection; letting it run first would erase the
+  // active Step-3 BLOCK target and return generic surface help.
+  const liveWorkflowBlockOwnsContextualPurpose = hasLiveCanonicalBlock(screenContext)
+    && blockLevelTargetIntent(message, canonicalShape, screenContext);
+  const parentLiveLocationHelpQuestion = isParentLiveLocationHelpQuestion(
+    transportedContext?.effectiveScreenPath || "",
+    normalize(message),
+  );
+  const contextualDecision = (hasCanonicalEnvelope && !canonicalSelectedShiftMissingData && !canonicalSelectedShiftSafeNext && !parentLiveLocationHelpQuestion) || hasCrossTenantBoundarySignal(message)
     || (transportedContext?.authorizedRole && transportedContext.authorizedRole !== role)
     ? null
+    : liveWorkflowBlockOwnsContextualPurpose
+      ? null
     : contextualPublicTypeDecision({ message, context: transportedContext });
   if (contextualDecision) {
     return buildContextualPublicTypeSemanticPlan({
@@ -2211,6 +2712,7 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
       canonicalShape,
       conversationRoute,
       decision: contextualDecision,
+      selectedEntity,
     });
   }
   const requestedOwnershipScope = canonicalShape.requestedOwnershipScope || null;
@@ -2234,20 +2736,35 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
     // latest settled product result, then fall back to the task context when
     // no settled result exists.
     const activeTaskPlan = conversationState?.activeGuidedTask?.semanticPlan || null;
-    const activeTaskHasWorkflowEvidence = Boolean(
+    const activeTaskHasWorkflowEvidence = !isStaleCompanyGuidedWorkflowPlan(activeTaskPlan, screenContext) && Boolean(
       activeTaskPlan?.workflowModel
       || activeTaskPlan?.workflowStepReference
       || activeTaskPlan?.workflowStepOrdinal
-      || ["CREATE_SHIFT", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE"].includes(String(activeTaskPlan?.workflowIntent || "").toUpperCase()),
+      || ["CREATE_SHIFT", "OPEN_SHIFT_SURFACE", "OPEN_OFFER_SURFACE", "OPEN_OPERATIONS_PANEL_SURFACE", "OPEN_PERSONNEL_ACCESS_SURFACE", "OPEN_PERSONNEL_LINKS_SURFACE"].includes(String(activeTaskPlan?.workflowIntent || "").toUpperCase()),
     );
-    const previousPlan = activeTaskHasWorkflowEvidence
-      ? activeTaskPlan
-      : conversationState?.lastSettledResult?.semanticPlan
-      || activeTaskPlan
-      || conversationState?.authorizedProductContext?.semanticPlan
-      || conversationState?.lastProductSemanticPlan
-      || conversationState?.lastSemanticPlan
-      || null;
+    const candidatePlans = activeTaskHasWorkflowEvidence
+      ? [
+        activeTaskPlan,
+        conversationState?.lastSettledResult?.semanticPlan,
+        conversationState?.authorizedProductContext?.semanticPlan,
+        conversationState?.lastProductSemanticPlan,
+        conversationState?.lastSemanticPlan,
+      ]
+      : [
+        conversationState?.lastSettledResult?.semanticPlan,
+        activeTaskPlan,
+        conversationState?.authorizedProductContext?.semanticPlan,
+        conversationState?.lastProductSemanticPlan,
+        conversationState?.lastSemanticPlan,
+      ];
+    const previousPlan = candidatePlans.find((candidate) => candidate && !isStaleCompanyGuidedWorkflowPlan(candidate, screenContext))
+      || (canonicalShape.taskType === 'CONTINUE_CURRENT_REASONING'
+        ? candidatePlans.find((candidate) => (
+          candidate
+          && String(candidate.family || '').toUpperCase() === 'UI_GUIDANCE'
+          && String(candidate.workflowIntent || '').toUpperCase() === 'CREATE_SHIFT'
+        ))
+        : null);
     return buildContinuationSemanticPlan({ role, text, conversationRoute, conversationState, screenContext, previousPlan, selectedEntity, canonicalShape });
   }
   if (["OFF_TOPIC_SAFE", "GENERAL_KNOWLEDGE", "LIVE_EXTERNAL_DATA", "UNCLEAR_OR_AMBIGUOUS"].includes(conversationRoute.route)) {
@@ -2331,10 +2848,16 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
       followUp: false,
       previousIntentFamily: conversationState?.lastSemanticPlan?.intentFamily || null,
       typedRequest: safeTypedRequest,
+      canonicalRequest: canonicalInput.request || canonicalRequest || null,
+      roomCostRequest: canonicalShape.roomCostRequest || canonicalInput.request?.roomCostRequest || null,
       typedRequestValidation: validateCanonicalTypedRequest(safeTypedRequest),
     };
   }
-  const temporalMode = collectionStatusDistributionIntent ? "UNKNOWN" : resolveTemporalMode(text);
+  const operationalSituationRead = canonicalShape.taskType === "SITUATION"
+    && String(canonicalShape.domain || "").toUpperCase() === "OPERATIONS";
+  const temporalMode = collectionStatusDistributionIntent || operationalSituationRead
+    ? "UNKNOWN"
+    : resolveTemporalMode(text);
   // A canonical interpretation may explicitly settle the requested-field
   // set (including an intentional empty set).  Downstream planning must not
   // re-read raw text and reintroduce a field/domain that the canonical
@@ -2384,7 +2907,7 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
   const hasSelectedPassengerCountField = canonicalShape.taskType === "COUNT"
     && requestedFields.some((field) => field?.key === "PASSENGER_COUNT");
   if (canonicalShape.taskType === "COUNT" && !hasSelectedPassengerCountField) requestedFields = [];
-  if (["SCREEN_CONTEXT", "SELECTED_RECORD_CONTEXT"].includes(canonicalShape.taskType)) requestedFields = [];
+  if (["SCREEN_CONTEXT", "SELECTED_RECORD_CONTEXT", "NEXT_ACTION"].includes(canonicalShape.taskType)) requestedFields = [];
   const taskSlotsFromCanonicalRequest = (canonicalShape.requestedTasks || []).flatMap((task) => ({
     ISSUE: ["ISSUE"],
     RISK: ["RISK"],
@@ -2418,9 +2941,31 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
   const discourseReferentialFieldLookup = canonicalShape.taskType === "FIELD_LOOKUP"
     && isReferentialRequest(message)
     && !lexicalDomains.length;
-  const entityDomains = canonicalShape.taskType === "COUNT" && canonicalShape.domain
+  const canonicalEntityDomain = {
+    SHIFT: "SHIFTS",
+    VEHICLE: "VEHICLES",
+    DRIVER: "DRIVERS",
+    OFFER: "OFFERS",
+    AGREEMENT: "AGREEMENTS",
+    PERSONNEL: "PERSONNEL",
+    STUDENT: "PERSONNEL",
+    PARENT: "PERSONNEL",
+    SERVICE_REQUEST: "SERVICE_REQUESTS",
+  }[String(canonicalShape.targetEntityType || "").toUpperCase()] || null;
+  const canonicalFinancialRequest = String(canonicalInput.request?.domain || "").toUpperCase() === "FINANCE"
+    && String(canonicalInput.request?.semanticAction?.objectClass || "").toUpperCase() === "FINANCIAL";
+  const canonicalFinancialSurfaceView = canonicalFinancialRequest
+    && canonicalInput.request?.operation === "VIEW_AUTHORIZED_SURFACE"
+    && String(canonicalInput.request?.semanticAction?.actionClass || "").toUpperCase() === "VIEW";
+  const entityDomains = operationHealthSurfaceIssue
+    ? ["OPERATIONS"]
+    : canonicalFinancialRequest
+      ? unique([...resolveScreenDomains(screenContext, role), "FINANCE"])
+    : canonicalShape.taskType === "COUNT" && canonicalShape.domain
     ? [canonicalShape.domain]
-    : lexicalDomains.length ? lexicalDomains : discourseReferentialFieldLookup ? [] : resolveScreenDomains(screenContext, role);
+    : lexicalDomains.length
+      ? unique([...lexicalDomains, ...(canonicalEntityDomain ? [canonicalEntityDomain] : [])])
+      : discourseReferentialFieldLookup ? [] : resolveScreenDomains(screenContext, role);
   // A named same-auth discourse record is a record target, even when its
   // requested operation (risk/cause/next step) is normally screen-scoped.
   // Keep CURRENT_SCREEN for genuinely deictic questions, but do not discard
@@ -2428,7 +2973,9 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
   const screenScopedDecision = canonicalShape.scopeTarget === "CURRENT_SCREEN"
     && ["SCREEN_CONTEXT", "NEXT_ACTION", "PRIORITY", "RISK", "CAUSE", "RESOLUTION"].includes(canonicalShape.taskType)
     && !isDiscourseEntityReference(message)
-    && !hasCanonicalRecordCandidate;
+    && !hasCanonicalRecordCandidate
+    && !canonicalShape.agreementOperationBridgeIntent
+    || operationHealthSurfaceIssue;
   // scopeTarget is frozen by the canonical request.  A ROLE_GLOBAL turn may
   // retain the selected record in conversation memory, but it must not inject
   // that record into this turn's entity set.
@@ -2436,6 +2983,39 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
   let entities = (canonicalShape.taskType === "COUNT" && !hasCanonicalRecordCandidate) || screenScopedDecision || roleGlobalScope
     ? []
     : resolveEntities(message, selectedEntity, conversationState, screenContext, entityDomains);
+  // An agreement operation bridge is a relation request about the currently
+  // selected agreement.  The lexical word "operasyon" legitimately adds the
+  // OPERATIONS domain, but it must not make the selected AGREEMENT record
+  // incompatible and then turn the deictic request into CLARIFY.  Preserve
+  // only the live selected agreement here; authorization and target
+  // resolution remain downstream gates.
+  if (canonicalShape.agreementOperationBridgeIntent
+    && selectedEntity?.entityType === "agreement"
+    && Number(selectedEntity.entityId) > 0
+    && !entities.some((entity) => String(entity?.type || "").toLowerCase() === "agreement" && Number(entity?.id) === Number(selectedEntity.entityId))) {
+    entities = [{
+      type: "agreement",
+      id: Number(selectedEntity.entityId),
+      source: "SCREEN_RECORD",
+    }];
+  }
+  const liveVehicleGpsContext = !screenScopedDecision
+    && canonicalShape.taskType === "FIELD_LOOKUP"
+    && String(canonicalShape.targetEntityType || "").toUpperCase() === "VEHICLE"
+    && requestedFields.some((field) => String(field?.key || "").toUpperCase() === "GPS")
+    && selectedEntity?.entityType === "vehicle"
+    && Number(selectedEntity?.entityId) > 0
+    && !entities.some((entity) => entity.type === "vehicle" && entity.source === "EXPLICIT_QUERY");
+  // The canonical request and live UI selection are the authoritative pair
+  // for a vehicle GPS read.  Do not let a prior shift/vehicle discourse
+  // candidate replace that pair before executor authorization runs.
+  if (liveVehicleGpsContext) {
+    entities = [{
+      type: "vehicle",
+      id: Number(selectedEntity.entityId),
+      source: "SCREEN_RECORD",
+    }];
+  }
   if (!roleGlobalScope && hasCanonicalRecordCandidate && !entities.length) {
     entities = canonicalCandidates.map((candidate) => ({ ...candidate }));
   }
@@ -2489,6 +3069,16 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
     entities = [{ type: canonicalShape.uiContext.selectedType.toLowerCase(), id: canonicalShape.uiContext.selectedId, source: "SELECTED_RECORD_CONTEXT" }];
   }
   const relationshipIntent = resolveRelationshipIntent(text, entities, selectedEntity, conversationState, screenContext, requestedFields);
+  const relationCollectionScope = relationshipIntent?.kind === 'AGREEMENT_TO_SHIFT_COLLECTION'
+    && !relationshipIntent?.fromEntity?.id;
+  // A collection relation has its own authorized source scope.  A stale
+  // selected vehicle/agreement from the screen must not leak into its entity
+  // or field envelope and cause an unrelated GPS/detail sentence to be
+  // appended to the relation answer.
+  if (relationCollectionScope) {
+    entities = [];
+    requestedFields = [];
+  }
   if (relationshipIntent) {
     const targetKey = entityKey(relationshipIntent.toEntity);
     const targetHasIdentity = Boolean(relationshipIntent.toEntity?.id || relationshipIntent.toEntity?.plate);
@@ -2502,7 +3092,7 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
     || selectedTypeText === "offer"
     || lexicalDomains.includes("OFFERS")
     || /\/offers\b|commercial-flow/iu.test(String(screenContext?.path || ""));
-  if (activeOfferContext && canonicalShape.taskType !== "COUNT") {
+  if (!canonicalShape.requestedFieldsAuthoritative && !relationCollectionScope && activeOfferContext && canonicalShape.taskType !== "COUNT") {
     const refreshedFields = removeBusinessDateFieldsForFreshness(
       resolveRequestedFields(text, { inferGenericCommercialValue: true, role }),
       canonicalShape.taskType,
@@ -2513,7 +3103,7 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
     || selectedTypeText === "agreement"
     || lexicalDomains.includes("AGREEMENTS")
     || /\/agreements\b/iu.test(String(screenContext?.path || ""));
-  if (activeAgreementContext && canonicalShape.taskType !== "COUNT") {
+  if (!canonicalShape.requestedFieldsAuthoritative && !relationCollectionScope && activeAgreementContext && canonicalShape.taskType !== "COUNT") {
     const refreshedFields = removeBusinessDateFieldsForFreshness(
       resolveRequestedFields(text, { role }),
       canonicalShape.taskType,
@@ -2533,7 +3123,7 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
   const entityScopedFieldLookup = canonicalShape.taskType === "FIELD_LOOKUP"
     && entities.length > 0
     && (discourseReferentialFieldLookup || canonicalShape.scopeTarget === "SELECTED_RECORD");
-  const domains = canonicalShape.taskType === "SCREEN_CONTEXT"
+  let domains = canonicalShape.taskType === "SCREEN_CONTEXT"
     ? (canonicalShape.explicitUiGuidance && canonicalShape.domain ? [canonicalShape.domain] : [])
     : ["COUNT", "PLAN_REVIEW", "RISK"].includes(canonicalShape.taskType) && canonicalShape.domain
       ? [canonicalShape.domain]
@@ -2553,8 +3143,17 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
     if (current.type === "parent") domains.push("PERSONNEL");
     if (current.type === "organizationPlan") domains.push("ORGANIZATION_PLANS");
     if (current.type === "serviceRequest") domains.push("SERVICE_REQUESTS");
+    if (current.type === "notification") domains.push("NOTIFICATIONS");
   }
   for (const field of requestedFields) domains.push(field.domain);
+  // Entity resolution can re-add SERVICE_REQUESTS after lexical domain
+  // normalization. Apply the same COMPANY market/offer bridge at the final
+  // domain envelope so authorization cannot reject an otherwise authorized
+  // commercial read because the user's wording mentioned its source request.
+  const companyOfferBridgeIntent = isCompanyOfferBridgeRequest(text, role)
+    && domains.includes("SERVICE_REQUESTS")
+    && domains.includes("OFFERS");
+  if (companyOfferBridgeIntent) domains = domains.filter((domain) => domain !== "SERVICE_REQUESTS");
   const allDomainRequest = hasAny(text, ["tüm domain", "tum domain"]);
   const requestOnly = domains.includes("SERVICE_REQUESTS")
     && !allDomainRequest
@@ -2564,6 +3163,19 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
       "plan", "organizasyon", "maliyet", "bütçe", "butce",
     ]);
   let requestedDomains = unique(requestOnly ? domains.filter((domain) => domain === "SERVICE_REQUESTS") : domains);
+  if (canonicalFinancialRequest) requestedDomains = ["FINANCE"];
+  if (relationCollectionScope) requestedDomains = unique([...requestedDomains, "SHIFTS"]);
+  // A bare, record-less risk request is scoped to the active surface.  The
+  // risk word alone must not manufacture OPERATIONS (or BUDGET downstream)
+  // when the current surface has no risk evidence, especially on shared
+  // notifications/logs/feedback screens. Explicit financial evidence keeps
+  // its canonical domain and selected records keep their entity domain.
+  if (canonicalShape.taskType === "RISK"
+    && !canonicalShape.domain
+    && canonicalShape.scopeTarget === "CURRENT_SCREEN"
+    && entities.length === 0) {
+    requestedDomains = unique(resolveScreenDomains(screenContext, role));
+  }
   if (roomServiceProcurementSignal) requestedDomains = [];
   const canonicalHelpOnly = !roomRequestBoundarySignal && (canonicalRoleExplanation
     || (canonicalRequest?.operation === "GENERAL_INFORMATION"
@@ -2592,6 +3204,7 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
       parent: "PERSONNEL",
       organizationPlan: "ORGANIZATION_PLANS",
       serviceRequest: "SERVICE_REQUESTS",
+      notification: "NOTIFICATIONS",
     }[current.type])).filter(Boolean);
     requestedDomains = unique([...groundedEntityDomains, ...requestedFields.map((field) => field.domain)]);
   }
@@ -2632,15 +3245,25 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
   const fieldLookupFamily = canonicalShape.taskType === "FIELD_LOOKUP"
     && requestedDomains.includes("OPERATIONS")
     && requestedFields.some((field) => field.key === "GPS")
-    && (hasAny(text, ["rota", "gps"]) || approvedLastLocationInfoTimeLookup || approvedDriverPhoneLocationSignalLookup)
+    && (hasAny(text, ["rota", "gps", "konum"]) || approvedLastLocationInfoTimeLookup || approvedDriverPhoneLocationSignalLookup)
     ? "LOCATION_GPS"
     : "ENTITY_LOOKUP";
   const shapeFamily = canonicalRoleExplanation
     ? "ROLE_EXPLANATION_HELP"
     : canonicalShape.generalProductHelpIntent && canonicalShape.scopeTarget === "ROLE_GLOBAL"
       ? "GENERIC_PRODUCT_HELP"
+    : canonicalFinancialSurfaceView
+      ? "SCREEN_CONTEXT"
     : canonicalRecordView
       ? "RECORD_DETAILS"
+    : canonicalShape.taskType === "SCREEN_CONTEXT"
+      && canonicalShape.screenContextIntent
+      && canonicalShape.screenKnowledgeIntent
+      && !canonicalShape.workflowIntent
+      && String(canonicalInput.request?.operation || "").toUpperCase() === "EXPLAIN_CURRENT_SURFACE"
+      ? "SCREEN_CONTEXT"
+    : canonicalShape.taskType === "NEXT_ACTION"
+      ? "NEXT_STEP"
     : canonicalShape.explicitUiGuidance
       ? "UI_GUIDANCE"
     : canonicalShape.screenKnowledgeKind === "SCREEN_RISK"
@@ -2672,7 +3295,9 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
   }[canonicalShape.taskType] || null;
   const resolvedFamily = roomServiceProcurementSignal
     ? "UNCLEAR_OR_AMBIGUOUS"
-    : shapeFamily || (requestedTaskSlots.includes("RISK") && requestedTaskSlots.includes("EVIDENCE") && requestedTaskSlots.includes("NEXT_STEP")
+    : relationshipIntent
+      ? "RELATION_LOOKUP"
+      : shapeFamily || (requestedTaskSlots.includes("RISK") && requestedTaskSlots.includes("EVIDENCE") && requestedTaskSlots.includes("NEXT_STEP")
     ? "RISK_RANKING"
     : resolveFamily({ text, domains: requestedDomains, entity, entities, temporalMode, relationshipIntent, requestedFields }));
   const family = canonicalHelpOnly
@@ -2834,7 +3459,7 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
     // STYLE operates exclusively on the already-authorized settled result.
     // It preserves context for presentation, but cannot cause a new product
     // query at the plan/executor boundary.
-    retrieveProductData: deniedDomains.length === 0 && !styleOnlyRequest,
+    retrieveProductData: deniedDomains.length === 0 && !roleTargetDenied && !styleOnlyRequest,
     requestedOwnershipScope,
   });
   const liveWorkflowActive = Boolean(
@@ -2855,7 +3480,22 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
       ? (styleTargetPlan?.semanticEntityType || entities[0]?.type?.toUpperCase() || semanticEntityType)
       : semanticEntityType,
     currentAssignmentIntent: Boolean(canonicalShape.currentAssignmentIntent),
-    workflowIntent: canonicalShape.workflowIntent || null,
+    crossRoleImpactIntent: Boolean(
+      canonicalShape.crossRoleImpactIntent
+      || typedRequest.crossRoleImpactIntent,
+    ),
+    workflowIntent: canonicalShape.workflowIntent
+      || (companyOfferBridgeIntent ? "OPEN_OFFER_SURFACE" : null),
+    capabilityIntent: canonicalShape.capabilityIntent
+      || canonicalShape.workflowCapabilityIntent
+      || previousPlan?.capabilityIntent
+      || previousPlan?.workflowCapabilityIntent
+      || null,
+    workflowCapabilityIntent: canonicalShape.workflowCapabilityIntent
+      || canonicalShape.capabilityIntent
+      || previousPlan?.workflowCapabilityIntent
+      || previousPlan?.capabilityIntent
+      || null,
     roleCapabilityBoundary: canonicalShape.roleCapabilityBoundary || null,
     generalProductHelpIntent: Boolean(canonicalShape.generalProductHelpIntent || typedRequest.generalProductHelpIntent),
     productTeachingIntent: Boolean(canonicalShape.productTeachingIntent || typedRequest.productTeachingIntent),
@@ -2966,6 +3606,8 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
     followUp: hasFollowUpContext,
     previousIntentFamily: styleOnlyRequest ? (styleTargetPlan?.intentFamily || styleTargetPlan?.family || null) : (previousPlan?.intentFamily || null),
     typedRequest,
+    canonicalRequest: canonicalInput.request || canonicalRequest || null,
+    roomCostRequest: canonicalShape.roomCostRequest || typedRequest.roomCostRequest || canonicalInput.request?.roomCostRequest || null,
     typedRequestValidation: validateCanonicalTypedRequest(typedRequest),
     requestState: {
       requestedEntitySet: entities,
@@ -2986,4 +3628,4 @@ export function resolveSemanticIntent({ message, user, selectedEntity: incomingS
   };
 }
 
-export { INTENT_FAMILIES, ROLE_DOMAIN_CAPABILITIES };
+export { INTENT_FAMILIES, ROLE_DOMAIN_CAPABILITIES, resolveDomains };

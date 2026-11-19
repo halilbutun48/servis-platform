@@ -19,11 +19,12 @@ export function uiStatusFromAt(atIso) {
 
 // UI standard: LIVE | STALE | OFFLINE
 export function uiStatusFromVehicle(v) {
-  // ✅ 1) backend gpsState varsa onu esas al (transition gate)
-  const gs = String(v?.gpsState?.lastUiStatus || "").toUpperCase();
-  if (gs === "LIVE" || gs === "STALE" || gs === "OFFLINE") return gs;
+  const canonical = String(v?.gpsCanonicalStatus || "").toUpperCase();
+  if (canonical === "LIVE" || canonical === "STALE" || canonical === "OFFLINE") return canonical;
 
-  // ✅ 2) gpsLast.at varsa yaşa göre hesapla
+  // Freshness is determined from the timestamp when it exists. A cached
+  // gpsState can outlive its last GPS sample and must not make old telemetry
+  // appear LIVE on the map or in the selected-record context.
   const atIso =
     v?.gpsLast?.at ||
     v?.gpsLast?.ts ||
@@ -34,7 +35,11 @@ export function uiStatusFromVehicle(v) {
   const byAt = uiStatusFromAt(atIso);
   if (byAt) return byAt;
 
-  // ✅ 3) Hiç GPS yoksa LIVE demeyelim (haritada görünmez, OFFLINE doğru)
+  // With no timestamp, retain a bounded provider state if one exists; never
+  // synthesize LIVE from the presence of a vehicle record alone.
+  const gs = String(v?.gpsState?.lastUiStatus || "").toUpperCase();
+  if (gs === "LIVE" || gs === "STALE" || gs === "OFFLINE") return gs;
+
   return "OFFLINE";
 }
 

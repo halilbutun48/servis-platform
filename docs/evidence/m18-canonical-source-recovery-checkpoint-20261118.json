@@ -1,0 +1,127 @@
+{
+  "schema": "m18.canonical-source-recovery.checkpoint.v1",
+  "continuation": "canonical-source-recovery",
+  "recordedAt": "2026-11-18T00:00:00+03:00",
+  "scope": "Task 1 inventory plus bounded Task 2 Prisma source recovery and Task 3 exact provenance correction; no product data, migration application, reset, cleanup or runtime mutation",
+  "repository": {
+    "root": "D:/servis-platform",
+    "branch": "m90d1_web_lint_inventory",
+    "head": "3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+    "statusCounts": {
+      "porcelainEntries": 4602,
+      "modified": 340,
+      "deleted": 1,
+      "untracked": 4261
+    },
+    "deletedTrackedPath": "web/public/vite.svg",
+    "worktreeDecision": "PRESERVE_ALL_EXISTING_WIP_AND_EVIDENCE; no reset/clean/stash/restore/delete"
+  },
+  "runtime": {
+    "composeProject": "seferpakt",
+    "composeFile": "D:/servis-platform/infra/docker-compose.clean-demo.yml",
+    "composeLifecycle": "canonical-compose-v1",
+    "containers": [
+      {"name": "seferpakt-api", "image": "seferpakt-clean-demo-api:cont365-cross-role-sync-v4", "status": "running/healthy"},
+      {"name": "seferpakt-frontend", "image": "seferpakt-clean-demo-frontend:cont351-copilot-context-final", "status": "running/healthy"},
+      {"name": "seferpakt-db-1", "image": "postgres:16", "status": "running/healthy"},
+      {"name": "seferpakt-solver-1", "image": "seferpakt-clean-demo-solver:local", "status": "running"},
+      {"name": "seferpakt-osrm-1", "image": "osrm/osrm-backend:latest", "status": "running"},
+      {"name": "seferpakt-redis-1", "image": "redis:7", "status": "running/healthy"}
+    ],
+    "database": "seferpakt_clean_demo.public",
+    "migrationStatus": "runtime reports 68 migrations found and database schema is up to date"
+  },
+  "migrationRecoveryCandidates": [
+    {"path": "backend/prisma/migrations/20261020012952_room_cost_ledger_foundation_01/migration.sql", "bytes": 8193, "sha256": "4eacc9ed9388756b8274045aef2e91ba8db369d78b6d00b5a5dba22ca1521607", "db": "finished/checksum-match", "classification": "USED_CANONICAL", "owner": "backend/prisma/migrations", "retention": "retain byte-for-byte"},
+    {"path": "backend/prisma/migrations/20261020090000_room_cost_allocation_01/migration.sql", "bytes": 3068, "sha256": "32e588d187a3259004d68cdaeaf7c1d720e7039b38781f5f1f079cdce28fbaa3", "db": "finished/checksum-match", "classification": "USED_CANONICAL", "owner": "backend/prisma/migrations", "retention": "retain byte-for-byte"},
+    {"path": "backend/prisma/migrations/20261020161000_room_cost_entry_draft_batch_id/migration.sql", "bytes": 288, "sha256": "8bdde405afafe102f9e58673bf86ab4733dcca661b379922b1762cfbcc8ff884", "db": "finished/checksum-match", "classification": "USED_CANONICAL", "owner": "backend/prisma/migrations", "retention": "retain byte-for-byte"},
+    {"path": "backend/prisma/migrations/20261023090000_invoice_collection_foundation_v1/migration.sql", "bytes": 3190, "sha256": "c8b70c875e8f746829f09409ba08514d3a8374c0349e8d12876a600390235d3f", "db": "finished/checksum-match", "classification": "USED_CANONICAL", "owner": "backend/prisma/migrations", "retention": "retain byte-for-byte"},
+    {"path": "backend/prisma/migrations/20261025120000_room_cost_vat_classification_part1/migration.sql", "bytes": 503, "sha256": "71a6dd6d48b044f4d3215c67108eee04e0a630867966b27fbad65fa8ca815680", "db": "finished/checksum-match", "classification": "USED_CANONICAL", "owner": "backend/prisma/migrations", "retention": "retain byte-for-byte"},
+    {"path": "backend/prisma/migrations/20261025190000_hakedis_income_period_correction/migration.sql", "bytes": 1642, "sha256": "9903e8ef33c928df0eed11df599da53d36b3cc8a0b124ea93090c8b8cc12b12c", "db": "finished/checksum-match", "classification": "USED_CANONICAL", "owner": "backend/prisma/migrations", "retention": "retain byte-for-byte"},
+    {"path": "backend/prisma/migrations/20261025200000_room_accounting_period_lifecycle_foundation/migration.sql", "bytes": 1420, "sha256": "6209a5fca633098ea92f4857595d2f31659e367a520d745e30665743a7445eeb", "db": "finished/checksum-match", "classification": "USED_CANONICAL", "owner": "backend/prisma/migrations", "retention": "retain byte-for-byte"},
+    {"path": "backend/prisma/migrations/20261026010000_room_cost_accrual_settlement_bridge_01/migration.sql", "bytes": 1986, "sha256": "cfb3978f71c25d7d8f110334f25351d8d922912d2ec642d8faa8a909067eb08c", "db": "finished/checksum-match", "classification": "USED_CANONICAL", "owner": "backend/prisma/migrations", "retention": "retain byte-for-byte"},
+    {"path": "backend/prisma/migrations/20261026093000_room_finance_vat_and_empty_distance_completion/migration.sql", "bytes": 548, "sha256": "24db9f9e78a96f0faf6e0121d5db3464186f04a7b370a6d161036e6fef497140", "db": "finished/checksum-match", "classification": "USED_CANONICAL", "owner": "backend/prisma/migrations", "retention": "retain byte-for-byte"},
+    {"path": "backend/prisma/migrations/20261029110000_company_budget_plan_agreement_scope/migration.sql", "bytes": 1298, "sha256": "694187932ca17d6c4af66c1152cb10175e45c80f77ab235172179696b287eda1", "db": "finished/checksum-match", "classification": "USED_CANONICAL", "owner": "backend/prisma/migrations", "retention": "retain byte-for-byte"},
+    {"path": "backend/prisma/migrations/20261108100000_vehicle_hgs_class/migration.sql", "bytes": 191, "sha256": "c1008c1b218c23c47c26d94ea6248105c58789d68168916ffc07e98a661cc363", "db": "finished/checksum-match", "classification": "USED_CANONICAL", "owner": "backend/prisma/migrations", "retention": "retain byte-for-byte"},
+    {"path": "backend/prisma/migrations/20261115110000_guided_batch_idempotency_v1/migration.sql", "bytes": 927, "sha256": "21a1da4d6a5fff30624e4b2847a2734ba6520a08a159b7d005668de0b0c794ed", "db": "finished/checksum-match; one historical rolled-back row plus one successful row", "classification": "USED_CANONICAL", "owner": "backend/prisma/migrations", "retention": "retain byte-for-byte"}
+  ],
+  "migrationTableReconciliation": {
+    "rows": 69,
+    "distinctMigrationNames": 68,
+    "finishedAndNotRolledBack": 68,
+    "rolledBackRows": 1,
+    "interpretation": "The 68-migration runtime count is the successful distinct/applied set; the extra row is Prisma rollback history for guided_batch_idempotency_v1, not a second source migration."
+  },
+  "schemaRecoveryCandidate": {
+    "path": "backend/prisma/schema/roomCost.prisma",
+    "bytes": 11457,
+    "sha256": "e320d9f56285d01dd5c3e9a2717091ce70e83d30cad6c5955b2e0b139356ff62",
+    "git": "untracked/no prior Git history",
+    "classification": "USED_CANONICAL",
+    "owner": "backend/prisma/schema",
+    "consumer": "canonicalPrismaSchemaFiles() recursively loads every .prisma under backend/prisma except migrations; Prisma CLI validates and generates from the directory",
+    "declaredEnums": 12,
+    "declaredModels": ["RoomCostCategory", "RoomCostEntry", "RoomCostSettlement", "RoomCostAllocationLine", "RoomAccountingPeriod", "UserCapabilityGrant"],
+    "runtimeProof": "present in the running API image and required by the RoomCost models referenced by tenant, identity, fleet, commercial and operations modules"
+  },
+  "seferAbiRecoveryCandidates": [
+    {"path": "backend/src/ai/chat/canonicalSemanticRequest.js", "sha256": "e8d8aaf87c843c09afebd5bb4941ade72b2c3589dedf16883a38edf09879ef61", "git": "tracked modified", "classification": "USED_CANONICAL_PROTECTED_WIP", "consumer": "API semantic request path; CONT-365 runtime image/evidence"},
+    {"path": "backend/src/ai/chat/semanticIntentPlanner.js", "sha256": "863cbb397e9421289708274632eb0b3f501eb648be39280d04f58dfe7d164bd1", "git": "tracked modified", "classification": "USED_CANONICAL_PROTECTED_WIP", "consumer": "API intent planning path; CONT-365 runtime image/evidence"},
+    {"path": "backend/src/ai/chat/helpComposer.js", "sha256": "8c3ece1ffd3cd7927d844b3a034d826e9fdab9c38d2d3c077ebbe54b531e396", "git": "tracked modified", "classification": "USED_CANONICAL_PROTECTED_WIP", "consumer": "API visible response/help path; CONT-365 runtime image/evidence"},
+    {"path": "backend/src/ai/service.js", "sha256": "d838fca2b11e0778d3bafdfc5f2660b57f5dc0e36b6f025e0be026f39a3d657d", "git": "tracked modified", "classification": "USED_CANONICAL_PROTECTED_WIP", "consumer": "API assistant orchestration path; CONT-365 runtime image/evidence"},
+    {"path": "backend/src/ai/chat/crossRoleSynchronizationKnowledge.continuation365.test.js", "sha256": "f78ea2214aa4aeb7a518e81e7df4db44309f95b198004c5704fe431c87a9fbc3", "git": "untracked", "classification": "EVIDENCE_PROTECTED", "consumer": "targeted CONT-365 regression for cross-role knowledge"}
+  ],
+  "task2SourceRecovery": {
+    "status": "BOUNDED_SOURCE_RECOVERY_COMPLETE",
+    "stagedSourceCount": 13,
+    "stagedSources": "12 checksum-matched canonical migration.sql files plus backend/prisma/schema/roomCost.prisma",
+    "stagingPolicy": "exact paths only; no bulk add",
+    "prismaModularizationCheck": "PASS",
+    "prismaVerify": "PASS at HEAD 3af6c1ac007cacf884ccdbb0bb50858f8eed486f",
+    "runtimeMigrationStatus": "PASS: 68 distinct successful migrations up to date; one rolled-back history row retained",
+    "workingTreeCommit": "not created; staged source remains protected WIP until final user-authorized integration"
+  },
+  "task3ExactProvenance": {
+    "status": "BOUNDED_CORRECTION_COMPLETE_WITH_REMAINING_DEBT",
+    "manifest": "backend/scripts/lib/m18CopilotUiElementAnchorOwnershipManifest.json",
+    "correctedProductionSources": [
+      "backend/src/ai/chat/canonicalSemanticRequest.js",
+      "backend/src/ai/chat/semanticIntentPlanner.js",
+      "backend/src/ai/chat/helpComposer.js",
+      "backend/src/ai/service.js"
+    ],
+    "addedEvidenceHarness": "backend/src/ai/chat/crossRoleSynchronizationKnowledge.continuation365.test.js",
+    "proof": "CONT-365 Sefer Abi product-knowledge reconciliation; exact raw/normalized SHA-256 matches current files",
+    "ownershipCheckAfterCorrection": {
+      "touched": 1061,
+      "owned": 1061,
+      "accepted": 1061,
+      "identityRegistered": 1061,
+      "lifecycleClassified": 1061,
+      "unownedDelta": 767,
+      "unexplained": 557,
+      "evidenceMatrixReconciled": 30,
+      "evidenceMatrixUnresolved": 557,
+      "negativeCasesPass": 10,
+      "positiveCasesPass": 7,
+      "staleTouched": 64,
+      "changedPathEquation": "4642=969+557+4+3085+27"
+    },
+    "targetedSeferAbiRegression": "PASS: 27/27",
+    "remainingRootCause": "557 changed paths remain outside the bounded M18 ownership/evidence matrix; they are not asserted as safe or reclassified by this package. 64 stale touched paths remain historical/current-baseline debt. No wildcard, bypass, hash refresh, deletion or reset performed."
+  },
+  "otherWorktree": {
+    "classification": "UNRESOLVED_PRESERVE",
+    "reason": "4261 untracked paths, 340 modified paths and one tracked deletion cannot be safely classified by aggregate status alone; generated logs, browser evidence, protected WIP and product source remain untouched for the next provenance package",
+    "noRemovalPerformed": true
+  },
+  "checks": {
+    "canonicalComposeRuntimeIdentity": "PASS",
+    "apiMigrationStatus": "PASS: 68 migrations found; database schema is up to date",
+    "runtimePresenceOf12MigrationsAndRoomCost": "PASS",
+    "migrationChecksumComparison": "PASS for all 12 candidates",
+    "localPrismaValidate": "PASS with isolated DATABASE_URL placeholder; first invocation used an incorrect relative path and produced no repository mutation",
+    "repositoryExit": "OPEN; this checkpoint does not claim package-ownership, Prisma parity, verify:repo or verify:final"
+  },
+  "nextTask": "Task 4: bounded clean-checkout reconstruction from HEAD plus exact staged source patch; then run affected gates. Do not claim Repository Exit closed while 557 unexplained paths, 64 stale touched paths and any Prisma parity/current-head/migration-history failure remain."
+}

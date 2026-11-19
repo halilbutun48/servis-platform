@@ -11,6 +11,7 @@ import { applyAcceptedBoardingChange } from "../services/boardingChangeApplicati
 import { buildBoardingChangeRouteRefreshState } from "../services/boardingChangeRouteRefresh.js";
 import { buildBoardingChangeRequestView, loadBoardingChangeRequestAuditMap } from "../services/boardingChangeRequestView.js";
 import { emitShift } from "./shifts/helpers.js";
+import { clearResponseCache } from "../utils/responseCache.js";
 
 /**
  * PickupRequestStatus enum:
@@ -24,9 +25,11 @@ import { emitShift } from "./shifts/helpers.js";
 
 const DEFAULT_CLOSE_STATUS = "ACCEPTED";
 const ALLOWED_CLOSE = new Set(["ACCEPTED", "CANCELLED"]);
-const BOARDING_CHANGE_DECISION_ACTIONS = [
+const BOARDING_CHANGE_REQUEST_AUDIT_ACTIONS = [
   "BOARDING_CHANGE_REQUEST_CREATE",
   "BOARDING_CHANGE_REQUEST_AUTO_ACCEPTED",
+];
+const BOARDING_CHANGE_DECISION_ACTIONS = [
   "BOARDING_CHANGE_REQUEST_CLOSE_ACCEPT",
   "BOARDING_CHANGE_REQUEST_CLOSE_CANCEL",
 ];
@@ -671,7 +674,7 @@ export function requestsRouter(io) {
             where: {
               entity: "PickupRequest",
               entityId: { in: ids },
-              action: { in: [...BOARDING_CHANGE_DECISION_ACTIONS, BOARDING_CHANGE_APPLY_ACTION] },
+              action: { in: [...BOARDING_CHANGE_REQUEST_AUDIT_ACTIONS, ...BOARDING_CHANGE_DECISION_ACTIONS, BOARDING_CHANGE_APPLY_ACTION] },
             },
             orderBy: { createdAt: "desc" },
           })
@@ -680,8 +683,11 @@ export function requestsRouter(io) {
       for (const row of audits) {
         const key = Number(row?.entityId || 0);
         if (!key) continue;
-        const current = auditMap.get(key) || { decisionAudit: null, applyAudit: null };
+        const current = auditMap.get(key) || { requestAudit: null, decisionAudit: null, applyAudit: null };
         const action = String(row?.action || "");
+        if (!current.requestAudit && BOARDING_CHANGE_REQUEST_AUDIT_ACTIONS.includes(action)) {
+          current.requestAudit = row;
+        }
         if (!current.decisionAudit && BOARDING_CHANGE_DECISION_ACTIONS.includes(action)) {
           current.decisionAudit = row;
         }
@@ -693,7 +699,10 @@ export function requestsRouter(io) {
 
       return res.json(items.map((item) => {
         const bucket = auditMap.get(Number(item.id || 0)) || {};
-        const meta = bucket.decisionAudit?.meta || bucket.applyAudit?.meta || {};
+        const meta = {
+          ...(bucket.requestAudit?.meta || {}),
+          ...(bucket.decisionAudit?.meta || {}),
+        };
         const applyMeta = bucket.applyAudit?.meta || {};
         const closeState = String(meta.closeStatus || "").toUpperCase();
         const derivedDecisionState = closeState === "ACCEPTED"
@@ -959,6 +968,11 @@ export function requestsRouter(io) {
             : `${decisionOwnerLabel} talebi reddetti.`,
         },
       });
+
+      clearResponseCache("dashboard-bulk:company-operations:");
+      clearResponseCache("dashboard-bulk:school-operations:");
+      clearResponseCache("dashboard-bulk:room-operation-health:");
+      clearResponseCache("dashboard-bulk:actionable-events:");
 
       await emitBoardingChangeNotifications({
         io,

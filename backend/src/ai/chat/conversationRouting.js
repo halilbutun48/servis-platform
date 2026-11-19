@@ -1,4 +1,5 @@
 import { evaluateGeneralArithmeticRequest, generalCreativeOutputShape, hasLiveWorkflowGroundingReference, inferCanonicalSemanticRequest, inferRequestedOwnershipScope, isExplicitRoleHelpIntent, isGenericProductHelpIntent, isGeneralArithmeticRequest, isGeneralCreativeOutputVocabularyRequest } from "./canonicalSemanticRequest.js";
+import { hasBoardingChangeRequestEntrySignal } from "./intentRouterCore.js";
 
 export { isExplicitRoleHelpIntent, isGenericProductHelpIntent };
 
@@ -137,6 +138,17 @@ export function hasCrossTenantBoundarySignal(value) {
     || hasAny(text, ["başka tenant", "baska tenant", "diğer tenant", "diger tenant", "farklı tenant", "farkli tenant", "tenant dışı", "tenant disi", "başka şirketin", "baska sirketin", "başka firmanın", "baska firmanin"]);
 }
 
+// An explicit request to bypass the user's own authority or a KVKK boundary
+// is terminal even when the current role normally has broad read access. Do
+// not let words such as "aç" and "kullanıcı" turn it into a navigation request.
+function hasExplicitAuthorizationBoundarySignal(value) {
+  const text = normalize(value);
+  if (!text) return false;
+  const authorityBoundary = /(?:yetkim|iznim|izinim|yetki(?:m|si)?).{0,28}(?:dis(?:indaki|inda)|harici|otesi|olmayan)/iu.test(text);
+  const kvkkBoundary = /(?:kvkk|kisisel\s+veri).{0,36}(?:kapsam(?:i)?\s+dis(?:inda|indaki)|dis(?:indaki|inda)|harici)/iu.test(text);
+  return authorityBoundary || kvkkBoundary;
+}
+
 function hasLiveExternalSignal(text) {
   return hasAny(text, LIVE_EXTERNAL_WORDS)
     && !hasAny(text, ["bildirim", "kayıt", "kayit", "operasyon", "vardiya", "sözleşme", "sozlesme"]);
@@ -248,7 +260,8 @@ function hasInternalMaterialRequest(text) {
     || /(?:hata|error|exception)\p{L}*.{0,28}(?:detay|ayrinti|rapor|log)\p{L}*/iu.test(normalized)
     || /(?:ic|internal)\s+(?:baglam|context|durum|state)\p{L}*/iu.test(normalized)
     || /(?:gizli|secret|token|sifre|password|api\s+key)\p{L}*/iu.test(normalized);
-  const disclosure = hasAny(text, ["ver", "göster", "goster", "dök", "dok", "paylaş", "paylas", "çıkar", "cikar"]);
+  const disclosure = hasAny(text, ["ver", "göster", "goster", "dök", "dok", "paylaş", "paylas", "çıkar", "cikar"])
+    || /(?:gorebilir|bakabilir|erisebilir|ogrenebilir)\b/iu.test(normalized);
   return material && disclosure;
 }
 
@@ -562,11 +575,10 @@ export function resolveConversationRoute({ message, user: _user, conversationSta
   const hasCanonicalV3Request = canonicalRequestValue?.version === "SEFER-ABI-CANONICAL-REQUEST-V3";
   const canonicalShape = providedCanonicalShape
     || (hasCanonicalV3Request ? null : inferCanonicalSemanticRequest({ message, screenContext, conversationState }));
-  const canonicalRoute = resolveCanonicalConversationRoute({ canonicalRequest, canonicalShape, hasContext, hasRetainedContext });
-  if (canonicalRoute) return canonicalRoute;
-  const commercialFieldAlias = hasCommercialFieldAliasSignal(text);
-  const genericCommercialValueLookup = hasGenericCommercialValueLookupSignal(text);
-  const offerContext = hasOfferContext(conversationState, screenContext);
+  // Protected-field disclosure must be decided before canonical product
+  // routing. A screen-bound question such as "şifreleri görebilir miyim?"
+  // still requests secret material and must never fall through to the generic
+  // product route merely because the user is on a management screen.
   if (hasInternalMaterialRequest(text)) {
     return {
       route: "OFF_TOPIC_SAFE",
@@ -580,9 +592,41 @@ export function resolveConversationRoute({ message, user: _user, conversationSta
       retrieveProductData: false,
     };
   }
+  if (hasExplicitAuthorizationBoundarySignal(text)) {
+    return {
+      route: "AUTHORIZATION_NEGATIVE",
+      dialogueTopic: "PRODUCT_AUTHORIZATION",
+      reason: "EXPLICIT_AUTHORIZATION_BOUNDARY_LANGUAGE",
+      hasContext,
+      productContextHint: "NONE",
+      retrieveProductData: false,
+    };
+  }
   if (hasCrossTenantBoundarySignal(text)) {
     return { route: "AUTHORIZATION_NEGATIVE", dialogueTopic: "PRODUCT_AUTHORIZATION", reason: "CROSS_TENANT_SCOPE_LANGUAGE", hasContext };
   }
+  // The live Personel/Parent boarding-request chips are canonical product
+  // actions even when the short chip text is the only user message. Resolve
+  // this route before the broad canonical fallback, which otherwise treats
+  // "Bugün binmeyeceğim talebi oluştur" as an untyped/off-topic sentence and
+  // loses the selected service-request context.
+  if (hasBoardingChangeRequestEntrySignal(text)
+    && /\/personel\/(?:live|my)|\/parent\/live/iu.test(String(screenContext?.path || ""))) {
+    return {
+      route: hasContext ? "RETURN_TO_PRODUCT_TASK" : "PRODUCT_TASK",
+      dialogueTopic: "PRODUCT",
+      reason: "BOARDING_CHANGE_REQUEST_ENTRY_SIGNAL",
+      hasContext,
+      primaryTask: "BOARDING_CHANGE_REQUEST_ENTRY",
+      productContextHint: "ACTIVE_PRODUCT_CONTEXT",
+      retrieveProductData: true,
+    };
+  }
+  const canonicalRoute = resolveCanonicalConversationRoute({ canonicalRequest, canonicalShape, hasContext, hasRetainedContext });
+  if (canonicalRoute) return canonicalRoute;
+  const commercialFieldAlias = hasCommercialFieldAliasSignal(text);
+  const genericCommercialValueLookup = hasGenericCommercialValueLookupSignal(text);
+  const offerContext = hasOfferContext(conversationState, screenContext);
   if (isGenericProductHelpIntent(message)
     && !canonicalShape.liveWorkflowGrounded
     && !hasLiveWorkflowGroundingReference(message, screenContext, conversationState)) {

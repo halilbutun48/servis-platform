@@ -19,6 +19,28 @@ import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
 import { findReservationConflictForRange } from "../services/reservationConflict.js";
 import logger from "../lib/logger.js";
 
+export function selectDriverRouteShift(rows, now = new Date()) {
+  const candidates = (rows ?? []).filter(Boolean);
+  const nowMs = now instanceof Date ? now.getTime() : new Date(now).getTime();
+  const timeMs = (value) => new Date(value).getTime();
+  const startMs = (row) => timeMs(row.startAt);
+  const endMs = (row) => timeMs(row.endAt);
+
+  const active = candidates
+    .filter((row) => row.status === "ACTIVE" || (startMs(row) <= nowMs && nowMs <= endMs(row)))
+    .sort((a, b) => Number(b.status === "ACTIVE") - Number(a.status === "ACTIVE") || startMs(a) - startMs(b));
+  if (active[0]) return active[0];
+
+  const upcoming = candidates
+    .filter((row) => startMs(row) > nowMs)
+    .sort((a, b) => startMs(a) - startMs(b));
+  if (upcoming[0]) return upcoming[0];
+
+  return candidates
+    .slice()
+    .sort((a, b) => endMs(b) - endMs(a) || startMs(b) - startMs(a))[0] ?? null;
+}
+
 // M72: audit helper (must never break ops)
 async function audit(prisma, { actorUserId, actorRole, action, entity, entityId, meta }) {
   try {
@@ -448,7 +470,7 @@ export function driverRouter(io) {
     const driver = await prisma.driver.findFirst({ where: { userId: u.id } });
     if (!driver) return res.json({ mode: "NO_DRIVER_PROFILE" });
 
-    const shift = await prisma.shift.findFirst({
+    const shifts = await prisma.shift.findMany({
       where: { driverId: driver.id, status: { in: ["APPROVED", "ACTIVE"] } },
       include: {
         vehicle: { include: { gpsLast: true, gpsState: true } },
@@ -473,8 +495,9 @@ export function driverRouter(io) {
         stops: { include: { _count: { select: { assignments: true } } }, orderBy: { order: "asc" } },
         progress: true,
       },
-      orderBy: { startAt: "desc" },
+      orderBy: { startAt: "asc" },
     });
+    const shift = selectDriverRouteShift(shifts, new Date());
 
     if (!shift) return res.json({ mode: "NO_ACTIVE_SHIFT" });
     const routeVisibilityByShiftId = await loadDriverBoardingChangeRouteEffects({ shiftIds: [shift.id] });
@@ -552,7 +575,7 @@ export function driverRouter(io) {
 
     const shift = await prisma.shift.findUnique({
       where: { id: shiftId },
-      select: { id: true, status: true, driverId: true, companyId: true, roomId: true, vehicleId: true, startAt: true, endAt: true },
+      select: { id: true, status: true, driverId: true, companyId: true, roomId: true, vehicleId: true, agreementId: true, startAt: true, endAt: true },
     });
     if (!shift) return res.status(404).json({ error: "Shift not found" });
     if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
@@ -567,6 +590,7 @@ export function driverRouter(io) {
         startAt: shift.startAt,
         endAt: shift.endAt,
         excludeShiftId: shift.id,
+        excludeAgreementId: shift.agreementId,
       });
       if (conflict) return res.status(409).json(conflict);
 

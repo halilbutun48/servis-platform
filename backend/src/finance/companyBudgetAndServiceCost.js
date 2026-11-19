@@ -2,8 +2,12 @@ import { safeHashId, buildIssues, compactText, normalizeCurrencyCode, roundMinor
 import { describeFinancialSurface, getFinancialOperationsAccessForRole } from "./financialOperationsScope.js";
 import { ymdTR } from "../time/tr.js";
 import { resolveOperationRegion } from "../region/operationRegion.js";
+import { buildCompanyBudgetCommitmentPreview } from "./companyBudgetCommitmentPreview.js";
+import { buildCompanyBudgetOfferComparison } from "./companyBudgetOfferComparison.js";
+export { buildCompanyBudgetCommitmentPreview } from "./companyBudgetCommitmentPreview.js";
 export const COMPANY_BUDGET_AND_SERVICE_COST_MODEL_VERSION = "COMPANY-BUDGET-AND-SERVICE-COST-01";
-const BLOCKED_COMPANY_KINDS = new Set(["SCHOOL", "ORGANIZATION"]);
+const SUPPORTED_BUYER_COMPANY_KINDS = new Set(["COMPANY", "SCHOOL", "ORGANIZATION"]);
+const WEEKDAY_LABELS_TR = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 function normalizeToken(value) {
   return String(value || "")
     .normalize("NFKD")
@@ -15,8 +19,9 @@ function normalizeToken(value) {
     .replace(/^_|_$/g, "")
     .toUpperCase();
 }
-function isBlockedCompanyKind(value) {
-  return BLOCKED_COMPANY_KINDS.has(normalizeToken(value));
+function isUnsupportedBuyerCompanyKind(value) {
+  const key = normalizeToken(value);
+  return Boolean(key) && !SUPPORTED_BUYER_COMPANY_KINDS.has(key);
 }
 function textOrNull(...values) {
   for (const value of values) {
@@ -63,14 +68,95 @@ function resolveTodayIso(value) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
   return ymdTR();
 }
-function dateSpanDays(startIso, endIso) {
-  if (!startIso || !endIso) return null;
-  if (startIso > endIso) return null;
-  const start = new Date(`${startIso}T00:00:00.000Z`);
-  const end = new Date(`${endIso}T00:00:00.000Z`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
-  const dayMs = 24 * 60 * 60 * 1000;
-  return Math.max(0, Math.round((end.getTime() - start.getTime()) / dayMs) + 1);
+
+function dateSpanDays(startIso, endIso) { if (!startIso || !endIso || startIso > endIso) return null; const start = new Date(`${startIso}T00:00:00.000Z`); const end = new Date(`${endIso}T00:00:00.000Z`); if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null; return Math.max(0, Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1); }
+function minuteLabel(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0 || numeric > 1439) return null;
+  const hours = String(Math.floor(numeric / 60)).padStart(2, "0");
+  const minutes = String(Math.round(numeric % 60)).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+function weekdayLabelsFromMask(value) {
+  const mask = Number(value);
+  if (!Number.isInteger(mask) || mask < 1 || mask > 127) return [];
+  return WEEKDAY_LABELS_TR.filter((_, index) => (mask & (1 << index)) !== 0);
+}
+function directionLabel(value) {
+  const key = normalizeToken(value);
+  if (key === "INBOUND") return "Gidiş";
+  if (key === "OUTBOUND") return "Dönüş";
+  if (key === "ROUND_TRIP") return "Gidiş ve dönüş";
+  return "Belirtilmedi";
+}
+function patternLabel(value) {
+  const key = normalizeToken(value);
+  if (key === "ROUND_TRIP") return "Gidiş ve dönüş";
+  if (key === "ONE_WAY") return "Tek yön";
+  return "Belirtilmedi";
+}
+function buildBuyerServiceContext(snapshot) {
+  const companyKind = normalizeToken(snapshot?.companyKind);
+  const plan = snapshot?.organizationPlan || null;
+  const planStops = Array.isArray(plan?.stops) ? plan.stops : [];
+  const planParticipantCount = planStops.reduce((sum, stop) => {
+    const count = Number(stop?.passengerCount);
+    return Number.isFinite(count) && count >= 0 ? sum + Math.round(count) : sum;
+  }, 0);
+  const participantCount = companyKind === "ORGANIZATION"
+    ? (planParticipantCount > 0 ? planParticipantCount : snapshot.requiredPax ?? snapshot.activePersonCount)
+    : companyKind === "SCHOOL"
+      ? (snapshot.requiredPax ?? snapshot.activePersonCount)
+      : (snapshot.requiredPax ?? snapshot.activePersonCount);
+  const normalizedParticipantCount = participantCount != null && Number(participantCount) > 0 ? Number(participantCount) : null;
+  const stopCount = companyKind === "ORGANIZATION" && planStops.length
+    ? planStops.length
+    : snapshot.activeTripCount;
+  const normalizedStopCount = stopCount != null && Number(stopCount) > 0 ? Number(stopCount) : null;
+  const startMin = companyKind === "ORGANIZATION" && plan ? plan.startMin : snapshot.scheduleStartMin;
+  const endMin = companyKind === "ORGANIZATION" && plan ? plan.endMin : snapshot.scheduleEndMin;
+  const workingDays = weekdayLabelsFromMask(snapshot.weekMask);
+  const missing = [];
+  if (!snapshot.contractStartIso || !snapshot.contractEndIso) missing.push("hizmet dönemi");
+  if (!workingDays.length) missing.push("çalışma günleri");
+  if (minuteLabel(startMin) == null || minuteLabel(endMin) == null) missing.push("hizmet saatleri");
+  if (normalizedParticipantCount == null) missing.push(companyKind === "SCHOOL" ? "öğrenci sayısı" : companyKind === "ORGANIZATION" ? "katılımcı sayısı" : "kişi sayısı");
+  if (normalizedStopCount == null) missing.push("duraklar");
+  return {
+    serviceLabel: companyKind === "SCHOOL"
+      ? "Öğrenci taşıma hizmeti"
+      : companyKind === "ORGANIZATION"
+        ? "Etkinlik taşıma hizmeti"
+        : "Servis hizmeti",
+    participantLabel: companyKind === "SCHOOL" ? "Öğrenci sayısı" : companyKind === "ORGANIZATION" ? "Katılımcı sayısı" : "Kişi sayısı",
+    participantCount: normalizedParticipantCount,
+    stopCount: normalizedStopCount,
+    period: {
+      start: snapshot.contractStartIso || null,
+      end: snapshot.contractEndIso || null,
+    },
+    workingDays,
+    schedule: {
+      startTime: minuteLabel(startMin),
+      endTime: minuteLabel(endMin),
+      direction: directionLabel(snapshot.direction),
+      pattern: patternLabel(snapshot.pattern),
+    },
+    route: {
+      distanceKm: snapshot.routeDistanceKm,
+      durationMin: snapshot.routeDurationMin,
+    },
+    organizationPlanId: plan?.id ? Number(plan.id) : null,
+    organizationPlanTitle: companyKind === "ORGANIZATION" ? textOrNull(plan?.title) || null : null,
+    source: {
+      companyId: snapshot.companyId,
+      shiftId: snapshot.shiftId,
+      agreementId: snapshot.agreementId,
+      organizationPlanId: plan?.id ? Number(plan.id) : null,
+    },
+    evidenceStatus: missing.length ? "PARTIAL" : "READY",
+    missing,
+  };
 }
 function normalizeCurrencyWithWarning(rawCurrencyCode, issues) {
   const normalized = normalizeCurrencyCode(rawCurrencyCode);
@@ -121,7 +207,7 @@ function pickServiceCostSource({
   if (deliveredServiceDayCount !== null && perDayPriceMinor !== null) return "delivered_service_day_count_x_per_day_price";
   return "missing";
 }
-function buildCompanySnapshot({ company, shift, agreement, companySummary, previewInputs = {} }) {
+function buildCompanySnapshot({ company, shift, agreement, organizationPlan = null, companySummary, previewInputs = {} }) {
   const companyId = Number(company?.id || shift?.companyId || agreement?.companyId || 0) || null;
   const roomId = Number(shift?.roomId || agreement?.roomId || 0) || null;
   const shiftId = Number(shift?.id || 0) || null;
@@ -144,13 +230,24 @@ function buildCompanySnapshot({ company, shift, agreement, companySummary, previ
   const activeTripCount = wholeOrNull(shift?._count?.stops);
   const requiredPax = wholeOrNull(shift?.requiredPaxOverride);
   const vehicleCapacity = wholeOrNull(shift?.vehicle?.capacity);
-  const currentCompanyOfferMinor = minorOrNull(shift?.companyOfferAmount, agreement?.companyOfferAmount);
+  const hasCommercialPriceEvidence = Boolean(agreement && Object.prototype.hasOwnProperty.call(agreement, "commercialPriceStatus"));
+  const commercialPriceStatus = hasCommercialPriceEvidence
+    ? textOrNull(agreement?.commercialPriceStatus, "NOT_PROVEN").toUpperCase()
+    : null;
+  const acceptedCommercialAmountMinor = commercialPriceStatus === "READY"
+    ? minorOrNull(agreement?.commercialAmountMinor)
+    : null;
+  const currentCompanyOfferMinor = hasCommercialPriceEvidence
+    ? acceptedCommercialAmountMinor
+    : minorOrNull(shift?.companyOfferAmount, agreement?.companyOfferAmount);
   const currentRoomOfferMinor = minorOrNull(shift?.roomOfferAmount, agreement?.roomOfferAmount);
   const contractStartIso = dateIsoOrNull(agreement?.startDate);
   const contractEndIso = dateIsoOrNull(agreement?.endDate);
   const contractDays = dateSpanDays(contractStartIso, contractEndIso);
+  const organizationPlanRecord = organizationPlan || shift?.organizationPlan || null;
+  const weekMask = wholeOrNull(agreement?.weekMask);
   const todayIso = resolveTodayIso(previewInputs?.todayIso);
-  return {
+  const snapshot = {
     companyId,
     roomId,
     shiftId,
@@ -173,13 +270,24 @@ function buildCompanySnapshot({ company, shift, agreement, companySummary, previ
     requiredPax,
     vehicleCapacity,
     currentCompanyOfferMinor,
+    acceptedCommercialAmountMinor,
+    commercialPriceStatus,
+    commercialPriceSource: hasCommercialPriceEvidence ? agreement?.commercialPriceSource || null : null,
     currentRoomOfferMinor,
     contractStartIso,
     contractEndIso,
     contractDays,
+    weekMask,
+    scheduleStartMin: wholeOrNull(agreement?.startMin, shift?.startMin),
+    scheduleEndMin: wholeOrNull(agreement?.endMin, shift?.endMin),
+    direction: textOrNull(agreement?.direction, shift?.direction),
+    pattern: textOrNull(agreement?.pattern, shift?.pattern),
+    organizationPlan: organizationPlanRecord,
     todayIso,
     companySummary,
   };
+  snapshot.buyerServiceContext = buildBuyerServiceContext(snapshot);
+  return snapshot;
 }
 function buildBudgetView(snapshot, inputs, issues) {
   const approvedBudgetAmountMinor = minorOrNull(inputs.approvedBudgetAmountMinor);
@@ -261,8 +369,13 @@ function buildServiceCostView(snapshot, inputs, issues) {
   const actualServiceSpendMinor = minorOrNull(inputs.actualServiceSpendMinor);
   const deliveredServiceCostPreviewMinor = minorOrNull(inputs.deliveredServiceCostPreviewMinor);
   const contractedServiceCostMinor = minorOrNull(inputs.contractedServiceCostMinor);
-  const agreementPriceMinor = minorOrNull(inputs.agreementPriceMinor, snapshot.currentCompanyOfferMinor);
-  const offerPriceMinor = minorOrNull(inputs.offerPriceMinor, snapshot.currentCompanyOfferMinor);
+  const hasCanonicalCommercialPrice = snapshot.commercialPriceStatus !== null;
+  const agreementPriceMinor = hasCanonicalCommercialPrice
+    ? snapshot.acceptedCommercialAmountMinor
+    : minorOrNull(inputs.agreementPriceMinor, snapshot.currentCompanyOfferMinor);
+  const offerPriceMinor = hasCanonicalCommercialPrice
+    ? snapshot.acceptedCommercialAmountMinor
+    : minorOrNull(inputs.offerPriceMinor, snapshot.currentCompanyOfferMinor);
   const perShiftPriceMinor = minorOrNull(inputs.perShiftPriceMinor);
   const perTripPriceMinor = minorOrNull(inputs.perTripPriceMinor);
   const perDayPriceMinor = minorOrNull(inputs.perDayPriceMinor);
@@ -397,7 +510,7 @@ function buildSupplierComparisons(inputs, serviceView, budgetView, periodState) 
     return {
       supplierComparisons: [],
       supplierComparisonState: "incomplete",
-      supplierComparisonSummaryText: "Tedarikçi karşılaştırması için veri bekleniyor; otomatik seçim yapılmadı.",
+      supplierComparisonSummaryText: "Karşılaştırılabilir tedarikçi verisi bulunamadı; otomatik seçim yapılmadı.",
     };
   }
   if (!pricePeriod) comparisonWarnings.push("period missing");
@@ -561,7 +674,7 @@ function buildCompanyBudgetSummaryText({ status, budgetView, serviceView, period
     base.push("Onaylı bütçe bulunmadığı için bütçe sapması hesaplanmadı.");
   }
   if (serviceView.companyVisibleServiceSpendMinor === null) {
-    base.push("Servis harcaması kaynağı bulunmadığı için gerçekleşen spend hesaplanmadı.");
+    base.push("Servis harcaması kaynağı bulunmadığı için gerçekleşen harcama hesaplanmadı.");
   }
   if (periodState.periodState === "partial") {
     base.push("Dönem henüz tamamlanmadığı için gösterilen tutar kesin dönem sonucu değildir.");
@@ -575,7 +688,7 @@ function buildCompanyBudgetSummaryText({ status, budgetView, serviceView, period
   if (comparisonState === "incomplete") {
     base.push("Tedarikçi karşılaştırması eksik veri nedeniyle tamamlanamadı.");
   }
-  base.push("Bu sonuç fatura, hakediş, ödeme veya muhasebe kaydı değildir.");
+  base.push("Servis maliyeti önizlemesidir; hakediş, fatura ve ödeme kayıtları ayrı finans kanıtı olarak gösterilir ve bu toplama ikinci kez eklenmez.");
   return base.join(" ");
 }
 function buildBudgetSummaryText({ status, budgetView, periodState }) {
@@ -600,14 +713,18 @@ function buildServiceSummaryText({ serviceView, status, periodState }) {
   if (serviceView.companyVisibleServiceSpendMinor === null) {
     return "Gerçekleşen servis harcaması için yeterli kaynak bulunamadı.";
   }
-  const fragments = ["Gerçekleşen servis harcaması önizlemesi hazırlandı."];
+  const isActualSpend = serviceView.source === "actual_service_spend";
+  const fragments = [isActualSpend ? "Gerçekleşen servis harcaması doğrulandı." : "Servis maliyeti önizlemesi hazırlandı."];
+  if (!isActualSpend) {
+    fragments.push("Bu değer sözleşme veya planlama kaynağına dayanır; gerçekleşmiş gider olarak sunulmaz.");
+  }
   if (periodState.periodState === "partial") {
     fragments.push("Dönem henüz tamamlanmadığı için bu değer bugüne kadarki servis harcamasıdır.");
   }
   if (status === "mixed_currency") {
     fragments.push("Para birimi uyumsuzluğu nedeniyle bazı karşılaştırmalar kapalı.");
   }
-  fragments.push("Bu sonuç fatura, hakediş, ödeme veya muhasebe kaydı değildir.");
+  fragments.push("Hakediş, fatura ve ödeme kayıtları ayrı finans kanıtıdır; aynı tutar bu maliyete ikinci kez eklenmez.");
   return fragments.join(" ");
 }
 function buildPeriodState(snapshot, budgetView, serviceView, issues) {
@@ -747,21 +864,22 @@ export function buildCompanyBudgetAndServiceCostPreview({
   company = null,
   shift = null,
   agreement = null,
+  organizationPlan = null,
   companySummary = null,
   budgetInputs = {},
   serviceCostInputs = {},
   supplierInputs = {},
   costInputs = {},
-  previewInputs = {},
+  previewInputs = {}, commitmentInputs = {}, offerInputs = {},
 } = {}) {
   const roleKey = normalizeToken(role) || "DEFAULT";
   const companyKindKey = normalizeToken(companyKind);
-  if (roleKey === "COMPANY" && isBlockedCompanyKind(companyKindKey)) {
+  if (roleKey === "COMPANY" && isUnsupportedBuyerCompanyKind(companyKindKey)) {
     return buildCompanyBudgetAndServiceCostDeniedPreview({ role: roleKey, companyKind: companyKindKey, scope: "COMPANY" });
   }
   const surface = describeFinancialSurface("company_budget", roleKey);
   const access = getFinancialOperationsAccessForRole(roleKey);
-  const snapshot = buildCompanySnapshot({ company, shift, agreement, companySummary, previewInputs });
+  const snapshot = buildCompanySnapshot({ company, shift, agreement, organizationPlan, companySummary, previewInputs });
   const issues = buildIssues();
   const mergedBudgetInputs = {
     ...previewInputs,
@@ -804,6 +922,8 @@ export function buildCompanyBudgetAndServiceCostPreview({
     periodState,
     supplierComparisons: supplierComparisonPack.supplierComparisons,
   });
+  const commitmentSummary = buildCompanyBudgetCommitmentPreview(commitmentInputs);
+  const offerBudgetComparison = buildCompanyBudgetOfferComparison({ companyId: snapshot.companyId, budgetPlan: commitmentInputs?.budgetPlan || null, commitmentSummary, offers: offerInputs?.offers || [] });
   const summaryText = buildCompanyBudgetSummaryText({
     status,
     budgetView,
@@ -879,6 +999,7 @@ export function buildCompanyBudgetAndServiceCostPreview({
     readOnly: true,
     previewOnly: true,
     writeAction: false,
+    commitmentSummary, offerBudgetComparison,
   };
   const companyServiceCost = {
     serviceCostSource: serviceView.source,
@@ -891,6 +1012,8 @@ export function buildCompanyBudgetAndServiceCostPreview({
     contractedServiceCostMinor: serviceView.contractedServiceCostMinor,
     agreementPriceMinor: serviceView.agreementPriceMinor,
     offerPriceMinor: serviceView.offerPriceMinor,
+    commercialPriceStatus: snapshot.commercialPriceStatus,
+    commercialPriceSource: snapshot.commercialPriceSource,
     deliveredShiftCount: serviceView.deliveredShiftCount,
     deliveredTripCount: serviceView.deliveredTripCount,
     deliveredServiceDayCount: serviceView.deliveredServiceDayCount,
@@ -919,6 +1042,20 @@ export function buildCompanyBudgetAndServiceCostPreview({
     surface,
     access,
     title: surface.title,
+    snapshot: {
+      companyId: snapshot.companyId,
+      companyKind: snapshot.companyKind,
+      companyName: snapshot.companyName,
+      roomName: snapshot.roomName,
+      shiftId: snapshot.shiftId,
+      agreementId: snapshot.agreementId,
+      acceptedCommercialAmountMinor: snapshot.acceptedCommercialAmountMinor,
+      commercialPriceStatus: snapshot.commercialPriceStatus,
+      commercialPriceSource: snapshot.commercialPriceSource,
+      routeDistanceKm: snapshot.routeDistanceKm,
+      routeDurationMin: snapshot.routeDurationMin,
+      buyerServiceContext: snapshot.buyerServiceContext,
+    },
     summaryText,
     nextAction: "Bütçe ve servis maliyeti önizlemesini açık parametrelerle tamamla.",
     nextSafeStep,
@@ -962,6 +1099,7 @@ export function buildCompanyBudgetAndServiceCostPreview({
     externalPreviewAdjustments: serviceView.externalPreviewAdjustments,
     companyBudget,
     companyServiceCost,
+    commitmentSummary, offerBudgetComparison,
     period: {
       periodType: periodState.periodType,
       periodStart: periodState.periodStart,

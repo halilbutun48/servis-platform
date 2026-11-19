@@ -1,3 +1,65 @@
+function normalizeGeoStatusQuestionText(value) {
+  return String(value || '')
+    .toLocaleLowerCase('tr-TR')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ı/g, 'i')
+    .trim();
+}
+
+export function buildGeoReviewStatusReply({ message = '', screenContext = null } = {}) {
+  const path = String(screenContext?.path || '').split('?')[0].trim();
+  if (!path.includes('/georeview')) return '';
+  const normalizedMessage = normalizeGeoStatusQuestionText(message);
+  const asksLocationStatus = /(?:konum|lokasyon).{0,24}(?:durum|status)|(?:durum|status).{0,24}(?:konum|lokasyon)/i.test(normalizedMessage);
+  if (!asksLocationStatus) return '';
+
+  const rows = Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields : [];
+  const valueFor = (pattern) => {
+    const row = rows.find((item) => pattern.test(normalizeGeoStatusQuestionText(item?.label || item?.key || '')));
+    return String(row?.value ?? row?.text ?? '').trim();
+  };
+  const selectedLabel = String(screenContext?.selectedLabel || '').trim();
+  const status = valueFor(/^(?:durum|status|statu)$/i);
+  if (!selectedLabel || !status) return '';
+
+  const reason = valueFor(/^(?:neden|gerekce|gerekçe)$/i);
+  const statusLabel = {
+    OK: 'Hazır (OK)',
+    NEEDS_REVIEW: 'İncelenecek',
+    FAILED: 'Başarısız',
+  }[status.toUpperCase()] || status;
+  const reasonText = reason ? ` Gerekçe: ${reason}.` : '';
+  return `Seçili kayıt ${selectedLabel} için konum durumu: ${statusLabel}.${reasonText} Bu bilgi yalnızca bu oturumun yetkili seçili kaydından okunuyor; başka kayıt veya tenant verisi açmıyorum.`;
+}
+
+export function buildGeoReviewContinuationReply({ message = '', screenContext = null } = {}) {
+  const path = String(screenContext?.path || '').split('?')[0].trim();
+  if (!path.includes('/georeview')) return '';
+  const normalizedMessage = normalizeGeoStatusQuestionText(message);
+  const asksContinuation = /(?:devam|sonraki|biraz daha|adım adım|adim adim|ne yap(?:ayım|alim|ayim)|şimdi ne|simdi ne)/i.test(normalizedMessage);
+  if (!asksContinuation) return '';
+
+  const rows = Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields : [];
+  const valueFor = (pattern) => {
+    const row = rows.find((item) => pattern.test(normalizeGeoStatusQuestionText(item?.label || item?.key || '')));
+    return String(row?.value ?? row?.text ?? '').trim();
+  };
+  const selectedLabel = String(screenContext?.selectedLabel || '').trim();
+  if (!selectedLabel) return '';
+  const screenLabel = String(screenContext?.label || 'Konum İncele').trim();
+
+  const status = valueFor(/^(?:durum|status|statu)$/i);
+  const coordinate = valueFor(/^(?:koordinat|coordinate|enlem|boylam|latitude|longitude)$/i);
+  const statusLabel = {
+    OK: 'Hazır (OK)',
+    NEEDS_REVIEW: 'İncelenecek',
+    FAILED: 'Başarısız',
+  }[status.toUpperCase()] || status || 'seçili kayıtta görünmüyor';
+  const coordinateText = coordinate || 'seçili kayıtta görünmüyor';
+  return `${screenLabel} ekranında seçili kayıt ${selectedLabel} için devam: önce Durum alanını (${statusLabel}) ve Koordinat alanını (${coordinateText}) kontrol et. Gerekirse bu ekrandaki yetkili konum düzeltme/kaydetme kontrolünü kullan; Sefer Abi senin yerine yeni işlem başlatmıyor. Bu yanıt yalnızca seçili kayıt ve yetkili tenant bağlamından okunuyor; başka alan, kayıt veya tenant verisi açmıyorum.`;
+}
+
 export function createSelectedRuntimeHelpers(deps = {}) {
   const {
     firstNonEmpty,
@@ -139,6 +201,24 @@ export function createSelectedRuntimeHelpers(deps = {}) {
       missing.length ? `Eksik veya boş görünen alanlar: ${missing.join(', ')}.` : '',
       riskHints.length ? `Dikkat: ${riskHints.join(' • ')}.` : '',
     ].filter(Boolean).join(' ');
+  }
+
+  function selectedMetricReply(message, screenContext) {
+    const path = String(screenContext?.path || screenContext?.screenPath || screenContext?.scopeKey || '').split('?')[0].trim();
+    const text = normalizeText(message);
+    if (!path || !text) return '';
+    const rows = selectedFieldRows(screenContext);
+    if (path.includes('/superadmin/observability') && /a[cç][iı]k alarm|alarm say[iı]s[iı]|a[cç][iı]k sorun|sorun say[iı]s[iı]/i.test(text)) {
+      const row = rows.find((item) => /a[cç][iı]k alarm|a[cç][iı]k sorun/i.test(normalizeText(item.label)));
+      if (!row) return '';
+      return `Canlı İzleme ekranında açık alarm / açık sorun sayısı: ${row.value}. Bu sayı yalnızca SUPER_ADMIN oturumunun yetkili canlı izleme metriğinden okunuyor; başka tenant veya gizli olay ayrıntısı açmıyorum.`;
+    }
+    if (path.includes('/organization/operations') && /aktif servis|aktif servis say[iı]s[iı]|servis say[iı]s[iı]/i.test(text)) {
+      const row = rows.find((item) => /aktif servis|servis durumu/i.test(normalizeText(item.label)));
+      if (!row) return '';
+      return `Organizasyon operasyon panelinde bugün aktif servis sayısı: ${row.value}. Bu değer yalnızca bu organizasyon tenant'ının yetkili güncel özetinden okunuyor; başka tenant verisi eklemiyorum.`;
+    }
+    return '';
   }
 
   function selectedFieldReply(message, screenContext, screenDefinition) {
@@ -317,6 +397,7 @@ export function createSelectedRuntimeHelpers(deps = {}) {
     selectedFieldRows,
     selectedBadgeRows,
     selectedRowReadReply,
+    selectedMetricReply,
     selectedFieldReply,
     selectedBadgeReply,
     selectedMissingReply,

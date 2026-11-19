@@ -4,7 +4,7 @@ function toNumber(value, fallback = 0) {
 }
 
 function fmtTry(value) {
-  const n = toNumber(value, null)
+  const n = toNumber(value, null) == null ? null : toNumber(value, null) / 100
   if (n == null) return "-"
   return `₺${n.toLocaleString("tr-TR")}`
 }

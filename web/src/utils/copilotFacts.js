@@ -12,6 +12,7 @@ import {
 } from "./liveTrackingCopy.js";
 import { resolvePersonDisplayLabel } from "./labels.js";
 import { gpsSourcePresentationLabel } from "./gpsSource.js";
+import { hasValidCoordinatePair } from "./geoCoordinatePair.js";
 
 function normalizeText(value) {
   return String(value || '').trim().toLocaleLowerCase('tr-TR');
@@ -945,7 +946,7 @@ export function buildCommercialCoreCopilotFacts({
 }
 
 export function buildGeoReviewFacts({ selected, counts, scopeMode = 'ALL', hasPlanningScope = false }) {
-  const hasCoordinates = Number.isFinite(Number(selected?.homeLat)) && Number.isFinite(Number(selected?.homeLng));
+  const hasCoordinates = hasValidCoordinatePair(selected?.homeLat, selected?.homeLng);
   const hasAddress = Boolean(String(selected?.homeAddress || '').trim());
   const status = String(selected?.geoStatus || '').toUpperCase();
   const missing = [];
@@ -1209,6 +1210,7 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
   });
   return {
     ...readonlyFacts,
+    driverId: Number(shift?.driverId || 0) || null,
     missing,
     blockers,
     reasoningLead: blockers.length
@@ -1686,7 +1688,7 @@ export function buildParentLiveNoVehicleFacts({
   };
 }
 
-export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, acceptedCount = 0, listCount = 0 }) {
+export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, acceptedCount = 0, listCount = 0, activeTab = "contractShift" }) {
   const status = String(selectedItem?.statusLabel || '-').toUpperCase();
   const section = String(selectedItem?.section || 'market');
   const isMarket = section === 'market';
@@ -1779,6 +1781,7 @@ export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, accept
   return {
     missing: [],
     blockers,
+    activeTab: String(activeTab || "contractShift"),
     ...readonlyFacts,
     reasoningLead: isMarket
       ? 'Bu kayıt hâlâ ticari pazarlık tarafında görünüyor.'
@@ -1976,6 +1979,8 @@ export function buildCopilotStarterChips({
 } = {}) {
   const path = compactText(screenPath, '').split('?')[0];
   const isRoomAgreementPath = path.includes('/room/agreements');
+  const isSharedKvkkPath = path === '/shared/kvkk';
+  const isFinancialOperations = path === '/room/financial-operations';
   const selectionText = selectionStarterText(selection);
   const fallback = ['Bu ekranda neye bakmalıyım?', 'Riskleri sırala', 'Sıradaki doğru işlem ne?'];
   const surfaceRole = compactText(role, '').toUpperCase();
@@ -2066,6 +2071,14 @@ export function buildCopilotStarterChips({
   );
   const isDriverToday = path.includes('/driver/today');
   const isDriverRouteOrMap = path.includes('/driver/route') || path.includes('/driver/map');
+  if (isSharedKvkkPath) {
+    return finalizeStarterChips([
+      'KVKK sınırını açıkla',
+      'Bu rolde ne görünür?',
+      'Erişim neden kapalı?',
+      'Yetkili ekrana yönlendir',
+    ], fallback);
+  }
   if (isDynamicSavingsPreview && !isRoomAgreementPath) {
     return finalizeStarterChips([
       'Tasarruf hesabını göster',
@@ -2130,6 +2143,7 @@ export function buildCopilotStarterChips({
   const selectionFacts = selection?.facts || selection?.liveFacts || selection?.structuredFacts || {};
   const selectionScreenType = compactText(selectionFacts?.screenType || selection?.screenType || '', '').toUpperCase();
   const selectionStage = compactText(selectionFacts?.stage || '', '').toUpperCase();
+  const financialView = compactText(selectionFacts?.financeView || selectionFacts?.activeTab || 'overview', '').toLowerCase();
   const selectionStops = Number(selectionFacts?.counters?.stops ?? selectionFacts?.stops ?? selectionFacts?.totalStops ?? 0);
   const selectedShiftTargetReady = selectionScreenType === 'SHIFTS'
     && ['APPROVED', 'ACCEPTED', 'ACTIVE'].includes(selectionStage)
@@ -2243,7 +2257,17 @@ export function buildCopilotStarterChips({
   const driverHasSelectedRecord = Number(selection?.entityId || selection?.selectedRecordId || 0) > 0;
 
   let chips = [];
-  if (isRoomMap) {
+  if (isFinancialOperations) {
+    chips = financialView === 'expenses'
+      ? ['Bu ay ne kadar giderim var?', 'Hangi giderler dağıtılmamış?', 'Bu aracın giderleri neler?', 'Bu rakam nereden geliyor?']
+      : financialView === 'service-cost'
+        ? ['Bu servisin maliyeti ne?', 'Bu rakam nereden geliyor?', 'Bu vardiyanın kilometresi neden eksik?', 'Bu bilgiyi nereden tamamlayabilirim?']
+        : financialView === 'vehicle-comparison'
+          ? ['Bu servise hangi araç daha uygun?', 'Midibüs yerine otobüs kullansam ne değişir?', 'Yakıt fiyatı artarsa maliyet ne olur?', 'Riskleri sırala']
+          : financialView === 'quote-profitability'
+            ? ['Bu hizmetten ne kadar kazanıyorum?', 'Gerçekleşen giderle tahmin arasındaki fark ne?', 'Teklif neden bu vardiyaya ait değil?', 'Bu rakam nereden geliyor?']
+            : ['Bu ay ne kadar giderim var?', 'Bu rakam nereden geliyor?', 'Hangi giderler dağıtılmamış?', 'Sıradaki doğru işlem ne?'];
+  } else if (isRoomMap) {
     chips = ['Bu araç neden görünmüyor?', 'Son GPS ne zaman geldi?', 'Sürücünün telefon GPS’i devrede mi?', 'Araç bağlantısı var mı?'];
   } else if (isRoomOperationHealth) {
     const operationHealthTab = compactText(selectionFacts?.activeTab || 'summary', '').toLowerCase();

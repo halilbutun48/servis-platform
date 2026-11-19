@@ -14,7 +14,7 @@ function stopCardClick(event) {
 
 function moneyTry(value) {
   if (value == null || value === "") return "-";
-  const n = Number(value);
+  const n = Number(value) / 100;
   if (!Number.isFinite(n)) return "-";
   return `${new Intl.NumberFormat("tr-TR").format(n)} ₺`;
 }

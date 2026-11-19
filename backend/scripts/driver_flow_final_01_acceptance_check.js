@@ -99,7 +99,7 @@ async function main() {
   mustNot(driverToday, 'Bugün için atanmış aktif / kabul edilmiş vardiya yok.', 'driver today removed misleading no-shift wording');
 
   must(driverMap, 'getEtaDisplay', 'driver map uses safe ETA display helper');
-  must(driverMap, 'getGpsReliabilityLabel', 'driver map uses GPS reliability helper');
+  must(driverMap, 'getDriverMapGpsReliabilityLabel', 'driver map uses GPS reliability helper');
   must(driverMap, 'GPS bekleniyor', 'driver map keeps GPS waiting wording');
   must(driverMap, 'Sıradaki durak', 'driver map keeps next stop wording');
 

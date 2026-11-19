@@ -209,7 +209,20 @@ function createRedisSubscriber(redisUrl, onMessage) {
   };
 }
 
-export function installSocketRelay(io, { redisUrl = String(process.env.REDIS_URL || "") } = {}) {
+export async function shouldPublishSocketRelay(writeFreezeController) {
+  if (!writeFreezeController?.assertWritable) return true;
+  try {
+    await writeFreezeController.assertWritable({ operation: "SOCKET_RELAY_PUBLISH" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function installSocketRelay(
+  io,
+  { redisUrl = String(process.env.REDIS_URL || ""), writeFreezeController } = {},
+) {
   if (!io) return () => {};
   if (!redisUrl) return () => {};
 
@@ -221,13 +234,16 @@ export function installSocketRelay(io, { redisUrl = String(process.env.REDIS_URL
   const baseEmit = typeof io.emit === "function" ? io.emit.bind(io) : null;
 
   const publish = (message) => {
-    try {
-      void redis.send("PUBLISH", RELAY_CHANNEL, JSON.stringify(message)).catch((err) => {
-        logger.debug("[ws-relay] publish failed:", err?.message || err);
-      });
-    } catch (err) {
-      logger.debug("[ws-relay] publish exception:", err?.message || err);
-    }
+    void shouldPublishSocketRelay(writeFreezeController).then((allowed) => {
+      if (!allowed) return;
+      try {
+        void redis.send("PUBLISH", RELAY_CHANNEL, JSON.stringify(message)).catch((err) => {
+          logger.debug("[ws-relay] publish failed:", err?.message || err);
+        });
+      } catch (err) {
+        logger.debug("[ws-relay] publish exception:", err?.message || err);
+      }
+    });
   };
 
   const relayLocal = (event, payload, rooms, isGlobal) => {

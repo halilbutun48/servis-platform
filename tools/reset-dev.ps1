@@ -1,5 +1,6 @@
 param(
-  [switch]$SkipOsrm
+  [switch]$SkipOsrm,
+  [switch]$AllowLegacyServisDb
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,6 +14,10 @@ $RouteRefreshStoreFiles = @(
 
 if (-not (Test-Path -LiteralPath $ComposeFile)) {
   throw "docker-compose file not found: $ComposeFile"
+}
+
+if (-not $AllowLegacyServisDb) {
+  throw "Legacy dev reset is disabled by the single-canonical DEMO policy. It would start personel_db/servisdb and may create new legacy resources. Use the verified seferpakt_clean_demo runtime; pass -AllowLegacyServisDb only for an explicitly historical legacy investigation."
 }
 
 Write-Host "=== DEV RESET ==="

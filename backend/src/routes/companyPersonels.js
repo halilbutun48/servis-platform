@@ -3,6 +3,7 @@ import express from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
+import { audit } from "../audit.js";
 import { decorateGeoItem, inferGeoState } from "../services/geoState.js";
 import { clearResponseCache, rememberResponse } from "../utils/responseCache.js";
 import { sanitizeCompanyPersonelItem } from "../kvkk/enforcement.js";
@@ -164,6 +165,18 @@ export function companyPersonelsRouter() {
     }
 
     clearCompanyPersonelsCache(u);
+    await audit(req, {
+      action: "COMPANY_PERSONEL_GEO_BULK_CLEAR",
+      entity: "Personel",
+      entityId: null,
+      meta: {
+        companyId: u.companyId ?? null,
+        fields,
+        idsApplied: ids.length,
+        updatedCount,
+        source: "COMPANY_GEOREVIEW_UI",
+      },
+    });
     res.json({ ok: true, updatedCount, fields, idsApplied: ids.length });
   });
   // PUT /api/company/personels/:id/location
@@ -236,6 +249,18 @@ export function companyPersonelsRouter() {
     });
 
     clearCompanyPersonelsCache(u);
+    await audit(req, {
+      action: "COMPANY_PERSONEL_GEO_UPDATE",
+      entity: "Personel",
+      entityId: updated.id,
+      meta: {
+        companyId: u.companyId ?? null,
+        geoStatus: updated.geoStatus,
+        geoManualOverride: Boolean(updated.geoManualOverride),
+        hasCoordinates: updated.homeLat != null && updated.homeLng != null,
+        source: "COMPANY_GEOREVIEW_UI",
+      },
+    });
     const company = u.companyId ? await prisma.company.findUnique({ where: { id: u.companyId }, select: { kind: true } }) : null;
     const businessDomain = String(company?.kind || "COMPANY").toUpperCase();
     res.json({ ok: true, item: sanitizeCompanyPersonelItem(decorateGeoItem(updated), { businessDomain, role: u.role }) });

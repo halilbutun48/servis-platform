@@ -20,8 +20,15 @@ const guidedSections = read('web/src/panels/company/guidedPlanModalSections.jsx'
 const guidedActions = read('web/src/panels/company/guidedPlanModalActions.js');
 const shiftPeople = read('web/src/panels/company/ShiftPeopleTab.jsx');
 const agreementWizard = read('web/src/panels/company/AgreementWizard.jsx');
+const roomCatalog = read('backend/src/ai/jobGuide/screenCatalog.roomCompany.js');
 
 ok(company.includes('"/guided-batch"'), 'guided batch create route exists');
+const companyCreateRouteGuards = [...company.matchAll(/r\.post\(\s*"([^"]+)"[\s\S]{0,220}?requireRole\("COMPANY", "SUPER_ADMIN"\)/g)]
+  .filter((match) => ["/guided-batch", "/"].includes(match[1]));
+ok(companyCreateRouteGuards.length === 2, 'guided and generic shift-create routes exclude ROOM');
+ok(company.includes('requireRole("COMPANY", "ROOM", "SUPER_ADMIN")'), 'ROOM remains admitted to shared shift router for operational routes');
+ok(company.includes('requireRole("COMPANY", "SUPER_ADMIN")'), 'ROOM create admission is narrowed without removing shared operational scope');
+ok(!roomCatalog.includes('button("Yeni oluştur"'), 'ROOM catalog does not advertise unsupported new-shift creation');
 ok(company.includes('Guided en fazla 7 gün olabilir.'), 'backend guided day guard exists');
 ok(company.includes('Guided en fazla 21 vardiya oluşturabilir.'), 'backend guided shift guard exists');
 ok(people.includes('"/stops/generate-batch"'), 'batch stop generate route exists');

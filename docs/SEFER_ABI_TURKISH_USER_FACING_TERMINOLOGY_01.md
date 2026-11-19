@@ -10,6 +10,8 @@ Repo: `servis-platform`
 - Komut: `node backend\scripts\sefer_abi_turkish_user_facing_terminology_01_check.js`
 - Static source of truth: `backend/src/ai/chat/helpComposer.js`
 - Reasoning surface: `backend/src/ai/chat/seferAbiReasoningAssistant.js`
+- Dynamic visible-output owner: `backend/src/ai/chat/userFacingLanguageNormalizer.js`
+- Runtime contract: the same audit normalizes and checks `reply`, `summary`, `responseSections`, `quickActions`, `authorizedRecords`, `retrievedFacts`, `dataSources`, `guidedTarget` and nested presentation fields.
 
 ## Amaç
 - Sefer Abi’nin kullanıcıya görünen cevaplarında İngilizce, teknik ve sistem içi terminolojiyi sade Türkçe kullanıcı diliyle değiştirir.
@@ -18,6 +20,8 @@ Repo: `servis-platform`
 - `Güvenli alternatif` ifadesi kullanıcı cevabında görünmez; güvenli yönlendirme açık Türkçe ile verilir.
 - `Mavi aktif parça` / `Yeşil parça` açıklamasıyla rota çizgisinin renk ayrımını Türkçe ve kullanıcıya açık tutar.
 - 80-case matrix ile SUPER_ADMIN, COMPANY, ROOM, DRIVER, PERSONEL, PARENT, SCHOOL ve ORGANIZATION yüzeylerinde terminoloji temizliğini doğrular.
+- `RAW_INTERNAL_TOKEN_LEAK_ZERO`: backend enum/state identifiers (known and newly structured `UPPER_SNAKE_CASE` values) may remain internal, but never appear in the visible Sefer Abi payload. Known values receive canonical Turkish copy; unknown structured values receive truthful generic Turkish wording.
+- Static source checks, dynamic runtime-envelope checks and real-browser rendered-response evidence are separate evidence types for the same canonical terminology owner.
 
 ## Kapsanan yüzeyler
 - `SUPER_ADMIN`
@@ -44,6 +48,7 @@ Repo: `servis-platform`
 - DB write açmaz.
 - Route apply açmaz.
 - Fake success açmaz.
+- Visible-output normalization does not mutate `semanticPlan` or authorization state; it only projects the user-facing response envelope.
 
 ## Not
 - Bu audit, kullanıcıya görünen kopyanın Türkçe kalmasını denetler; kod identifier, enum, API field, route, data-testid, CSS class ve test/script adlarını değiştirmez.

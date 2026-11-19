@@ -58,24 +58,40 @@ function isExplicitRawPersonalDisclosure(value) {
   ]);
 }
 
+function isGpsStatusRequest(value) {
+  const text = normalize(value);
+  if (!/(telefon\s+gps|telefonundan\s+konum|konum\s+sinyali)/.test(text)) return false;
+  return !/(telefon\s+numarasi|telefonu(?:nu|nuzu)?\s+(?:soyle|yaz|goster|ver)|adres|e\s*-?posta)/.test(text);
+}
+
+function isExplicitRawCoordinateDisclosure(value) {
+  return hasAny(value, [
+    /ham\s+koordinat/,
+    /(?:tam|kesin|raw)\s+(?:koordinat|enlem|boylam)/,
+    /(?:koordinat(?:lari|lar)?|enlem(?:i|ini)?|boylam(?:i|ini)?)\s+(?:soyle|yaz|goster|ver|paylas|kaydet|sakla)/,
+  ]);
+}
+
 export function resolveFieldPrivacyPolicy({ user, message, plan } = {}) {
   const input = normalize(`${message || ""} ${planText(plan)}`);
   const messageInput = normalize(message || "");
   const uiHelpPlan = isAuthorizedUiHelpPlan(plan);
   const explicitRawPersonalDisclosure = isExplicitRawPersonalDisclosure(messageInput);
+  const explicitRawCoordinateDisclosure = isExplicitRawCoordinateDisclosure(messageInput);
+  const gpsStatusRequest = isGpsStatusRequest(messageInput);
   const deniedFields = [];
 
-  if (explicitRawPersonalDisclosure || (!uiHelpPlan && hasAny(input, [
+  if (explicitRawPersonalDisclosure || (!uiHelpPlan && !gpsStatusRequest && hasAny(input, [
     /ham\s+kisisel/, /raw\s+personal/, /ad\s+soyad/, /telefon(?:\s+numarasi)?/,
     /e\s*-?posta/, /adres/, /ham\s+adres/, /gizli\s+(?:konum|adres|lokasyon)/, /\btc(?:\s+kimlik)?\b/, /kimlik\s+numarasi/,
     /isimleri\s+(listele|goster|ver)/, /ogrenci(?:lerin)?\s+(ad|isim|detay)/,
     /personel(?:lerin)?\s+(ad|isim|detay)/, /kisisel\s+(bilgi|detay|alan|veri)/,
   ]))) deniedFields.push(FIELD_FAMILIES.PERSONAL);
 
-  if (hasAny(input, [
+  if (explicitRawCoordinateDisclosure || (!uiHelpPlan && hasAny(input, [
     /koordinat/, /enlem/, /boylam/, /latitude/, /longitude/, /raw\s+coord/, /lat\s*\/\s*lng/,
     /gps\s+(?:enlem|boylam|koordinat)/,
-  ])) deniedFields.push(FIELD_FAMILIES.COORDINATES);
+  ]))) deniedFields.push(FIELD_FAMILIES.COORDINATES);
 
   if (hasAny(input, [
     /sifre/, /password/, /parola/, /totp/, /otp/, /secret/, /api\s*key/, /token/, /gizli\s+anahtar/,

@@ -13,6 +13,7 @@ import { startAgreementShiftGenerator } from "./agreementShiftGenerator.js";
 import { startRouteLearnMonitor } from "./routeLearnMonitor.js";
 import { startShiftCompletionMonitor } from "./shiftCompletionMonitor.js";
 import { getRedis } from "../redis/index.js";
+import { workerPrisma } from "../prisma.js";
 
 const JOB_LEADER_KEY = "jobs:leader:v1";
 const JOB_LEASE_MS = 30_000;
@@ -38,6 +39,31 @@ export function localMaintenanceModeDecision(env = process.env) {
 
 function newLeaderId() {
   return `${process.pid}:${crypto.randomBytes(8).toString("hex")}`;
+}
+
+// Scheduler/worker yazıları API başlangıcından ayrı bir işletim kararıdır.
+// Varsayılan güvenli durum API + yetkili kullanıcı okumaları açık, otomasyon
+// yazıcıları kapalıdır. Normal otomasyon yalnız açıkça SCHEDULER_ENABLED=1
+// ile etkinleştirilir; anlaşma/tarih/çakışma/idempotency kuralları yine
+// agreementShiftGenerator içinde uygulanır.
+export function schedulerActivationDecision(env = process.env) {
+  const requested = String(env.SCHEDULER_ENABLED ?? "").trim() === "1";
+  return {
+    requested,
+    enabled: requested,
+    reason: requested ? "EXPLICIT_SCHEDULER_ENABLE" : "DEFAULT_SAFE_CLOSED",
+  };
+}
+
+export async function canStartWriteMonitors(writeFreezeController, workerClient = workerPrisma) {
+  if (!workerClient) return false;
+  if (!writeFreezeController?.assertWritable) return true;
+  try {
+    await writeFreezeController.assertWritable({ operation: "WORKER_SCHEDULER_START" });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function acquireLeader(redis, leaderId) {
@@ -67,24 +93,30 @@ async function releaseLeader(redis, leaderId) {
 }
 
 function startLocalMonitors(io, opts = {}) {
+  if (!opts.workerPrisma) return () => {};
   const stopFns = [];
 
   // ✅ M17: agreement lifecycle monitor (AUTO DONE)
-  stopFns.push(startAgreementMonitor(io, { intervalMs: opts.agreementIntervalMs }));
+  stopFns.push(startAgreementMonitor(io, { intervalMs: opts.agreementIntervalMs, prismaClient: opts.workerPrisma }));
 
   // ✅ AUTO-REACHED queue worker: keep GPS ingest thin, process stop progress out of band.
-  stopFns.push(startAutoReachedQueueWorker(io, { redisUrl: opts.redisUrl }));
+  stopFns.push(startAutoReachedQueueWorker(io, {
+    redisUrl: opts.redisUrl,
+    writeFreezeController: opts.writeFreezeController,
+    prismaClient: opts.workerPrisma,
+  }));
 
   // ✅ M52: agreement -> rolling 7-day shift generator
   // ✅ M19: learned route monitor (optional)
-  stopFns.push(startRouteLearnMonitor(io, { intervalMs: opts.routeLearnIntervalMs }));
+  stopFns.push(startRouteLearnMonitor(io, { intervalMs: opts.routeLearnIntervalMs, prismaClient: opts.workerPrisma }));
 
   // ✅ M58.5: reconcile shifts that are completed (progress.completedAt) but still not DONE
-  stopFns.push(startShiftCompletionMonitor(io, { intervalMs: opts.shiftCompletionIntervalMs }));
+  stopFns.push(startShiftCompletionMonitor(io, { intervalMs: opts.shiftCompletionIntervalMs, prismaClient: opts.workerPrisma }));
 
   stopFns.push(
     startAgreementShiftGenerator(io, {
       intervalMs: opts.agreementShiftGenIntervalMs,
+      prismaClient: opts.workerPrisma,
     })
   );
 
@@ -92,6 +124,7 @@ function startLocalMonitors(io, opts = {}) {
     startGpsStaleMonitor(io, {
       intervalMs: opts.gpsIntervalMs,
       batchSize: opts.gpsBatchSize,
+      prismaClient: opts.workerPrisma,
     })
   );
 
@@ -100,6 +133,7 @@ function startLocalMonitors(io, opts = {}) {
       intervalMs: opts.maintenanceIntervalMs,
       windowDays: opts.maintenanceWindowDays,
       dedupeHours: opts.maintenanceDedupeHours,
+      prismaClient: opts.workerPrisma,
     })
   );
 
@@ -109,6 +143,7 @@ function startLocalMonitors(io, opts = {}) {
       intervalMs: opts.retentionIntervalMs,
       batchSize: opts.retentionBatchSize,
       runOnStart: opts.retentionRunOnStart,
+      prismaClient: opts.workerPrisma,
     })
   );
 
@@ -132,8 +167,16 @@ export function startMonitors(io, opts = {}) {
   if (maintenance.requested && !maintenance.valid) {
     throw new Error("LOCAL_MAINTENANCE_MODE_REJECTED");
   }
+  const resolvedWorkerPrisma = opts.workerPrisma ?? workerPrisma;
+  if (!resolvedWorkerPrisma) return () => {};
+  opts = { ...opts, workerPrisma: resolvedWorkerPrisma };
   if (maintenance.enabled) {
     console.warn("[jobs] local maintenance mode enabled: DEMO_FIXTURE_ONLY; background monitors are not started");
+    return () => {};
+  }
+  const scheduler = schedulerActivationDecision();
+  if (!scheduler.enabled) {
+    console.warn("[jobs] scheduler disabled by activation gate; API remains available and background writers are not started");
     return () => {};
   }
   const redis = getRedis();
@@ -174,6 +217,10 @@ export function startMonitors(io, opts = {}) {
     acquireTimer = setTimeout(async () => {
       acquireTimer = null;
       if (closed || isLeader) return;
+      if (!(await canStartWriteMonitors(opts.writeFreezeController, opts.workerPrisma))) {
+        scheduleAcquire(JOB_RETRY_MS);
+        return;
+      }
       const ok = await acquireLeader(redis, leaderId);
       if (!ok) {
         scheduleAcquire(JOB_RETRY_MS);
@@ -191,6 +238,13 @@ export function startMonitors(io, opts = {}) {
     renewTimer = setTimeout(async () => {
       renewTimer = null;
       if (closed || !isLeader) return;
+      if (!(await canStartWriteMonitors(opts.writeFreezeController))) {
+        isLeader = false;
+        await stopLocal();
+        await releaseLeader(redis, leaderId);
+        scheduleAcquire(JOB_RETRY_MS);
+        return;
+      }
       const ok = await renewLeader(redis, leaderId);
       if (!ok) {
         isLeader = false;
@@ -203,6 +257,10 @@ export function startMonitors(io, opts = {}) {
   };
 
   (async () => {
+    if (!(await canStartWriteMonitors(opts.writeFreezeController, opts.workerPrisma))) {
+      scheduleAcquire(JOB_RETRY_MS);
+      return;
+    }
     const ok = await acquireLeader(redis, leaderId);
     if (!ok) {
       scheduleAcquire(JOB_RETRY_MS);

@@ -6,6 +6,7 @@ import { navigate } from "../../router";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
 import { boardingChangeRouteRefreshLabel, boardingChangeRouteRefreshNote } from "../shared/boardingChangeUi";
+import { shouldClearDriverTodaySelection } from "./todaySelectionLifecycle";
 
 import QueueDetailTable from "../../components/QueueDetailTable";
 import CollapsibleSection from "../../components/CollapsibleSection";
@@ -48,6 +49,7 @@ export default function DriverTodayPanel() {
   const flushBusyRef = useRef(false);
   const loadRef = useRef(null);
   const flushNowRef = useRef(null);
+  const previousCopilotSelectionRef = useRef(null);
 
   const active = data?.active || null;
   const today = data?.today || EMPTY_ARRAY;
@@ -129,7 +131,7 @@ export default function DriverTodayPanel() {
       selectedRecordStatus: [
         `Durum: ${displayStatusLabel(String(copilotSelectedShift?.status || "-").toUpperCase())}`,
         `Araç: ${copilotSelectedVehicle?.plate || copilotSelectedShift?.vehicle?.plate || "Yok"}`,
-        `Sürücü: ${copilotSelectedShift?.driver?.fullName || copilotSelectedShift?.driver?.name || "Yok"}`,
+        `Sürücü: ${copilotSelectedShift?.driver?.fullName || copilotSelectedShift?.driver?.name || (copilotSelectedShift?.driverId ? `#${copilotSelectedShift.driverId}` : "Yok")}`,
         `Durak: ${Array.isArray(copilotSelectedShift?.stops) ? copilotSelectedShift.stops.length : Number(copilotSelectedShift?.stopCount || 0)}`,
         `Son GPS: ${gpsAge}`,
         `GPS durumu: ${gpsStateLabel}`,
@@ -146,7 +148,7 @@ export default function DriverTodayPanel() {
         { label: "Vardiya", value: `#${copilotSelectedShift?.id || "-"}` },
         { label: "Durum", value: displayStatusLabel(String(copilotSelectedShift?.status || "-").toUpperCase()) },
         { label: "Araç", value: copilotSelectedVehicle?.plate || copilotSelectedShift?.vehicle?.plate || "-" },
-        { label: "Sürücü", value: copilotSelectedShift?.driver?.fullName || copilotSelectedShift?.driver?.name || "-" },
+        { label: "Sürücü", value: copilotSelectedShift?.driver?.fullName || copilotSelectedShift?.driver?.name || (copilotSelectedShift?.driverId ? `#${copilotSelectedShift.driverId}` : "-") },
         { label: "Durak", value: String(Array.isArray(copilotSelectedShift?.stops) ? copilotSelectedShift.stops.length : Number(copilotSelectedShift?.stopCount || 0)) },
         { label: "Son GPS", value: gpsAge },
         { label: "GPS durumu", value: gpsStateLabel },
@@ -157,7 +159,7 @@ export default function DriverTodayPanel() {
         { label: "Vardiya", value: `#${copilotSelectedShift?.id || "-"}` },
         { label: "Durum", value: displayStatusLabel(String(copilotSelectedShift?.status || "-").toUpperCase()) },
         { label: "Araç", value: copilotSelectedVehicle?.plate || copilotSelectedShift?.vehicle?.plate || "-" },
-        { label: "Sürücü", value: copilotSelectedShift?.driver?.fullName || copilotSelectedShift?.driver?.name || "-" },
+        { label: "Sürücü", value: copilotSelectedShift?.driver?.fullName || copilotSelectedShift?.driver?.name || (copilotSelectedShift?.driverId ? `#${copilotSelectedShift.driverId}` : "-") },
         { label: "Durak", value: String(Array.isArray(copilotSelectedShift?.stops) ? copilotSelectedShift.stops.length : Number(copilotSelectedShift?.stopCount || 0)) },
         { label: "Son GPS", value: gpsAge },
         { label: "GPS durumu", value: gpsStateLabel },
@@ -188,13 +190,19 @@ export default function DriverTodayPanel() {
   }, [copilotFacts, copilotSelectedShift, copilotSelectedVehicle]);
 
   useEffect(() => {
-    if (!copilotSelectedShift) {
+    const nextSelection = copilotSelectedShift ? copilotSelection : null;
+    if (shouldClearDriverTodaySelection(previousCopilotSelectionRef.current, nextSelection)) {
       clearCopilotSelection("/driver/today");
-      return undefined;
     }
-    setCopilotSelection(copilotSelection);
-    return () => clearCopilotSelection("/driver/today");
+    if (nextSelection) setCopilotSelection(nextSelection);
+    else clearCopilotSelection("/driver/today");
+    previousCopilotSelectionRef.current = nextSelection;
   }, [copilotSelection, copilotSelectedShift]);
+
+  useEffect(() => () => {
+    previousCopilotSelectionRef.current = null;
+    clearCopilotSelection("/driver/today");
+  }, []);
 
   async function load() {
     setErr("");

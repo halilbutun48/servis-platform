@@ -143,7 +143,7 @@ export function agreementIntersectsRange(ag, startAt, endAt) {
   return false;
 }
 
-export async function findAgreementConflictForRange({ vehicleId, driverId, startAt, endAt }) {
+export async function findAgreementConflictForRange({ vehicleId, driverId, startAt, endAt, excludeAgreementId }) {
   const s = new Date(startAt);
   const e = new Date(endAt);
 
@@ -152,6 +152,7 @@ export async function findAgreementConflictForRange({ vehicleId, driverId, start
   const e0 = dateOnlyTR(e);
 
   const where = {
+    ...(excludeAgreementId ? { id: { not: Number(excludeAgreementId) } } : {}),
     status: { in: ["APPROVED", "ACTIVE"] },
     ...(vehicleId ? { vehicleId } : {}),
     ...(driverId ? { driverId } : {}),

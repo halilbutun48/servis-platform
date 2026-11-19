@@ -90,7 +90,7 @@ export function parentRouter() {
   const r = express.Router();
 
   // GET /api/parent/children
-  r.get("/children", authRequired(), requireRole("PARENT"), async (req, res) => {
+  r.get("/children", authRequired(), requireRole("PARENT"), requireConsent(CONSENT_DOCS.LOCATION.docKey, CONSENT_DOCS.LOCATION.docVersion), async (req, res) => {
     const u = req.user;
 
     const links = await prisma.parentChild.findMany({

@@ -1,0 +1,38 @@
+import { chromium } from '@playwright/test';
+const base = process.env.M18_BASE || 'http://localhost:5273';
+const width = Number(process.env.M18_WIDTH || 1440);
+const browser = await chromium.launch({ headless: true });
+const context = await browser.newContext({ viewport: { width, height: 900 }, locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
+const page = await context.newPage();
+page.setDefaultTimeout(10000);
+page.on('requestfailed', (request) => console.log(`requestfailed ${request.url()} ${request.failure()?.errorText || ''}`));
+console.log('goto-login');
+await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+const username = page.locator('input[autocomplete="username"]');
+console.log('login-form', await username.count());
+if (await username.count()) {
+  await username.fill('parent@demo.com');
+  await page.locator('input[autocomplete="current-password"]').fill('demo123');
+  const responsePromise = page.waitForResponse((candidate) => new URL(candidate.url()).pathname === '/api/auth/login', { timeout: 15000 });
+  await page.locator('button[type="submit"]').click();
+  const response = await responsePromise;
+  console.log('login-response', response.status());
+  await page.waitForTimeout(700);
+}
+console.log('goto-parent');
+await page.goto(`${base}/#/parent/live`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+await page.waitForTimeout(1200);
+const body = await page.locator('body').innerText();
+const fab = page.locator('.copilotFab:visible').first();
+if (await fab.count()) await fab.click();
+await page.waitForTimeout(250);
+const drawer = page.locator('.copilotDrawer:visible').first();
+const prompt = 'Öğrencimin servisi nerede?';
+const copilotResponsePromise = page.waitForResponse((candidate) => new URL(candidate.url()).pathname === '/api/ai/copilot' && candidate.request().method() === 'POST', { timeout: 25000 });
+await drawer.locator('textarea').first().fill(prompt);
+await drawer.locator('button[type="submit"]').click();
+const copilotResponse = await copilotResponsePromise;
+const copilotBody = await copilotResponse.json();
+await page.waitForTimeout(600);
+console.log(JSON.stringify({ url: page.url(), drawerCount: await drawer.count(), fabCount: await page.locator('.copilotFab:visible').count(), body: body.slice(0, 1800), drawerText: await drawer.innerText().catch(() => ''), prompt, copilotStatus: copilotResponse.status(), provider: copilotBody?.provider, source: copilotBody?.source || null, reply: copilotBody?.reply, visibleAssistant: await drawer.locator('.copilotMsg.assistant:visible').last().innerText().catch(() => ''), errors: [] }, null, 2));
+await browser.close();

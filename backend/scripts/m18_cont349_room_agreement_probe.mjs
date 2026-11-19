@@ -1,0 +1,5 @@
+import { chromium } from "@playwright/test";
+const b=await chromium.launch({headless:true}); const c=await b.newContext({viewport:{width:1440,height:900},locale:'tr-TR'}); const p=await c.newPage();
+await p.goto('http://localhost:5273/',{waitUntil:'domcontentloaded'}); if(await p.locator('input[autocomplete="username"]').count()){await p.locator('input[autocomplete="username"]').fill('room@demo.com'); await p.locator('input[autocomplete="current-password"]').fill('demo123'); await p.locator('button[type="submit"]').click(); await p.waitForTimeout(1400);}
+await p.goto('http://localhost:5273/#/room/agreements',{waitUntil:'domcontentloaded'}); await p.waitForTimeout(1300);
+console.log(JSON.stringify({text:(await p.locator('body').innerText()).slice(-12000),buttons:await p.locator('button:visible').allInnerTexts(),links:await p.locator('a:visible').allInnerTexts(),inputs:await p.locator('input:visible').evaluateAll(ns=>ns.map(n=>({type:n.type,placeholder:n.placeholder,value:n.value}))),selects:await p.locator('select:visible').evaluateAll(ns=>ns.map(n=>({value:n.value,options:Array.from(n.options).map(o=>o.text)})))},null,2)); await b.close();

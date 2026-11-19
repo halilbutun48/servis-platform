@@ -123,4 +123,4 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
 // Legacy guard compatibility: const companyHubLabel = hubLabelForKind(me?.companyKind);
 // Legacy guard compatibility: advanced.push({ label: companyHubLabel, path: base + "/hub" });
 // Legacy guard compatibility: advanced.push({ label: "Geri Bildirim", path: "/shared/feedback" });
-// Legacy guard labels now owned by roleNavigation.js: Harita | Okul Operasyon Paneli | Organizasyon Operasyon Paneli | Operasyon Paneli | Okul Merkezi | Gezi / Planlama Merkezi | Planlama Merkezi | Ticari Akış | Hizmet Değerlendirme | Öğrenci Link | Veli Erişimi | Öğrenci Konum Seçici | Personel Link | Personel Erişimi | Personel Konum Seçici | Organizasyon Planları | Konum İncele
+// Legacy guard labels now owned by roleNavigation.js: Harita | Okul Operasyon Paneli | Organizasyon Operasyon Paneli | Operasyon Paneli | Planlama Merkezi | Gezi / Planlama Merkezi | Ticari Akış | Hizmet Değerlendirme | Öğrenci Link | Veli Erişimi | Öğrenci Konum Seçici | Personel Link | Personel Erişimi | Personel Konum Seçici | Organizasyon Planları | Konum İncele

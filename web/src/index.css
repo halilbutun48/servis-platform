@@ -452,6 +452,106 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   }
 }
 
+/* Guided targets must stay visible on tablet-sized desktop viewports. The
+   drawer component supplies the matching temporary 320px-safe width and
+   right-rail position; these rules keep its header usable at that width. */
+@media (min-width: 721px) and (max-width: 1180px) {
+  /* Use the Vardiyalar-sized shared drawer on every tablet route. The
+     underlying panel (offers, agreements, commercial flow, etc.) must not
+     decide a different alignment or push the Sefer Abi controls off-screen. */
+  body .copilotDrawer:not(.copilotDrawer--maximized) {
+    min-width: 320px;
+    max-width: 420px;
+  }
+
+  body .copilotDrawer:not(.copilotDrawer--maximized) .copilotDrawerHeader {
+    gap: 6px;
+    padding: 8px 9px;
+  }
+
+  body .copilotDrawer:not(.copilotDrawer--maximized) .copilotDrawerIdentity {
+    gap: 7px;
+  }
+
+  body .copilotDrawer:not(.copilotDrawer--maximized) .copilotDrawerIdentity > .seferAbiAvatar {
+    width: 72px !important;
+    height: 72px !important;
+  }
+
+  body .copilotDrawer:not(.copilotDrawer--maximized) .copilotDrawerTitle {
+    font-size: 14px;
+    line-height: 1.15;
+  }
+
+  body .copilotDrawer:not(.copilotDrawer--maximized) .copilotDrawerContext,
+  body .copilotDrawer:not(.copilotDrawer--maximized) .copilotDrawerState,
+  body .copilotDrawer:not(.copilotDrawer--maximized) .copilotDrawerCompactContext {
+    font-size: 10px;
+  }
+
+  body .copilotDrawer:not(.copilotDrawer--maximized) .copilotDrawerHeaderActions {
+    gap: 3px;
+  }
+
+  body .copilotDrawer:not(.copilotDrawer--maximized) .copilotDrawerHeaderActions .copilotWindowControl {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    padding: 0;
+  }
+
+  body .copilotDrawer.copilotDrawer--guided-target:not(.copilotDrawer--maximized) .copilotDrawerIdentity > .seferAbiAvatar {
+    width: 72px !important;
+    height: 72px !important;
+  }
+
+  body .copilotDrawer.copilotDrawer--guided-target:not(.copilotDrawer--maximized) .copilotDrawerTitle {
+    font-size: 14px;
+  }
+
+  body .copilotDrawer.copilotDrawer--guided-target:not(.copilotDrawer--maximized) .copilotDrawerHeaderActions {
+    gap: 4px;
+  }
+
+  body .copilotDrawer.copilotDrawer--guided-target:not(.copilotDrawer--maximized) .copilotDrawerHeaderActions .copilotToolBtn {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0;
+  }
+}
+
+/* CONT-207: at compact mobile widths keep the avatar and four standard
+   window controls in separate rows. At 390px the two-column header would
+   otherwise squeeze the 100px avatar beside four 44px controls. This
+   preserves usable touch movement lanes without overlapping the header
+   contents. The glyphs stay compact while the buttons retain their
+   accessible hit area and labels. */
+@media (max-width: 400px) {
+  body .copilotDrawer.copilotDrawer.copilotDrawer .copilotDrawerHeader {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: flex-start;
+  }
+
+  body .copilotDrawer.copilotDrawer.copilotDrawer .copilotDrawerIdentity,
+  body .copilotDrawer.copilotDrawer.copilotDrawer .copilotDrawerHeaderActions {
+    width: 100%;
+  }
+
+  body .copilotDrawer.copilotDrawer.copilotDrawer .copilotDrawerHeaderActions {
+    justify-content: flex-end;
+  }
+
+  body .copilotDrawer.copilotDrawer.copilotDrawer .copilotWindowControl > span:first-child {
+    font-size: 13px;
+  }
+
+  body .copilotDrawer.copilotDrawer.copilotDrawer .copilotToolBtn--close {
+    font-size: 16px;
+  }
+}
+
 /* Explicit authenticated recovery for invalid/deep-link routes. */
 .notFoundRecovery {
   min-height: min(62vh, 620px);
@@ -1552,6 +1652,53 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 .muted { color:#98a2b3; font-size: 13px; }
 .err { color:#ffb4b4; border-color:#6b1d1d; }
 .ok { color:#aef3c2; }
+.finance-risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #475569;
+  background: rgba(148, 163, 184, .10);
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .01em;
+  line-height: 1.25;
+  max-width: 100%;
+  white-space: normal;
+}
+.finance-risk-badge[data-risk="green"] {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, .16);
+  color: #bbf7d0;
+}
+.finance-risk-badge[data-risk="orange"] {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, .16);
+  color: #fde68a;
+}
+.finance-risk-badge[data-risk="red"] {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, .16);
+  color: #fecaca;
+}
+.finance-risk-badge[data-risk="gray"] {
+  border-color: #64748b;
+  background: rgba(148, 163, 184, .12);
+  color: #e2e8f0;
+}
+.finance-risk-card[data-risk="green"] { border-color: rgba(34, 197, 94, .35); background: rgba(34, 197, 94, .04); }
+.finance-risk-card[data-risk="orange"] { border-color: rgba(245, 158, 11, .35); background: rgba(245, 158, 11, .05); }
+.finance-risk-card[data-risk="red"] { border-color: rgba(239, 68, 68, .35); background: rgba(239, 68, 68, .05); }
+.finance-risk-card[data-risk="gray"] { border-color: rgba(148, 163, 184, .24); background: rgba(148, 163, 184, .04); }
+@media (prefers-color-scheme: light) {
+  .finance-risk-badge[data-risk="green"] { color: #166534; background: #dcfce7; }
+  .finance-risk-badge[data-risk="orange"] { color: #92400e; background: #fef3c7; }
+  .finance-risk-badge[data-risk="red"] { color: #991b1b; background: #fee2e2; }
+  .finance-risk-badge[data-risk="gray"] { color: #334155; background: #f1f5f9; }
+}
 .pill {
   display: inline-flex;
   align-items: center;
@@ -2420,6 +2567,8 @@ button, input, select, textarea, .btn, .secondary {
 .row { flex-wrap: wrap; }
 .tbl { width: 100%; }
 
+.roomAgreementsOtherMobileCards { display: none; }
+
 .tableWrap {
   width: 100%;
   max-width: 100%;
@@ -2778,6 +2927,10 @@ button, input, select, textarea, .btn, .secondary {
   .panelChromeActions > *, .saActions > * { flex: 1 1 100%; }
   .btn, .secondary, .navItem, .tabletQuickButton { min-height: 44px; }
   .tbl { min-width: 0; width: 100%; }
+  .roomAgreementsOtherDesktopTable { display: none; }
+  .roomAgreementsOtherMobileCards { display: grid; gap: 10px; }
+  .roomAgreementMobileCard { display: grid; gap: 12px; }
+  .roomAgreementMobileMeta { display: grid; gap: 10px; }
   .modal-backdrop { align-items: flex-end; padding: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
   .modal { width: 100%; max-height: min(92dvh, 92vh); border-radius: 18px 18px 0 0; }
 
@@ -3031,6 +3184,10 @@ button, input, select, textarea, .btn, .secondary {
 .copilotContextSuggestionsToggle:hover,
 .copilotContextSuggestionsToggle:focus-visible { background: rgba(197, 216, 248, .6); }
 .copilotContextSuggestionsChevron { font-size: 16px; line-height: 1; }
+.copilotContextSuggestionsLabel { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.copilotContextSuggestionsLabel small { font-size: .9em; font-weight: 500; color: #667085; }
+.copilotContextSuggestionsIcon { position: relative; display: inline-block; width: 11px; height: 9px; border: 1.4px solid currentColor; border-radius: 50%; flex: 0 0 auto; }
+.copilotContextSuggestionsIcon::after { content: ""; position: absolute; left: 1px; bottom: -3px; width: 4px; height: 4px; border-left: 1.4px solid currentColor; transform: skew(-26deg); }
 .copilotContextSuggestions .copilotSuggestionWrap {
   border-bottom: 0;
   padding-top: 7px;
@@ -3098,14 +3255,10 @@ button, input, select, textarea, .btn, .secondary {
   white-space: nowrap;
   box-shadow: 0 1px 0 rgba(255,255,255,.55) inset;
 }
-@media (max-width: 420px) {
-  .copilotDrawer:has(.copilotContextSuggestionsToggle[aria-expanded="true"]) {
-    /* Opening suggestions is an explicit expanded state. Keep the same
-       bounded height as the mobile expansion control so the disclosure does
-       not steal the chat viewport or clip the newest exchange. */
-    height: min(75vh, 640px) !important;
-  }
-
+.copilotChipLabel { min-width: 0; }
+.copilotChipArrow { display: none; flex: 0 0 auto; margin-left: 10px; font-size: 14px; line-height: 1; }
+.copilotDrawerTitleCompact { display: none; }
+@media (max-width: 720px) {
   .copilotContextSuggestions .copilotChip {
     min-width: 0;
     min-height: 44px;
@@ -3255,7 +3408,7 @@ button, input, select, textarea, .btn, .secondary {
   .copilotComposerRow { margin-top: 6px; }
 }
 
-.copilotDrawer { resize: both; }
+.copilotDrawer { resize: none; }
 .copilotDrawer .btn.sm.copilotToolBtn { padding: 7px 10px; font-size: 12px; min-height: unset; }
 .copilotChatSurface { padding: 14px; }
 .copilotMsg { padding: 12px 13px; }
@@ -3269,10 +3422,10 @@ button, input, select, textarea, .btn, .secondary {
 
 /* Sefer Abi premium character: one product-owned, scalable identity for launcher and assistant headers. */
 .copilotFab--mascot {
-  width: 68px;
-  height: 68px;
-  min-width: 68px;
-  min-height: 68px;
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  min-height: 80px;
   padding: 6px;
   border-radius: 999px;
   display: grid;
@@ -3291,7 +3444,8 @@ button, input, select, textarea, .btn, .secondary {
 .copilotFab--mascot.copilotFab--dragging { cursor: grabbing; box-shadow: 0 18px 34px rgba(2, 6, 23, .42), 0 0 0 6px rgba(227, 183, 91, .22); }
 .copilotFab--mascot:hover, .copilotFab--mascot:focus-visible { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(2, 6, 23, .38), 0 0 0 5px rgba(227, 183, 91, .2); }
 .copilotMascotLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.copilotMascotAvatar { display: grid; place-items: center; width: 54px; height: 54px; }
+.copilotMascotAvatar { display: grid; place-items: center; width: 64px; height: 64px; }
+.copilotFab--mascot .seferAbiAvatar { width: 64px !important; height: 64px !important; }
 .copilotFab--map-safe { position:fixed; }
 .copilotFab--smart-safe { position:fixed; }
 .copilotLauncherStack {
@@ -3341,6 +3495,95 @@ button, input, select, textarea, .btn, .secondary {
 .copilotAttentionBubble--below { top: calc(100% + 10px); bottom: auto; }
 .copilotAttentionBubble--below::after { top: -6px; bottom: auto; transform: rotate(225deg); }
 .copilotAttentionBubbleTitle { color: #fbbf24; font-weight: 900; }
+.copilotAttentionBubbleSuggestion { color: #d0d5dd; font-size: 11px; }
+.copilotAttentionBubble--success { border-color: rgba(74, 222, 128, .62); box-shadow: 0 12px 26px rgba(2, 6, 23, .34), 0 0 0 3px rgba(74, 222, 128, .08); }
+.copilotAttentionBubble--success::after { border-color: rgba(74, 222, 128, .62); }
+.copilotAttentionBubble--success .copilotAttentionBubbleTitle { color: #86efac; }
+.copilotProactiveBubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: min(240px, calc(100vw - 24px));
+  max-width: min(240px, calc(100vw - 24px));
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(96, 165, 250, .62);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(31, 43, 68, .98), rgba(15, 25, 47, .98));
+  color: #f8fafc;
+  box-shadow: 0 12px 26px rgba(2, 6, 23, .34), 0 0 0 3px rgba(96, 165, 250, .08);
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.35;
+  z-index: 1;
+  pointer-events: none;
+}
+.copilotProactiveBubble::after {
+  content: "";
+  position: absolute;
+  right: 21px;
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  border-right: 1px solid rgba(96, 165, 250, .62);
+  border-bottom: 1px solid rgba(96, 165, 250, .62);
+  background: #172642;
+  transform: rotate(45deg);
+}
+.copilotProactiveBubbleBody { display: grid; gap: 3px; padding-right: 18px; }
+.copilotProactiveBubbleActions { display: flex; align-items: center; gap: 8px; }
+.copilotProactiveBubbleAction {
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid rgba(147, 197, 253, .52);
+  border-radius: 8px;
+  background: rgba(30, 64, 175, .46);
+  color: #eff6ff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.copilotProactiveBubbleAction:hover,
+.copilotProactiveBubbleAction:focus-visible { background: rgba(37, 99, 235, .72); }
+.copilotProactiveBubbleClose {
+  margin-left: auto;
+  width: 28px;
+  min-height: 30px;
+  padding: 0;
+  border: 1px solid rgba(148, 163, 184, .36);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, .58);
+  color: #cbd5e1;
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.copilotProactiveBubbleClose:hover,
+.copilotProactiveBubbleClose:focus-visible { color: #fff; border-color: rgba(226, 232, 240, .62); }
+.copilotContextCue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(245, 158, 11, .25);
+  background: #fffbeb;
+  color: #7a2e0e;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.copilotContextCue > div { display: grid; gap: 2px; min-width: 0; }
+.copilotContextCue strong { color: #b54708; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.copilotContextCue span { overflow-wrap: anywhere; }
+.copilotContextCue small { color: #925f16; }
+.copilotContextCue--success { border-bottom-color: rgba(74, 222, 128, .3); background: #ecfdf3; color: #14532d; }
+.copilotContextCue--success strong { color: #087443; }
+.copilotContextCue--success small { color: #166534; }
 .parentLiveStatusBand { min-width:0; }
 .parentLiveStatusBandTitle { color:#bfd0f2; }
 .parentLiveStatusGrid { min-width:0; }
@@ -3399,6 +3642,70 @@ button, input, select, textarea, .btn, .secondary {
   user-select: none;
   -webkit-user-drag: none;
   will-change: transform;
+  opacity: 1;
+  transition: opacity .12s ease;
+}
+.seferAbiAvatar__canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: opacity .12s ease;
+}
+.seferAbiAvatar[data-canvas-ready="true"] .seferAbiAvatar__fallback {
+  opacity: 0;
+}
+.seferAbiAvatar[data-canvas-ready="true"] .seferAbiAvatar__canvas {
+  opacity: 1;
+}
+
+/* Keep the approved source portrait visible while the flattened-PNG facial
+   layer experiment is not visually approved. Status rings and marks still
+   communicate the real assistant state without drawing fake facial features. */
+.seferAbiAvatar[data-facial-animation="static"] .seferAbiAvatar__fallback {
+  opacity: 1 !important;
+  animation: none !important;
+}
+.seferAbiAvatar[data-facial-animation="static"] .seferAbiAvatar__canvas {
+  opacity: 0 !important;
+  visibility: hidden;
+}
+.seferAbiAvatar[data-sprite-animation="trial"] .seferAbiAvatar__fallback,
+.seferAbiAvatar[data-sprite-animation="expression"] .seferAbiAvatar__fallback {
+  opacity: 0 !important;
+}
+.seferAbiAvatar[data-sprite-animation="expression"][data-expression-transition="loading"] .seferAbiAvatar__fallback,
+.seferAbiAvatar[data-sprite-animation="expression"][data-expression-transition="out"] .seferAbiAvatar__fallback,
+.seferAbiAvatar[data-sprite-animation="expression"][data-expression-transition="in"] .seferAbiAvatar__fallback {
+  opacity: 1 !important;
+  transition: opacity .12s ease;
+}
+.seferAbiAvatar__sprite,
+.seferAbiAvatar__expression {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.seferAbiAvatar__expression--current,
+.seferAbiAvatar__expression--pending {
+  transition: opacity .12s ease;
+}
+.seferAbiAvatar__expressionFrame {
+  background-repeat: no-repeat;
+  background-color: transparent;
+}
+.seferAbiAvatar--static-portrait .seferAbiAvatar__image {
+  animation: none !important;
 }
 .seferAbiAvatar__stateMark {
   position: absolute;
@@ -3440,6 +3747,12 @@ button, input, select, textarea, .btn, .secondary {
 .seferAbiAvatar--listening .seferAbiAvatar__image { animation: seferAbiCharacterListening 1.8s ease-in-out infinite; }
 .seferAbiAvatar--thinking .seferAbiAvatar__image { animation: seferAbiCharacterThinking 1.7s ease-in-out infinite; }
 .seferAbiAvatar--responding .seferAbiAvatar__image { animation: seferAbiCharacterResponding .92s ease-in-out infinite; }
+
+/* Canvas owns the visible character motion once the approved portrait is ready.
+   The legacy image keyframes remain as a safe load-failure fallback only. */
+.seferAbiAvatar[data-canvas-ready="true"] .seferAbiAvatar__image {
+  animation: none !important;
+}
 
 @keyframes seferAbiCharacterIdle {
   0%, 100% { transform: translateY(1px) scale(1.06) rotate(0deg); }
@@ -3510,6 +3823,54 @@ button, input, select, textarea, .btn, .secondary {
 
 @media (prefers-reduced-motion: reduce) {
   .seferAbiAvatar *, .seferAbiAvatar, .copilotFab--mascot { animation: none !important; transition: none !important; }
+  .seferAbiAvatar__canvas { transition: none !important; }
+}
+
+/* Frameless Sefer Abi surfaces: preserve the existing click target and portrait
+   asset while removing the legacy navy disc, gold ring, and state halos. */
+.copilotFab--mascot.copilotFab--frameless {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+.copilotFab--mascot.copilotFab--frameless:hover,
+.copilotFab--mascot.copilotFab--frameless.copilotFab--dragging {
+  transform: translateY(-2px);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.copilotFab--mascot.copilotFab--frameless:focus-visible {
+  outline: 2px solid rgba(227, 183, 91, .9);
+  outline-offset: 4px;
+}
+.copilotFab--mascot.copilotFab--frameless .copilotMascotAvatar,
+.copilotFab--mascot.copilotFab--frameless .seferAbiAvatar {
+  width: 100% !important;
+  height: 100% !important;
+}
+.seferAbiAvatar--frameless {
+  overflow: visible;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none !important;
+  filter: drop-shadow(0 3px 5px rgba(2, 6, 23, .28));
+  animation: none !important;
+}
+.seferAbiAvatar--frameless::before,
+.seferAbiAvatar--frameless::after {
+  display: none !important;
+  content: none;
+}
+.seferAbiAvatar--frameless .seferAbiAvatar__stateMark {
+  display: none !important;
+}
+.seferAbiAvatar--frameless .seferAbiAvatar__image {
+  animation: none !important;
 }
 
 /* PRE-#18 major-finding corrective: keep dense operational cards decision-first. */
@@ -3726,8 +4087,10 @@ button, input, select, textarea, .btn, .secondary {
 }
 @media (max-width: 720px) {
   .copilotLauncherStack { right: max(14px, env(safe-area-inset-right)); bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px)); }
-  .copilotFab--mascot { right: max(14px, env(safe-area-inset-right)); bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px)); width: 58px; height: 58px; min-width: 58px; min-height: 58px; }
-  .copilotFab--mascot .copilotMascotAvatar, .copilotFab--mascot .seferAbiAvatar { width: 44px !important; height: 44px !important; }
+  .copilotFab--mascot { right: max(14px, env(safe-area-inset-right)); bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px)); width: 64px; height: 64px; min-width: 64px; min-height: 64px; }
+  .copilotFab--mascot .copilotMascotAvatar,
+  .copilotFab--mascot .seferAbiAvatar,
+  .copilotWorkspaceIdentity > .seferAbiAvatar { width: 48px !important; height: 48px !important; }
   .copilotDrawer { top: auto; right: 12px; left: 12px; bottom: max(88px, calc(env(safe-area-inset-bottom) + 78px)); width: auto !important; max-width: none; }
   .copilotDrawer--from-left { left: 12px; right: 12px; }
   .copilotDrawer--task-home-top { top: 12px; bottom: auto; }
@@ -3741,7 +4104,8 @@ button, input, select, textarea, .btn, .secondary {
     height: min(var(--copilot-map-safe-height, 66vh), 560px) !important;
     max-height: calc(100dvh - 88px);
   }
-  .copilotAttentionBubble { width: min(224px, calc(100vw - 24px)); padding: 9px 10px; font-size: 11px; }
+  .copilotAttentionBubble,
+  .copilotProactiveBubble { width: min(224px, calc(100vw - 24px)); padding: 9px 10px; font-size: 11px; }
   .parentLiveStatusGrid { grid-template-columns: 1fr !important; }
   .parentLiveStatusCard { padding: 10px !important; }
 }
@@ -3766,6 +4130,29 @@ button, input, select, textarea, .btn, .secondary {
 .roleSectionKicker, .roleTaskActionHint { font-size: 11px; letter-spacing: .1em; font-weight: 800; color: #93c5fd; }
 .roleTaskHeroAction { display: grid; gap: 8px; justify-items: end; min-width: 190px; }
 .rolePrimaryCta { min-height: 44px; white-space: nowrap; }
+.planningFlowNavigator {
+  display: grid;
+  gap: 14px;
+  margin: 14px 0;
+  padding: 18px;
+  border: 1px solid rgba(59, 130, 246, .42);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 10px 24px rgba(30, 64, 175, .12);
+}
+.planningFlowNavigatorHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.planningFlowNavigator h2 { margin: 4px 0 6px; color: #0f2f68; font-size: clamp(20px, 2.4vw, 28px); }
+.planningFlowNavigator p { margin: 0; color: #31527e; line-height: 1.5; }
+.planningFlowNavigatorAction { min-width: 150px; min-height: 44px; }
+.planningFlowNavigatorSteps { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; list-style: none; padding: 0; margin: 0; }
+.planningFlowNavigatorStep { display: grid; gap: 7px; align-content: start; min-width: 0; min-height: 94px; padding: 11px; border: 1px solid rgba(30, 64, 175, .18); border-radius: 12px; background: rgba(255, 255, 255, .76); color: #193b68; font-size: 12px; font-weight: 800; line-height: 1.35; }
+.planningFlowNavigatorStep[data-step-current="true"] { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, .16); }
+.planningFlowNavigatorStep[data-step-done="true"] { background: rgba(220, 252, 231, .8); border-color: rgba(22, 101, 52, .28); color: #14532d; }
+.planningFlowNavigatorStepIndex { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 999px; background: #2563eb; color: #fff; font-size: 12px; }
+.planningFlowNavigatorStep[data-step-done="true"] .planningFlowNavigatorStepIndex { background: #16a34a; }
+.planningFlowNavigatorStep strong { color: #55708f; font-size: 11px; }
+.planningFlowNavigatorNote { padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, .62); color: #31527e; font-size: 12px; line-height: 1.45; }
+.guidedPlanBudgetCard { border: 1px solid rgba(37, 99, 235, .24); }
 .roleTaskSummaryGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .roleTaskSummaryCard { display: grid; gap: 7px; min-width: 0; padding: 16px; border: 1px solid rgba(148, 163, 184, .24); border-radius: 14px; background: var(--surface, #fff); }
 .roleTaskSummaryCard > span { font-size: 12px; font-weight: 800; color: #667085; text-transform: uppercase; letter-spacing: .06em; }
@@ -3800,11 +4187,18 @@ button, input, select, textarea, .btn, .secondary {
   .roleTaskHero { align-items: stretch; flex-direction: column; padding: 18px; }
   .roleTaskHeroAction { justify-items: stretch; min-width: 0; }
   .rolePrimaryCta { width: 100%; }
+  .planningFlowNavigatorHead { flex-direction: column; }
+  .planningFlowNavigatorAction { width: 100%; }
+  .planningFlowNavigatorSteps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .roleTaskSummaryGrid { grid-template-columns: 1fr; }
   .roleCommandCenterHead { flex-direction: column; }
   .roleCommandCenterCounts { justify-content: flex-start; }
   .roleSignalCard { align-items: stretch; flex-direction: column; }
   .roleSignalAction { width: 100%; text-align: center; }
+}
+@media (max-width: 420px) {
+  .planningFlowNavigator { padding: 14px; }
+  .planningFlowNavigatorSteps { grid-template-columns: 1fr; }
 }
 
 /* PRE-#18 — premium typography and responsive hierarchy polish.
@@ -3946,6 +4340,16 @@ body {
 .notifTblWrap th,
 .notifTblWrap td {
   line-height: 1.4;
+}
+
+/* Keep the wide agreement decision column reachable instead of clipping
+   real user actions at the desktop content rail. */
+@media (min-width: 761px) {
+  .companyAgreementsDesktopList {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .roleTaskHome {
@@ -4090,6 +4494,47 @@ textarea:focus-visible,
 
   .roleTaskHero p {
     font-size: 15px;
+  }
+}
+
+/* Buyer finance mobile safety: an open Sefer Abi conversation stays in the
+   document flow so it cannot cover the active budget or price cards. */
+@media (max-width: 720px) {
+  body:has(.pre18-finance-company) .copilotDrawer {
+    position: static;
+    inset: auto;
+    width: 100% !important;
+    max-width: none;
+    min-width: 0;
+    min-height: 0;
+    height: auto !important;
+    max-height: none;
+    margin: 12px 0 0;
+    z-index: 1;
+  }
+}
+
+/* At tablet width the side rail no longer fits beside the finance surface;
+   return the assistant to normal document flow. Wide desktop keeps a reserved
+   right rail so the drawer and financial cards remain separate. */
+@media (min-width: 721px) and (max-width: 1180px) {
+  body:has(.pre18-finance-company) .copilotDrawer {
+    position: static;
+    inset: auto;
+    width: 100% !important;
+    max-width: none;
+    min-width: 0;
+    min-height: 0;
+    height: auto !important;
+    max-height: none;
+    margin: 12px 0 0;
+    z-index: 1;
+  }
+}
+
+@media (min-width: 1181px) {
+  body:has(.pre18-finance-company) .shellContent {
+    padding-right: min(460px, 32vw);
   }
 }
 
@@ -4473,7 +4918,114 @@ textarea:focus-visible,
   }
 }
 
+/* COMPANY finance keeps Sefer Abi in the document flow on every viewport.
+   The launcher must not remain fixed over a long vehicle-comparison card. */
+body:has(.pre18-finance-company) .copilotFab--mascot {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+}
+body:has(.pre18-finance-company) .copilotLauncherStack {
+  position: absolute;
+  top: 16px;
+  right: 0;
+  bottom: auto;
+}
+
+/* ROOM finance uses the same safe-lane rule as buyer finance: Sefer Abi must
+   remain available without covering the selected period, vehicle or cost
+   result. Wide screens reserve a right rail; smaller screens place the drawer
+   after the finance surface so the primary numbers stay readable. */
+@media (min-width: 1181px) {
+  body:has(.pre18-finance-room) .shellContent {
+    padding-right: min(460px, 32vw);
+  }
+}
+
+@media (min-width: 1181px) and (max-width: 1600px) {
+  body:has(.pre18-finance-room) .shellContent {
+    padding-right: 400px;
+  }
+
+  body:has(.pre18-finance-room) .copilotDrawer {
+    width: 360px !important;
+    min-width: 360px;
+  }
+}
+
+@media (max-width: 1180px) {
+  body:has(.pre18-finance-room) .copilotDrawer {
+    position: static;
+    inset: auto;
+    width: 100% !important;
+    max-width: none;
+    min-width: 0;
+    min-height: 0;
+    height: auto !important;
+    max-height: none;
+    margin: 12px 0 0;
+    z-index: 1;
+  }
+}
+
 @media (max-width: 720px) {
+  /* On narrow screens reserve a header-adjacent lane for Sefer Abi and keep
+     the launcher in page flow while scrolling through deep cards. */
+  body:has(.pre18-finance-company) .copilotFab--mascot {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+  }
+  body:has(.pre18-finance-company) .copilotLauncherStack {
+    position: absolute;
+    top: 64px;
+    right: max(14px, env(safe-area-inset-right));
+    bottom: auto;
+  }
+  body:has(.pre18-finance-company) .shell--has-copilot-fab .shellContent {
+    padding-top: calc(86px + env(safe-area-inset-top));
+  }
+  body:has(.pre18-finance-room) .copilotFab--mascot {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+  }
+  body:has(.pre18-finance-room) .copilotLauncherStack {
+    position: absolute;
+    top: 64px;
+    right: max(14px, env(safe-area-inset-right));
+    bottom: auto;
+  }
+  body:has(.pre18-finance-room) .shell--has-copilot-fab .shellContent {
+    padding-top: calc(86px + env(safe-area-inset-top));
+  }
+
+  /* The contextual scenario is nested inside a details/card grid. Keep every
+     nested grid shrinkable on narrow screens so vehicle metrics never create
+     a wider card than the visible COMPANY page. */
+  body:has(.pre18-finance-company) .company-contextual-details,
+  body:has(.pre18-finance-company) .company-contextual-detail-grid,
+  body:has(.pre18-finance-company) .company-contextual-scenario,
+  body:has(.pre18-finance-company) .cost-scenario-workspace-shell,
+  body:has(.pre18-finance-company) .cost-scenario-workspace-shell > .card,
+  body:has(.pre18-finance-company) .cost-scenario-workspace-content,
+  body:has(.pre18-finance-company) [data-testid="scenario-vehicle-plan-alternatives"],
+  body:has(.pre18-finance-company) [data-testid^="scenario-vehicle-alternative-"] {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+  body:has(.pre18-finance-company) .vehicle-plan-metrics {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  body:has(.pre18-finance-company) [data-testid^="scenario-vehicle-alternative-"] {
+    overflow-x: clip;
+  }
+
   /* The quick assistant is a compact, two-row control surface on narrow
      screens: its controls reflow instead of competing with the heading. */
   .copilotDrawer {
@@ -5052,25 +5604,155 @@ textarea:focus-visible,
    secondary, while the close action stays immediately available. */
 .copilotDrawer {
   overflow: visible;
+  /* Keep the drawer chrome above route-specific guidance cards. The drawer
+     root still passes through empty space via pointer-events:none below, so
+     this raises only the real assistant controls without blocking the page. */
+  z-index: 4310;
   min-width: min(400px, calc(100vw - 24px));
   min-height: 500px;
   resize: none;
+  /* The window owns its visible rectangle. Guidance outside the drawer stays
+     pass-through, while real assistant controls receive native pointer input. */
+  pointer-events: auto;
+}
+
+.copilotDrawer > * { pointer-events: auto; }
+
+/* The window chrome is an intentional interaction surface: its empty
+   header area moves the desktop drawer while the child controls keep their
+   existing button behavior. */
+.copilotDrawerHeader { pointer-events: auto; }
+
+/* The transcript is its own interaction surface. Without this override the
+   drawer's pass-through rule sends wheel, scrollbar, and text-selection
+   gestures to the page underneath the assistant. */
+.copilotDrawer .copilotChatSurface {
+  pointer-events: auto;
+  user-select: text;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  scrollbar-gutter: auto;
+  padding-right: 24px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+.copilotDrawer .copilotChatSurface::-webkit-scrollbar { width: 0; height: 0; }
+
+/* Keep the composer as a first-class interaction surface so real mouse and
+   touch hit-testing cannot fall through to route cards underneath the window. */
+.copilotDrawer .copilotComposer,
+.copilotDrawer .copilotComposerInputRow {
+  pointer-events: auto;
+}
+
+.copilotChatViewport {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.copilotChatScrollbar {
+  position: absolute;
+  z-index: 4;
+  top: 6px;
+  right: 4px;
+  bottom: 6px;
+  width: 10px;
+  border-radius: 999px;
+  background: rgba(188, 204, 238, .48);
+  box-shadow: inset 0 0 0 1px rgba(114, 140, 190, .22);
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+}
+
+.copilotChatScrollbar:focus-visible {
+  outline: 2px solid #476ee8;
+  outline-offset: 2px;
+}
+
+.copilotChatScrollbar:active { cursor: grabbing; }
+
+.copilotChatScrollbarThumb {
+  position: absolute;
+  inset-inline: 1px;
+  min-height: 28px;
+  border-radius: 999px;
+  background: #6f87bd;
+  border: 1px solid rgba(238, 243, 255, .9);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.copilotChatScrollbar:hover .copilotChatScrollbarThumb,
+.copilotChatScrollbar:focus-visible .copilotChatScrollbarThumb {
+  background: #526fae;
+}
+
+/* Only the assistant's real controls should capture pointer input. The
+   drawer's copy and empty layout area must let adjacent authorized finance
+   actions remain clickable when the panel overlaps a wide card grid. */
+.copilotDrawer button,
+.copilotDrawer input,
+.copilotDrawer textarea,
+.copilotDrawer select,
+.copilotDrawer summary,
+.copilotDrawer a,
+.copilotDrawer [role="button"],
+.copilotDrawer [contenteditable="true"],
+.copilotDrawerResizeHandle {
+  pointer-events: auto;
+}
+
+/* Planning completion is a first-class finance action. Keep its three
+   authorized buttons clickable even when the assistant rail crosses the
+   service-cost card grid. */
+.pre18-finance-service-cost [data-testid^="room-planning-bucket-action-"] {
+  position: relative;
+  z-index: 4301;
+}
+
+.pre18-finance-service-cost [data-testid^="room-planning-bucket-"] {
+  position: relative;
+  z-index: 4301;
 }
 
 .copilotDrawerResizeHandle {
   position: absolute;
-  right: 3px;
-  bottom: 3px;
   z-index: 40;
-  width: 18px;
-  height: 18px;
-  border-right: 2px solid rgba(227, 183, 91, .78);
-  border-bottom: 2px solid rgba(227, 183, 91, .78);
-  border-radius: 0 0 4px 0;
-  cursor: nwse-resize;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  background: transparent;
   touch-action: none;
   user-select: none;
 }
+
+.copilotDrawerResizeHandle::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgba(227, 183, 91, .78);
+  border-radius: 3px;
+  opacity: .9;
+}
+
+.copilotDrawerResizeHandle--nw { left: -3px; top: -3px; cursor: nwse-resize; }
+.copilotDrawerResizeHandle--ne { right: -3px; top: -3px; cursor: nesw-resize; }
+.copilotDrawerResizeHandle--sw { left: -3px; bottom: -3px; cursor: nesw-resize; }
+.copilotDrawerResizeHandle--se { right: -3px; bottom: -3px; cursor: nwse-resize; }
+.copilotDrawerResizeHandle--nw::after { left: 3px; top: 3px; border-left-color: #f3cc74; border-top-color: #f3cc74; }
+.copilotDrawerResizeHandle--ne::after { right: 3px; top: 3px; border-right-color: #f3cc74; border-top-color: #f3cc74; }
+.copilotDrawerResizeHandle--sw::after { left: 3px; bottom: 3px; border-left-color: #f3cc74; border-bottom-color: #f3cc74; }
+.copilotDrawerResizeHandle--se::after { right: 3px; bottom: 3px; border-right-color: #f3cc74; border-bottom-color: #f3cc74; }
 
 .copilotDrawerResizeHandle:hover,
 .copilotDrawerResizeHandle:focus-visible {
@@ -5094,8 +5776,29 @@ textarea:focus-visible,
 }
 
 .copilotDrawerIdentity > .seferAbiAvatar {
-  width: 36px !important;
-  height: 36px !important;
+  width: 112px !important;
+  height: 112px !important;
+}
+
+@media (min-width: 721px) and (max-width: 1180px) {
+  .copilotFab--mascot {
+    width: 72px;
+    height: 72px;
+    min-width: 72px;
+    min-height: 72px;
+  }
+
+  .copilotFab--mascot .copilotMascotAvatar,
+  .copilotFab--mascot .seferAbiAvatar,
+  .copilotWorkspaceIdentity > .seferAbiAvatar {
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  .copilotDrawerIdentity > .seferAbiAvatar {
+    width: 104px !important;
+    height: 104px !important;
+  }
 }
 
 .copilotDrawerTitle {
@@ -5131,6 +5834,17 @@ textarea:focus-visible,
   align-items: center;
   flex: 0 0 auto;
   gap: 6px;
+}
+
+.copilotWindowControl { white-space: nowrap; }
+.copilotWindowControl > span:first-child { font-size: 16px; font-weight: 900; line-height: 1; }
+
+.copilotDrawer--maximized {
+  right: auto !important;
+  bottom: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  border-radius: 14px;
 }
 
 .copilotDrawerHeaderActions .copilotToolBtn--close {
@@ -5245,6 +5959,37 @@ textarea:focus-visible,
   }
 }
 
+/* Short desktop viewports still need a usable composer.  Keep the bounded
+   drawer compact without allowing its textarea or action row to escape the
+   visible panel and cover the underlying workspace. */
+@media (min-width: 721px) and (max-height: 760px) {
+  .copilotDrawer {
+    overflow: hidden;
+  }
+
+  .copilotDrawerHeader {
+    padding: 8px 10px 6px;
+  }
+
+  .copilotDrawer .copilotChatSurface {
+    padding: 8px;
+  }
+
+  .copilotDrawer .copilotComposer {
+    flex: 0 0 auto;
+    padding: 6px 10px 8px;
+  }
+
+  .copilotDrawer .copilotComposer textarea {
+    min-height: 56px;
+    height: 56px;
+  }
+
+  .copilotDrawer .copilotComposerRow {
+    margin-top: 6px;
+  }
+}
+
 @media (max-width: 720px) {
   .guidedPlanModalContent,
   .guidedPlanModalContent > * {
@@ -5287,11 +6032,17 @@ textarea:focus-visible,
   }
 
   .copilotDrawerIdentity > .seferAbiAvatar {
-    width: 32px !important;
-    height: 32px !important;
+    width: 100px !important;
+    height: 100px !important;
   }
 
-  .copilotDrawerTitle { font-size: 14px; }
+  .copilotDrawerTitle {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px;
+  }
   .copilotDrawerContext { display: none; }
   .copilotDrawerState { margin-top: 1px; font-size: 10px; }
 
@@ -5345,6 +6096,21 @@ textarea:focus-visible,
     height: auto;
     min-height: 96px;
     padding-bottom: 10px;
+    pointer-events: auto;
+    user-select: text;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  /* The ordinary mobile drawer must reserve room for its header, answer
+     area, and composer together. Guided and map-specific surfaces below keep
+     their tighter, task-specific geometry. */
+  .copilotDrawer:not(.copilotDrawer--guided-target):not(.copilotDrawer--map-top):not(.copilotDrawer--map-bottom) {
+    height: min(56dvh, 470px) !important;
+    max-height: calc(100dvh - 88px);
   }
 
   .copilotDrawer .copilotChatSurface::after {
@@ -5402,11 +6168,6 @@ textarea:focus-visible,
     overflow: visible;
   }
 
-  .copilotDrawer.copilotDrawer--mobile-expanded {
-    height: min(72vh, 620px) !important;
-    max-height: calc(100dvh - 88px);
-  }
-
   .copilotDrawer .copilotComposer textarea {
     min-height: 36px;
     height: 36px;
@@ -5448,7 +6209,6 @@ textarea:focus-visible,
   .copilotDrawer .copilotDrawerHeaderActions > .copilotToolBtn,
   .copilotDrawer .copilotDrawerMore > summary,
   .copilotDrawer .copilotContextSuggestionsToggle,
-  .copilotDrawer .copilotMobileExpandBtn,
   .copilotDrawer .copilotComposer textarea,
   .copilotDrawer .copilotComposerRow .copilotToolBtn {
     min-height: 44px;
@@ -5472,54 +6232,21 @@ textarea:focus-visible,
     height: 44px;
   }
 
-  /* Compact mode keeps the latest answer and its primary continuation action
-     visible.  Full history/detail remains available in expanded mode and
-     through the existing "Devamını anlat" action. */
-  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child {
-    padding: 4px 6px;
-    margin-bottom: 2px;
-  }
-
-  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child .copilotMsgHead {
-    margin-bottom: 2px;
-    font-size: 9px;
-  }
-
-  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child .copilotMsgText {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
+  /* Every assistant answer remains readable in the normal scroll surface;
+     no mobile expand/collapse state or automatic line clamp is used. */
+  .copilotDrawer .copilotMsg.assistant .copilotMsgText {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
     font-size: 11.5px;
-    line-height: 1.2;
+    line-height: 1.3;
   }
 
-  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child .copilotMsgActions {
-    flex-wrap: nowrap;
-    gap: 3px;
-    max-height: 26px;
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-
-  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child .copilotMsgActions > button:first-child {
-    display: none;
-  }
-
-  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child .copilotMsgActions .copilotToolBtn {
-    flex: 0 0 auto;
-    min-height: 24px;
-    padding: 2px 6px;
-    font-size: 10px;
-  }
-
-  /* The primary safe action is part of compact working mode, not an
-     optional overflow item. Keep it visible whenever the current response
-     supplied one; secondary actions may remain horizontally scrollable. */
-  .copilotDrawer:not(.copilotDrawer--mobile-expanded) .copilotMsg.assistant:last-child .copilotMsgPrimaryAction {
-    display: inline-flex !important;
-    visibility: visible;
-    opacity: 1;
+  .copilotDrawer .copilotMsg.assistant .copilotMsgActions {
+    flex-wrap: wrap;
+    gap: 4px;
+    max-height: none;
+    overflow: visible;
   }
 
   .copilotDrawerHeaderActions {
@@ -5527,14 +6254,450 @@ textarea:focus-visible,
     justify-content: flex-end;
   }
 
-  .copilotMobileExpandBtn {
-    display: inline-flex;
+  .copilotWindowControlLabel { display: none; }
+  .copilotWindowControl { min-width: 44px; width: 44px; justify-content: center; padding-inline: 0; }
+  .copilotFullWorkspaceBtn { display: inline-flex; }
+
+}
+
+/* CONT-207 mobile conversation presentation: keep the drawer visually light
+   and record-first while retaining the shared desktop component, drag state,
+   selected-record context and authorized message actions. */
+@media (max-width: 720px) {
+  body .copilotDrawer.copilotDrawer.copilotDrawer[data-mobile-frame="true"],
+  body .copilotDrawer.copilotDrawer.copilotDrawer {
+    background: rgba(9, 14, 26, .96) !important;
+    color: #f8fafc;
+    border: 1px solid #31466f;
+    border-radius: 16px;
+    box-shadow: 0 22px 50px rgba(2, 6, 23, .5);
+  }
+
+  body .copilotDrawer .copilotDrawerHeader {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px 8px;
+    background: linear-gradient(180deg, rgba(20, 34, 63, .96) 0%, rgba(12, 18, 34, .96) 100%);
+    border-bottom: 1px solid #22314f;
+  }
+
+  body .copilotDrawer .copilotDrawerIdentity {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    gap: 8px;
+  }
+
+  body .copilotDrawer .copilotDrawerIdentity > .seferAbiAvatar {
+    display: inline-grid;
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
+  }
+
+  body .copilotDrawer .copilotDrawerIdentity::before {
+    content: none;
+  }
+
+  body .copilotDrawer .copilotDrawerIdentity::after {
+    content: none;
+  }
+
+  body .copilotDrawer .copilotDrawerTitleFull,
+  body .copilotDrawer .copilotDrawerContext,
+  body .copilotDrawer .copilotDrawerState {
+    display: block;
+  }
+
+  body .copilotDrawer .copilotDrawerCompactContext {
+    display: none;
+  }
+
+  body .copilotDrawer .copilotDrawerTitleCompact {
+    display: none;
+    color: #101828;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  body .copilotDrawer .copilotDrawerTitleFull {
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  body .copilotDrawer .copilotDrawerContext {
+    margin-top: 2px;
+    color: #c8d6f6;
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  body .copilotDrawer .copilotDrawerState {
+    margin-top: 2px;
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  body .copilotDrawer .copilotDrawerHeaderActions {
+    display: flex;
+    width: auto;
+    flex: 0 0 auto;
+    gap: 2px;
+    justify-content: flex-end;
+  }
+
+  body .copilotDrawer .copilotDrawerHeaderActions .copilotToolBtn,
+  body .copilotDrawer .copilotDrawerHeaderActions .copilotToolBtn--close {
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    min-height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #c8d6f6;
+    font-size: 13px;
+    box-shadow: none;
+  }
+
+  body .copilotDrawer .copilotDrawerHeaderActions .copilotToolBtn:hover,
+  body .copilotDrawer .copilotDrawerHeaderActions .copilotToolBtn:focus-visible {
+    background: rgba(126, 164, 232, .18);
+    color: #fff;
+  }
+
+  /* Mobile chrome keeps only the two actions that fit the compact window:
+     detailed/full workspace and close. Minimize/maximize remain available
+     in the desktop chrome; mobile uses the header/dismiss gesture contract. */
+  body .copilotDrawer .copilotDrawerHeaderActions .copilotWindowControl:not(.copilotFullWorkspaceBtn) {
+    display: none;
+  }
+
+  body .copilotDrawer .copilotChatViewport {
+    min-height: 0;
+    background: linear-gradient(180deg, #eef3ff 0%, #f7faff 100%);
+  }
+
+  body .copilotDrawer .copilotChatSurface {
+    padding: 2px 8px 8px;
+    background: linear-gradient(180deg, #eef3ff 0%, #f7faff 100%);
+  }
+
+  body .copilotDrawer .copilotMsgHead {
+    height: 0;
+    margin: 0;
+    overflow: hidden;
+    font-size: 0;
+  }
+
+  body .copilotDrawer .copilotMsg {
+    margin: 0;
+    border: 0;
+    color: #243447;
+    box-sizing: border-box;
+  }
+
+  body .copilotDrawer .copilotMsg.user {
+    margin: 7px 0 0;
+    padding: 12px 12px 4px;
+    border-radius: 14px 14px 0 0;
+    background: #f3f3f3;
+    text-align: right;
+  }
+
+  body .copilotDrawer .copilotMsg.assistant {
+    margin: 0 0 8px;
+    padding: 4px 12px 12px;
+    border-radius: 0 0 14px 14px;
+    background: #f3f3f3;
+  }
+
+  body .copilotDrawer .copilotMsg:not(.user):not(.assistant) {
+    background: #f3f3f3;
+  }
+
+  body .copilotDrawer .copilotMsg.user .copilotMsgText,
+  body .copilotDrawer .copilotMsg.assistant .copilotMsgText {
+    display: inline-block;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 9px;
+    background: #fff;
+    color: #243447;
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: left;
+  }
+
+  body .copilotDrawer .copilotMsg.assistant .copilotMsgText {
+    display: block;
+  }
+
+  body .copilotDrawer .copilotContextSuggestions {
+    margin: 6px 8px 7px;
+    flex: 0 0 auto;
+    min-height: 44px;
+    border: 1px solid #d9d9d9;
+    border-radius: 12px;
+    background: rgba(236, 243, 255, .78);
+    overflow: hidden;
+  }
+
+  body .copilotDrawer .copilotContextSuggestionsToggle {
+    min-height: 44px;
+    height: 44px;
+    padding: 0 12px;
+    background: transparent;
+    color: #233557;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  body .copilotDrawer .copilotContextSuggestionsToggle small {
+    color: #667085;
+    font-weight: 500;
+  }
+
+  body .copilotDrawer .copilotSuggestionWrap {
+    display: grid;
+    gap: 7px;
+    padding: 7px;
+    border-top: 1px solid #e4e4e4;
+    border-bottom: 0;
+    background: rgba(236, 243, 255, .78);
+  }
+
+  /* The disclosure owns visibility on compact screens. Keep the native
+     [hidden] contract stronger than the open-state grid layout above. */
+  body .copilotDrawer .copilotSuggestionWrap[hidden] {
+    display: none;
+  }
+
+  body .copilotDrawer .copilotContextSuggestions .copilotChip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-width: 0;
+    min-height: 45px;
+    height: auto;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 11px;
+    background: #fff;
+    color: #173b68;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: left;
+    white-space: normal;
+    box-shadow: 0 1px 1px rgba(16, 24, 40, .04);
+  }
+
+  body .copilotDrawer .copilotContextSuggestions .copilotChip:focus-visible,
+  body .copilotDrawer .copilotContextSuggestions .copilotChip:hover {
+    background: #f8fbff;
+    outline: 2px solid #b8c6e8;
+    outline-offset: -2px;
+  }
+
+  body .copilotDrawer .copilotChipLabel {
+    overflow-wrap: anywhere;
+  }
+
+  body .copilotDrawer .copilotChipArrow {
+    display: inline;
+    color: #667085;
+  }
+
+  body .copilotDrawer .copilotComposer {
+    padding: 5px 10px 9px;
+    border-top: 1px solid #22314f;
+    background: rgba(11, 16, 30, .98);
+  }
+
+  body .copilotDrawer .copilotComposer textarea {
+    min-height: 44px;
+    height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+    background: #f7f7f7;
+    color: #101828;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  body .copilotDrawer .copilotComposerIconBtn {
+    color: #c8d6f6;
+  }
+
+  body .copilotDrawer .copilotComposerIconBtn:hover:not(:disabled),
+  body .copilotDrawer .copilotComposerIconBtn:focus-visible:not(:disabled) {
+    background: rgba(126, 164, 232, .18);
+    color: #fff;
+  }
+
+  body .copilotDrawer .copilotComposerSubmitBtn {
+    border-color: #7e9bd8;
+    background: #1c3564;
+    color: #fff;
+  }
+
+  body .copilotDrawer .copilotComposerSubmitBtn:disabled {
+    border-color: #53698f;
+    background: #24385e;
+    color: #b6c5e6;
+  }
+
+  body .copilotDrawer .copilotComposerRow {
+    margin-top: 4px;
+    justify-content: flex-end;
+  }
+
+  body .copilotDrawer .copilotComposerRow .copilotToolBtn {
+    min-height: 30px;
+    height: 30px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 11px;
   }
 }
 
+/* At the narrowest width the legacy four-control rule still assigns the
+   identity and action groups a full row. The mobile chrome now has two
+   controls, so restore the shared one-line header and give the avatar copy
+   the remaining width. */
+@media (max-width: 400px) {
+  body .copilotDrawer.copilotDrawer.copilotDrawer .copilotDrawerHeader {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  body .copilotDrawer.copilotDrawer.copilotDrawer .copilotDrawerIdentity {
+    width: auto !important;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  body .copilotDrawer.copilotDrawer.copilotDrawer .copilotDrawerHeaderActions {
+    width: auto !important;
+    flex: 0 0 auto;
+  }
+}
+
+/* CONT-207 composer contract: one compact icon row on desktop and mobile.
+   Attachment and microphone are visible future affordances only; the
+   current text-question flow remains the sole enabled submission path. */
+.copilotComposerInputRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.copilotComposerInputRow > textarea {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  height: 44px;
+  resize: none;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.copilotComposerIconBtn {
+  display: inline-grid;
+  flex: 0 0 30px;
+  place-items: center;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #475467;
+  cursor: pointer;
+}
+
+.copilotComposerIconBtn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.copilotComposerIconBtn:hover:not(:disabled),
+.copilotComposerIconBtn:focus-visible:not(:disabled) {
+  background: #f2f4f7;
+  color: #101828;
+}
+
+.copilotComposerIconBtn:disabled,
+.copilotComposerFutureBtn {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.copilotComposerClearBtn {
+  color: #667085;
+}
+
+.copilotComposerSubmitBtn {
+  border: 1px solid #101828;
+  background: #fff;
+  color: #101828;
+}
+
+.copilotComposerSubmitBtn:disabled {
+  border-color: #98a2b3;
+  color: #98a2b3;
+  background: #f2f4f7;
+}
+
+.copilotComposerSubmitBtn:not(:disabled):hover,
+.copilotComposerSubmitBtn:not(:disabled):focus-visible {
+  background: #101828;
+  color: #fff;
+}
+
+.copilotComposerInputRow + .copilotComposerRow {
+  display: none;
+}
+
+/* Keep the approved desktop Sefer Abi surface in its established deep-blue
+   tone while the composer uses the same compact icon row as mobile. */
 @media (min-width: 721px) {
-  .copilotMobileExpandBtn {
-    display: none !important;
+  body .copilotDrawer.copilotDrawer.copilotDrawer {
+    background: rgba(9, 14, 26, .96);
+    border-color: #31466f;
+    box-shadow: 0 22px 50px rgba(2, 6, 23, .5);
+  }
+
+  body .copilotDrawer .copilotDrawerHeader {
+    background: linear-gradient(180deg, rgba(20, 34, 63, .96) 0%, rgba(12, 18, 34, .96) 100%);
+    border-bottom-color: #22314f;
+  }
+
+  body .copilotDrawer .copilotComposer {
+    background: rgba(11, 16, 30, .98);
+    border-top-color: #22314f;
   }
 }
 
@@ -5562,8 +6725,7 @@ textarea:focus-visible,
 /* M18 COMPANY guided-mode hierarchy: the guided workspace owns the upper
    interaction lane and the assistant remains a compact companion below it.
    This prevents the default drawer from sharing the modal's last controls or
-   hiding the current step on narrow screens. Explicit mobile expansion keeps
-   its existing user-controlled behavior. */
+   hiding the current step on narrow screens. */
 @media (max-width: 720px) {
   body:has(.guidedPlanModalContent--primary) .guidedPlanModalContent {
     height: min(56dvh, 470px) !important;
@@ -5571,7 +6733,7 @@ textarea:focus-visible,
     margin-bottom: calc(min(35vh, 300px) + 52px) !important;
   }
 
-  body:has(.guidedPlanModalContent--primary) .copilotDrawer:not(.copilotDrawer--mobile-expanded) {
+  body:has(.guidedPlanModalContent--primary) .copilotDrawer {
     height: min(35vh, 300px) !important;
     max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 88px);
   }
@@ -5584,6 +6746,206 @@ textarea:focus-visible,
   body:has(.guidedPlanModalContent--primary) .guidedPlanModalStepTitle {
     color: #f3cc74;
     font-weight: 800;
+  }
+
+  /* Step 3 owns two desktop columns (controls + import). On narrow phones
+     those columns must become one scrollable flow; otherwise every label and
+     control is squeezed into a fraction of the modal width. */
+  .shiftPeopleOverviewGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .shiftPeopleOverviewGrid > * {
+    min-width: 0;
+  }
+
+  .shiftPeopleOverviewGrid .grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .shiftPeopleOverviewGrid .tbl {
+    width: max-content;
+    min-width: 620px;
+  }
+
+  /* Guided plan step 3 is a real form, not a desktop table squeezed into a
+     phone.  Keep the import control inside the card and represent each
+     student row as a readable field stack so names, coordinates and actions
+     remain usable at 320/390px. */
+  .shiftPeopleImportCard,
+  .shiftPeopleImportCard > *,
+  .shiftPeopleImportCard form,
+  .shiftPeopleImportCard .grid,
+  .shiftPeopleImportCard .col {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .shiftPeopleImportCard {
+    overflow-x: hidden;
+  }
+
+  .shiftPeopleImportCard input[type="file"] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    font-size: 12px;
+  }
+
+  .shiftPeopleImportCard .card {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .shiftPeopleImportCard .shiftPeopleImportModeField {
+    min-width: 0 !important;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .shiftPeopleImportCard .shiftPeopleImportModeField select,
+  .shiftPeopleImportCard input,
+  .shiftPeopleImportCard select,
+  .shiftPeopleImportCard button {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .shiftPeopleImportCard form .col > div[style*="display: flex"],
+  .shiftPeopleImportCard .card > div[style*="display: flex"] {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .shiftPeopleImportCard form .col > div[style*="display: flex"] > input,
+  .shiftPeopleImportCard .card > div[style*="display: flex"] > input {
+    flex: 1 1 140px;
+  }
+
+  .guidedDestinationRowCard {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .guidedOrganizationPlanCard {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden !important;
+  }
+
+  .guidedOrganizationSummaryGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-width: 0;
+  }
+
+  .guidedDestinationFields {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-width: 0;
+  }
+
+  .guidedDestinationFields > *,
+  .guidedDestinationRowCard input,
+  .guidedDestinationRowCard button {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .shiftPeopleListCard {
+    overflow-x: visible !important;
+  }
+
+  .shiftPeopleTable {
+    display: block;
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: auto !important;
+    white-space: normal !important;
+  }
+
+  .shiftPeopleTable thead {
+    display: none;
+  }
+
+  .shiftPeopleTable tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .shiftPeopleTable tr {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid #22314f;
+    border-radius: 10px;
+    background: rgba(12, 19, 34, .5);
+  }
+
+  .shiftPeopleTable td {
+    display: grid;
+    grid-template-columns: minmax(82px, 34%) minmax(0, 1fr);
+    gap: 8px;
+    width: 100%;
+    min-width: 0 !important;
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+    white-space: normal !important;
+    align-items: center;
+  }
+
+  .shiftPeopleTable td::before {
+    content: attr(data-label);
+    color: #a9b7d6;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .shiftPeopleTable td input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .shiftPeopleTable td:last-child {
+    display: block;
+    padding-top: 2px;
+  }
+
+  .shiftPeopleTable td:last-child::before {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .shiftPeopleTable td[colspan] {
+    display: block;
+  }
+
+  .shiftPeopleTable td[colspan]::before {
+    content: none;
+  }
+}
+
+/* Keep the launcher visible without placing its hitbox over the guided plan's
+   primary action. The avatar asset, animation and drawer remain unchanged. */
+body:has(.guidedPlanModalContent--primary) .copilotLauncherStack {
+  /* The launcher carries a saved inline position. Keep it in the modal's
+     header-safe lane while the guided flow is open: the bottom action lane
+     must remain fully clickable at every step. */
+  top: max(16px, env(safe-area-inset-top)) !important;
+  right: calc(max(18px, env(safe-area-inset-right)) + 84px) !important;
+  bottom: auto !important;
+  z-index: 9050;
+}
+
+@media (max-width: 720px) {
+  body:has(.guidedPlanModalContent--primary) .copilotLauncherStack {
+    top: max(12px, env(safe-area-inset-top)) !important;
+    right: calc(max(12px, env(safe-area-inset-right)) + 72px) !important;
+    bottom: auto !important;
   }
 }
 
@@ -5638,4 +7000,1911 @@ textarea:focus-visible,
   border-color: rgba(126, 164, 232, .42);
   color: #d9e5ff;
   font-weight: 650;
+}
+
+/* ROOM finance premium surface: keep the existing canonical workflows, but
+   give each decision a calmer hierarchy and a single obvious next step. */
+.pre18-finance-room {
+  --finance-ink: #f6f8ff;
+  --finance-muted: #9ca9bf;
+  --finance-line: rgba(126, 164, 232, .22);
+  --finance-accent: #7ea4e8;
+}
+
+.pre18-finance-room .panelChromeCard {
+  background: linear-gradient(180deg, rgba(18, 27, 45, .98), rgba(13, 21, 36, .98));
+  border-color: var(--finance-line);
+  box-shadow: 0 18px 42px rgba(2, 6, 23, .22);
+}
+
+.pre18-finance-room .panelChromeEyebrow {
+  color: #91b4ff;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.pre18-finance-room .panelChromeCard {
+  padding: 13px 15px;
+}
+
+.pre18-finance-room .panelTitle {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 28px);
+}
+
+.pre18-finance-room .panelChromeHead {
+  gap: 6px;
+}
+
+.pre18-finance-room .panelChromeEyebrow {
+  display: none;
+}
+
+.finance-quote-selected-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(126, 164, 232, .28);
+  border-radius: 10px;
+  background: rgba(7, 13, 25, .36);
+}
+
+.finance-quote-selected-context > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.finance-quote-selected-context strong,
+.finance-quote-selected-context small {
+  overflow-wrap: anywhere;
+}
+
+.finance-quote-selected-context small {
+  color: var(--finance-muted);
+}
+
+.finance-context-label {
+  color: var(--finance-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.pre18-finance-quote {
+  display: grid;
+  gap: 12px;
+}
+
+.pre18-finance-quote > [data-testid="quote-profitability-context"],
+.pre18-finance-quote > [data-testid="quote-request-context"],
+.pre18-finance-quote > [data-testid="quote-selected-scenario-binding"],
+.pre18-finance-quote > .finance-v21-card-actions,
+.pre18-finance-quote > details:last-child {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 680px) {
+  .finance-quote-selected-context {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .finance-quote-selected-context .btn {
+    width: 100%;
+  }
+}
+
+.pre18-finance-tabs {
+  padding: 4px;
+  gap: 6px !important;
+  border: 1px solid rgba(126, 164, 232, .16);
+  border-radius: 12px;
+  background: rgba(7, 13, 25, .42);
+}
+
+.pre18-finance-tabs .btn {
+  min-height: 38px;
+  border-color: transparent;
+  color: #aebbd0;
+  background: transparent;
+  font-weight: 700;
+}
+
+.pre18-finance-tabs .btn:hover,
+.pre18-finance-tabs .btn:focus-visible {
+  border-color: rgba(126, 164, 232, .42);
+  color: #f4f7ff;
+  background: rgba(126, 164, 232, .08);
+}
+
+.pre18-finance-tabs .btn.primary {
+  color: #fff;
+  border-color: rgba(126, 164, 232, .58);
+  background: linear-gradient(180deg, #315fb9, #244991);
+  box-shadow: 0 6px 18px rgba(36, 73, 145, .28);
+}
+
+.pre18-finance-tabpanel {
+  min-width: 0;
+}
+
+.pre18-finance-overview,
+.pre18-finance-expenses,
+.pre18-finance-service-cost,
+.pre18-finance-vehicle-comparison,
+.pre18-finance-quote {
+  min-width: 0;
+}
+
+.pre18-finance-overview > .muted:first-child {
+  color: var(--finance-muted);
+  max-width: 720px;
+}
+
+.pre18-finance-hero {
+  align-items: stretch;
+}
+
+.pre18-finance-metric {
+  background: rgba(255, 255, 255, .018);
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+
+.pre18-finance-metric:hover {
+  background: rgba(126, 164, 232, .045);
+  border-color: rgba(126, 164, 232, .36) !important;
+  transform: translateY(-1px);
+}
+
+.pre18-finance-hero-card {
+  min-height: 132px;
+}
+
+.pre18-finance-hero-card--ledger {
+  background: linear-gradient(145deg, rgba(24, 65, 67, .32), rgba(255, 255, 255, .02));
+}
+
+.pre18-finance-hero-card--operation {
+  background: linear-gradient(145deg, rgba(38, 58, 101, .30), rgba(255, 255, 255, .02));
+}
+
+.pre18-finance-next-step {
+  display: grid;
+  gap: 2px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.pre18-finance-next-step .panelSectionTitle,
+.pre18-finance-next-step .muted {
+  grid-column: 1;
+}
+
+.pre18-finance-next-step .btn {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  white-space: nowrap;
+}
+
+.pre18-finance-overview [data-finance-calculation-checklist],
+.pre18-finance-advanced,
+.pre18-finance-scope-card,
+.pre18-finance-decision-card,
+.pre18-finance-quote-separation {
+  border-color: rgba(126, 164, 232, .18);
+  background: rgba(255, 255, 255, .014);
+}
+
+.pre18-finance-advanced > summary,
+.pre18-finance-quote details > summary,
+.pre18-finance-quote > details > summary {
+  cursor: pointer;
+  color: #d8e3f8;
+}
+
+.pre18-finance-service-cost .card,
+.pre18-finance-vehicle-comparison .card,
+.pre18-finance-quote .card {
+  min-width: 0;
+}
+
+.finance-service-cost-sources {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(126, 164, 232, .18);
+}
+
+.finance-service-cost-context {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid rgba(126, 164, 232, .24);
+  border-radius: 12px;
+  background: rgba(18, 29, 48, .58);
+}
+
+.finance-service-cost-context-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.finance-service-cost-context-source {
+  flex: 0 0 auto;
+  color: #9fb1cc;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.finance-service-cost-context-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.finance-service-cost-context-field {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+}
+
+.finance-service-cost-context-field > span {
+  color: #9fb1cc;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.finance-service-cost-context-field > strong {
+  overflow: hidden;
+  color: #f7faff;
+  font-size: 12px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+}
+
+.finance-service-cost-context-field select {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid rgba(126, 164, 232, .32);
+  border-radius: 8px;
+  color: #f7faff;
+  background: rgba(7, 14, 27, .72);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.finance-service-cost-context-relations {
+  margin-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 10px;
+}
+
+.finance-service-cost-context-relations > summary {
+  cursor: pointer;
+  color: rgba(255,255,255,0.72);
+  font-size: 0.82rem;
+}
+
+.finance-service-cost-context-good { color: #b7f7d2 !important; }
+.finance-service-cost-context-warning { color: #ffd38a !important; }
+
+.financial-overview-financial-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.financial-overview-primary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.financial-overview-company-wide {
+  border: 1px solid rgba(126, 164, 232, .24);
+  border-radius: 12px;
+  background: rgba(18, 29, 48, .46);
+}
+
+.financial-overview-company-wide-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.financial-overview-company-wide-summary::-webkit-details-marker { display: none; }
+.financial-overview-company-wide-summary > span:first-child { display: grid; gap: 3px; min-width: 0; }
+.financial-overview-company-wide-summary strong { color: #f7faff; font-size: 13px; }
+.financial-overview-company-wide-summary small { color: #9fb1cc; font-size: 11px; }
+.financial-overview-company-wide-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 0 14px 14px; }
+
+.finance-service-cost-primary-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.finance-service-cost-evidence { margin-top: 10px; border-top: 1px solid rgba(126, 164, 232, .16); padding-top: 9px; }
+.finance-service-cost-evidence > summary { cursor: pointer; color: #b8c9e3; font-size: 11px; font-weight: 750; }
+.finance-service-cost-evidence-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+
+.room-operational-filter-bar { padding: 12px 14px; }
+.room-operational-filter-bar > .panelMeta { max-width: 680px; }
+
+.financial-overview-financial-metrics-grid .panelStatValue {
+  overflow-wrap: anywhere;
+}
+
+.finance-service-cost-scope-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 12px;
+  min-width: 0;
+  margin-top: 10px;
+  padding: 9px 12px;
+  border-top: 1px solid rgba(126, 164, 232, .18);
+  color: #9fb1cc;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.finance-service-cost-scope-note span:first-child {
+  color: #8bb1ff;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.finance-service-cost-scope-note strong { color: #f7faff; }
+
+.finance-service-cost-source-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 4px;
+}
+
+.finance-service-cost-source-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 14px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(126, 164, 232, .18);
+  border-radius: 10px;
+  background: rgba(7, 14, 27, .26);
+}
+
+.finance-service-cost-source-main,
+.finance-service-cost-source-amount,
+.finance-service-cost-source-detail {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.finance-service-cost-source-main strong,
+.finance-service-cost-source-amount strong {
+  color: #f7faff;
+  font-size: 12px;
+}
+
+.finance-service-cost-source-main span,
+.finance-service-cost-source-main small,
+.finance-service-cost-source-amount span,
+.finance-service-cost-source-detail span {
+  color: #9fb1cc;
+  font-size: 10px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.finance-service-cost-source-amount {
+  justify-items: end;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.finance-service-cost-source-detail {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding-top: 7px;
+  border-top: 1px solid rgba(126, 164, 232, .12);
+}
+
+.finance-service-cost-evidence-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid rgba(247, 178, 103, .28);
+  border-radius: 10px;
+  background: rgba(247, 178, 103, .05);
+}
+
+.finance-service-cost-evidence-form > strong,
+.finance-service-cost-evidence-form > .panelMeta,
+.finance-service-cost-evidence-form > .finance-service-cost-warning,
+.finance-service-cost-evidence-form > .finance-v21-card-actions {
+  grid-column: 1 / -1;
+}
+
+.finance-service-cost-evidence-form label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.finance-service-cost-evidence-form label > span {
+  color: #9fb1cc;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.finance-service-cost-evidence-form input,
+.finance-service-cost-evidence-form select {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 7px 8px;
+  border: 1px solid rgba(126, 164, 232, .32);
+  border-radius: 8px;
+  color: #f7faff;
+  background: rgba(7, 14, 27, .72);
+  font-size: 12px;
+}
+
+.finance-service-cost-proof-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.finance-service-cost-proof {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(126, 164, 232, .2);
+  border-radius: 10px;
+  background: rgba(7, 14, 27, .26);
+}
+
+.finance-service-cost-proof-label {
+  color: #9fb1cc;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.finance-service-cost-proof strong {
+  overflow-wrap: anywhere;
+  color: #f7faff;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.finance-service-cost-proof span {
+  color: #9fb1cc;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.finance-service-cost-proof--good { border-color: rgba(18, 183, 106, .34); }
+.finance-service-cost-proof--good strong { color: #b7f7d2; }
+.finance-service-cost-proof--warm { border-color: rgba(247, 144, 9, .34); }
+.finance-service-cost-proof--warm strong { color: #ffd38a; }
+
+.finance-service-cost-source-statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.finance-service-cost-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 7px;
+  border: 1px solid rgba(126, 164, 232, .25);
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.finance-service-cost-status--good {
+  border-color: rgba(18, 183, 106, .4);
+  color: #b7f7d2;
+  background: rgba(18, 183, 106, .08);
+}
+
+.finance-service-cost-status--warm {
+  border-color: rgba(247, 144, 9, .42);
+  color: #ffd38a;
+  background: rgba(247, 144, 9, .08);
+}
+
+.finance-service-cost-status--danger {
+  border-color: rgba(240, 68, 56, .42);
+  color: #fecaca;
+  background: rgba(240, 68, 56, .08);
+}
+
+.finance-service-cost-compare {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(126, 164, 232, .24);
+  border-radius: 10px;
+  background: rgba(7, 14, 27, .3);
+}
+
+.finance-service-cost-compare > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.finance-service-cost-compare strong {
+  color: #f7faff;
+  font-size: 13px;
+}
+
+.finance-service-cost-compare span {
+  color: #9fb1cc;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.finance-service-cost-source-empty,
+.finance-service-cost-warning {
+  padding: 9px 10px;
+  border: 1px solid rgba(247, 178, 103, .28);
+  border-radius: 9px;
+  background: rgba(247, 178, 103, .07);
+  color: #f7c98e;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.finance-service-cost-warning {
+  margin-top: 8px;
+}
+
+.financial-period-controls {
+  min-width: 0;
+}
+
+.financial-period-controls > label {
+  display: block;
+  min-width: 0;
+}
+
+.financial-period-controls select,
+.financial-period-controls input {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .financial-period-controls {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .financial-overview-financial-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .financial-overview-primary-grid,
+  .financial-overview-company-wide-grid,
+  .finance-service-cost-primary-metrics,
+  .finance-service-cost-evidence-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .financial-overview-company-wide-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .finance-service-cost-context-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .finance-service-cost-context-head {
+    flex-direction: column;
+  }
+
+  .finance-service-cost-context-source {
+    white-space: normal;
+  }
+
+  .finance-service-cost-proof-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-service-cost-source-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .finance-service-cost-source-amount {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .finance-service-cost-source-detail {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-service-cost-evidence-form {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-service-cost-source-detail .btn {
+    width: 100%;
+  }
+
+  .finance-service-cost-compare {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .finance-service-cost-compare .btn {
+    width: 100%;
+  }
+
+  .finance-service-cost-scope-note {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}
+
+/* Approved ROOM finance V2.1 overview. Other finance tabs keep their current
+   components and routes. */
+.pre18-finance-overview-v21 {
+  --finance-v21-ink: #f8fafc;
+  --finance-v21-muted: #9aabc5;
+  --finance-v21-line: rgba(126, 164, 232, .24);
+  --finance-v21-surface: rgba(18, 29, 48, .86);
+  --finance-v21-surface-soft: rgba(14, 23, 39, .82);
+  --finance-v21-green: #63e6a4;
+  --finance-v21-amber: #f7b267;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  color: var(--finance-v21-ink);
+}
+
+.finance-v21-page-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--finance-v21-line);
+}
+
+.finance-v21-page-head h1 {
+  margin: 4px 0 0;
+  color: #f8fbff;
+  font-size: clamp(32px, 3.2vw, 46px);
+  line-height: 1;
+  letter-spacing: -.045em;
+}
+
+.finance-v21-page-head p {
+  max-width: 520px;
+  margin: 8px 0 0;
+  color: #b5c5df;
+  line-height: 1.45;
+}
+
+.finance-v21-eyebrow,
+.finance-v21-section-label {
+  color: #8bb1ff;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.finance-v21-add { min-width: 118px; white-space: nowrap; }
+
+.finance-v21-scope-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) repeat(4, minmax(0, 1fr));
+  min-width: 0;
+  border-top: 1px solid var(--finance-v21-line);
+  border-bottom: 1px solid var(--finance-v21-line);
+}
+
+.finance-v21-scope-item {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 14px 13px 0;
+  border-right: 1px solid rgba(126, 164, 232, .18);
+}
+
+.finance-v21-scope-item + .finance-v21-scope-item { padding-left: 14px; }
+.finance-v21-scope-item:last-child { border-right: 0; }
+.finance-v21-scope-item span,
+.finance-v21-scope-item small,
+.finance-v21-summary-strip span,
+.finance-v21-summary-strip small { color: var(--finance-v21-muted); }
+.finance-v21-scope-item span,
+.finance-v21-summary-strip span { font-size: 10px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+.finance-v21-scope-item strong { overflow: hidden; color: #f8fbff; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.finance-v21-scope-item small,
+.finance-v21-summary-strip small { font-size: 11px; line-height: 1.35; }
+.finance-v21-scope-item--warning strong,
+.finance-v21-warning { color: var(--finance-v21-amber) !important; }
+.finance-v21-context-shell { display: contents; }
+.finance-v21-context-shell > summary { display: none; }
+.finance-v21-context-field { display: grid; gap: 4px; min-width: 0; }
+.finance-v21-context-field > span { color: var(--finance-v21-muted); font-size: 10px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+.finance-v21-context-field select { width: 100%; min-width: 0; min-height: 32px; padding: 4px 8px; border: 1px solid rgba(126, 164, 232, .32); border-radius: 7px; color: #f8fbff; background: rgba(7, 14, 27, .72); font-size: 13px; font-weight: 800; }
+.finance-v21-context-shell:not([open]) > .finance-v21-scope-grid { display: grid; }
+
+.finance-v21-actual-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, .75fr);
+  gap: 18px;
+  align-items: center;
+  min-width: 0;
+  padding-top: 8px;
+}
+
+.finance-v21-actual-copy { min-width: 0; }
+.finance-v21-actual-copy p { max-width: 700px; margin: 10px 0 12px; color: #d7e2f4; line-height: 1.5; }
+
+.finance-v21-actual-card {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 18px 20px;
+  border: 1px solid rgba(99, 230, 164, .45);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(24, 75, 72, .48), rgba(16, 42, 48, .52));
+  box-shadow: 0 14px 32px rgba(2, 6, 23, .2);
+}
+
+.finance-v21-actual-card > span { color: var(--finance-v21-green); font-size: 13px; font-weight: 850; }
+.finance-v21-actual-card strong { overflow-wrap: anywhere; color: #f7fbff; font-size: clamp(34px, 4vw, 52px); letter-spacing: -.045em; line-height: .98; }
+.finance-v21-actual-card small { color: #b9d0df; line-height: 1.4; }
+
+.finance-v21-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--finance-v21-line);
+  border-radius: 13px;
+  background: var(--finance-v21-surface);
+}
+
+.finance-v21-summary-strip > div { display: grid; gap: 6px; min-width: 0; padding: 15px 16px; border-right: 1px solid var(--finance-v21-line); }
+.finance-v21-summary-strip > div:last-child { border-right: 0; }
+.finance-v21-summary-strip strong { overflow-wrap: anywhere; color: #f8fbff; font-size: 18px; }
+.finance-v21-positive { color: var(--finance-v21-green) !important; }
+
+.finance-v21-alert { padding: 12px 14px; border: 1px solid rgba(240, 68, 56, .42); border-radius: 10px; background: rgba(240, 68, 56, .08); color: #fecaca; }
+
+.finance-v21-lower-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap: 14px; min-width: 0; }
+.finance-v21-card { display: grid; gap: 13px; min-width: 0; padding: 16px 18px; border: 1px solid var(--finance-v21-line); border-radius: 14px; background: var(--finance-v21-surface-soft); }
+.finance-v21-card-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; min-width: 0; }
+.finance-v21-card-head h2 { margin: 0; color: #f7faff; font-size: 18px; }
+.finance-v21-card-head p { max-width: 640px; margin: 5px 0 0; color: #9fb1cc; font-size: 12px; line-height: 1.4; }
+.finance-v21-expense-list { min-width: 0; }
+
+.finance-v21-expense-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-width: 0; padding: 10px 0; border-top: 1px solid rgba(126, 164, 232, .16); }
+.finance-v21-expense-row--detail-open { cursor: pointer; }
+.finance-v21-expense-icon { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid rgba(126, 164, 232, .52); border-radius: 8px; color: #9ec0ff; font-size: 13px; }
+.finance-v21-expense-main { display: grid; gap: 3px; min-width: 0; }
+.finance-v21-expense-main > strong { color: #f8fbff; font-size: 13px; }
+.finance-v21-expense-main > span { overflow: hidden; color: #9fb1cc; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.finance-v21-status-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.finance-v21-status { display: inline-flex; max-width: 100%; padding: 2px 6px; border: 1px solid rgba(126, 164, 232, .3); border-radius: 999px; color: #c6d5ee; font-size: 10px; font-weight: 750; line-height: 1.25; }
+.finance-v21-status--positive { border-color: rgba(99, 230, 164, .42); color: #8cf0bc; }
+.finance-v21-status--warning { border-color: rgba(247, 178, 103, .52); color: #f7c487; }
+.finance-v21-status--neutral { border-color: rgba(126, 164, 232, .3); color: #c6d5ee; }
+.finance-v21-expense-amount { align-self: center; color: #f5f8ff; font-size: 14px; white-space: nowrap; }
+
+.finance-v21-empty { display: grid; gap: 5px; padding: 18px 0 4px; color: #b4c2d8; }
+.finance-v21-empty strong { color: #f7faff; }
+.finance-v21-empty span { font-size: 12px; line-height: 1.45; }
+.finance-v21-vehicle-summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 12px; padding: 2px 0 8px; }
+.finance-v21-vehicle-summary strong { color: #f7faff; }
+.finance-v21-vehicle-summary b { color: var(--finance-v21-amber); font-size: 12px; text-align: right; }
+.finance-v21-vehicle-summary span { grid-column: 1 / -1; color: #9fb1cc; font-size: 11px; line-height: 1.4; }
+.finance-v21-evidence-list { display: grid; gap: 9px; padding: 10px 12px; border: 1px solid rgba(247, 178, 103, .4); border-radius: 11px; background: rgba(247, 178, 103, .06); }
+.finance-v21-evidence-list > div { display: flex; justify-content: space-between; gap: 12px; color: #aebed5; font-size: 12px; }
+.finance-v21-evidence-list b { color: #f7c487; text-align: right; }
+.finance-v21-card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.finance-v21-evidence-drawer { display: grid; gap: 12px; min-width: 0; margin-top: 2px; padding: 14px; border: 1px solid rgba(126, 164, 232, .34); border-radius: 12px; background: rgba(7, 14, 27, .54); }
+.finance-v21-evidence-drawer h3 { margin: 0; color: #f7faff; font-size: 16px; }
+.finance-v21-evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; min-width: 0; }
+.finance-v21-evidence-grid > div { display: grid; gap: 3px; min-width: 0; padding: 9px 10px; border: 1px solid rgba(126, 164, 232, .2); border-radius: 9px; background: rgba(18, 29, 48, .58); }
+.finance-v21-evidence-grid span { color: var(--finance-v21-muted); font-size: 10px; font-weight: 850; letter-spacing: .05em; text-transform: uppercase; }
+.finance-v21-evidence-grid b { overflow-wrap: anywhere; color: #f8fbff; font-size: 12px; }
+.finance-v21-evidence-note { display: grid; gap: 5px; min-width: 0; color: #b9c9df; font-size: 12px; line-height: 1.45; }
+.finance-v21-evidence-note > strong { color: #f7faff; font-size: 12px; }
+
+@media (max-width: 900px) {
+  .finance-v21-scope-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .finance-v21-scope-item:nth-child(2) { border-right: 0; }
+  .finance-v21-scope-item:nth-child(n+3) { border-top: 1px solid rgba(126, 164, 232, .18); }
+  .finance-v21-lower-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .pre18-finance-overview-v21 { gap: 10px; }
+  .finance-v21-page-head { display: grid; align-items: start; gap: 10px; padding-bottom: 9px; }
+  .finance-v21-page-head h1 { font-size: 30px; line-height: 1.03; }
+  .finance-v21-page-head p { margin-top: 5px; font-size: 13px; }
+  .finance-v21-add { width: 100%; }
+  .finance-v21-context-shell { display: block; overflow: hidden; border: 1px solid var(--finance-v21-line); border-radius: 10px; background: var(--finance-v21-surface); }
+  .finance-v21-context-shell > summary { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 10px; color: #f7faff; cursor: pointer; list-style: none; }
+  .finance-v21-context-shell > summary::-webkit-details-marker { display: none; }
+  .finance-v21-context-shell > summary > span:first-child { color: #9fb1cc; font-size: 10px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+  .finance-v21-context-shell > summary > strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+  .finance-v21-context-shell > .finance-v21-scope-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid rgba(126, 164, 232, .16); }
+  .finance-v21-context-shell:not([open]) > .finance-v21-scope-grid { display: none; }
+  .finance-v21-context-shell .finance-v21-scope-item { min-height: 82px; padding: 9px 10px; border-right: 0; border-bottom: 1px solid rgba(126, 164, 232, .12); }
+  .finance-v21-context-shell .finance-v21-scope-item:nth-child(odd) { border-right: 1px solid rgba(126, 164, 232, .12); }
+  .finance-v21-context-shell .finance-v21-scope-item:nth-last-child(-n+2) { border-bottom: 0; }
+  .finance-v21-context-shell .finance-v21-scope-item + .finance-v21-scope-item { padding-left: 10px; }
+  .finance-v21-context-shell .finance-v21-context-field select { min-height: 38px; }
+  .finance-v21-actual-layout { grid-template-columns: 1fr; gap: 8px; padding-top: 2px; }
+  .finance-v21-actual-card { order: -1; padding: 15px 17px; }
+  .finance-v21-actual-card strong { font-size: 39px; }
+  .finance-v21-actual-copy p { margin: 7px 0 9px; font-size: 13px; }
+  .finance-v21-summary-strip { grid-template-columns: 1fr; }
+  .finance-v21-summary-strip > div { padding: 13px; border-right: 0; border-bottom: 1px solid var(--finance-v21-line); }
+  .finance-v21-summary-strip > div:last-child { border-bottom: 0; }
+  .finance-v21-card { padding: 14px 12px; }
+  .finance-v21-card-head { align-items: stretch; flex-direction: column; }
+  .finance-v21-card-head .btn { align-self: start; }
+  .finance-v21-expense-row { grid-template-columns: 26px minmax(0, 1fr); }
+  .finance-v21-expense-amount { grid-column: 2; justify-self: start; }
+  .finance-v21-vehicle-summary { grid-template-columns: 1fr; }
+  .finance-v21-vehicle-summary b { text-align: left; }
+  .finance-v21-vehicle-summary span { grid-column: 1; }
+  .finance-v21-evidence-drawer { padding: 12px; }
+  .finance-v21-evidence-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 380px) {
+  .finance-v21-page-head h1 { font-size: 29px; }
+  .finance-v21-context-shell > summary { grid-template-columns: minmax(0, 1fr) auto; }
+  .finance-v21-context-shell > summary > span:first-child { grid-column: 1 / -1; }
+  .finance-v21-context-shell > summary > strong { grid-column: 1; }
+  .finance-v21-context-shell > .finance-v21-scope-grid { grid-template-columns: 1fr; }
+  .finance-v21-context-shell .finance-v21-scope-item,
+  .finance-v21-context-shell .finance-v21-scope-item:nth-child(odd) { border-right: 0; border-bottom: 1px solid rgba(126, 164, 232, .12); }
+  .finance-v21-context-shell .finance-v21-scope-item:last-child { border-bottom: 0; }
+  .finance-v21-actual-card strong { font-size: 37px; }
+  .finance-v21-status { font-size: 9px; }
+}
+
+.pre18-finance-vehicle-comparison .pre18-finance-decision-card {
+  max-width: 880px;
+}
+
+.pre18-finance-expenses [data-finance-expense-launcher],
+.pre18-finance-expenses [data-finance-batch-composer],
+.pre18-finance-expenses [data-finance-batch-review] {
+  border-color: rgba(126, 164, 232, .2);
+}
+
+/* Production Expenses V2.1: compact, evidence-first presentation. */
+.finance-v21-expenses {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  color: #e8eef9;
+}
+.finance-v21-expenses-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+.finance-v21-expenses-head h2 { margin: 2px 0 0; color: #f7faff; font-size: clamp(24px, 3vw, 34px); letter-spacing: -.03em; }
+.finance-v21-expenses-head p { max-width: 680px; margin: 6px 0 0; color: #9fb1cc; font-size: 13px; line-height: 1.45; }
+.finance-v21-expenses-head-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; }
+.finance-v21-eyebrow { color: #8fa9d7; font-size: 10px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
+.finance-v21-expenses-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(250px, .75fr);
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(126, 164, 232, .25);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(22, 43, 73, .82), rgba(12, 24, 44, .88));
+}
+.finance-v21-expenses-total { display: grid; gap: 6px; min-width: 0; }
+.finance-v21-expenses-total strong { overflow-wrap: anywhere; color: #f7fbff; font-size: clamp(30px, 4vw, 48px); letter-spacing: -.045em; line-height: 1; }
+.finance-v21-expenses-total span { color: #b8c9e3; font-size: 12px; }
+.finance-v21-expenses-scope { display: grid; gap: 9px; align-content: center; min-width: 0; }
+.finance-v21-expenses-scope > div { display: flex; justify-content: space-between; gap: 10px; color: #a9bbd5; font-size: 12px; }
+.finance-v21-expenses-scope strong { color: #f7faff; text-align: right; }
+.finance-v21-expenses-scope .finance-v21-expense-warning { color: #f7c487; }
+.finance-v21-expenses-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(230px, .32fr); gap: 14px; min-width: 0; }
+.finance-v21-expenses-list-card,
+.finance-v21-expenses-side,
+.finance-v21-expense-entry,
+.finance-v21-expense-composer { min-width: 0; padding: 16px; border: 1px solid rgba(126, 164, 232, .22); border-radius: 14px; background: rgba(18, 29, 48, .78); }
+.finance-v21-expenses-list-card { display: grid; gap: 12px; }
+.finance-v21-expenses-list-card h3,
+.finance-v21-expense-entry h3,
+.finance-v21-expense-composer h3,
+.finance-v21-expenses-side h3 { margin: 0; color: #f7faff; font-size: 16px; }
+.finance-v21-expense-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 8px; align-items: end; }
+.finance-v21-expense-filters label,
+.finance-v21-expense-advanced-grid label,
+.finance-v21-form-grid label,
+.finance-v21-apply-row label { display: grid; gap: 5px; min-width: 0; color: #a9bbd5; font-size: 11px; font-weight: 750; }
+.finance-v21-expense-filters select,
+.finance-v21-expense-advanced-grid select,
+.finance-v21-form-grid input,
+.finance-v21-form-grid select,
+.finance-v21-form-grid textarea,
+.finance-v21-apply-row input { width: 100%; min-width: 0; min-height: 34px; padding: 7px 9px; border: 1px solid rgba(126, 164, 232, .32); border-radius: 8px; color: #f3f7ff; background: rgba(7, 14, 27, .72); }
+.finance-v21-expense-filters select:focus,
+.finance-v21-expense-advanced-grid select:focus,
+.finance-v21-form-grid input:focus,
+.finance-v21-form-grid select:focus,
+.finance-v21-form-grid textarea:focus,
+.finance-v21-apply-row input:focus { outline: 2px solid rgba(99, 180, 255, .5); outline-offset: 1px; }
+.finance-v21-expense-advanced { border-top: 1px solid rgba(126, 164, 232, .15); padding-top: 9px; }
+.finance-v21-expense-advanced summary { color: #b8c9e3; cursor: pointer; font-size: 11px; font-weight: 750; }
+.finance-v21-expense-advanced-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.finance-v21-expense-list { display: grid; min-width: 0; }
+.finance-v21-expenses .finance-v21-expense-row { grid-template-columns: 28px minmax(0, 1fr) auto auto; }
+.finance-v21-expense-actions { display: grid; gap: 6px; align-content: center; justify-items: stretch; min-width: 72px; }
+.finance-v21-expense-actions .btn { width: 100%; }
+.finance-v21-expense-detail-button,
+.finance-v21-expense-edit-button { align-self: center; }
+.finance-v21-expense-empty { display: grid; gap: 7px; padding: 18px 0 4px; color: #a9bbd5; }
+.finance-v21-expense-empty strong { color: #f7faff; }
+.finance-v21-expense-empty span { font-size: 12px; line-height: 1.45; }
+.finance-v21-expense-detail,
+.finance-v21-expense-inline-detail { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid rgba(126, 164, 232, .2); }
+.finance-v21-expense-inline-detail { grid-column: 1 / -1; margin-top: 8px; padding-bottom: 2px; }
+.finance-v21-correction-history { display: grid; gap: 10px; grid-column: 1 / -1; padding: 10px 12px; border: 1px solid rgba(126, 164, 232, .2); border-radius: 10px; background: rgba(7, 14, 27, .28); }
+.finance-v21-correction-history summary { cursor: pointer; color: #dce9ff; font-size: 12px; font-weight: 800; }
+.finance-v21-active-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding: 8px 10px; border: 1px solid rgba(247, 144, 9, .28); border-radius: 10px; background: rgba(247, 144, 9, .06); }
+.finance-v21-active-filters-label { color: #f7b267; font-size: 11px; font-weight: 800; }
+.finance-v21-active-filter { padding: 3px 8px; border: 1px solid rgba(126, 164, 232, .28); border-radius: 999px; color: #dce9ff; font-size: 11px; }
+.finance-v21-active-filter--warning { border-color: rgba(247, 144, 9, .5); color: #ffd38a; }
+.finance-v21-expense-row--warning { border-color: rgba(247, 144, 9, .36); background: rgba(247, 144, 9, .045); }
+.finance-v21-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.finance-v21-detail-grid > div { display: grid; gap: 3px; min-width: 0; padding: 9px; border: 1px solid rgba(126, 164, 232, .17); border-radius: 9px; background: rgba(7, 14, 27, .4); }
+.finance-v21-detail-grid span { color: #8fa9d7; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.finance-v21-detail-grid strong { overflow-wrap: anywhere; color: #f7faff; font-size: 12px; }
+.finance-v21-expenses-side { display: grid; align-content: start; gap: 0; }
+
+/* Keep the explicit financial write-review surface actionable when Sefer Abi
+   remains open.  The assistant is guidance-only; it must not intercept the
+   user's approval, save, or close controls in the canonical finance form. */
+.finance-v21-expense-composer-drawer-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 4300;
+}
+
+.finance-v21-side-section { display: grid; gap: 7px; padding: 0 0 14px; margin-bottom: 14px; border-bottom: 1px solid rgba(126, 164, 232, .16); }
+.finance-v21-side-section:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; }
+.finance-v21-side-section p { margin: 0; color: #a9bbd5; font-size: 12px; line-height: 1.45; }
+.finance-v21-legend { display: grid; gap: 5px; color: #b8c9e3; font-size: 11px; }
+.finance-v21-legend span { display: flex; align-items: center; gap: 7px; }
+.finance-v21-dot { width: 7px; height: 7px; border-radius: 50%; background: #8fa9d7; }
+.finance-v21-dot--good { background: #63e6a4; }
+.finance-v21-dot--warning { background: #f7b267; }
+.finance-v21-dot--danger { background: #f27c7c; }
+.finance-v21-expense-entry { display: grid; gap: 13px; }
+.finance-v21-entry-actions,
+.finance-v21-form-actions,
+.finance-v21-apply-row { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+.finance-v21-expense-shortcuts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.finance-v21-expense-shortcut { display: flex; align-items: start; gap: 9px; min-width: 0; padding: 10px; border: 1px solid rgba(126, 164, 232, .2); border-radius: 10px; color: #eaf1ff; background: rgba(7, 14, 27, .32); text-align: left; cursor: pointer; }
+.finance-v21-expense-shortcut:hover { border-color: rgba(126, 164, 232, .5); background: rgba(29, 55, 92, .42); }
+.finance-v21-expense-shortcut > span:last-child { display: grid; gap: 3px; min-width: 0; }
+.finance-v21-expense-shortcut strong { color: #f7faff; font-size: 12px; }
+.finance-v21-expense-shortcut small { color: #9fb1cc; font-size: 10px; line-height: 1.35; }
+.finance-v21-expense-composer { display: grid; gap: 14px; }
+.finance-v21-expense-list-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 7px 10px; color: #9fb1cc; font-size: 11px; text-align: right; }
+.finance-v21-expense-list-meta span { white-space: nowrap; }
+.finance-v21-expense-summary-note { margin: 0; }
+.finance-v21-expense-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding-top: 8px; border-top: 1px solid rgba(126, 164, 232, .14); color: #9fb1cc; font-size: 11px; }
+.finance-v21-expense-composer-drawer-layer { position: fixed; inset: 0; z-index: 4300; display: flex; justify-content: flex-end; background: rgba(2, 8, 18, .54); }
+.finance-v21-expense-composer-backdrop { position: absolute; inset: 0; width: 100%; min-height: 100%; border: 0; background: transparent; cursor: default; }
+.finance-v21-expense-composer-drawer { position: relative; z-index: 1; display: block; width: min(720px, calc(100vw - 28px)); height: 100%; overflow-y: auto; padding: 18px 18px 118px; border-left: 1px solid rgba(126, 164, 232, .28); background: linear-gradient(180deg, rgba(13, 25, 45, .99), rgba(7, 14, 27, .99)); box-shadow: -20px 0 50px rgba(0, 0, 0, .35); overscroll-behavior: contain; }
+.finance-v21-expense-composer-drawer > .finance-v21-expense-composer { min-height: min-content; border: 0; padding: 0; background: transparent; }
+.finance-v21-form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.finance-v21-form-grid textarea { resize: vertical; }
+.finance-v21-form-full { grid-column: 1 / -1; }
+.finance-v21-form-note,
+.finance-v21-expense-security,
+.finance-v21-expense-message { padding: 10px 12px; border: 1px solid rgba(126, 164, 232, .24); border-radius: 9px; color: #b8c9e3; font-size: 12px; line-height: 1.45; background: rgba(7, 14, 27, .3); }
+.finance-v21-correction-preview { display: grid; gap: 5px; padding: 11px 12px; border: 1px solid rgba(247, 178, 103, .34); border-radius: 10px; color: #f7d6a7; background: rgba(122, 74, 25, .13); }
+.finance-v21-correction-preview strong { color: #ffd38a; font-size: 12px; }
+.finance-v21-correction-preview span,
+.finance-v21-correction-preview small { overflow-wrap: anywhere; font-size: 11px; line-height: 1.4; }
+.finance-v21-correction-preview small { color: #c8b99f; }
+.finance-v21-expense-security { border-color: rgba(99, 180, 255, .3); }
+.finance-v21-expense-message--error { border-color: rgba(242, 124, 124, .45); color: #ffc3c3; background: rgba(127, 29, 29, .16); }
+.finance-v21-batch-review,
+.finance-v21-draft-review { display: grid; gap: 10px; padding: 13px; border: 1px solid rgba(99, 230, 164, .28); border-radius: 11px; background: rgba(24, 75, 72, .14); }
+.finance-v21-draft-list { display: grid; gap: 7px; }
+.finance-v21-draft-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid rgba(126, 164, 232, .14); }
+.finance-v21-draft-row > div { display: grid; gap: 3px; min-width: 0; }
+.finance-v21-draft-row strong { color: #f7faff; font-size: 12px; }
+.finance-v21-draft-row small { overflow: hidden; color: #9fb1cc; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.finance-v21-draft-row b { color: #f7faff; white-space: nowrap; }
+.finance-v21-expense-support { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.finance-v21-allocation-disclosure { min-width: 0; border: 1px solid rgba(126, 164, 232, .22); border-radius: 14px; background: rgba(18, 29, 48, .62); }
+.finance-v21-allocation-disclosure summary { padding: 13px 16px; color: #b8c9e3; cursor: pointer; font-size: 12px; font-weight: 800; }
+.finance-v21-allocation-disclosure[open] { padding-bottom: 12px; }
+.finance-v21-allocation-disclosure[open] summary { margin-bottom: 0; border-bottom: 1px solid rgba(126, 164, 232, .16); }
+.finance-v21-allocation-disclosure > .card { margin-top: 0 !important; border: 0 !important; border-radius: 0; background: transparent; }
+.finance-v21-allocation-lines { display: grid; gap: 8px; margin-top: 12px; }
+.finance-v21-allocation-line { overflow: hidden; border: 1px solid rgba(126, 164, 232, .18); border-radius: 11px; background: rgba(7, 14, 27, .28); }
+.finance-v21-allocation-line > summary { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 11px 12px; color: #f7faff; cursor: pointer; list-style: none; }
+.finance-v21-allocation-line > summary::-webkit-details-marker { display: none; }
+.finance-v21-allocation-line > summary::before { content: "＋"; color: #8fa9d7; font-size: 13px; font-weight: 800; }
+.finance-v21-allocation-line[open] > summary::before { content: "−"; }
+.finance-v21-allocation-line-main { display: grid; gap: 3px; min-width: 0; }
+.finance-v21-allocation-line-main strong { overflow-wrap: anywhere; color: #f7faff; font-size: 12px; }
+.finance-v21-allocation-line-main small { overflow: hidden; color: #9fb1cc; font-size: 10px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.finance-v21-allocation-line-amount { color: #f7faff; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.finance-v21-allocation-line-detail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 0 12px 12px 38px; }
+.finance-v21-allocation-line-detail > div { display: grid; gap: 3px; min-width: 0; padding: 8px; border: 1px solid rgba(126, 164, 232, .14); border-radius: 8px; background: rgba(18, 29, 48, .46); }
+.finance-v21-allocation-line-detail span { color: #8fa9d7; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.finance-v21-allocation-line-detail strong { overflow-wrap: anywhere; color: #f7faff; font-size: 11px; line-height: 1.35; }
+.finance-v21-allocation-line-detail small { color: #9fb1cc; font-size: 10px; line-height: 1.35; }
+.finance-v21-allocation-line-warning { grid-column: 1 / -1; border-color: rgba(247, 178, 103, .3) !important; }
+
+@media (max-width: 900px) {
+  .finance-v21-expenses-summary,
+  .finance-v21-expenses-workspace { grid-template-columns: 1fr; }
+  .finance-v21-expense-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .finance-v21-expense-filters > .btn { justify-self: start; }
+}
+@media (max-width: 640px) {
+  .finance-v21-expenses-head { align-items: stretch; flex-direction: column; }
+  .finance-v21-expenses-head-actions { justify-content: start; }
+  .finance-v21-expenses-head-actions .btn { flex: 1 1 150px; }
+  .finance-v21-expense-list-meta { justify-content: flex-start; text-align: left; }
+  .finance-v21-expenses-summary { padding: 14px; }
+  .finance-v21-expenses-scope { padding-right: 70px; }
+  .finance-v21-expense-composer,
+  .finance-v21-expense-detail,
+  .finance-v21-expense-inline-detail { padding-right: 64px; }
+  .finance-v21-expenses-total strong { font-size: 37px; }
+  .finance-v21-expense-filters,
+  .finance-v21-expense-advanced-grid,
+  .finance-v21-form-grid,
+  .finance-v21-expense-support { grid-template-columns: 1fr; }
+  .finance-v21-expense-filters > .btn { width: 100%; }
+  .finance-v21-expense-composer-drawer-layer { justify-content: stretch; }
+  .finance-v21-expense-composer-drawer { width: 100%; padding: calc(12px + env(safe-area-inset-top)) 12px calc(118px + env(safe-area-inset-bottom)); border-left: 0; }
+  .finance-v21-expenses .finance-v21-expense-row { grid-template-columns: 26px minmax(0, 1fr); gap: 8px; }
+  .finance-v21-expenses .finance-v21-expense-amount { grid-column: 2; justify-self: start; }
+  .finance-v21-expense-actions { grid-column: 2; justify-self: start; justify-items: start; min-width: 0; }
+  .finance-v21-expense-actions .btn { width: auto; }
+  .finance-v21-expense-shortcuts { grid-template-columns: 1fr; }
+  .finance-v21-entry-actions { align-items: stretch; flex-direction: column; }
+  .finance-v21-entry-actions .btn { width: 100%; }
+  .finance-v21-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .finance-v21-draft-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .finance-v21-draft-row .btn { justify-self: start; }
+  .finance-v21-apply-row { align-items: stretch; flex-direction: column; }
+  .finance-v21-apply-row label,
+  .finance-v21-apply-row .btn { width: 100%; }
+  .finance-v21-allocation-line > summary { grid-template-columns: minmax(0, 1fr) auto; }
+  .finance-v21-allocation-line > summary::before { grid-row: 1; }
+  .finance-v21-allocation-line-amount { grid-column: 2; grid-row: 1; }
+  .finance-v21-allocation-line > summary .finance-v21-status { grid-column: 1 / -1; justify-self: start; }
+  .finance-v21-allocation-line-detail { grid-template-columns: 1fr; padding-left: 12px; }
+}
+@media (max-width: 380px) {
+  .finance-v21-expenses-scope { padding-right: 54px; }
+  .finance-v21-expenses-total strong { font-size: 34px; }
+  .finance-v21-detail-grid { grid-template-columns: 1fr; }
+}
+
+/* ROOM Servis Maliyeti Premium V3.1: compact canonical summary with
+   optional context, distribution and source disclosures. */
+.pre18-finance-service-cost .finance-service-cost-context {
+  display: block;
+  overflow: hidden;
+  padding: 0;
+}
+
+.pre18-finance-service-cost .finance-service-cost-context > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 16px;
+  align-items: center;
+  padding: 14px;
+  color: #f7faff;
+  cursor: pointer;
+  list-style: none;
+}
+
+.pre18-finance-service-cost .finance-service-cost-context > summary::-webkit-details-marker,
+.pre18-finance-service-cost .finance-service-cost-breakdown > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pre18-finance-service-cost .finance-service-cost-context > summary::after,
+.pre18-finance-service-cost .finance-service-cost-breakdown > summary::after {
+  content: "＋";
+  grid-column: 2;
+  grid-row: 1;
+  color: #8fa9d7;
+  font-weight: 900;
+}
+
+.pre18-finance-service-cost .finance-service-cost-context[open] > summary::after,
+.pre18-finance-service-cost .finance-service-cost-breakdown[open] > summary::after {
+  content: "−";
+}
+
+.finance-service-cost-context-summary > span:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.finance-service-cost-context-summary small,
+.finance-service-cost-v31-source-label {
+  color: #8fa9d7;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .08em;
+}
+
+.finance-service-cost-context-summary strong {
+  overflow-wrap: anywhere;
+  color: #f7faff;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.finance-service-cost-context-summary em {
+  color: #b7f7d2;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.finance-service-cost-context-summary-state {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  text-align: right;
+}
+
+.finance-service-cost-context-summary-state em {
+  grid-column: auto;
+}
+
+.finance-service-cost-context-summary-state small {
+  color: #dce9ff;
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+
+.finance-service-cost-context-details {
+  padding: 0 14px 14px;
+}
+
+.finance-service-cost-context[open] > summary {
+  border-bottom: 1px solid rgba(126, 164, 232, .18);
+}
+
+.finance-service-cost-v31-heading,
+.finance-service-cost-sources-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.finance-service-cost-v31-heading .panelSectionTitle,
+.finance-service-cost-sources-head .panelSectionTitle {
+  margin-top: 3px;
+}
+
+.finance-service-cost-v31-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.finance-service-cost-v31-card {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(126, 164, 232, .22);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .018);
+}
+
+.finance-service-cost-v31-card--main {
+  border-color: rgba(126, 164, 232, .52);
+  background: linear-gradient(145deg, rgba(35, 73, 137, .32), rgba(255, 255, 255, .02));
+}
+
+.finance-service-cost-v31-card--pending,
+.finance-service-cost-v31-card--missing {
+  border-color: rgba(247, 178, 103, .36);
+  background: rgba(122, 74, 25, .09);
+}
+
+.finance-service-cost-v31-card span {
+  color: #b8c9e3;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.finance-service-cost-v31-card strong {
+  overflow-wrap: anywhere;
+  color: #f7faff;
+  font-size: clamp(22px, 3vw, 30px);
+  letter-spacing: -.03em;
+  line-height: 1.05;
+}
+
+.finance-service-cost-v31-card small {
+  min-height: 30px;
+  color: #9fb1cc;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.finance-service-cost-v31-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(126, 164, 232, .24);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(35, 73, 137, .22), rgba(255, 255, 255, .018));
+}
+
+.finance-service-cost-v31-result > div:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.finance-service-cost-v31-result strong {
+  color: #f7faff;
+  font-size: 15px;
+}
+
+.finance-service-cost-v31-result span,
+.finance-service-cost-v31-result small {
+  color: #9fb1cc;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.finance-service-cost-v31-result > div:last-child {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 3px;
+  text-align: right;
+}
+
+.finance-service-cost-v31-result-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, auto));
+  gap: 14px;
+  align-items: start;
+  text-align: right;
+}
+
+.finance-service-cost-v31-result-metrics > div {
+  display: grid;
+  gap: 3px;
+}
+
+.finance-service-cost-v31-result b {
+  color: #f7faff;
+  font-size: 15px;
+}
+
+.finance-service-cost-missing {
+  margin-top: 12px;
+  border: 1px solid rgba(247, 178, 103, .36);
+  border-radius: 14px;
+  background: rgba(122, 74, 25, .09);
+}
+
+.finance-service-cost-missing > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 13px 14px;
+  color: #ffe1b5;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 850;
+  list-style: none;
+}
+
+.finance-service-cost-missing > summary::-webkit-details-marker {
+  display: none;
+}
+
+.finance-service-cost-missing > summary::after {
+  content: "＋";
+  color: #f7b267;
+  font-weight: 900;
+}
+
+.finance-service-cost-missing[open] > summary {
+  border-bottom: 1px solid rgba(247, 178, 103, .24);
+}
+
+.finance-service-cost-missing[open] > summary::after {
+  content: "−";
+}
+
+.finance-service-cost-missing-list {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 12px;
+}
+
+.finance-service-cost-missing-item {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid rgba(247, 178, 103, .2);
+  border-radius: 10px;
+  background: rgba(7, 14, 27, .2);
+}
+
+.finance-service-cost-missing-item strong {
+  color: #fff5e6;
+  font-size: 12px;
+}
+
+.finance-service-cost-missing-item span,
+.finance-service-cost-missing-item small,
+.finance-service-cost-missing-item em {
+  color: #d5c2a6;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.finance-service-cost-missing-item em {
+  font-style: normal;
+}
+
+.finance-service-cost-missing-empty {
+  color: #b8c9e3;
+  font-size: 12px;
+}
+
+.finance-service-cost-breakdown,
+.finance-service-cost-sources {
+  margin-top: 12px;
+  border: 1px solid rgba(126, 164, 232, .2);
+  border-radius: 14px;
+  background: rgba(7, 14, 27, .18);
+}
+
+.finance-service-cost-breakdown > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 13px 14px;
+  color: #dce9ff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 850;
+  list-style: none;
+}
+
+.finance-service-cost-breakdown[open] > summary {
+  border-bottom: 1px solid rgba(126, 164, 232, .18);
+}
+
+.finance-service-cost-breakdown-body {
+  padding: 0 12px 12px;
+}
+
+.finance-service-cost-distribution-summary {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(126, 164, 232, .16);
+  border-radius: 10px;
+  background: rgba(18, 29, 48, .38);
+}
+
+.finance-service-cost-advanced {
+  min-width: 0;
+  border-top: 1px solid rgba(126, 164, 232, .16);
+}
+
+.finance-service-cost-advanced > summary {
+  padding: 11px 2px 9px;
+  color: #b8c9e3;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 850;
+  list-style: none;
+}
+
+.finance-service-cost-advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+.finance-service-cost-advanced > summary::before {
+  content: "＋";
+  display: inline-block;
+  width: 18px;
+  color: #8fa9d7;
+  font-weight: 900;
+}
+
+.finance-service-cost-advanced[open] > summary::before {
+  content: "−";
+}
+
+.finance-service-cost-advanced-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 0 4px;
+}
+
+.finance-service-cost-sources {
+  padding: 13px 14px;
+}
+
+.finance-service-cost-sources .finance-service-cost-source-list,
+.finance-service-cost-sources .finance-service-cost-source-empty {
+  margin-top: 12px;
+}
+
+.finance-service-cost-sources .finance-service-cost-source-empty {
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .finance-service-cost-v31-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .finance-service-cost-v31-card--main {
+    grid-column: 1 / -1;
+  }
+
+  .finance-service-cost-v31-card--missing {
+    grid-column: 1 / -1;
+  }
+
+  .finance-service-cost-v31-card--missing > div {
+    display: grid;
+    min-width: 0;
+    gap: 5px;
+  }
+
+  .finance-service-cost-v31-result {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .finance-service-cost-v31-result > div:last-child {
+    text-align: left;
+  }
+
+  .finance-service-cost-v31-result-metrics {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+
+  .finance-service-cost-context-summary > span:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .finance-service-cost-context-summary em {
+    grid-column: auto;
+  }
+
+  .finance-service-cost-context-summary-state {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}
+
+@media (max-width: 380px) {
+  .finance-service-cost-v31-summary {
+    gap: 7px;
+  }
+
+  .finance-service-cost-v31-card {
+    padding: 10px;
+  }
+
+  .finance-service-cost-v31-card strong {
+    font-size: 21px;
+  }
+
+  .finance-service-cost-v31-card small {
+    min-height: 0;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 720px) {
+  /* Finance completion controls remain the primary touch surface. */
+  body:has(.pre18-finance-tabpanel) .copilotDrawer--task-home-top {
+    top: max(12px, env(safe-area-inset-top));
+    bottom: auto;
+  }
+  body:has(.pre18-finance-room) .copilotDrawer--task-home-top {
+    top: auto;
+    bottom: max(88px, calc(env(safe-area-inset-bottom) + 78px));
+  }
+  body:has(.pre18-finance-room) .copilotDrawer {
+    height: min(18vh, 155px) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .pre18-finance-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px !important;
+  }
+
+  .pre18-finance-tabs .btn {
+    width: 100%;
+    min-width: 0;
+    padding: 8px 7px;
+    font-size: 12px;
+  }
+
+  .pre18-finance-tabs .btn:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .pre18-finance-hero {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pre18-finance-hero-card {
+    min-height: 0;
+  }
+
+  .pre18-finance-next-step {
+    grid-template-columns: 1fr;
+  }
+
+  .pre18-finance-next-step .panelSectionTitle,
+  .pre18-finance-next-step .muted,
+  .pre18-finance-next-step .btn {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .pre18-finance-next-step .btn {
+    width: 100%;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 380px) {
+  .pre18-finance-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px !important;
+  }
+  .pre18-finance-tabs .btn {
+    width: 100%;
+    min-width: 0;
+    padding: 8px 7px;
+    font-size: 12px;
+  }
+  .pre18-finance-tabs .btn:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 420px) {
+  .room-monthly-price-reference-primary-metric {
+    padding: 10px !important;
+  }
+
+  .room-monthly-price-reference-primary-metric .panelSectionTitle {
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    margin-bottom: 6px !important;
+  }
+
+  .room-monthly-price-reference-primary-metric .panelStatValue {
+    font-size: 18px !important;
+    line-height: 1.15 !important;
+    white-space: nowrap;
+  }
+
+  .room-monthly-price-reference-primary-metric .panelMeta {
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    margin-top: 6px !important;
+  }
+}
+[data-quote-evaluation-compact="true"] [data-testid="scenario-service-context"],
+[data-quote-evaluation-compact="true"] [data-testid="contractless-period-planning"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-result-summary"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-current-plan"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-primary-inputs"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-advanced-assumptions"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-current-scenario-delta"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-readonly-example"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-ab-comparison"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-variant-comparison"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-economic-scope"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-partial-cost"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-far-opportunity"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-dimension-comparison"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-proof-details"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-warnings-details"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-effect-summary"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-fuel-comparison"],
+[data-quote-evaluation-compact="true"] [data-testid="scenario-forecast-evidence"] {
+  display: none !important;
+}
+
+.quote-vehicle-compact-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.quote-vehicle-compact-head,
+.quote-selected-vehicle-summary-head,
+.quote-selected-vehicle-summary-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.quote-vehicle-compact-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.quote-vehicle-compact-grid,
+.quote-selected-vehicle-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.quote-vehicle-compact-grid > div,
+.quote-selected-vehicle-summary-grid > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid rgba(126, 164, 232, .16);
+  border-radius: 9px;
+  background: rgba(7, 14, 27, .28);
+}
+
+.quote-vehicle-compact-grid span,
+.quote-selected-vehicle-summary-grid span {
+  color: #8fa9d7;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.quote-vehicle-compact-grid strong,
+.quote-selected-vehicle-summary-grid strong {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+.quote-vehicle-compact-status--warning,
+.quote-vehicle-compact-status--ready {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.quote-vehicle-compact-status--warning { color: #f2c56a; }
+.quote-vehicle-compact-status--ready { color: #78ddb0; }
+
+.quote-selected-vehicle-summary {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(58, 102, 255, .3);
+  border-radius: 10px;
+  background: rgba(58, 102, 255, .045);
+}
+
+.quote-selected-vehicle-details-body {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.quote-selected-vehicle-details-body > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  line-height: 1.35;
+}
+
+.finance-v21-expenses-summary--compact {
+  padding-block: 14px;
+}
+
+.finance-v21-expenses-summary--compact .finance-v21-expenses-total strong {
+  font-size: clamp(18px, 2.5vw, 26px);
+}
+
+@media (max-width: 680px) {
+  .quote-vehicle-compact-grid,
+  .quote-selected-vehicle-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quote-vehicle-compact-card .btn,
+  .quote-selected-vehicle-summary-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Sefer Abi mobile task-home fallback.  The placement code chooses this
+   lane only when the top and bottom lanes intersect real task controls. */
+@media (max-width: 720px) {
+  .copilotDrawer--task-home-middle {
+    top: 50%;
+    right: 12px;
+    bottom: auto;
+    transform: translateY(-50%);
+  }
+}
+
+/* CONT-207: mobile uses the same movable/resizable drawer contract as
+   desktop once the user has interacted with the frame. The CSS variable
+   bridge wins over the older task-home/map height rules without duplicating
+   role-specific panel implementations. */
+@media (max-width: 720px) {
+  .copilotDrawer .copilotDrawerHeader {
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .copilotDrawer .copilotDrawerHeader:active {
+    cursor: grabbing;
+  }
+
+  .copilotDrawer .copilotDrawerResizeHandle {
+    display: block;
+    width: 22px;
+    height: 22px;
+    z-index: 50;
+  }
+
+  .copilotDrawer .copilotDrawerResizeHandle::after {
+    width: 10px;
+    height: 10px;
+  }
+
+  /* The legacy mobile rules use !important and a higher :not() specificity.
+     Match that specificity so an interacted frame can actually apply its
+     measured height instead of silently snapping back to the compact 470px
+     fallback. */
+  body .copilotDrawer.copilotDrawer.copilotDrawer[data-mobile-frame="true"] {
+    left: var(--copilot-mobile-drawer-left) !important;
+    right: auto !important;
+    top: var(--copilot-mobile-drawer-top) !important;
+    bottom: auto !important;
+    width: var(--copilot-mobile-drawer-width) !important;
+    height: var(--copilot-mobile-drawer-height) !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 20px) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    transform: none !important;
+  }
+
+}
+
+/* Final composer precedence for the shared compact icon row. */
+.copilotComposerInputRow > textarea {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  resize: none !important;
+  box-sizing: border-box;
+}
+
+@media (max-width: 720px) {
+  body .copilotDrawer .copilotComposer {
+    padding: 5px 10px 9px;
+  }
+
+  body .copilotDrawer .copilotComposerInputRow {
+    gap: 4px;
+  }
+
+  body .copilotDrawer .copilotComposerIconBtn {
+    flex-basis: 28px;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    min-height: 28px;
+  }
+
+  body .copilotDrawer .copilotComposerInputRow > textarea {
+    min-height: 44px !important;
+    height: 44px !important;
+    padding: 10px 10px;
+    font-size: 12px;
+  }
 }

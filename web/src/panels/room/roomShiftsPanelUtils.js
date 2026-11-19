@@ -1,5 +1,7 @@
 ﻿import { getApiErrorInfo } from "../../utils/apiContract";
 
+import { formatOfferAmountMinor, parseOfferAmountInput } from "../shared/offerAmountPresentation";
+
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
 export function trimOrNull(s) {
@@ -8,18 +10,11 @@ export function trimOrNull(s) {
 }
 
 export function formatTRY(amount) {
-  if (amount == null) return "";
-  const n = Number(amount);
-  if (!Number.isFinite(n)) return "";
-  return new Intl.NumberFormat("tr-TR").format(n);
+  return amount == null ? "" : formatOfferAmountMinor(amount);
 }
 
 export function parseTryInput(raw) {
-  if (raw == null) return null;
-  const cleaned = String(raw).replace(/\./g, "").replace(/[^\d]/g, "");
-  if (!cleaned) return null;
-  const n = Number(cleaned);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  return parseOfferAmountInput(raw);
 }
 
 export function vehicleMetaLine(v) {
@@ -34,7 +29,7 @@ export function roomLabel(r) {
   const name = r.name || r.title;
   return name
     ? String(name).replace(/^(Room|Oda)\s+/i, "").trim()
-    : `Taşımacılık Firması ID ${r.id}`;
+    : "Taşımacılık Firması";
 }
 
 export function toPositiveIntOrZero(v) {
@@ -127,6 +122,7 @@ function parsePossibleJson(text) {
 
 export function normalizeRoomShiftError(error, fallbackMessage = "İşlem başarısız") {
   const info = getApiErrorInfo(error, fallbackMessage);
+  const status = info.status || Number(error?.status || 0) || 0;
   const msg = String(error?.message || "");
   const parsed = parsePossibleJson(msg);
   const parsedError = parsed?.error && typeof parsed.error === "object" ? parsed.error : null;
@@ -134,9 +130,11 @@ export function normalizeRoomShiftError(error, fallbackMessage = "İşlem başar
 
   const payloadError = info.payload?.error && typeof info.payload.error === "object" ? info.payload.error : null;
   return {
-    status: info.status || Number(parsedData?.status || 0) || 0,
+    status: status || Number(parsedData?.status || 0) || 0,
     code: info.code || payloadError?.code || parsedError?.code || parsedData?.code || null,
-    message: info.message || payloadError?.message || parsedError?.message || parsedData?.message || fallbackMessage,
+    message: status >= 500 && status < 600
+      ? fallbackMessage
+      : info.message || payloadError?.message || parsedError?.message || parsedData?.message || fallbackMessage,
     details: info.details || payloadError?.details || parsedError?.details || parsedData?.details || null,
     data: payloadError || parsedError || parsedData || info.payload || null,
   };

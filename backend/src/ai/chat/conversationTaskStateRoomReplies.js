@@ -26,6 +26,38 @@ function humanizeStatusText(value) {
     .trim();
 }
 
+function canonicalRoomBoundaryTarget(screenContext) {
+  const hints = screenContext?.uiHints || {};
+  const selectedId = Number(screenContext?.selectedEntityId || screenContext?.selectedRecordId || 0);
+  const rows = [
+    ...(Array.isArray(hints.visibleButtons) ? hints.visibleButtons : []),
+    ...(Array.isArray(hints.visibleMenus) ? hints.visibleMenus : []),
+    ...(Array.isArray(hints.visibleTabs) ? hints.visibleTabs : []),
+  ].filter((row) => row?.identitySource === 'CANONICAL' && row?.label && row?.disabled !== true);
+  const currentTarget = [
+    hints.currentTarget,
+    hints.currentTurnTarget,
+    hints.selectedRecordTarget,
+  ].find((row) => row?.identitySource === 'CANONICAL' && row?.label && row?.disabled !== true);
+  // A selected-record control outranks the page-level current target and the
+  // global navigation controls. This keeps the guidance tied to the same
+  // authorized record the user sees in the DOM.
+  const selectedRecordTarget = selectedId > 0
+    ? rows.find((row) => (
+      row.targetKey === `room-shifts:shift:${selectedId}:details`
+      || String(row.targetKey || '').includes(`:shift:${selectedId}:`)
+    ))
+    : null;
+  if (selectedRecordTarget) return selectedRecordTarget;
+  if (currentTarget) return currentTarget;
+  return rows.find((row) => (
+    row.targetKey === 'room:shifts'
+    || row.targetKey === 'room-shifts'
+    || String(row.targetKey || '').startsWith('room-shifts:')
+    || /^(?:vardiyalar|detayları göster|detaylari goster)$/iu.test(String(row.label || '').trim())
+  )) || null;
+}
+
 export function looksLikeRoomShiftFocusQuestion(message) {
   const text = normalizeLooseText(message);
   if (!text) return false;
@@ -60,6 +92,7 @@ export function looksLikeRoomShiftClarifyingRequest(message) {
 export function buildRoomShiftSemanticOverrideReply({
   message,
   questionType,
+  semanticPlan = null,
   userRole,
   user,
   screenContext,
@@ -79,6 +112,10 @@ export function buildRoomShiftSemanticOverrideReply({
     '',
   );
   if (!String(sourceScreenPath || '').includes('/room/shifts')) return '';
+  // Missing-data questions have a typed, record-scoped evidence reply. Do
+  // not let the legacy shift next-action override reinterpret them from a
+  // matching "eksik" word cue.
+  if (String(questionType || '') === 'MISSING_DATA_HELP') return '';
   const text = normalizeLooseText(message);
   const selectionSummary = firstNonEmpty(
     selectedCarrySummary(screenContext),
@@ -105,6 +142,27 @@ export function buildRoomShiftSemanticOverrideReply({
   const driver = firstNonEmpty(extractVisibleValueFromText(selectionSummary, ['Sürücü', 'Surucu']), '');
   const hasSelection = Boolean(selectionSummary || selectionLabel);
   const hasVehicleDriver = Boolean(vehicle && driver);
+  const roomCreateBoundary = String(semanticPlan?.roleCapabilityBoundary || '').toUpperCase() === 'ROOM_CREATE_UNSUPPORTED';
+  const continuationAction = String(
+    semanticPlan?.typedRequest?.continuationAction
+      || semanticPlan?.continuationAction
+      || '',
+  ).trim().toUpperCase();
+  const continuationGuidanceRequested = roomCreateBoundary
+    && semanticPlan?.typedRequest?.continuationIntent === true
+    && continuationAction === 'CONTINUE'
+    && !/^(?:geri|geri dön|geri don|bulamadım|bulamadim)$/iu.test(text);
+  if (continuationGuidanceRequested) {
+    const steps = Array.isArray(sourceScreenDefinition?.stepByStep)
+      ? sourceScreenDefinition.stepByStep.filter(Boolean).slice(0, 4)
+      : ['Vardiyalar listesinden doğru mevcut kaydı seç.', 'Durumunu oku.', 'Eksik alan varsa ilgili yetkili ekrana geç.'];
+    const stepText = steps.map((step, index) => `${index + 1}. ${String(step).trim()}`).join(' ');
+    const visibleTarget = canonicalRoomBoundaryTarget(screenContext);
+    const targetText = visibleTarget
+      ? `Şu an doğrulanmış hedef: “${String(visibleTarget.label).trim()}”.`
+      : 'Hedef görünür değilse önce yetkili Vardiyalar listesini aç; görünmeyen bir hedefi tamamlandı saymıyorum.';
+    return `ROOM hesabında yeni vardiya veya talep kaydı oluşturulmaz; bu sınır değişmedi. Mevcut rolünde yapabileceğin güvenli yol: ${stepText} ${targetText} Yeni iş planını yalnızca yetkili Hizmet Alan Firma rolü başlatabilir; burada kayıt oluşturmuyor veya değiştirmiyorum.`;
+  }
   const selectionLead = hasSelection
     ? hasVehicleDriver && /onay|approved|kabul/i.test(normalizeLooseText(status))
       ? 'Seçili kayıt onaylı ve araç/sürücü atanmış görünüyor.'
@@ -112,6 +170,13 @@ export function buildRoomShiftSemanticOverrideReply({
         ? `Seçili kayıt ${humanizeStatusText(status).replace(/^Durum:\s*/i, '')}`.trim()
         : 'Seçili kayıt görünüyor.'
     : '';
+
+  if (hasSelection && /^geri$/i.test(text)) {
+    return 'Bir önceki güvenli adıma dönüyoruz. Seçili vardiyanın durum ve araç/sürücü atamasını yeniden kontrol edelim; bu geri dönüşte kayıt değişikliği yapılmadı.';
+  }
+  if (hasSelection && /^(?:bulamadım|bulamadim)$/i.test(text)) {
+    return 'Seçili vardiya akışında kalıyoruz. Önce bu vardiyanın ayrıntılarını yeniden açıp durum, araç/sürücü ve rota bilgilerini kontrol edelim; doğrulanmayan bir adımı tamamlandı saymıyorum.';
+  }
 
   if (looksLikeRoomShiftClarifyingRequest(text) || (String(questionType || '') === 'STATUS_HELP' && looksLikeRoomShiftClarifyingRequest(text))) {
     if (hasSelection && hasVehicleDriver) {

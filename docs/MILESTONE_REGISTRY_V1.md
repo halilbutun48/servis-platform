@@ -4,6 +4,10 @@
 
 Milestone contract and freeze provenance remain owned by this registry. The latest mutable M18/ROOM progress, WP-08 recovery boundary and next frontier are maintained only in [docs/NEXT_BACKLOG_V1.md](NEXT_BACKLOG_V1.md); historical HEAD/status overlays below are not a replacement for that current handoff.
 
+### Demo data preparation boundary
+
+Verified demo/test fixture preparation may occur before acceptance through the canonical seed/fixture/domain owners when the target database is proven non-production and the change is minimum, idempotent, traceable, tenant/role-safe and integrity-preserving. This is test setup, not product business-write execution; it does not alter `M18_NO_BUSINESS_WRITE`, the write-approval boundary, locked security invariants, or the field-launch gate.
+
 ## Current frontier (2026-09-24)
 
 <!-- <!-- SEFERPAKT_MILESTONE_CONTRACT_V1
@@ -419,6 +423,52 @@ Milestone contract and freeze provenance remain owned by this registry. The late
 - Final accepted scope covers all 8 supported roles, `109/109` current menu/route targets, local and same-build public representative guidance, desktop/tablet/mobile behavior, desktop resize, mobile compact guided UX, suggestions, modal stacking, current-screen help, continuation/recovery/back, offer navigation and nonexistent-target rejection.
 - `PRODUCT_DEFECTS_REMAINING = 0`, fake navigation `0`, business write execution `0`, package ownership/current-head/M90C.6/onboarding/smart-chips governance PASS, `verify:repo = 32/32`, `verify:final = PASS`.
 - M18 is the `ANLAT → GÖSTER → BİRLİKTE YAP` foundation. #19 preparation, #20 dispatch/optimizer, #21 controlled safe action/approval, #22–#29 voice, #30–#33 proactive/agentic work and #39 exhaustive all-role E2E retain their existing ownership. M18 does not claim #39 coverage or start #19.
+
+### M18 additive final frontend / brand / premium UX closure gate
+
+The product-owner-approved frontend/brand/UX decision is recorded inside M18's
+existing final closure; it does not create a new milestone or replace the active
+frontier. B-04 and subsequent role-based functional acceptance continue in their
+existing order and are not restarted or split. Existing M18 functional, Finans
+11, and closed B/C evidence remains valid in its original scope.
+
+The gate requires current same-build evidence for approved SeferPakt assets and
+their source/runtime visibility; Login, AppShell, NavDock, mobile menu, favicon
+and manifest; all eight roles; ROOM finance/operations; COMPANY/SCHOOL/
+ORGANIZATION budget, offer and service tracking; DRIVER/PERSONEL/PARENT mobile
+flows; shared forms/tables/charts/maps/modals/notifications; Sefer Abi identity
+and interaction; 1440/1024/390/320 Chromium; keyboard/safe-area/device checks;
+and measured task success, steps, manual entry, time, errors/recovery and
+five-second comprehension. The #18 internal design descriptions being removed
+are not interchangeable with the approved product logo or brand assets.
+
+The ROOM Finans acceptance additionally includes `D-FIN-01`: in both `Araç
+Karşılaştır` and `Teklif ve Kârlılık`, an authorized ROOM/tenant user must be
+able to select a real request/offer and see its customer, request/offer/
+counter-offer/accepted-offer/contract relationship, status, period, route and
+vehicle context. The selection must persist across tabs and carry the vehicle
+to profitability. Replacing the offer must replace the entire context so the
+old price, cost, period or vehicle cannot leak. Offer price, planning estimate,
+realized expense and proven profit remain distinct; missing data links to the
+real correction record; Sefer Abi is aware of the selected offer and vehicle.
+Two-offer switching, vehicle change, missing-data completion, tenant/RBAC
+negatives, responsive behavior, audit and durable regression are mandatory
+real-Chromium evidence. A technical test PASS without end-to-end user proof
+does not close the criterion. The existing Finans 11 engine and canonical
+ledger ownership are preserved; no new finance engine or independent tab is
+authorized by this criterion.
+
+Until all mandatory rows are proven with real user/browser evidence and durable
+regressions, the state is explicitly:
+
+- `M18_FRONTEND_BRAND_UX_FINAL_GATE = NOT_PROVEN`
+- `FULL_D_LEVEL_CLOSED = FALSE`
+- `SAFE_TO_PROMOTE = FALSE`
+- `#19 = NOT_STARTED`
+
+Documentation of this gate must not turn an unexecuted visual test into PASS,
+pause B-04, reopen closed work without newer regression evidence, or grant
+commit/merge/push/cutover authority.
 
 The older ordering below is retained as historical compatibility context. It is not the current frontier and must not override `docs/INDEX.md`, `docs/PRIMER_SSOT.md`, or current-head evidence.
 

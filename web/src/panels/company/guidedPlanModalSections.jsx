@@ -8,9 +8,11 @@ import {
   GuidedPlanDatesCard,
   GuidedPlanPackCard,
 } from "./guidedPlanModalCards";
+import { guidedPlanHubCopy } from "./guidedPlanRoleCopy";
 
 export function GuidedHubStep({
   organization,
+  school,
   busy,
   useGeolocation,
   addr,
@@ -24,12 +26,11 @@ export function GuidedHubStep({
   saveHub,
   guidedTargetKey,
 }) {
+  const copy = guidedPlanHubCopy({ organization, school });
   return (
     <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
       <div className="muted">
-        {organization
-          ? "1. adımda gezi için toplanma konumunu ayarla. Bu nokta turun başlangıç merkezi olur."
-          : "1. adımda firma kendi konumunu ayarlar."}
+        {copy.description}
       </div>
 
       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -37,7 +38,7 @@ export function GuidedHubStep({
         <input
           value={addr}
           onChange={(e) => setAddr(e.target.value)}
-          placeholder={organization ? "Toplanma konumu adresi (örn. Denizli Forum önü)" : "Adresten konum al (örn. Ankara Çankaya ...)"}
+          placeholder={copy.placeholder}
           style={{ flex: 1, minWidth: 0, maxWidth: "100%" }}
           disabled={busy}
         />
@@ -46,20 +47,20 @@ export function GuidedHubStep({
 
       <div className="guidedPlanHubCoordGrid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, minWidth: 0 }}>
         <div>
-          <label className="muted">{organization ? "Toplanma konumu enlemi" : "Firma konumu enlemi"}</label>
+          <label className="muted">{copy.latitude}</label>
           <input value={hubLat} onChange={(e) => setHubLat(e.target.value)} disabled={busy} />
         </div>
         <div>
-          <label className="muted">{organization ? "Toplanma konumu boylamı" : "Firma konumu boylamı"}</label>
+          <label className="muted">{copy.longitude}</label>
           <input value={hubLng} onChange={(e) => setHubLng(e.target.value)} disabled={busy} />
         </div>
       </div>
 
-      {!hubLoaded ? <div className="muted">{organization ? "Toplanma Konumu okunuyor..." : "Firma Konumu okunuyor..."}</div> : null}
+      {!hubLoaded ? <div className="muted">{copy.loading}</div> : null}
 
       <div className="row" style={{ justifyContent: "flex-end" }}>
         <button type="button" className="guidedPlanPrimaryAction" onClick={saveHub} disabled={busy}>
-          {organization ? "Toplanma konumunu kaydet" : "İleri"}
+          {copy.save}
         </button>
       </div>
     </div>
@@ -79,6 +80,8 @@ export function GuidedPlanSetupStep({
   createAdditionalCustomSlot,
   startDate,
   setStartDate,
+  draftAmount,
+  setDraftAmount,
   durationOptions,
   durationKey,
   setDurationKey,
@@ -146,6 +149,30 @@ export function GuidedPlanSetupStep({
           nextValidStart={nextValidStart}
           planSummary={planSummary}
         />
+      </div>
+
+      <div className="card guidedPlanBudgetCard" data-testid="guided-plan-budget-card">
+        <div style={{ fontWeight: 800 }}>6. Talep bütçesi</div>
+        <div className="muted" style={{ marginTop: 6 }}>
+          COMPANY&apos;nin bu talep için ayırdığı bütçeyi gir. Bu tutar ROOM&apos;un teklif fiyatı değildir; teklif gönderiminde ayrıca taşımacılık firması seçilir. Kaydedilen tutar Planlama Merkezi ve Teklif ve Fiyat Rehberi&apos;nin ortak ticari kaynağıdır.
+        </div>
+        <div className="card" data-testid="guided-plan-budget-context" style={{ marginTop: 10, padding: 12, background: "rgba(255,255,255,0.025)" }}>
+          <div className="panelSectionTitle">Bu planın bütçe kapsamı</div>
+          <div className="panelMeta" style={{ marginTop: 6, lineHeight: 1.45 }}>
+            Dönem: <b>{startDate || "Belirtilmedi"} – {endDate || "Belirtilmedi"}</b> · Çalışma günü: <b>{eligibleDaysCount}</b> · Taslak vardiya: <b>{totalShiftCount}</b>
+          </div>
+          <div className="panelMeta" style={{ marginTop: 6, lineHeight: 1.45 }}>
+            {organization && orgEstimatedPax
+              ? `Katılımcı sayısı: ${orgEstimatedPax}. `
+              : "Personel/katılımcı sayısı bu adımda doğrulanmadı. "}
+            Rota, durak ve hizmet uygunluğu sonraki adımlarda gerçek kayıtlarla doğrulanır.
+          </div>
+          <div className="panelMeta" data-testid="guided-plan-budget-recommendation" style={{ marginTop: 8, lineHeight: 1.45, color: "#ffd38a" }}>
+            Bütçe önerisi: Bu yeni plan için doğrulanmış karşılaştırılabilir fiyat referansı mevcut değil; tutar uydurulmadı. Plan kapsamı ve gelen gerçek teklifler tamamlandığında Teklif ve Fiyat Rehberi&apos;nde bütçe farkı gösterilir.
+          </div>
+        </div>
+        <label className="muted" style={{ display: "block", marginTop: 10 }} htmlFor="guided-plan-budget">Talep bütçesi (₺)</label>
+        <input id="guided-plan-budget" data-testid="guided-plan-budget" inputMode="decimal" value={draftAmount} onChange={(event) => setDraftAmount(event.target.value)} placeholder="Örn. 10000" disabled={busy} />
       </div>
 
       {organization ? (

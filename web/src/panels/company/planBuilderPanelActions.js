@@ -16,6 +16,7 @@ import {
   summarizeMatrix,
 } from "./planBuilderPanelWorkflow";
 import logger from "../../lib/logger.js";
+import { parseOfferAmountInput } from "../shared/offerAmountPresentation";
 
 export async function ensurePlanBuilderRoomsLoaded({ api, token, pbRooms, setPbRoomsBusy, setPbRooms }) {
   if (pbRooms?.length) return;
@@ -46,7 +47,7 @@ export async function sendPlanBuilderBulkOffers({ api, token, bulkOffer, setBulk
   try {
     const amt = String(bulkOffer.amountCompany || "").trim();
     const note = String(bulkOffer.noteCompany || "").trim();
-    const amountCompany = amt ? Number(amt) : null;
+    const amountCompany = parseOfferAmountInput(amt);
 
     let sent = 0;
     const skipped = new Set();
@@ -57,10 +58,7 @@ export async function sendPlanBuilderBulkOffers({ api, token, bulkOffer, setBulk
         token,
         body: {
           roomIds,
-          amountCompany: (() => {
-            const n = Number(Number.isFinite(amountCompany) ? amountCompany : null);
-            return Number.isFinite(n) && n > 0 ? n : undefined;
-          })(),
+          amountCompany: amountCompany ?? undefined,
           noteCompany: note == null ? "" : String(note),
         },
       });

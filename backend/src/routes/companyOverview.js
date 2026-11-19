@@ -12,13 +12,19 @@ import {
 } from "../time/tr.js";
 import {
   buildCompanyBudgetAndServiceCostPreview,
-  buildFinancialOperationsCompanyKindDeniedPreview,
 } from "../finance/companyBudgetAndServiceCost.js";
 import {
   buildCompanyBudgetPlanPreviewInputs,
+  getCompanyBudgetAgreementEvidence,
+  getCompanyHistoricalFinancialEvidence,
   getCompanyBudgetPlanOverview,
+  selectCompanyBudgetPlanForPreview,
 } from "../services/financialOperationsLifecycle.js";
+import { enrichAgreementCommercialEvidence } from "../services/companyBudgetScope.js";
+import { buildInvoiceCollectionSummary } from "../services/invoiceCollectionLedger.js";
 import { attachCompanyBudgetLifecycleRoutes } from "./companyBudgetLifecycleRoutes.js";
+
+export { selectCompanyBudgetPlanForPreview };
 
 function scopeOf(user) {
   return {
@@ -80,31 +86,112 @@ async function resolveTargetCompany(req) {
   });
 }
 
-function isBlockedCompanyKindForWrite(req, company) {
-  return (
-    String(req.user?.role || "").toUpperCase() === "COMPANY" &&
-    [
-      "SCHOOL",
-      "ORGANIZATION",
-    ].includes(
-      String(
-        company?.kind || ""
-      ).toUpperCase()
-    )
+const COMPANY_FINANCIAL_SHIFT_STATUSES = new Set([
+  "APPROVED",
+  "ACTIVE",
+  "DONE",
+  "SPLIT",
+]);
+
+function positiveId(value) {
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
+function dateOnly(value) {
+  if (!value) return null;
+  if (typeof value === "string") return value.slice(0, 10);
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
+}
+
+function compareFinancialShiftDesc(left, right) {
+  const leftStart = new Date(left?.startAt || 0).getTime() || 0;
+  const rightStart = new Date(right?.startAt || 0).getTime() || 0;
+  if (rightStart !== leftStart) return rightStart - leftStart;
+  return (Number(right?.id) || 0) - (Number(left?.id) || 0);
+}
+
+export function resolveCompanyFinancialContext({
+  companyId,
+  requestedAgreementId = null,
+  requestedShiftId = null,
+  candidateShifts = [],
+} = {}) {
+  const scopedCompanyId = positiveId(companyId);
+  const agreementId = positiveId(requestedAgreementId);
+  const shiftId = positiveId(requestedShiftId);
+
+  const validCandidates = (Array.isArray(candidateShifts) ? candidateShifts : [])
+    .filter((shift) => {
+      const shiftCompanyId = positiveId(shift?.companyId);
+      const linkedAgreement = shift?.agreement;
+      const linkedAgreementId = positiveId(shift?.agreementId ?? linkedAgreement?.id);
+      const agreementCompanyId = positiveId(linkedAgreement?.companyId);
+      const status = String(shift?.status || "").toUpperCase();
+      const shiftDate = dateOnly(shift?.startAt);
+      const agreementStart = dateOnly(linkedAgreement?.startDate);
+      const agreementEnd = dateOnly(linkedAgreement?.endDate);
+
+      if (!scopedCompanyId || shiftCompanyId !== scopedCompanyId) return false;
+      if (!linkedAgreementId || !linkedAgreement || linkedAgreement.id !== linkedAgreementId) return false;
+      if (agreementCompanyId !== scopedCompanyId) return false;
+      if (!COMPANY_FINANCIAL_SHIFT_STATUSES.has(status)) return false;
+      if (agreementId && linkedAgreementId !== agreementId) return false;
+      if (shiftId && positiveId(shift?.id) !== shiftId) return false;
+      if (agreementStart && shiftDate && shiftDate < agreementStart) return false;
+      if (agreementEnd && shiftDate && shiftDate > agreementEnd) return false;
+      return true;
+    })
+    .sort(compareFinancialShiftDesc);
+
+  if (validCandidates.length === 0) {
+    return {
+      status: "NO_CANONICAL_CONTEXT",
+      shift: null,
+      agreement: null,
+      relatedShiftCount: 0,
+      relatedShiftIds: [],
+    };
+  }
+
+  const selectedShift = validCandidates[0];
+  const selectedAgreement = selectedShift.agreement;
+  const relatedShifts = validCandidates.filter(
+    (shift) => positiveId(shift?.agreementId ?? shift?.agreement?.id) === positiveId(selectedAgreement?.id),
   );
+
+  return {
+    status: "RESOLVED",
+    shift: selectedShift,
+    agreement: selectedAgreement,
+    relatedShiftCount: relatedShifts.length,
+    relatedShiftIds: relatedShifts.map((shift) => positiveId(shift?.id)).filter(Boolean),
+  };
+}
+
+function isBlockedCompanyKindForWrite(req, company) {
+  if (String(req.user?.role || "").toUpperCase() !== "COMPANY") return false;
+  return !["COMPANY", "SCHOOL", "ORGANIZATION"].includes(String(company?.kind || "").toUpperCase());
 }
 
 function fmtTRY(value) {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
   const n = Number(value);
 
-  if (!Number.isFinite(n) || n <= 0) {
+  if (!Number.isSafeInteger(n) || n < 0) {
     return "-";
   }
 
   return (
     new Intl.NumberFormat("tr-TR", {
-      maximumFractionDigits: 0,
-    }).format(n) + " ₺"
+      maximumFractionDigits: 2,
+    }).format(n / 100) + " ₺"
   );
 }
 
@@ -129,7 +216,7 @@ function isFinalShiftStatus(value) {
   return FINAL_SHIFT_STATUSES.has(statusOf(value));
 }
 
-function offerAmountLabel(offer) {
+export function offerAmountLabel(offer) {
   const parts = [];
 
   const company = fmtTRY(offer?.amountCompany);
@@ -539,10 +626,6 @@ export function companyOverviewRouter() {
     requireRole(
       "COMPANY",
       "SUPER_ADMIN"
-    ),
-    requireStepUpWrite(
-      "COMPANY",
-      "SUPER_ADMIN"
     )
   );
 
@@ -628,14 +711,6 @@ export function companyOverviewRouter() {
     })
   );
 
-  attachCompanyBudgetLifecycleRoutes(
-    r,
-    {
-      resolveTargetCompany,
-      isBlockedCompanyKindForWrite,
-    }
-  );
-
   r.get(
     "/financial-operations/preview",
     asyncHandler(async (req, res) => {
@@ -649,39 +724,20 @@ export function companyOverviewRouter() {
         });
       }
 
-      if (
-        String(
-          req.user?.role || ""
-        ).toUpperCase() ===
-          "COMPANY" &&
-        [
-          "SCHOOL",
-          "ORGANIZATION",
-        ].includes(
-          String(
-            company.kind || ""
-          ).toUpperCase()
-        )
-      ) {
-        return res
-          .status(403)
-          .json(
-            buildFinancialOperationsCompanyKindDeniedPreview({
-              role:
-                req.user?.role,
-              companyKind:
-                company.kind,
-              scope: "COMPANY",
-            })
-          );
-      }
+      const requestedAgreementId = positiveId(
+        req.query?.agreementId ?? req.query?.focusAgreementId,
+      );
+      const requestedShiftId = positiveId(
+        req.query?.shiftId ?? req.query?.focusShiftId,
+      );
 
       const [
         workflowSummary,
         commercialFlowSummary,
         budgetPlanOverview,
-        latestShift,
-        latestAgreement,
+        candidateFinancialShifts,
+        companyOfferCandidates,
+        historicalHakedisAgreementRefs,
       ] = await Promise.all([
         buildWorkflowSummary(company),
 
@@ -689,7 +745,11 @@ export function companyOverviewRouter() {
           company
         ),
 
-        prisma.shift.findFirst({
+        getCompanyBudgetPlanOverview(
+          company.id
+        ),
+
+        prisma.shift.findMany({
           where: {
             companyId:
               company.id,
@@ -697,9 +757,15 @@ export function companyOverviewRouter() {
               in: [
                 "APPROVED",
                 "ACTIVE",
+                "DONE",
                 "SPLIT",
               ],
             },
+            agreementId: {
+              not: null,
+              ...(requestedAgreementId ? { equals: requestedAgreementId } : {}),
+            },
+            ...(requestedShiftId ? { id: requestedShiftId } : {}),
           },
           orderBy: [
             {
@@ -713,6 +779,7 @@ export function companyOverviewRouter() {
               id: "desc",
             },
           ],
+          take: 400,
           select: {
             id: true,
             status: true,
@@ -723,6 +790,9 @@ export function companyOverviewRouter() {
             routeSnapshotValidatedAt: true,
             routeSnapshotInputHash: true,
             requiredPaxOverride: true,
+            direction: true,
+            pattern: true,
+            organizationPlanId: true,
             companyOfferAmount: true,
             roomOfferAmount: true,
             companyOfferNote: true,
@@ -763,60 +833,132 @@ export function companyOverviewRouter() {
                 stops: true,
               },
             },
+
+            organizationPlan: {
+              select: {
+                id: true,
+                title: true,
+                planDate: true,
+                startMin: true,
+                endMin: true,
+                status: true,
+                stops: {
+                  select: { id: true, passengerCount: true },
+                  orderBy: { order: "asc" },
+                },
+              },
+            },
+
+            agreement: {
+              select: {
+                id: true,
+                status: true,
+                companyId: true,
+                roomId: true,
+                startDate: true,
+                endDate: true,
+                weekMask: true,
+                startMin: true,
+                endMin: true,
+                direction: true,
+                pattern: true,
+                companyOfferAmount: true,
+                roomOfferAmount: true,
+                companyOfferNote: true,
+                roomOfferNote: true,
+                updatedAt: true,
+
+                room: {
+                  select: {
+                    id: true,
+                    name: true,
+                    regionId: true,
+                    region: { select: { id: true, name: true } },
+                  },
+                },
+
+                company: {
+                  select: {
+                    id: true,
+                    name: true,
+                    kind: true,
+                    regionId: true,
+                    region: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
           },
         }),
 
-        prisma.agreement.findFirst({
+        prisma.shiftOffer.findMany({
           where: {
-            companyId:
-              company.id,
+            status: { in: ["OPEN", "COUNTERED", "ACCEPTED", "CANCELLED"] },
+            shift: { companyId: company.id },
           },
-          orderBy: [
-            {
-              updatedAt: "desc",
-            },
-            {
-              id: "desc",
-            },
-          ],
+          orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+          take: 400,
           select: {
             id: true,
-            status: true,
-            companyId: true,
+            shiftId: true,
             roomId: true,
-            startDate: true,
-            endDate: true,
-            companyOfferAmount: true,
-            roomOfferAmount: true,
-            companyOfferNote: true,
-            roomOfferNote: true,
-            updatedAt: true,
-
-            room: {
+            status: true,
+            amountCompany: true,
+            amountRoom: true,
+            room: { select: { id: true, name: true } },
+            shift: {
               select: {
                 id: true,
-                name: true,
-                regionId: true,
-                region: { select: { id: true, name: true } },
-              },
-            },
-
-            company: {
-              select: {
-                id: true,
-                name: true,
-                kind: true,
-                regionId: true,
-                region: { select: { id: true, name: true } },
+                companyId: true,
+                agreementId: true,
+                status: true,
+                startAt: true,
+                endAt: true,
+                requiredPaxOverride: true,
+                routeSnapshotDistanceM: true,
+                routeSnapshotDurationSec: true,
+                _count: { select: { stops: true, people: true } },
               },
             },
           },
         }),
 
-        getCompanyBudgetPlanOverview(
-          company.id
-        ),
+        prisma.hakedisRecord.findMany({
+          where: { companyId: company.id },
+          select: { agreementId: true },
+        }),
+
       ]);
+
+      const financialContext = resolveCompanyFinancialContext({
+        companyId: company.id,
+        requestedAgreementId,
+        requestedShiftId,
+        candidateShifts: candidateFinancialShifts,
+      });
+      const latestShift = financialContext.shift;
+      const latestAgreement = financialContext.agreement
+        ? (await enrichAgreementCommercialEvidence(prisma, [financialContext.agreement]))[0] || null
+        : null;
+      const latestOrganizationPlan = latestShift?.organizationPlan || null;
+      const linkedCompanyInvoice = latestAgreement?.id
+        ? await prisma.invoiceRecord.findFirst({
+          where: {
+            agreementId: Number(latestAgreement.id),
+            companyId: Number(company.id),
+            roomId: { not: null },
+          },
+          orderBy: [{ issuedAt: "desc" }, { id: "desc" }],
+          select: { id: true },
+        })
+        : null;
+      const companyInvoicePayment = linkedCompanyInvoice
+        ? await buildInvoiceCollectionSummary({
+          prisma,
+          actor: { id: req.user?.id, role: "COMPANY", companyId: company.id },
+          invoiceId: linkedCompanyInvoice.id,
+        })
+        : null;
 
       const mergedCompanySummary = {
         ...workflowSummary,
@@ -832,6 +974,36 @@ export function companyOverviewRouter() {
         },
       };
 
+      const selectedBudgetPlan = selectCompanyBudgetPlanForPreview(
+        budgetPlanOverview,
+        req.query?.budgetPlanId,
+      );
+      const selectedBudgetPlanOverview = budgetPlanOverview
+        ? { ...budgetPlanOverview, current: selectedBudgetPlan }
+        : budgetPlanOverview;
+
+      const commitmentEvidence = await getCompanyBudgetAgreementEvidence(
+        company.id,
+        selectedBudgetPlan?.agreementIds || [],
+      );
+
+      const historicalAgreementIds = [...new Set(
+        (historicalHakedisAgreementRefs || [])
+          .map((row) => Number(row?.agreementId || 0))
+          .filter((id) => Number.isSafeInteger(id) && id > 0),
+      )];
+      const historicalAgreementRows = historicalAgreementIds.length
+        ? await prisma.agreement.findMany({
+          where: { companyId: company.id, id: { in: historicalAgreementIds } },
+          select: { id: true, companyId: true, status: true, companyOfferAmount: true, roomOfferAmount: true, startDate: true, endDate: true },
+          orderBy: [{ endDate: "desc" }, { id: "desc" }],
+        })
+        : [];
+      const historicalFinancialEvidence = await getCompanyHistoricalFinancialEvidence(
+        company.id,
+        historicalAgreementRows,
+      );
+
       return res.json(
         {
           ...buildCompanyBudgetAndServiceCostPreview({
@@ -844,12 +1016,14 @@ export function companyOverviewRouter() {
             latestShift,
           agreement:
             latestAgreement,
+          organizationPlan:
+            latestOrganizationPlan,
           companySummary:
             mergedCompanySummary,
           budgetInputs:
             {
               ...buildCompanyBudgetPlanPreviewInputs(
-                budgetPlanOverview?.current
+                selectedBudgetPlan
               ),
               ...(req.query || {}),
             },
@@ -859,11 +1033,42 @@ export function companyOverviewRouter() {
             req.query || {},
           previewInputs:
             req.query || {},
+          commitmentInputs: {
+            budgetPlan: selectedBudgetPlan || null,
+            agreements: selectedBudgetPlan?.scope?.eligible || [],
+            evidenceByAgreementId: commitmentEvidence,
+          },
+          offerInputs: {
+            offers: companyOfferCandidates,
+          },
         }),
-          budgetPlan: budgetPlanOverview,
+          contextResolution: {
+            status: financialContext.status,
+            requestedAgreementId,
+            requestedShiftId,
+            selectedAgreementId: positiveId(financialContext.agreement?.id),
+            selectedShiftId: positiveId(financialContext.shift?.id),
+            relatedShiftCount: financialContext.relatedShiftCount,
+            relatedShiftIds: financialContext.relatedShiftIds,
+          },
+          budgetPlan: selectedBudgetPlanOverview,
+          historicalFinancialEvidence,
+          companyInvoicePayment,
         }
       );
     })
+  );
+
+  // Read-only buyer-finance previews do not require step-up. Keep the
+  // approval boundary on budget-plan lifecycle writes below.
+  r.use(requireStepUpWrite("COMPANY", "SUPER_ADMIN"));
+
+  attachCompanyBudgetLifecycleRoutes(
+    r,
+    {
+      resolveTargetCompany,
+      isBlockedCompanyKindForWrite,
+    }
   );
 
   return r;

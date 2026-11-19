@@ -3,8 +3,8 @@ import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import AppShell from "./layout/AppShell";
 import { useSession } from "./state/session";
 import { login } from "./api";
-import { useHashRoute, navigate } from "./router";
-import { getRoleDefaultPath, resolveRouteScope } from "./utils/roleNavigation";
+import { getHashQueryParams, useHashRoute, navigate } from "./router";
+import { getRoleDefaultPath, isPostLoginEntryPath, resolveRouteScope } from "./utils/roleNavigation";
 import { createCopilotRouteContext } from "./copilot/routeContext";
 import BrandMark from "./components/BrandMark";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -119,6 +119,11 @@ function fallbackCopilotPath(path) {
   if (clean.startsWith("/personel")) return "/personel/copilot";
   if (clean.startsWith("/parent")) return "/parent/copilot";
   return "/superadmin/copilot";
+}
+
+function readSafeRouteNumber(params, key) {
+  const value = Number(params.get(key));
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
 function SessionLoadingCard({ path }) {
@@ -319,6 +324,7 @@ function NotFoundRecovery({ me, requestedPath }) {
 export default function App() {
   const { token, me } = useSession();
   const { path } = useHashRoute();
+  const routeQuery = getHashQueryParams();
   const cleanPath = String(path || "/").split("?")[0];
   const canonicalRouteScope = token && me ? resolveRouteScope(me, cleanPath) : "UNAVAILABLE";
 
@@ -334,7 +340,7 @@ export default function App() {
   // Redirect to default panel after login
   useEffect(() => {
     if (!token || !me?.role) return;
-    if (path === "/" || path === "") navigate(getRoleDefaultPath(me));
+    if (isPostLoginEntryPath(path)) navigate(getRoleDefaultPath(me));
   }, [token, me, me?.role, me?.requirePasswordChange, path]);
 
   const view = useMemo(() => {
@@ -384,7 +390,20 @@ export default function App() {
     if (path === "/room/offers") return { layout: true, node: <RoomOffersPanel /> };
     if (path === "/room/commercial-flow") return { layout: true, node: <CommercialFlowPanel /> };
     if (path === "/room/financial-operations") return { layout: true, node: <FinancialOperationsPanel scope="ROOM" /> };
-    if (path === "/room/cost-scenarios") return { layout: true, node: <CostScenarioWorkspacePanel scope="ROOM" /> };
+    if (path === "/room/cost-scenarios") {
+      return {
+        layout: true,
+        node: (
+          <CostScenarioWorkspacePanel
+            scope="ROOM"
+            focusAgreementId={readSafeRouteNumber(routeQuery, "focusAgreementId")}
+            focusShiftId={readSafeRouteNumber(routeQuery, "focusShiftId")}
+            focusOfferId={readSafeRouteNumber(routeQuery, "focusOfferId")}
+            focusVehicleId={readSafeRouteNumber(routeQuery, "focusVehicleId")}
+          />
+        ),
+      };
+    }
     if (path === "/room/hub") return { layout: true, node: <RoomHubPanel /> };
     if (path === "/room/checkin") return { layout: true, node: <RoomCheckinPanel /> };
     if (path === "/room/copilot") return { layout: true, node: <CopilotPanel /> };
@@ -485,7 +504,7 @@ export default function App() {
     // to a role home makes invalid-route evidence indistinguishable from a
     // successful page load and can hide stale/deep-link defects.
     return { layout: true, routeContextStatus: "UNKNOWN", node: <NotFoundRecovery me={me} requestedPath={cleanPath} /> };
-  }, [token, me, path, cleanPath, canonicalRouteScope]);
+  }, [token, me, path, cleanPath, routeQuery, canonicalRouteScope]);
 
   if (!view.layout) return view.node;
 

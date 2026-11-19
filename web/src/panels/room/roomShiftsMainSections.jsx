@@ -20,6 +20,10 @@ export function RoomShiftsMainSections({
   contractQ,
   setContractQ,
   contractFiltered,
+  contractEmptyText,
+  contractEmptyFocusTarget,
+  contractEmptyAction,
+  contractEmptyActionLabel,
   otherQ,
   setOtherQ,
   otherFiltered,
@@ -67,6 +71,7 @@ export function RoomShiftsMainSections({
   decideExtend,
   openOpsEvents,
   openReassignModal,
+  completeTestSimulatedService,
 }) {
   const activeLabel = roomShiftsTabLabel(activeTab);
   const activeCounts = tabCounts || { pending: 0, contract: 0, other: 0 };
@@ -105,7 +110,13 @@ export function RoomShiftsMainSections({
           ariaLabel="Taşımacılık Firması vardiya bölümleri"
           tabs={[
             { key: "pending", label: "Bekleyen Talepler", badge: activeCounts.pending || 0 },
-            { key: "contract", label: "Sözleşmeden Üretilen", badge: activeCounts.contract || 0 },
+            {
+              key: "contract",
+              label: "Sözleşmeden Üretilen",
+              badge: activeCounts.contract || 0,
+              copilotTarget: "room:shifts:tab:contract",
+              copilotSemanticId: "product:room:shifts:tab:contract",
+            },
             { key: "other", label: "Diğer Vardiyalar", badge: activeCounts.other || 0 },
           ]}
           value={activeTab}
@@ -177,7 +188,10 @@ export function RoomShiftsMainSections({
           copilotShift={copilotShift}
           listFiltered={contractFiltered}
           items={items}
-          emptyText="Sözleşmeden üretilen vardiya yok."
+           emptyText={contractEmptyText || "Sözleşmeden üretilen vardiya yok."}
+           emptyFocusTarget={contractEmptyFocusTarget}
+           emptyAction={contractEmptyAction}
+           emptyActionLabel={contractEmptyActionLabel}
           searchPlaceholder="Ara (kayıt no / firma / plaka / sürücü / not)"
           offersByShiftId={offersByShiftId}
           vehiclesById={vehiclesById}
@@ -191,6 +205,7 @@ export function RoomShiftsMainSections({
           decideExtend={decideExtend}
           openOpsEvents={openOpsEvents}
           openReassignModal={openReassignModal}
+          completeTestSimulatedService={completeTestSimulatedService}
           openRoutePreview={openRoutePreview}
         />
       ) : activeTab === "other" ? (
@@ -217,6 +232,7 @@ export function RoomShiftsMainSections({
           decideExtend={decideExtend}
           openOpsEvents={openOpsEvents}
           openReassignModal={openReassignModal}
+          completeTestSimulatedService={completeTestSimulatedService}
           openRoutePreview={openRoutePreview}
         />
       ) : null}

@@ -3,6 +3,8 @@ import { authRequired } from "../auth/middleware.js";
 import { getCommercialCoreManifest, buildCommercialLifecycleTemplate } from "../ops/commercialCoreManifest.js";
 import { attachCommercialCorePaymentRoutes } from "./commercialCorePaymentRoutes.js";
 import { attachCommercialCoreRoomRoutes } from "./commercialCoreRoomRoutes.js";
+import { attachInvoiceCollectionRoutes } from "./invoiceCollectionRoutes.js";
+import { attachRoomCostRoutes } from "./roomCostRoutes.js";
 
 export function attachCommercialCoreRoutes(r) {
   wrapAsyncRouterMethods(r);
@@ -23,6 +25,8 @@ export function attachCommercialCoreRoutes(r) {
 
   attachCommercialCorePaymentRoutes(r);
   attachCommercialCoreRoomRoutes(r);
+  attachInvoiceCollectionRoutes(r);
+  attachRoomCostRoutes(r);
 
   return r;
 }

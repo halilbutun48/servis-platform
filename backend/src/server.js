@@ -8,7 +8,8 @@ import { Server } from "socket.io";
 import "dotenv/config";
 
 import { ENV } from "./env.js";
-import { prisma } from "./prisma.js";
+import { ensureCanonicalDatabaseReady, ensureWorkerDatabaseReady, prisma, runtimeWriteFreezeController, workerPrisma } from "./prisma.js";
+import { shouldEnforceCanonicalRuntime } from "./databaseTarget.js";
 import { verifyToken } from "./auth/jwt.js";
 import { authRequired, requireStepUp, requireStepUpWrite } from "./auth/middleware.js";
 import { scopeRoomsForUser } from "./ws/scope.js";
@@ -72,7 +73,7 @@ import { operationVerificationRouter } from "./routes/operationVerification.js";
 import * as dashboardBulkMod from "./routes/dashboardBulk.js";
 import { externalCostReferenceRouter } from "./externalCost/router.js";
 import { reconciliationRouter } from "./routes/reconciliation.js";
-import { costScenarioRouter } from "./routes/costScenario.js";
+import { costScenarioRouter, COST_SCENARIO_READ_ONLY_POST_PATH } from "./routes/costScenario.js";
 import { accountingExportsRouter } from "./routes/accountingExports.js";
 
 import { startMonitors } from "./jobs/index.js";
@@ -85,6 +86,7 @@ import { mountCoreRoutes, mountIoRoutes } from "./bootstrap/routeMounts.js";
 import { createApiRateLimiters } from "./bootstrap/rateLimits.js";
 import { expressErrorHandler } from "./errors/http.js";
 import { installSocketRelay } from "./ws/socketRelay.js";
+import { createWriteFreezeMiddleware } from "./middleware/globalWriteFreeze.js";
 
 import * as agreementsMod from "./routes/agreements.js";
 import logger from "./lib/logger.js";
@@ -173,6 +175,12 @@ app.use(edgeRequestContext);
 app.use(applyEdgeSecurityHeaders);
 app.use(edgeSecurityGuard);
 app.use(express.json({ limit: "1mb" }));
+// Global business-write gate. Safe reads continue during freeze; all
+// mutating requests fail closed before request-log persistence or route code.
+app.use(createWriteFreezeMiddleware({
+  controller: runtimeWriteFreezeController,
+  readOnlyPostPaths: [COST_SCENARIO_READ_ONLY_POST_PATH],
+}));
 app.use((req, res, next) => {
   capacityRequestStarted();
   let done = false;
@@ -189,7 +197,7 @@ morgan.token("url", (req) => sanitizeRequestUrl(req.originalUrl || req.url || ""
 app.use(morgan("dev"));
 
 // M10: request log (must be early)
-app.use(apiRequestLog());
+app.use(apiRequestLog({ writeFreezeController: runtimeWriteFreezeController }));
 
 const rateLimitStoreMode = String(ENV.RATE_LIMIT_STORE || process.env.RATE_LIMIT_STORE || "").toLowerCase();
 
@@ -255,7 +263,10 @@ app.get("/health", async (req, res) => {
 // Server + Socket.IO
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: ENV.CORS_ORIGIN === "*" ? true : ENV.CORS_ORIGIN } });
-const stopSocketRelay = installSocketRelay(io, { redisUrl: ENV.REDIS_URL });
+const stopSocketRelay = installSocketRelay(io, {
+  redisUrl: ENV.REDIS_URL,
+  writeFreezeController: runtimeWriteFreezeController,
+});
 
 mountCoreRoutes(app, {
   authStep2Router,
@@ -364,15 +375,19 @@ mountIoRoutes(app, io, {
   checkinRouter,
   organizationRouter,
   aiRouter,
+  workerPrisma,
+  writeFreezeController: runtimeWriteFreezeController,
 });
 
 app.use(expressErrorHandler);
-// Background monitors
-const stopMonitors = startMonitors(io);
+// Background monitors are started only after the explicitly configured worker
+// connection has been established. Health must never hide a missing or stuck
+// worker database path behind a healthy API connection.
+let stopMonitors = () => {};
 
 let shuttingDown = false;
 
-async function shutdown() {
+async function shutdown(exitCode = 0) {
   if (shuttingDown) return;
   shuttingDown = true;
   try {
@@ -387,14 +402,37 @@ async function shutdown() {
   try {
     await io.close();
   } catch {}
-  process.exit(0);
+  try {
+    await prisma.$disconnect();
+  } catch {}
+  try {
+    await workerPrisma?.$disconnect?.();
+  } catch {}
+  process.exit(exitCode);
 }
 
-process.on("SIGTERM", shutdown);
-process.on("SIGINT", shutdown);
+process.on("SIGTERM", () => shutdown(0));
+process.on("SIGINT", () => shutdown(0));
 
-server.listen(ENV.PORT, () => {
-  logger.info(`✅ API listening on http://localhost:${ENV.PORT}`);
+async function startServer() {
+  if (shouldEnforceCanonicalRuntime()) {
+    const canonicalIdentity = await ensureCanonicalDatabaseReady({ client: prisma });
+    logger.info(`[startup] canonical DEMO database ready database=${canonicalIdentity.databaseName} schema=${canonicalIdentity.schema} migration_count=${canonicalIdentity.migrationCount} current_user=${canonicalIdentity.currentUser || "unknown"}`);
+  }
+  const workerIdentity = await ensureWorkerDatabaseReady({ workerClient: workerPrisma });
+  logger.info(`[startup] worker database ready current_user=${workerIdentity.currentUser || "unknown"} session_user=${workerIdentity.sessionUser || "unknown"}`);
+  stopMonitors = startMonitors(io, {
+    writeFreezeController: runtimeWriteFreezeController,
+    workerPrisma,
+  });
+  server.listen(ENV.PORT, () => {
+    logger.info(`✅ API listening on http://localhost:${ENV.PORT}`);
+  });
+}
+
+startServer().catch((error) => {
+  logger.error(`[startup] worker database unavailable: ${error?.code || "WORKER_DATABASE_CONNECT_FAILED"}`);
+  void shutdown(1).catch(() => process.exit(1));
 });
 
 

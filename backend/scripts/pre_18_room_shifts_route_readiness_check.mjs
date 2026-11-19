@@ -4,6 +4,7 @@
  * landmark: the real panel mounts a ROOM shifts container and its tab surface.
  */
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 const readinessModule = "./lib/pre_18_room_prehit_246_migration_v1.mjs";
 const authModule = "./lib/pre_18_authenticated_role_context.mjs";
@@ -138,6 +139,28 @@ test("RED-SHIFTS-7 auth lifecycle remains a separate gate", async () => {
     authResponse: { status: 200, role: "ROOM", tenantScopeProven: true },
     clientSessionHydrated: false, roomShellRendered: false, sessionLoadingVisible: true,
   }), false);
+});
+
+test("RED-SHIFTS-8 a read-only 503 is a visible ROOM error, never raw HTTP or empty success", async () => {
+  const [utils, workflow] = await Promise.all([
+    readFile(new URL("../../web/src/panels/room/roomShiftsPanelUtils.js", import.meta.url), "utf8"),
+    readFile(new URL("../../web/src/panels/room/roomShiftsPanelWorkflow.js", import.meta.url), "utf8"),
+  ]);
+  assert.match(utils, /status\s*>=\s*500/u);
+  assert.match(workflow, /Vardiyalar yüklenemedi\. Lütfen Tekrar Dene ile yeniden deneyin\./u);
+  assert.match(utils, /status:\s*status\s*\|\|/u);
+});
+
+test("RED-SHIFTS-9 failed list loads expose explicit error/retry state instead of 0/0", async () => {
+  const [workflow, panel, overview] = await Promise.all([
+    readFile(new URL("../../web/src/panels/room/roomShiftsPanelWorkflow.js", import.meta.url), "utf8"),
+    readFile(new URL("../../web/src/panels/room/ShiftsPanel.jsx", import.meta.url), "utf8"),
+    readFile(new URL("../../web/src/panels/room/roomShiftsOverviewSection.jsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(workflow, /setLoadState\?\.\("error"\)/u);
+  assert.match(workflow, /setLoadState\?\.\(list\.length \? "ready" : "empty"\)/u);
+  assert.match(panel, /loadState/u);
+  assert.match(overview, /Tekrar Dene/u);
 });
 
 let failures = 0;

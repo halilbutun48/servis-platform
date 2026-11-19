@@ -257,7 +257,7 @@ function runBoundaryChecks() {
   check(FINANCIAL_OPERATIONS_SURFACES.length === 13, "surface registry size");
   check(FINANCIAL_OPERATIONS_REUSE_MAP.length >= 13, "reuse map size");
   check(FINANCIAL_OPERATIONS_SCOPE_BOUNDARY.includes("preview surfaces plus company budget lifecycle"), "scope boundary lifecycle");
-  check(FINANCIAL_OPERATIONS_SCOPE_BOUNDARY.includes("no write-action"), "scope boundary no write");
+  check(FINANCIAL_OPERATIONS_SCOPE_BOUNDARY.includes("no assistant/copilot write-action; explicit ROOM income-chain action is bounded separately"), "scope boundary no write");
   check(FINANCIAL_OPERATIONS_SCOPE_BOUNDARY.includes("tenant isolation preserved"), "scope boundary tenant isolation");
   check(FINANCIAL_OPERATIONS_EXCLUDED_SCOPE.includes("provider credential read/write/use"), "excluded scope provider credential");
   check(FINANCIAL_OPERATIONS_EXCLUDED_SCOPE.includes("dispatch apply"), "excluded scope dispatch apply");
@@ -331,7 +331,7 @@ function runActionClassificationChecks() {
 
   for (const surface of FINANCIAL_OPERATIONS_SURFACES) {
     check(
-      isFinancialOperationReadOnlyAction(surface.id) === (surface.id === "company_budget" ? false : true),
+      isFinancialOperationReadOnlyAction(surface.id) === (["company_budget", "hakedis_invoice_reconciliation_preview"].includes(surface.id) ? false : true),
       `surface read-only action ${surface.id}`,
     );
     check(isAccountingExecutionBlocked(surface.id) === false, `surface not blocked action ${surface.id}`);
@@ -356,16 +356,16 @@ function runPreviewChecks() {
   check(roomPreview.writeAction === false, "room preview no write action");
   check(roomPreview.scope === "ROOM", "room preview scope");
   check(roomPreview.surfaceId === "room_profitability", "room preview surface id");
-  checkEqual(roomPreview.operationalCostModel.status, "incomplete", "room model status");
-  checkEqual(roomPreview.operationalCostModel.baselineOperationalCostMinor, 63675, "room model baseline");
-  checkEqual(roomPreview.operationalCostModel.adjustedPreviewCostMinor, 63425, "room model adjusted preview");
-  checkEqual(roomPreview.operationalCostModel.dataQuality.completenessScore, 68, "room model completeness");
+  checkEqual(roomPreview.operationalCostModel.status, "partial", "room model status");
+  checkEqual(roomPreview.operationalCostModel.baselineOperationalCostMinor, 67675, "room model baseline");
+  checkEqual(roomPreview.operationalCostModel.adjustedPreviewCostMinor, 67425, "room model adjusted preview");
+  checkEqual(roomPreview.operationalCostModel.dataQuality.completenessScore, 72, "room model completeness");
   checkEqual(roomPreview.operationalCostModel.confidence.level, "medium", "room model confidence");
   checkEqual(component(roomPreview, "fuel").amountMinor, 50000, "room fuel amount");
-  checkEqual(component(roomPreview, "vehicle_fixed_allocated").amountMinor, 0, "room vehicle fixed amount");
-  checkEqual(component(roomPreview, "vehicle_fixed_allocated").status, "incomplete", "room vehicle fixed status");
-  checkIncludes(component(roomPreview, "vehicle_fixed_allocated").missingFields || [], "vehicleFixedCostAllocationMode", "room vehicle fixed missing mode");
-  checkIncludes(component(roomPreview, "vehicle_fixed_allocated").missingFields || [], "allocation basis", "room vehicle fixed missing basis");
+  checkEqual(component(roomPreview, "vehicle_fixed_allocated").amountMinor, 4000, "room vehicle fixed amount");
+  checkEqual(component(roomPreview, "vehicle_fixed_allocated").status, "complete", "room vehicle fixed status");
+  check(!(component(roomPreview, "vehicle_fixed_allocated").missingFields || []).includes("vehicleFixedCostAllocationMode"), "room vehicle fixed mode resolved");
+  check(!(component(roomPreview, "vehicle_fixed_allocated").missingFields || []).includes("allocation basis"), "room vehicle fixed allocation basis resolved");
   checkEqual(component(roomPreview, "vehicle_variable").amountMinor, 3000, "room vehicle variable amount");
   checkEqual(component(roomPreview, "driver_labor").amountMinor, 2550, "room driver labor amount");
   checkEqual(component(roomPreview, "waiting_and_overtime").amountMinor, 525, "room waiting amount");
@@ -374,11 +374,11 @@ function runPreviewChecks() {
   checkEqual(component(roomPreview, "other_direct_cost").amountMinor, 150, "room other direct cost amount");
   checkEqual(component(roomPreview, "external_preview_adjustments").amountMinor, -250, "room preview adjustments amount");
   checkEqual(roomPreview.roomProfitability?.profitMinor, 80000, "room profit amount");
-  checkEqual(roomPreview.roomProfitability?.marginBps, 4444, "room margin bps");
-  checkEqual(roomPreview.quoteFloor?.quoteFloorMinor, 115000, "room quote floor");
-  checkEqual(roomPreview.quoteFloor?.quoteFloorPerPassengerMinor, 5227, "room quote floor per passenger");
-  checkEqual(roomPreview.quoteFloor?.marginGapMinor, 65000, "room quote gap");
-  check(roomPreview.summaryText.includes("salt okunur"), "room summary copy");
+  checkEqual(roomPreview.roomProfitability?.marginBps, null, "room margin remains unconfirmed");
+  checkEqual(roomPreview.quoteFloor?.quoteFloorMinor, 117046, "room quote floor");
+  checkEqual(roomPreview.quoteFloor?.quoteFloorPerPassengerMinor, 5320, "room quote floor per passenger");
+  checkEqual(roomPreview.quoteFloor?.marginGapMinor, 62954, "room quote gap");
+  check(roomPreview.summaryText.includes("Tahmini kârlılık"), "room summary identifies estimate");
   check(roomPreview.nextAction.includes("Teklif tabanı"), "room next action copy");
   check(roomPreview.companyBudget === null, "room company budget hidden");
 
@@ -391,12 +391,12 @@ function runPreviewChecks() {
   check(companyPreview.writeAction === false, "company preview no write action");
   check(companyPreview.scope === "COMPANY", "company preview scope");
   check(companyPreview.surfaceId === "company_budget", "company preview surface id");
-  checkEqual(companyPreview.operationalCostModel.status, "incomplete", "company model status");
-  checkEqual(companyPreview.operationalCostModel.baselineOperationalCostMinor, 63675, "company model baseline");
-  checkEqual(companyPreview.quoteFloor?.quoteFloorMinor, 100800, "company quote floor");
-  checkEqual(companyPreview.quoteFloor?.quoteFloorPerPassengerMinor, 5929, "company quote floor per passenger");
-  checkEqual(companyPreview.companyBudget?.budgetGapMinor, 119200, "company budget gap");
-  checkEqual(companyPreview.companyBudget?.serviceCostMinor, 100800, "company service cost");
+  checkEqual(companyPreview.operationalCostModel.status, "partial", "company model status");
+  checkEqual(companyPreview.operationalCostModel.baselineOperationalCostMinor, 67675, "company model baseline");
+  checkEqual(companyPreview.quoteFloor?.quoteFloorMinor, 102000, "company quote floor");
+  checkEqual(companyPreview.quoteFloor?.quoteFloorPerPassengerMinor, 6000, "company quote floor per passenger");
+  checkEqual(companyPreview.companyBudget?.budgetGapMinor, 118000, "company budget gap");
+  checkEqual(companyPreview.companyBudget?.serviceCostMinor, 102000, "company service cost");
   check(companyPreview.roomProfitability === null, "company room profitability hidden");
   check(companyPreview.summaryText.includes("salt okunur"), "company summary copy");
   check(companyPreview.nextAction.includes("Bütçe"), "company next action copy");
@@ -440,10 +440,10 @@ function runPreviewChecks() {
     }),
   );
   check(roomNoBaselinePreview.quoteFloor?.computed === true, "room missing baseline fallback quote floor");
-  checkEqual(roomNoBaselinePreview.quoteFloor?.baselineSource, "incomplete", "room missing baseline source");
-  checkEqual(roomNoBaselinePreview.quoteFloor?.baselineOperationalCostMinor, 63425, "room missing baseline fallback amount");
-  checkEqual(roomNoBaselinePreview.quoteFloor?.quoteFloorMinor, 72939, "room missing baseline fallback floor");
-  check(roomNoBaselinePreview.roomProfitability?.summaryText.includes("salt okunur"), "room missing baseline profitability summary");
+  checkEqual(roomNoBaselinePreview.quoteFloor?.baselineSource, "partial", "room missing baseline source");
+  checkEqual(roomNoBaselinePreview.quoteFloor?.baselineOperationalCostMinor, 67425, "room missing baseline fallback amount");
+  checkEqual(roomNoBaselinePreview.quoteFloor?.quoteFloorMinor, 78919, "room missing baseline fallback floor");
+  check(roomNoBaselinePreview.roomProfitability?.summaryText.includes("Tahmini kârlılık"), "room missing baseline profitability summary");
 
   const roomNoReservePreview = buildRoomProfitabilityAndQuoteFloorPreview(
     buildRoomPreviewArgs({
@@ -484,8 +484,8 @@ function runPreviewChecks() {
     }),
   );
   checkEqual(roomLowOfferPreview.roomProfitability?.profitMinor, -5000, "room low offer profit");
-  checkEqual(roomLowOfferPreview.roomProfitability?.marginBps, -526, "room low offer margin");
-  checkEqual(roomLowOfferPreview.quoteFloor?.marginGapMinor, -20000, "room low offer quote gap");
+  checkEqual(roomLowOfferPreview.roomProfitability?.marginBps, null, "room low offer margin remains unconfirmed");
+  checkEqual(roomLowOfferPreview.quoteFloor?.marginGapMinor, -22046, "room low offer quote gap");
 
   const roomBreakEvenPreview = buildRoomProfitabilityAndQuoteFloorPreview(
     buildRoomPreviewArgs({
@@ -502,25 +502,25 @@ function runPreviewChecks() {
     }),
   );
   checkEqual(roomBreakEvenPreview.roomProfitability?.profitMinor, 0, "room break even profit");
-  checkEqual(roomBreakEvenPreview.roomProfitability?.marginBps, 0, "room break even margin");
-  checkEqual(roomBreakEvenPreview.quoteFloor?.marginGapMinor, -15000, "room break even quote gap");
+  checkEqual(roomBreakEvenPreview.roomProfitability?.marginBps, null, "room break even margin remains unconfirmed");
+  checkEqual(roomBreakEvenPreview.quoteFloor?.marginGapMinor, -17046, "room break even quote gap");
 
   const roomFloorHitPreview = buildRoomProfitabilityAndQuoteFloorPreview(
     buildRoomPreviewArgs({
       shift: {
         ...roomBase.shift,
-        roomOfferAmount: 115000,
+        roomOfferAmount: 117046,
         companyOfferAmount: 114000,
       },
       agreement: {
         ...roomBase.agreement,
-        roomOfferAmount: 115000,
+        roomOfferAmount: 117046,
         companyOfferAmount: 114000,
       },
     }),
   );
-  checkEqual(roomFloorHitPreview.roomProfitability?.profitMinor, 15000, "room floor hit profit");
-  checkEqual(roomFloorHitPreview.roomProfitability?.marginBps, 1304, "room floor hit margin");
+  checkEqual(roomFloorHitPreview.roomProfitability?.profitMinor, 17046, "room floor hit profit");
+  checkEqual(roomFloorHitPreview.roomProfitability?.marginBps, null, "room floor hit margin remains unconfirmed");
   checkEqual(roomFloorHitPreview.quoteFloor?.marginGapMinor, 0, "room floor hit quote gap");
 
   const roomHighOfferPreview = buildRoomProfitabilityAndQuoteFloorPreview(
@@ -538,8 +538,8 @@ function runPreviewChecks() {
     }),
   );
   checkEqual(roomHighOfferPreview.roomProfitability?.profitMinor, 30000, "room high offer profit");
-  checkEqual(roomHighOfferPreview.roomProfitability?.marginBps, 2308, "room high offer margin");
-  checkEqual(roomHighOfferPreview.quoteFloor?.marginGapMinor, 15000, "room high offer quote gap");
+  checkEqual(roomHighOfferPreview.roomProfitability?.marginBps, null, "room high offer margin remains unconfirmed");
+  checkEqual(roomHighOfferPreview.quoteFloor?.marginGapMinor, 12954, "room high offer quote gap");
 
   const roomDeniedState = buildFinancialOperationsRbacDenial("ROOM", "company_budget");
   const roomEmptyState = buildFinancialOperationsEmptyState("ROOM", "room_profitability");

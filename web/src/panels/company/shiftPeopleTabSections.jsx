@@ -222,6 +222,9 @@ export function ShiftPeopleHubSection({
           </span>
         ) : null}
       </div>
+      <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
+        Kaydedilen mesafe planlanan OSRM rota kanıtıdır; gerçek sürüş veya GPS kanıtı değildir.
+      </div>
     </div>
   );
 }
@@ -242,6 +245,7 @@ export function ShiftPeopleImportSection({
   importMode,
   setImportMode,
   onImportFile,
+  guidedMode = false,
   importSummary,
   hideGeoReviewLinks,
   geoReviewPath,
@@ -254,7 +258,7 @@ export function ShiftPeopleImportSection({
   warningLabel,
 }) {
   return (
-    <div className="card" style={{ margin: 0 }}>
+    <div className="card shiftPeopleImportCard" style={{ margin: 0 }}>
       <h3 style={{ marginTop: 0 }}>{who} Ekle / İçe aktar</h3>
 
       <form onSubmit={onAddPersonManual} className="grid">
@@ -305,7 +309,7 @@ export function ShiftPeopleImportSection({
         </div>
 
         <div style={{ display: "flex", gap: 8, alignItems: "end", flexWrap: "wrap", marginTop: 8 }}>
-          <div style={{ minWidth: 220 }}>
+          <div className="shiftPeopleImportModeField" style={{ minWidth: 220 }}>
             <label className="muted">İçe aktarma modu</label>
             <select value={importMode} onChange={(e) => setImportMode(e.target.value)} disabled={busy}>
               <option value="REPLACE">Değiştir — mevcut listeyi yenile</option>
@@ -317,6 +321,8 @@ export function ShiftPeopleImportSection({
         <input
           type="file"
           accept=".csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+          aria-label={guidedMode ? "Dosya seç" : undefined}
+          data-copilot-target={guidedMode ? "company-shifts:step3:personnel-import" : undefined}
           disabled={busy}
           onChange={(e) => onImportFile(e.target.files?.[0])}
           style={{ marginTop: 8 }}
@@ -442,6 +448,7 @@ export function ShiftPeopleOverviewSection({
   importMode,
   setImportMode,
   onImportFile,
+  guidedMode,
   importSummary,
   onRunImportQuickGeocode,
   importQuickBusy,
@@ -468,7 +475,7 @@ export function ShiftPeopleOverviewSection({
         </div>
       ) : null}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start", marginTop: 12 }}>
+      <div className="shiftPeopleOverviewGrid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start", marginTop: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <ShiftPeopleSummarySection
             busy={busy}
@@ -532,6 +539,7 @@ export function ShiftPeopleOverviewSection({
           importMode={importMode}
           setImportMode={setImportMode}
           onImportFile={onImportFile}
+          guidedMode={guidedMode}
           importSummary={importSummary}
           hideGeoReviewLinks={hideGeoReviewLinks}
           geoReviewPath={geoReviewPath}
@@ -558,7 +566,7 @@ export function ShiftPeopleListSection({
   geocodeBusyId,
 }) {
   return (
-    <div className="card" style={{ marginTop: 12, overflowX: "auto" }}>
+    <div className="card shiftPeopleListCard" style={{ marginTop: 12, overflowX: "auto" }}>
       <h3 style={{ marginTop: 0 }}>Vardiya {who} listesi</h3>
       <ShiftPersonelTable
         people={people}

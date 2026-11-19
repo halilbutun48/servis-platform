@@ -11,6 +11,7 @@ import PanelChrome from "../../components/PanelChrome";
 import HakedisReconciliationEntryCard from "../../components/HakedisReconciliationEntryCard";
 import { statusBadgeInlineStyle } from "../../utils/statusBadge";
 import { buildAgreementConversionByShift } from "./companyShiftsPanelStateHelpers";
+import { resolveCommercialFlowRolePath } from "./commercialFlowNavigation";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -47,7 +48,13 @@ function MetricCard({ title, value, note, accent = "default" }) {
   };
   const palette = accentMap[accent] || accentMap.default;
   return (
-    <div style={{ padding: 14, border: palette.border, borderRadius: 8, flex: "1 1 180px" }}>
+    <div
+      data-copilot-metric="true"
+      data-copilot-metric-label={title}
+      data-copilot-metric-value={String(value)}
+      data-copilot-metric-source="AUTHORIZED_VISIBLE_SCREEN"
+      style={{ padding: 14, border: palette.border, borderRadius: 8, flex: "1 1 180px" }}
+    >
       <div className="panelSectionTitle" style={{ marginBottom: 8, color: palette.title }}>{title}</div>
       <div className="panelStatValue" style={{ color: palette.value }}>{value}</div>
       {note ? <div className="panelMeta" style={{ marginTop: 8 }}>{note}</div> : null}
@@ -318,7 +325,7 @@ export default function CompanyCommercialFlowPanel() {
   }, [selectedItem, selectedTarget, marketOffers.length, acceptedOffers.length, finalItems.length, copilotScopeKey]);
 
   function openShifts(section, shiftId) {
-    navigate("/company/shifts");
+    navigate(resolveCommercialFlowRolePath(getPath(), "/shifts"));
     setTimeout(() => {
       try {
         window.dispatchEvent(new CustomEvent("company:shifts:focus", {
@@ -329,7 +336,7 @@ export default function CompanyCommercialFlowPanel() {
   }
 
   function openAgreementReconciliation() {
-    navigate("/company/agreements?detail=bridge");
+    navigate(resolveCommercialFlowRolePath(getPath(), "/agreements?detail=bridge"));
   }
 
   return (

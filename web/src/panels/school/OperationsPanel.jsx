@@ -24,6 +24,7 @@ import {
   boardingChangeKindLabel,
   boardingChangeRouteRefreshLabel,
   boardingChangeRouteRefreshNote,
+  isOpenBoardingChangeRequest,
 } from "../shared/boardingChangeUi";
 
 function MiniStat({ title, value, note }) {
@@ -189,10 +190,7 @@ export default function SchoolOperationsPanel() {
   const boardedRows = useMemo(() => filterNotificationDigest(notifRows, ["servise bindi", "okula ulaştı", "ulaştı"]), [notifRows]);
   const parentNotificationRows = useMemo(() => notifRows.slice(0, 10), [notifRows]);
   const inviteByChild = useMemo(() => latestInviteByChild(invites), [invites]);
-  const riskRequestRows = useMemo(() => (Array.isArray(requests) ? requests : []).filter((item) => {
-    const status = String(item?.status || "").toUpperCase();
-    return ["REQUESTED", "OPEN", "PENDING", "COUNTERED"].includes(status) || item?.lat != null || item?.lng != null;
-  }), [requests]);
+  const riskRequestRows = useMemo(() => (Array.isArray(requests) ? requests : []).filter(isOpenBoardingChangeRequest), [requests]);
   const acceptedRequestRows = useMemo(() => (Array.isArray(requests) ? requests : []).filter((item) => String(item?.status || "").toUpperCase() === "ACCEPTED"), [requests]);
 
   const studentRows = useMemo(

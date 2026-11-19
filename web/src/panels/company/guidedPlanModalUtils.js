@@ -2,11 +2,23 @@ import {
   QUICK_DURATION_PRESETS,
   addDaysISO,
   selectedFromMask,
+  weekdayBitFromYmdUTC,
 } from "../../utils/agreementUi";
 import { formatDateTimeTR, isoFromTRYmdMin, ymdTR } from "../../utils/time";
+import { parseOfferAmountInput } from "../shared/offerAmountPresentation";
+import { guidedPlanStepTitle } from "./guidedPlanRoleCopy";
 
 export function todayYmd() {
   return ymdTR();
+}
+
+export function createGuidedBatchIdempotencyKey() {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return `guided-${crypto.randomUUID()}`;
+  } catch {
+    // Fall through to the bounded browser-safe fallback.
+  }
+  return `guided-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
 }
 
 export function toHHMM(min) {
@@ -36,14 +48,24 @@ export function fmtTR(iso) {
 }
 
 export function parseTryInput(raw) {
-  if (raw == null) return null;
-  const cleaned = String(raw).replace(/\./g, "").replace(/[^\d]/g, "");
-  if (!cleaned) return null;
-  const n = Number(cleaned);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  return parseOfferAmountInput(raw);
 }
 
-export function buildGuidedPlanModalResetState() {
+// A server-owned guided draft is resumed in place.  Keep omitted offer fields
+// untouched so advancing a saved draft cannot erase an existing value, while
+// still persisting values the user entered in the resume form.
+export function buildGuidedResumeCompanyOfferPatch({ draftAmount, draftNote } = {}) {
+  const patch = {};
+  const amount = parseTryInput(draftAmount);
+  if (amount != null) patch.companyOfferAmount = amount;
+
+  const note = String(draftNote || "").trim();
+  if (note) patch.companyOfferNote = note.slice(0, 500);
+
+  return patch;
+}
+
+export function buildGuidedPlanModalResetState(overrides = {}) {
   return {
     step: 0,
     busy: false,
@@ -69,6 +91,7 @@ export function buildGuidedPlanModalResetState() {
     mapPickPoint: null,
     draftShiftIds: [],
     draftShifts: [],
+    guidedBatchIdempotencyKey: String(overrides?.guidedBatchIdempotencyKey || createGuidedBatchIdempotencyKey()),
     osrmBatch: { running: false, done: 0, total: 0 },
     osrmResById: {},
     roomQ: "",
@@ -116,6 +139,7 @@ export function normalizePersistedGuidedPlanDraftState(source = {}) {
     mapPickPoint: Array.isArray(source?.mapPickPoint) ? source.mapPickPoint : defaults.mapPickPoint,
     draftShiftIds: Array.isArray(source?.draftShiftIds) ? source.draftShiftIds.map((x) => Number(x)).filter(Number.isFinite) : defaults.draftShiftIds,
     draftShifts: Array.isArray(source?.draftShifts) ? source.draftShifts : defaults.draftShifts,
+    guidedBatchIdempotencyKey: String(source?.guidedBatchIdempotencyKey || defaults.guidedBatchIdempotencyKey || createGuidedBatchIdempotencyKey()),
     osrmResById: source?.osrmResById && typeof source.osrmResById === "object" ? source.osrmResById : defaults.osrmResById,
     roomQ: source?.roomQ == null ? defaults.roomQ : String(source.roomQ),
     onlyHubRooms: Boolean(source?.onlyHubRooms ?? defaults.onlyHubRooms),
@@ -380,6 +404,115 @@ export function emptyDestination() {
   return { title: "", address: "", lat: "", lng: "", status: "idle", foundText: "" };
 }
 
+function localDateParts(value) {
+  const raw = String(value || "");
+  const date = new Date(raw);
+  if (!Number.isFinite(date.getTime())) {
+    return { ymd: raw.slice(0, 10), minutes: null };
+  }
+  const pad = (n) => String(n).padStart(2, "0");
+  return {
+    ymd: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    minutes: date.getHours() * 60 + date.getMinutes(),
+  };
+}
+
+function guidedResumeSlot(shift, startMinutes, endMinutes) {
+  const direction = String(shift?.direction || "INBOUND").toUpperCase() === "OUTBOUND" ? "OUTBOUND" : "INBOUND";
+  const pattern = String(shift?.pattern || "ONE_WAY").toUpperCase() === "LOOP" ? "LOOP" : "ONE_WAY";
+  const label = direction === "OUTBOUND" ? "Akşam" : "Sabah";
+  return {
+    label,
+    startHHMM: toHHMM(startMinutes),
+    endHHMM: toHHMM(endMinutes),
+    direction,
+    pattern,
+  };
+}
+
+/**
+ * Rehydrates the visible guided-plan form from the server-owned draft.
+ * A resume action must show the same schedule, capacity and coordinate stops
+ * that will be preserved by the server; falling back to the default form
+ * would make a safe continuation look like a new plan.
+ */
+export function buildGuidedResumeFormState(shift) {
+  const start = localDateParts(shift?.startAt);
+  const end = localDateParts(shift?.endAt);
+  const startDate = start.ymd || todayYmd();
+  const endDate = end.ymd || startDate;
+  const startMinutes = Number.isFinite(start.minutes) ? start.minutes : 8 * 60;
+  const endMinutes = Number.isFinite(end.minutes) ? end.minutes : 10 * 60;
+  const slot = guidedResumeSlot(shift, startMinutes, endMinutes);
+  const isMorning = startMinutes === 7 * 60 && endMinutes === 9 * 60 && slot.direction === "INBOUND";
+  const isEvening = startMinutes === 17 * 60 && endMinutes === 19 * 60 && slot.direction === "OUTBOUND";
+  const packKey = isMorning ? "WK_MORNING" : isEvening ? "WK_EVENING" : "CUSTOM";
+  const stops = Array.isArray(shift?.stops) ? shift.stops : [];
+  const orgDestinations = stops.length
+    ? stops.map((stop) => ({
+      title: String(stop?.name || "").trim(),
+      address: "",
+      lat: stop?.lat == null ? "" : String(stop.lat),
+      lng: stop?.lng == null ? "" : String(stop.lng),
+      status: stop?.lat != null && stop?.lng != null ? "manual" : "idle",
+      foundText: stop?.lat != null && stop?.lng != null ? "Koordinat hazır" : "",
+    }))
+    : [emptyDestination()];
+  const requiredPax = Number(shift?.requiredPaxOverride ?? shift?.peopleCount ?? 0);
+
+  return {
+    packKey,
+    customSlots: [slot],
+    startDate,
+    endDate,
+    durationKey: startDate === endDate ? "1d" : "1w",
+    daysSel: selectedFromMask(weekdayBitFromYmdUTC(startDate)),
+    hubLat: shift?.hubLat == null ? "" : String(shift.hubLat),
+    hubLng: shift?.hubLng == null ? "" : String(shift.hubLng),
+    orgEstimatedPax: requiredPax > 0 ? String(requiredPax) : "",
+    orgReturnType: slot.pattern === "LOOP" ? "RETURN_TO_START" : "END_AT_LAST",
+    orgDestinations,
+  };
+}
+
+export function buildGuidedDraftCopilotSelection(shift, facts = {}) {
+  const id = Number(shift?.id || 0);
+  if (!Number.isSafeInteger(id) || id <= 0) return null;
+
+  const status = String(shift?.status || "DRAFT").toUpperCase();
+  const stops = Array.isArray(shift?.stops) ? shift.stops : [];
+  const pax = Number(shift?.requiredPaxOverride || shift?.requiredPax || 0);
+  const label = `Taslak vardiya #${id}`;
+
+  return {
+    entityType: "shift",
+    entityId: id,
+    selectedRecordType: "shift",
+    selectedRecordId: id,
+    label,
+    selectedRecordLabel: label,
+    summary: `${label} • Durum ${status} • ${stops.length} durak`,
+    fields: [
+      { label: "Vardiya", value: `#${id}`, help: "Seçili taslak vardiyanın sistem içindeki kimliğini gösterir." },
+      { label: "Durum", value: status, help: "Seçili taslak vardiyanın mevcut durumunu gösterir." },
+      { label: "Durak Sayısı", value: String(stops.length), help: "Taslak vardiyadaki durak sayısını gösterir." },
+      { label: "Katılımcı", value: pax > 0 ? String(pax) : "-", help: "Taslak vardiya için kayıtlı katılımcı sayısını gösterir." },
+    ],
+    facts: {
+      ...facts,
+      screenType: "SHIFTS",
+      selectedRecordType: "shift",
+      selectedRecordId: id,
+      selectedRecordLabel: label,
+      selectedRecordStatus: facts?.selectedRecordStatus || `Durum: ${status}`,
+    },
+    badges: [
+      { label: "Durum", value: status, help: "Seçili taslak vardiyanın durumunu gösterir." },
+      { label: "Taslak", value: "DEMO", help: "Bu kayıt güvenli DEMO kabul akışındaki taslak vardiyadır." },
+    ],
+  };
+}
+
 export function buildGuidedPlanFilledDestinations(orgDestinations) {
   return (Array.isArray(orgDestinations) ? orgDestinations : []).filter((d) => String(d?.title || d?.address || "").trim());
 }
@@ -471,19 +604,8 @@ export function fmtCoord(v) {
   return n == null ? "" : String(n);
 }
 
-export function stepTitle(step, who, organization) {
-  if (organization) {
-    if (step === 0) return "1) Toplanma Konumu";
-    if (step === 1) return "2) Plan paketi";
-    if (step === 2) return "3) Kişi sayısı + yerler";
-    if (step === 3) return "4) Ön izleme + teklif";
-    return "";
-  }
-  if (step === 0) return "1) Şirket konumu";
-  if (step === 1) return "2) Plan paketi";
-  if (step === 2) return `3) ${who} + Durak`;
-  if (step === 3) return "4) Ön izleme + teklif";
-  return "";
+export function stepTitle(step, who, organization, school = false) {
+  return guidedPlanStepTitle(step, who, { organization, school });
 }
 
 export const GUIDED_TEMP_STORAGE_KEY = "psv1:guidedTempShiftIds:v1";

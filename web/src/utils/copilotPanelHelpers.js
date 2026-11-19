@@ -24,8 +24,12 @@ export function selectionApplies(selection, path) {
   const sameFamily = scopeFamily(scope) && scopeFamily(scope) === scopeFamily(current);
   if (!sameFamily) return false;
   if (/\/copilot$/.test(current)) return true;
-  const entityType = String(selection?.entityType || "");
-  return ["shift", "vehicle"].includes(entityType);
+  // A record selection belongs to the exact surface that produced it. The
+  // shared family is not enough to carry an offer, agreement, shift or
+  // vehicle into another ROOM screen; that would silently answer from a
+  // stale record. Dedicated copilot routes may still consume the scoped
+  // selection because they explicitly request that hand-off.
+  return false;
 }
 
 export function screenOptionLabel(item) {

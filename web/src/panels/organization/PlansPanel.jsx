@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
 import { ymdTR } from "../../utils/time";
+import { parseOfferAmountInput } from "../shared/offerAmountPresentation";
 import {
   fieldLabelStyle,
   hmToMin,
@@ -189,7 +190,7 @@ export default function OrganizationPlansPanel() {
     try {
       const data = await api.post(`/api/organization/plans/${current.id}/send-offers`, {
         roomIds: selectedRoomIds,
-        amountCompany: Number(offerAmount),
+        amountCompany: parseOfferAmountInput(offerAmount),
         noteCompany: offerNote || null,
       });
 

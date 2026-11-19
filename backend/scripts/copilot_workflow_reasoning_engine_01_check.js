@@ -10,6 +10,11 @@ import {
   buildWorkflowReasoningState,
 } from '../src/ai/chat/conversationWorkflowReasoningEngine.js';
 import { buildSeferAbiReasoningAssistant } from '../src/ai/chat/seferAbiReasoningAssistant.js';
+import {
+  inferCanonicalSemanticRequest,
+  resolveCanonicalConversationRequest,
+} from '../src/ai/chat/canonicalSemanticRequest.js';
+import { resolveSemanticIntent } from '../src/ai/chat/semanticIntentPlanner.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -474,6 +479,60 @@ runBlockedCase({
   selectedLabel: 'Log',
   selectedRecordStatus: 'Log hazır',
 });
+
+// Step-4 semantic boundary: when live route-order verification is the active
+// precondition, canonical meaning must select the existing route-order action
+// instead of handing the request to generic cost/domain reasoning.  The
+// visible control is supplied as current UI evidence; it never grants access
+// or executes the action.
+const routeOrderScreenContext = {
+  path: '/company/shifts',
+  label: 'Planlama Merkezi',
+  uiHints: {
+    visibleButtons: [
+      { label: 'Rota sırasını oluştur', targetKey: 'company:route-order-create', identitySource: 'CANONICAL' },
+    ],
+    workflowState: {
+      workflowId: 'COMPANY_GUIDED_NEW_PLAN',
+      activeStepOrdinal: 4,
+      source: 'LIVE_UI',
+    },
+  },
+};
+const routeOrderMessage = 'Rota sırası doğrulaması eksik, sıradaki adım ne?';
+const routeOrderShape = inferCanonicalSemanticRequest({ message: routeOrderMessage, screenContext: routeOrderScreenContext, conversationState: null });
+const routeOrderPlan = resolveSemanticIntent({
+  message: routeOrderMessage,
+  user: { role: 'COMPANY' },
+  conversationState: null,
+  screenContext: routeOrderScreenContext,
+});
+const routeOrderCanonical = resolveCanonicalConversationRequest({
+  message: routeOrderMessage,
+  user: { role: 'COMPANY' },
+  screenContext: routeOrderScreenContext,
+  conversationState: null,
+});
+assert(routeOrderShape.taskType === 'NEXT_ACTION', 'Step-4 missing route order is a canonical NEXT_ACTION');
+assert(routeOrderShape.routeOrderIntent === true, 'Step-4 route-order intent is explicit in canonical shape');
+assert(routeOrderPlan.family === 'NEXT_STEP', 'Step-4 route-order semantic plan stays in next-step family');
+assert(routeOrderPlan.routeOrderAction?.label === 'Rota sırasını oluştur', 'Step-4 semantic plan selects existing route-order action');
+assert(routeOrderPlan.routeOrderAction?.targetKey === 'company:route-order-create', 'Step-4 semantic plan preserves existing route-order target identity');
+assert(routeOrderCanonical.validation.status === 'VALID', 'Step-4 route-order canonical envelope is valid');
+assert(routeOrderCanonical.request.capability === 'NEXT_ACTION', 'Step-4 route-order canonical capability is NEXT_ACTION');
+assert(routeOrderCanonical.request.safety.writeBoundary === 'NO_BUSINESS_WRITE', 'Step-4 route-order guidance is no-business-write');
+assert(routeOrderCanonical.request.safety.actionPolicy === 'SAFE_UI_ONLY', 'Step-4 route-order guidance is safe UI only');
+
+const costMessage = 'Maliyeti neden arttı?';
+const costShape = inferCanonicalSemanticRequest({ message: costMessage, screenContext: routeOrderScreenContext, conversationState: null });
+const costPlan = resolveSemanticIntent({
+  message: costMessage,
+  user: { role: 'COMPANY' },
+  conversationState: null,
+  screenContext: routeOrderScreenContext,
+});
+assert(costShape.taskType === 'CAUSE', 'Step-4 unrelated cost question remains cause reasoning');
+assert(costPlan.family !== 'NEXT_STEP' && costPlan.routeOrderIntent !== true, 'Step-4 cost reasoning is not captured by route-order guidance');
 
 const runtimeCases = positiveCases.length;
 const guardCases = 2;

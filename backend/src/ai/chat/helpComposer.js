@@ -5,7 +5,7 @@ import { filterWorkflowGenericChips, hasExplicitRoleBoundarySignal, workflowActi
 import { detectQuestionIntent, resolveReplyMode, selectGuideJobType, buildSuggestedChips } from './intentRouter.js';
 import { firstNonEmpty, makeAskAction, makeCopyAction, makeGuideAction, makeLinkedGuide, makeQuickAction, mergeQuickActions, toReply, uniqueStrings } from './replyShapes.js';
 import { analyzeScreenState } from './screenStateAnalyzer.js';
-import { createSelectedRuntimeHelpers } from './helpComposerSelectedRuntime.js';
+import { buildGeoReviewContinuationReply, buildGeoReviewStatusReply, createSelectedRuntimeHelpers } from './helpComposerSelectedRuntime.js';
 import { createEntityRuntimeHelpers } from './helpComposerEntityRuntime.js';
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel, normalizeGpsFreshness } from './etaSanity.js';
 import {
@@ -70,6 +70,8 @@ import {
   WORKFLOW_DIAGNOSTIC_QUESTION_TYPES, hasSeferScoreSignal, matchesStandalonePhrase, normalizeGuideText,
   pickWorkflowVisibleReply, pickButtons, pickTerms, polishReply, questionTypeLabel,
   collapseDuplicateVisibleActionPair,
+  buildVisibleReplyOverrides,
+  buildVisibleReplyWithLead,
   sameVisibleReplyFragment,
   stripVisibleNowLeadMarkers,
   termComparisonReplyV2,
@@ -269,6 +271,13 @@ function selectedDiagnosticTheme(message) {
   if (/(kvkk|görünürlük|gorunurluk).*(görünmüyor|gorunmuyor|kim görebilir|kim gorebilir|hangi rol)/.test(text) || /(görünmüyor|gorunmuyor).*(kvkk|görünürlük|gorunurluk)/.test(text)) return 'KVKK_VISIBILITY';
   if (/(sıradaki doğru işlem|siradaki dogru islem|sıradaki işlem|siradaki islem|sonraki doğru işlem|sonraki dogru islem|ilk neye bakayım|ilk neye bakayim|şimdi ne yapayım|simdi ne yapayim|şimdi ne yapmalıyım|simdi ne yapmaliyim|hangi ekrana gitmeliyim|nereye geçmeliyim|nereye gitmeliyim)/.test(text)) return 'NEXT_ACTION';
   return '';
+}
+
+function isDirectNextStopLookupMessage(value) {
+  const text = normalizeText(value);
+  const nextStop = /\b(?:s[ıi]radaki|sonraki|bir\s+sonraki)\s+durak\p{L}*\b[\s\S]*\b(?:ne|hangisi|neresi|nerede|nereye)\b/iu.test(text);
+  const action = /\b(?:g[öo]ster|a[çc]|haz[ıi]rla|olu[şs]tur|uygula|kontrol\s+et|do[ğg]rula|s[ıi]rala|git|ba[şs]lat)\p{L}*\b/iu.test(text);
+  return nextStop && !action;
 }
 
 function sanitizeDiagnosticSupportText(text) {
@@ -554,7 +563,11 @@ function splitCompoundQuestion(message) {
     .filter(Boolean);
 }
 
-function expandFollowUpMessage(message, conversationState, screenContext) {
+function expandFollowUpMessage(message, conversationState, screenContext, canonicalRequest = null) {
+  const canonicalCurrentSurfaceExplanation = canonicalRequest?.operation === 'EXPLAIN_CURRENT_SURFACE'
+    && canonicalRequest?.semanticAction?.actionClass === 'EXPLAIN'
+    && canonicalRequest?.semanticAction?.objectClass === 'SURFACE';
+  if (canonicalCurrentSurfaceExplanation) return String(message || '');
   return resolveFollowUpContextQuestion({ message, conversationState, screenContext });
 }
 
@@ -563,6 +576,10 @@ export function extractPrimaryConcern(message) {
   if (!raw) return raw;
   const rawNormalized = normalizeText(raw);
   if (/(bu\s+kayitta|secili\s+kayitta|ayni\s+kayitta|ayni\s+satirda|bu\s+satirda)/.test(rawNormalized) && /(ne eksik|eksigi ne|eksik ne var|hangi alan bos|eksik alan|eksik veri|hangi veri eksik|burda ne eksik|burada ne eksik)/.test(rawNormalized)) {
+    return raw;
+  }
+  if (/(bu\s+kay[ıi]t(?:ta)?|secili\s+kay[ıi]tta|ayni\s+kay[ıi]tta|ayni\s+satirda|bu\s+satirda)/.test(rawNormalized)
+    && /neden\s+(?:ilerlemiyor|olmuyor|bekliyor|durdu)/.test(rawNormalized)) {
     return raw;
   }
   const parts = splitCompoundQuestion(raw);
@@ -777,6 +794,13 @@ function detectContextTopic({ message, questionType, screenPath, screenContext, 
   if (explicitCopilotTopic) return explicitCopilotTopic;
   const text = normalizeText(message);
   const path = normalizeText(screenPath);
+  const sourcePath = normalizeText(sourceScreenContext?.path);
+  const semanticSurfacePath = /\/driver\/copilot\b/.test(path) ? sourcePath : path;
+  // A canonical LOCATION_HELP decision on the DRIVER live surface must stay
+  // a location lookup even when the selected shift label contains "Vardiya".
+  // The selected label is evidence, not a replacement for the current typed
+  // semantic decision.
+  if (questionType === 'LOCATION_HELP' && /\/driver\/(?:today|route|map)\b/.test(semanticSurfacePath)) return 'LOCATION_HELP';
   const selectedText = normalizeText(firstNonEmpty(
     screenContext?.selectedLabel,
     screenContext?.selectedSummary,
@@ -1758,6 +1782,38 @@ function isRecordScopedQuestion(message) {
   return /(bu|şu|su)\s+(seçili|secili)?\s*kayıt|haritadaki\s+bu\s+kayıt|secili\s+kayit|seçili\s+kayıt|ilgili\s+kayıt|bu\s+vardiya|bu\s+araç|bu\s+arac/.test(text);
 }
 
+// A modal or selected-record label is stronger evidence than token overlap
+// with an unrelated menu item.  For example, while the SUPER_ADMIN profile
+// modal contains "DemoRoom", "DemoRoom kaydını güvenli biçimde nereden
+// incelerim?" must stay on the current authorized rooms surface instead of
+// drifting to the similarly-scored "Güven ve Kalite" menu item.
+function hasCurrentRecordInspectionContext(message, screenContext = {}) {
+  const text = normalizeText(message);
+  if (!text) return false;
+  const modalTitles = Array.isArray(screenContext?.uiHints?.modalTitles)
+    ? screenContext.uiHints.modalTitles
+    : [];
+  const currentSurfaceText = [
+    screenContext?.selectedLabel,
+    screenContext?.selectedRecordLabel,
+    screenContext?.selectedSummary,
+    screenContext?.contextSummary,
+    ...modalTitles.map((row) => (typeof row === 'string' ? row : row?.label)),
+  ].filter(Boolean).join(' ');
+  if (!currentSurfaceText) return false;
+  const stopWords = new Set(['taşımacılık', 'firması', 'firmasi', 'profil', 'kayıt', 'kayit', 'seçili', 'secili', 'modal']);
+  const currentTerms = normalizeText(currentSurfaceText)
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((term) => term.length >= 4 && !stopWords.has(term));
+  const messageTerms = new Set(normalizeText(text).split(/[^\p{L}\p{N}]+/u).filter((term) => term.length >= 4));
+  const sharesVisibleRecordTerm = currentTerms.some((term) => Array.from(messageTerms).some((messageTerm) =>
+    term === messageTerm || term.startsWith(messageTerm) || messageTerm.startsWith(term),
+  ));
+  const inspectionRequest = /\b(?:incele\p{L}*|bak\p{L}*|g[oö]r[uü]nt[uü]le\p{L}*|g[oö]ster\p{L}*|detay\p{L}*|profil\p{L}*|nereden|neresi|hangi\s+(?:ekran|sayfa|panel))\b/iu.test(text);
+  const recordReference = /\b(?:kay(?:ı|i)?t\p{L}*|profil\p{L}*|detay\p{L}*|ekran|sayfa|panel)\b/iu.test(text);
+  return sharesVisibleRecordTerm && inspectionRequest && recordReference;
+}
+
 function isGenericFlowQuestion(message) {
   const text = normalizeText(message);
   if (!text) return false;
@@ -1811,6 +1867,9 @@ function resolveReferencedScreenDefinition(user, screenContext, screenDefinition
     '',
   ));
   const isTurkishShiftSurface = /vardiyalar/.test(sourceSurfaceText);
+  if (hasCurrentRecordInspectionContext(text, screenContext)) {
+    return screenDefinition;
+  }
   if (sourcePath.includes('/shared/notifications')) {
     if (normalizeRoleKey(user?.role) === 'company') {
       const companyNotifications = getScreenDefinitionForUser({ role: 'COMPANY', companyKind: user?.companyKind || '' }, { path: '/company/shifts' }, 2102);
@@ -1821,6 +1880,17 @@ function resolveReferencedScreenDefinition(user, screenContext, screenDefinition
   if (
     /\/(?:company|organization|school)\/operations\b/.test(sourcePath)
     && /(bu ekran ne|burası ne|burasi ne|bu ne|burada ne yapacagim|burada ne yapayim|ne yapayim|ne yapacagim|ne yapmaliyim|ne gerekiyor)/.test(text)
+  ) {
+    return screenDefinition;
+  }
+  // A blocker question on the commercial-flow surface must stay scoped to
+  // that authorized surface.  Token-overlap remapping can otherwise send a
+  // generic "why is this not progressing?" question to GeoReview, which
+  // changes both the answer semantics and the visible next action.
+  if (
+    sourcePath.includes('/commercial-flow')
+    && /(?:neden\s+(?:ilerlemiyor|takıldı|takildi|bekliyor|durdu)|(?:ilerlemiyor|takıldı|takildi|bekliyor|durdu).*neden)/.test(text)
+    && !hasExplicitForeignScreenReference(text)
   ) {
     return screenDefinition;
   }
@@ -2069,8 +2139,21 @@ function parentLiveNoVehicleDetected(screenContext, sourceScreenContext, screenP
   return /canlı araç görünmüyor|canli araç görünmüyor|canli arac gorunmuyor|araç yok|arac yok|araç:\s*0|arac:\s*0|canlı konum görünmüyor|canli konum görünmüyor|aktif vardiya saat aralığı|araç ataması varsa görünür|arac ataması varsa görünür/i.test(merged);
 }
 
-function buildParentLiveNoVehicleReply({ screenContext, sourceScreenContext, screenPath = '' }) {
+export function parentLiveGpsSourceAllowed({ screenPath = '', parentLiveSelectionSignal = false, parentLiveNoVehicleVisibleSignal = false } = {}) {
+  return String(screenPath || '').includes('/parent/live')
+    && Boolean(parentLiveSelectionSignal)
+    && !Boolean(parentLiveNoVehicleVisibleSignal);
+}
+
+export function buildParentLiveNoVehicleReply({ screenContext, sourceScreenContext, screenPath = '', message = '' }) {
   if (!parentLiveNoVehicleDetected(screenContext, sourceScreenContext, screenPath)) return '';
+  const normalizedMessage = normalizeText(message);
+  if (/(servis\s+saat|başlangıç\s+saat|baslangic\s+saat|vardiya\s+saat|hangi\s+saat)/i.test(normalizedMessage)) {
+    return 'Bu çocuk için bugün aktif servis görünmüyor; bu nedenle doğrulanmış servis saati yok. Önce okul veya operasyon tarafında tarihli vardiya ve araç atamasını kontrol et.';
+  }
+  if (/(canlı\s+konum|canli\s+konum|konum|servis(?:i)?\s+nerede|nerede)/i.test(normalizedMessage)) {
+    return 'Bu çocuk için bugün aktif servis görünmüyor; bu nedenle canlı konum gösteremiyorum. GPS veya araç hareketi uydurmuyorum; önce aktif servis ve araç atamasını kontrol et.';
+  }
   return 'Şu an bu çocuk için canlı araç görünmüyor. Araç sadece aktif vardiya saat aralığında ve araç ataması varsa görünür. Önce aktif servis saati, araç ataması ve canlı konum durumunu kontrol et.';
 }
 
@@ -2396,6 +2479,24 @@ function composeDetailContinuationReply({ guide, screenDefinition, screenContext
   ].filter(Boolean).join(' ').trim();
 }
 
+function composeKvkkVisibilityReply({ screenContext, sourceScreenContext, userRole = '' } = {}) {
+  const facts = [screenContext, sourceScreenContext]
+    .map((context) => context?.structuredFacts?.kvkkAccess)
+    .find((value) => value && typeof value === 'object') || null;
+  if (!facts) {
+    return 'Bu oturum için KVKK erişim durumu doğrulanmış bir yetki sinyaliyle taşınmadı; erişimi kapalı varsaymıyorum. Görünürlük yalnız mevcut rol ve tenant kapsamındaki bilgilerle sınırlıdır.';
+  }
+  const requiredCount = Number(facts.requiredCount || 0);
+  const acceptedCount = Number(facts.acceptedCount || 0);
+  const blocking = Boolean(facts.blocking);
+  const role = firstNonEmpty(userRole, screenContext?.role, sourceScreenContext?.role, 'mevcut rol');
+  if (blocking || requiredCount > acceptedCount) {
+    const pendingCount = Math.max(requiredCount - acceptedCount, 0);
+    return `Bu oturumda KVKK erişimi kapalı görünüyor: ${role} rolü için ${pendingCount || 'gerekli'} zorunlu belge/onay bekliyor ve yetki kapsamı blokajlı. Önce KVKK ekranındaki bekleyen onayı tamamlamak gerekir; yetki dışı bilgiyi açamam.`;
+  }
+  return `Bu oturumda KVKK erişimi kapalı görünmüyor: ${role} rolü için zorunlu belge/onay blokajı yok (${acceptedCount}/${requiredCount} onay). Görünürlük yalnız mevcut rol ve tenant kapsamındaki yetkili bilgilerle sınırlıdır; kapsam dışı bilgi bu ekranda gösterilmez.`;
+}
+
 function ageMinutes(input) {
   const d = input ? new Date(input) : null;
   if (!d || Number.isNaN(d.getTime())) return null;
@@ -2411,7 +2512,7 @@ function tokenOverlapScore(text, hay) {
   return parts.reduce((sum, part) => sum + (target.includes(part) ? 1 : 0), 0);
 }
 
-const { selectedFieldRows, selectedBadgeRows, selectedRowReadReply, selectedFieldReply, selectedBadgeReply, selectedMissingReply, selectedTermReply, selectedSignalRows, selectedSignalReply } = createSelectedRuntimeHelpers({
+const { selectedFieldRows, selectedBadgeRows, selectedRowReadReply, selectedMetricReply, selectedFieldReply, selectedBadgeReply, selectedMissingReply, selectedTermReply, selectedSignalRows, selectedSignalReply } = createSelectedRuntimeHelpers({
     firstNonEmpty,
     normalizeText,
     tokenOverlapScore,
@@ -2658,6 +2759,15 @@ function findButtonGuideByMessage(message, guide, screenDefinition, fallbackScre
       || rows[0]
       || null;
   }
+  const directLabelMatch = rows.find((row) => {
+    const label = normalizeGuideText(firstNonEmpty(row?.label, ''));
+    return label.length > 2 && text.includes(label);
+  });
+  if (directLabelMatch) return directLabelMatch;
+  if (/\b(?:veri\s+degistir|veriyi\s+degistir|mutasyon|kayit\s+degistir)\b/iu.test(text)) {
+    const exportRow = rows.find((row) => normalizeGuideText(firstNonEmpty(row?.label, '')) === 'disa aktar');
+    if (exportRow) return exportRow;
+  }
   const scoredRows = rows
     .map((row) => ({ row, score: tokenOverlapScore(text, `${row?.label || ''} ${row?.purpose || ''} ${row?.whenToUse || ''} ${row?.whatHappens || ''}`) }))
     .sort((a, b) => b.score - a.score);
@@ -2667,6 +2777,33 @@ function findButtonGuideByMessage(message, guide, screenDefinition, fallbackScre
     || guideRows.find((row) => !isLabelEcho(row))
     || rows[0]
     || null;
+}
+
+function currentScreenCatalogQuestionDefinition(message, screenDefinition, user = null, userRole = '', screenPath = '') {
+  const normalizedMessage = normalizeText(message).replace(/[?!.,;:]+$/g, '').trim();
+  if (!normalizedMessage) return null;
+  const route = firstNonEmpty(screenDefinition?.path, screenDefinition?.screenPath, screenPath, '');
+  const roleFromPath = /\/superadmin(?:\/|$)/iu.test(route) ? 'SUPER_ADMIN'
+    : /\/driver(?:\/|$)/iu.test(route) ? 'DRIVER'
+      : /\/school(?:\/|$)/iu.test(route) ? 'SCHOOL'
+        : /\/organization(?:\/|$)/iu.test(route) ? 'ORGANIZATION'
+          : /\/company(?:\/|$)/iu.test(route) ? 'COMPANY'
+            : /\/room(?:\/|$)/iu.test(route) ? 'ROOM'
+              : userRole;
+  const authorizedUser = {
+    ...(user && typeof user === 'object' ? user : {}),
+    role: String(user?.role || userRole || roleFromPath || '').trim().toUpperCase(),
+  };
+  const authorizedDefinition = route
+    ? getScreenDefinitionForUser(authorizedUser, { path: route }, screenDefinition?.id)
+    : null;
+  const definitions = [authorizedDefinition, screenDefinition].filter(Boolean);
+  return definitions.find((definition) => (Array.isArray(definition?.chatQuestions) ? definition.chatQuestions : [])
+    .some((question) => normalizeText(question).replace(/[?!.,;:]+$/g, '').trim() === normalizedMessage)) || null;
+}
+
+function isCurrentScreenCatalogQuestion(message, screenDefinition, user = null, userRole = '', screenPath = '') {
+  return Boolean(currentScreenCatalogQuestionDefinition(message, screenDefinition, user, userRole, screenPath));
 }
 
 function findWorkflowStageByMessage(message, guide, screenDefinition) {
@@ -3368,14 +3505,45 @@ function vehicleNextStep(context) {
   return "Önce sürücü bağını ve konum kaynağını kontrol et. Sonra canlı konum ekranına dön.";
 }
 
+function buildAccessCredentialSummaryReply({ requestedFields = [], context = null, entityType = '', entityId = null } = {}) {
+  const requested = Array.isArray(requestedFields)
+    && requestedFields.some((field) => String(field?.key || field || '').toUpperCase() === 'ACCESS_CREDENTIALS');
+  const selectedEntityType = String(entityType || context?.type || '').toLowerCase();
+  const activeCredentials = context?.accessCredentials || null;
+  if (!requested || selectedEntityType !== 'shift' || !activeCredentials) return '';
+
+  const activeCount = Math.max(0, Number(activeCredentials.activeCount || 0));
+  const personelCount = Math.max(0, Number(activeCredentials.personelCount || 0));
+  const types = Array.isArray(activeCredentials.types)
+    ? [...new Set(activeCredentials.types.map((type) => String(type || '').trim().toUpperCase()).filter(Boolean))]
+    : [];
+  const typeText = types.length ? ` Türler: ${types.join(', ')}.` : '';
+  const shiftText = Number(entityId || context?.id || 0) > 0 ? `Vardiya #${Number(entityId || context.id)}` : 'Seçili vardiya';
+  return `${shiftText} için ${activeCount} aktif erişim kodu görünüyor; ${personelCount} kişiyle ilişkili.${typeText} Güvenlik nedeniyle kodların kendisini burada göstermiyorum.`;
+}
+
 function composeReply({ questionType, replyMode, guide, message, rawMessage = message, context, entityType, screenDefinition, roleMode, screenContext, conversationState, sourceScreenDefinition, sourceScreenContext, preferEntityContext = false, user = null, userRole = '', screenPath = '', contextPriority = null, guidedTaskMeta = null, canonicalRequest = null, requestedFields = [] }) {
   const requestedFieldKeys = new Set((Array.isArray(requestedFields) ? requestedFields : []).map((field) => String(field?.key || field || '')));
-  if (entityType === 'shift' && (requestedFieldKeys.has('BOARDING_COUNT') || requestedFieldKeys.has('ALIGHTING_COUNT')) && context?.checkinCounts) {
+  const selectedShiftContext = String(entityType || '').trim().toLowerCase() === 'shift'
+    || String(screenContext?.selectedEntityType || '').trim().toLowerCase() === 'shift'
+    || String(conversationState?.selectedEntityType || '').trim().toLowerCase() === 'shift';
+  if (selectedShiftContext && (requestedFieldKeys.has('BOARDING_COUNT') || requestedFieldKeys.has('ALIGHTING_COUNT')) && context?.checkinCounts) {
     const boardingCount = Number(context.checkinCounts.BOARD);
     const alightingCount = Number(context.checkinCounts.ALIGHT);
     const boardingText = Number.isFinite(boardingCount) ? `${boardingCount}` : 'veri yok';
     const alightingText = Number.isFinite(alightingCount) ? `${alightingCount}` : 'veri yok';
     return toReply(`Seçili Vardiya #${context.id} için biniş sayısı ${boardingText}, iniş sayısı ${alightingText}. Bu bilgi yetkili salt-okunur check-in kayıtlarından geliyor.`);
+  }
+  if (selectedShiftContext && requestedFieldKeys.has('ACCESS_CREDENTIALS') && context?.accessCredentials) {
+    const types = Array.isArray(context.accessCredentials.types)
+      ? context.accessCredentials.types.map((type) => String(type || '').toUpperCase()).filter(Boolean)
+      : [];
+    const activeCount = Number(context.accessCredentials.activeCount || 0);
+    const personelCount = Number(context.accessCredentials.personelCount || 0);
+    const typeText = types.length ? ` Türler: ${types.join(', ')}.` : '';
+    return toReply(
+      `Seçili Vardiya #${context.id} için ${activeCount} aktif erişim kodu görünüyor; ${personelCount} kişiyle ilişkili.${typeText} Güvenlik nedeniyle kodların kendisini burada göstermiyorum.`,
+    );
   }
   const effectiveContextPriority = contextPriority?.guidedTaskMeta?.familyId
     ? contextPriority
@@ -3396,6 +3564,17 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
     : null;
   const resolvedGuidedTaskMeta = effectiveGuidedTaskMeta?.familyId ? effectiveGuidedTaskMeta : recoveredGuidedTaskMeta;
   guide = guide || {};
+  const metricScreenContext = {
+    ...(screenContext || {}),
+    path: screenContext?.path || screenContext?.screenPath || screenContext?.scopeKey || screenPath,
+  };
+  const metricSourceScreenContext = {
+    ...(sourceScreenContext || {}),
+    path: sourceScreenContext?.path || sourceScreenContext?.screenPath || sourceScreenContext?.scopeKey || screenPath,
+  };
+  const directMetricReply = selectedMetricReply(rawMessage || message, metricScreenContext)
+    || selectedMetricReply(rawMessage || message, metricSourceScreenContext);
+  if (directMetricReply) return toReply(directMetricReply);
   const hasScreenContext = !preferEntityContext && (entityType === 'screen' || Boolean(screenContext?.path || screenDefinition?.path));
   const analysis = hasScreenContext ? analyzeScreenState({ screenContext, screenDefinition, conversationState }) : null;
   const workflowStyle = shouldUseWorkflowGuide({ questionType, activeTopic: firstNonEmpty(contextPriority?.activeTopic, selectedDiagnosticTheme(message), '') });
@@ -3414,6 +3593,16 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
       guide?.summary,
       'Bu ekran için kısa rehber.',
     ));
+  if (
+    selectedShiftContext
+    && requestedFieldKeys.has('STATUS')
+    && /(?:personel|çalışan|calisan|kişi|kisi)/iu.test(String(rawMessage || message || ''))
+    && /(?:durum|atama|liste|bağlantı|baglanti|kim)/iu.test(String(rawMessage || message || ''))
+  ) {
+    const shiftId = Number(context?.id || screenContext?.selectedEntityId || screenContext?.selectedRecordId || conversationState?.selectedEntityId || 0);
+    const shiftLabel = shiftId > 0 ? `Vardiya #${shiftId}` : 'Seçili vardiya';
+    return toReply(`${shiftLabel} kartında personel listesi doğrudan görünmüyor; bu nedenle personel sayısı veya atama durumu hakkında kanıtsız bir sonuç vermiyorum. Kişi/personel bağlantısını aynı Vardiyalar ekranındaki “Eksik rota ve yolcu bilgisi” bölümünden açıp doğrulayabilirsin.`);
+  }
   if (questionType === 'SHIFT_BLOCKED') {
     const driverLiveSurface = /\/driver\/(today|route|map)/.test(normalizeText(firstNonEmpty(
       screenPath,
@@ -3482,6 +3671,9 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
       conversationState,
     });
     if (canonicalClarifyingQuestionReply) return toReply(canonicalClarifyingQuestionReply);
+  }
+  if (questionType === 'KVKK_VISIBILITY') {
+    return toReply(composeKvkkVisibilityReply({ screenContext, sourceScreenContext, userRole }));
   }
   const guidedTaskReply = resolvedGuidedTaskMeta?.familyId
     ? composeCopilotGuidedTaskEngineReply({
@@ -3563,7 +3755,7 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
   const selectedRecordDiagnosticReply = composeSelectedRecordDiagnosticReply({ questionType, message, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, conversationState });
   if (selectedRecordDiagnosticReply) return toReply(selectedRecordDiagnosticReply);
   {
-    const parentLiveNoVehicleReply = buildParentLiveNoVehicleReply({ screenContext, sourceScreenContext, screenPath });
+    const parentLiveNoVehicleReply = buildParentLiveNoVehicleReply({ screenContext, sourceScreenContext, screenPath, message });
     if (parentLiveNoVehicleReply) return toReply(parentLiveNoVehicleReply);
     // CLARIFYING_QUESTION is already decided by the canonical planner and
     // public adapter. Keep the generic no-selection guard for every other
@@ -3833,6 +4025,12 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
       return toReply(shiftScreenNoSelectionReply(questionType, screenDefinition));
     }
   }
+  if (questionType === 'MISSING_DATA_HELP' && entityType === 'shift') {
+    return toReply(shiftMissingDataReply(context));
+  }
+  if (questionType === 'MISSING_DATA_HELP' && entityType === 'vehicle') {
+    return toReply(vehicleMissingDataReply(context));
+  }
   if (questionType === 'MISSING_DATA_HELP') {
     const missingReply = selectedMissingReply(screenContext, screenDefinition);
     if (missingReply) return toReply(missingReply);
@@ -3848,12 +4046,6 @@ if (questionType === 'EVIDENCE_HELP') {
   const uiEvidence = uiSurfaceEvidence(screenContext);
   if (analysis) return toReply(`${analyzerReply(analysis, 'EVIDENCE')} ${uiEvidence}`.trim());
   return toReply(uiEvidence || 'Bu yorum seçili alan, rozet ve ekrandaki görünen ipuçlarına dayanır.');
-}
-if (questionType === 'MISSING_DATA_HELP' && entityType === 'shift') {
-  return toReply(shiftMissingDataReply(context));
-}
-if (questionType === 'MISSING_DATA_HELP' && entityType === 'vehicle') {
-  return toReply(vehicleMissingDataReply(context));
 }
 if (questionType === 'READINESS_CHECK' && entityType === 'shift') {
   return toReply(shiftReadinessReply(context));
@@ -3907,6 +4099,18 @@ if (questionType === 'READINESS_CHECK') {
     if (rowReply) return toReply(rowReply);
   }
   if (questionType === 'BUTTON_HELP') {
+    const catalogQuestionDefinition = currentScreenCatalogQuestionDefinition(rawMessage || message, screenDefinition, user, userRole, screenPath);
+    if (canonicalRequest?.screenKnowledgeKind === 'HOW_TO_USE' || catalogQuestionDefinition) {
+      return toReply(buildFieldButtonHelpReply({
+        message: rawMessage || message,
+        guide,
+        screenDefinition: catalogQuestionDefinition || screenDefinition,
+        screenContext,
+        analysis,
+        roleMode,
+        user,
+      }));
+    }
     const uiDisabled = disabledButtonReply(message, screenContext, analysis);
     if (uiDisabled) return toReply(uiDisabled);
     const uiVisible = visibleButtonReply(message, screenContext, analysis);
@@ -4208,6 +4412,7 @@ function composeGeneralProductGuideReply({
     screenContext,
     sourceScreenContext,
     screenPath,
+    message,
   });
   if (parentLiveNoVehicleReply) return parentLiveNoVehicleReply;
   const parentLiveNoSelectionReply = buildParentLiveNoSelectionReply({
@@ -4371,15 +4576,25 @@ function composeGeneralProductGuideReply({
     extractVisibleValueFromText(liveSelectedHint, ['Toplam Durak', 'Toplam durak', 'Durak Sayısı', 'Durak sayısı']),
     '',
   );
-  const liveSurfacePath = normalizeText(firstNonEmpty(screenPath, screenContext?.path, sourceScreenDefinition?.path, ''));
+  const liveSurfacePath = normalizeText(firstNonEmpty(
+    /\/driver\/copilot\b/.test(String(screenPath || '')) ? sourceScreenContext?.path : '',
+    screenPath,
+    screenContext?.path,
+    sourceScreenDefinition?.path,
+    sourceScreenContext?.path,
+    '',
+  ));
   const liveSelectedFieldCount = (Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields.length : 0)
     + (Array.isArray(sourceScreenContext?.selectedFields) ? sourceScreenContext.selectedFields.length : 0);
   const liveSelectedBadgeCount = (Array.isArray(screenContext?.selectedBadges) ? screenContext.selectedBadges.length : 0)
     + (Array.isArray(sourceScreenContext?.selectedBadges) ? sourceScreenContext.selectedBadges.length : 0);
   const liveSelectionHasEntity = Boolean(
-    sourceScreenContext?.selectedEntityType
+    screenContext?.selectedEntityType
+    || screenContext?.selectedEntityId
+    || sourceScreenContext?.selectedEntityType
     || sourceScreenContext?.selectedEntityId
   );
+  const directNextStopLookup = isDirectNextStopLookupMessage(message);
   liveSelectedHint = redactSensitiveLiveSelectionText(liveSelectedHint, liveSurfacePath);
   const liveHasMeaningfulLiveText = /(?:\b\d{2}[A-Z]{0,3}\d{2,}\b|GPS|Tahmini varış süresi|Durak|Sıradaki|Sıradaki durak|Araç|Arac|Servis|Sürücü|Surucu)/i.test(normalizeLooseText(liveSelectionSummary))
     || /(?:\b\d{2}[A-Z]{0,3}\d{2,}\b|GPS|Tahmini varış süresi|Durak|Sıradaki|Sıradaki durak|Araç|Arac|Servis|Sürücü|Surucu)/i.test(normalizeLooseText(liveSelectedHint));
@@ -4468,6 +4683,10 @@ function composeGeneralProductGuideReply({
       : liveSurfacePath.includes('/parent/live')
         ? 'Servis görünmüyorsa önce son konum bilgisi zamanını, araç bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.'
         : 'Araç haritada güvenilir görünmüyorsa önce son konum bilgisi zamanını, araç bağlantısını, görev bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.';
+    if (directNextStopLookup && liveNextStop) {
+      const nextStopReply = `${liveNextLabel}: ${normalizeVisibleReplyFragment(liveNextStop)}.${liveGpsStatus ? ` Konum sinyali: ${liveGpsLabel}.` : ''}${liveLastGps ? ` Son konum bilgisi ${liveGpsAge}.` : ''}${liveEta ? ` Tahmini varış süresi ${liveEtaVisibleText}.` : ' Tahmini varış süresi hesaplanamıyor.'}`;
+      return `Şimdi: ${nextStopReply} ${liveLocationAdviceShort}`.trim();
+    }
     return `Şimdi: ${liveLocationNow} ${liveLocationSignals ? `${liveLocationSignals}.` : ''} ${liveLocationAdviceShort}`.trim();
   }
   if (workflowStyle && driverShiftTopic && liveHasSelection && !directRouteNavigationRequest) {
@@ -4801,14 +5020,52 @@ export function buildGenericProductHelpResponse({ message, semanticPlan = null }
 }
 
 
-function buildCurrentTargetExplanationReply({ semanticPlan, conversationState, screenContext } = {}) {
+function buildCurrentTargetExplanationReply({ semanticPlan, conversationState, screenContext, message = '' } = {}) {
   const target = conversationState?.guidedTarget?.status === 'FOUND'
     ? conversationState.guidedTarget
     : semanticPlan?.guidedTargetReference;
+  const currentPath = String(screenContext?.path || '').split('?')[0].trim();
+  const targetPath = String(
+    target?.screenPath
+      || target?.authorizedContext?.screenPath
+      || target?.anchor?.screenPath
+      || '',
+  ).split('?')[0].trim();
+  if (currentPath && targetPath && currentPath !== targetPath) {
+    const geoReviewContinuation = buildGeoReviewContinuationReply({ message, screenContext });
+    if (geoReviewContinuation) return geoReviewContinuation;
+    const screenLabel = String(screenContext?.label || 'bu ekran').trim();
+    return `Şu an ${screenLabel} üzerindesin. Önceki yönlendirme hedefi bu ekrana ait değil; onu burada kullanmıyorum. Bu ekrandaki yetkili seçili kayıt ve görünür kontroller üzerinden devam edebiliriz.`;
+  }
   const targetLabel = String(target?.label || '').trim();
   const screenLabel = String(screenContext?.label || 'bu ekran').trim();
   if (!targetLabel) {
     return `Şu an ${screenLabel} üzerindesin. Ekrandaki geçerli hedefi doğrulayamadığım için ilerleme yapmadan önce hangi alanı açıklamamı istediğini belirtir misin?`;
+  }
+  const normalizedMessage = normalizeText(message);
+  const asksHowToFillField = /\b(?:bu|şu|su|buradaki)\s+alan[ıi]\s+(?:nasıl|nasil)\s+doldur/iu.test(normalizedMessage);
+  const workflowState = screenContext?.uiHints?.workflowState || null;
+  const visibleButtonLabels = (Array.isArray(screenContext?.uiHints?.visibleButtons)
+    ? screenContext.uiHints.visibleButtons
+    : [])
+    .map((button) => String(button?.label || '').trim())
+    .filter(Boolean);
+  if (asksHowToFillField && targetLabel === 'Konumumu al') {
+    const hasAddressLookup = visibleButtonLabels.includes('Adresten bul');
+    const hasNextStep = visibleButtonLabels.includes('İleri');
+    const addressInstruction = hasAddressLookup
+      ? 'Alternatif olarak adres alanına firma adresini yazıp “Adresten bul” ile konumu doğrula.'
+      : 'Alternatif adres alanı görünüyorsa firma adresini girip konumu doğrula.';
+    const nextInstruction = hasNextStep
+      ? 'Enlem ve boylamı kontrol ettikten sonra “İleri” ile sonraki adıma geç.'
+      : 'Konum doğrulandıktan sonra ekrandaki sonraki adım kontrolünü kullan.';
+    return `Şu an ${screenLabel} ekranındaki ${workflowState?.activeStepOrdinal || 1}. adım, Şirket konumu. “Konumumu al” kayıtlı firma konumunu kullanır. ${addressInstruction} ${nextInstruction} Sefer Abi bu bilgileri senin yerine kaydetmez; kaydetme ve ilerleme kontrolü sende.`;
+  }
+  if (asksHowToFillField) {
+    const availableControls = visibleButtonLabels.length
+      ? ` Görünen kontroller: ${visibleButtonLabels.join(', ')}.`
+      : '';
+    return `Şu an ${screenLabel} üzerindesin. “${targetLabel}” mevcut hedef; alanı doldururken ekrandaki gerçek alan etiketini ve doğrulama kontrolünü izle.${availableControls} Sefer Abi senin yerine kaydetmez.`;
   }
   if (semanticPlan?.currentTargetRecoveryIntent) {
     return `Şu an ${screenLabel} üzerindesin. “${targetLabel}” hedefinde ilerleyemediğini anladım. Bu hedefi yeniden kontrol ederek birlikte devam edelim; hedef doğrulanmadan görevi tamamlandı saymıyorum.`;
@@ -4817,6 +5074,331 @@ function buildCurrentTargetExplanationReply({ semanticPlan, conversationState, s
   // grammar belongs around the quoted product label; it must not mutate the
   // label into a made-up noun or verb form.
   return `Şu an ${screenLabel} üzerindesin. Vurgulanan “${targetLabel}” bu akıştaki mevcut hedef. Buradan “${targetLabel}” hedefini kontrol edebilir veya alanın ne yaptığını öğrenebilirsin; bu açıklama görevin adımını ilerletmez.`;
+}
+
+export function buildOperationVerificationContextReply({ message, screenContext }) {
+  const path = String(screenContext?.path || '').trim().replace(/\/+$/, '');
+  if (path !== '/superadmin/operation-verification') return null;
+
+  const rows = Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields : [];
+  const fieldValue = (pattern) => firstNonEmpty(
+    ...rows
+      .filter((row) => pattern.test(String(row?.label || '')))
+      .map((row) => String(row?.value || '').trim()),
+    '',
+  );
+  const text = normalizeText(message);
+  const asksCount = /(?:kaç|kac|kaç tane|kac tane|kayıtlı kontrol|kayitli kontrol|kontrol kaydı|kontrol kaydi|toplam kontrol|kaç kontrol|kac kontrol)/.test(text);
+  const asksRole = /(?:seçili rol|secili rol|hangi rol|rol hangisi|hangi yüzey|hangi yuzey)/.test(text);
+  const asksStatus = /(?:durum özeti|durum ozeti|durum dağılımı|durum dagilimi|hangi durum|kaç kabul|kac kabul|kaç red|kac red|eksik|tekrar kontrol|tekrar kontrol)/.test(text);
+  const asksVerification = /(?:operasyon doğrulama|operasyon dogrulama|kontrol ekranı|kontrol ekrani|kanıt türü|kanit turu|kanıt|kanit)/.test(text);
+  if (!asksCount && !asksRole && !asksStatus && !asksVerification) return null;
+
+  const role = fieldValue(/^(?:rol|seçili rol|secili rol)$/i) || 'seçili rol';
+  const saved = fieldValue(/kayıtlı kontrol|kayitli kontrol/i);
+  const total = fieldValue(/toplam kontrol/i);
+  const defaultStatus = fieldValue(/varsayılan karar|varsayilan karar/i);
+  const statusSummary = fieldValue(/durum özeti|durum ozeti/i);
+  const firstControl = fieldValue(/ilk kontrol/i);
+  const parts = [];
+
+  if (asksCount || asksVerification) {
+    if (saved && total) parts.push(`Seçili Operasyon Doğrulama ekranında ${saved} kayıtlı kontrol var; toplam kontrol ${total}.`);
+    else if (saved) parts.push(`Seçili Operasyon Doğrulama ekranında ${saved} kayıtlı kontrol görünüyor.`);
+  }
+  if (asksRole || asksVerification) parts.push(`Seçili rol: ${role}.`);
+  if (asksStatus || asksVerification) {
+    if (statusSummary) parts.push(`Durum özeti: ${statusSummary}.`);
+    else if (defaultStatus) parts.push(`Varsayılan karar: ${defaultStatus}; görünür kayıt sayısı ${saved || 'belirtilmemiş'}.`);
+  }
+  if (asksVerification && firstControl) parts.push(`İlk kontrol maddesi: ${firstControl}.`);
+  if (!parts.length) return null;
+  const reply = `${parts.join(' ')} Bu yanıt yalnızca seçili SUPER_ADMIN rol yüzeyinde görünen operasyon doğrulama bilgilerine dayanır; yeni bir kayıt veya işlem başlatmaz.`;
+  return {
+    reply,
+    summary: reply,
+    questionType: 'STATUS_HELP',
+    activeTopic: 'OPERATION_VERIFICATION_CONTEXT',
+    assistantIntent: 'OPERATION_VERIFICATION_CONTEXT',
+    suggestedChips: ['İlk kontrol maddesini göster', 'Durum ve kanıtı oku'],
+    contextualSuggestedChips: ['İlk kontrol maddesini göster', 'Durum ve kanıtı oku'],
+    quickActions: [],
+    intentConfidence: 0.98,
+    intentSignals: ['OPERATION_VERIFICATION_CONTEXT', 'SELECTED_SCREEN_FIELDS'],
+    qualityHints: { actionable: true, hasSupportAction: true },
+    responseSections: [{ title: 'Operasyon doğrulama', body: reply }],
+    dataSources: ['seçili yetkili ekran alanları'],
+    retrievedFacts: [role, saved, total, statusSummary, defaultStatus].filter(Boolean),
+  };
+}
+
+function buildSelectedShiftStopCountReply({ screenContext, semanticPlan }) {
+  const requestedFields = Array.isArray(semanticPlan?.requestedFields) ? semanticPlan.requestedFields : [];
+  const asksStopCount = requestedFields.some((field) => String(field?.key || field || '').toUpperCase() === 'STOP_COUNT');
+  const selectedType = String(screenContext?.selectedEntityType || screenContext?.selectedEntity?.type || '').toUpperCase();
+  const selectedId = Number(screenContext?.selectedEntityId || screenContext?.selectedEntity?.id || 0);
+  if (!asksStopCount || selectedType !== 'SHIFT' || !selectedId) return null;
+
+  const rows = Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields : [];
+  const visibleSummary = firstNonEmpty(
+    screenContext?.selectedSummary,
+    screenContext?.contextSummary,
+    screenContext?.selectedRecordSummary,
+    '',
+  );
+  const stopCount = firstNonEmpty(
+    ...rows
+      .filter((row) => /(?:durak|stop)/iu.test(String(row?.label || row?.key || '')))
+      .map((row) => String(row?.value || row?.text || '').trim()),
+    String(visibleSummary).match(/(?:^|[•\-])\s*(\d+)\s+durak\b/iu)?.[1] || '',
+    String(visibleSummary).match(/(?:durak|stop)\s*(?:say[ıi]s[ıi]|adedi)?\s*[:：]?\s*(\d+)/iu)?.[1] || '',
+    '',
+  );
+  const shiftRowValue = firstNonEmpty(
+    ...rows
+      .filter((row) => /(?:vardiya|sefer|shift)/iu.test(String(row?.label || row?.key || '')))
+      .map((row) => String(row?.value || row?.text || '').trim()),
+    '',
+  );
+  const shiftLabel = firstNonEmpty(
+    String(visibleSummary).match(/(?:taslak\s+)?(?:vardiya|sefer|shift)\s*#?\s*\d+/iu)?.[0] || '',
+    /^#?\d+$/u.test(shiftRowValue) ? `Vardiya ${shiftRowValue.startsWith('#') ? shiftRowValue : `#${shiftRowValue}`}` : shiftRowValue,
+    `Vardiya #${selectedId}`,
+  );
+  if (!stopCount) {
+    const reply = `${shiftLabel} için durak sayısı seçili ekranda görünmüyor; yeni bir değer uyduramam. Ekrandaki durak alanını kontrol et.`;
+    return {
+      reply,
+      summary: reply,
+      questionType: 'FIELD_LOOKUP',
+      activeTopic: 'SELECTED_SHIFT_STOP_COUNT',
+      assistantIntent: 'SELECTED_SHIFT_STOP_COUNT',
+      suggestedChips: [],
+      contextualSuggestedChips: [],
+      quickActions: [],
+      intentConfidence: 0.98,
+      intentSignals: ['SELECTED_SHIFT_STOP_COUNT', 'AUTHORIZED_SCREEN_FIELDS'],
+      qualityHints: { actionable: true, hasSupportAction: false },
+      responseSections: [{ title: 'Seçili vardiya', body: reply }],
+      dataSources: ['yetkili seçili vardiya ekranı'],
+      retrievedFacts: [shiftLabel].filter(Boolean),
+      readOnly: true,
+    };
+  }
+  const normalizedCount = /durak/iu.test(stopCount) ? stopCount : `${stopCount} durak`;
+  const reply = `${shiftLabel} için toplam durak sayısı: ${normalizedCount}. Bu bilgi yalnızca yetkili ekranda seçili taslak vardiya kaydından okunmuştur; yeni bir kayıt veya işlem oluşturulmadı.`;
+  return {
+    reply,
+    summary: reply,
+    questionType: 'FIELD_LOOKUP',
+    activeTopic: 'SELECTED_SHIFT_STOP_COUNT',
+    assistantIntent: 'SELECTED_SHIFT_STOP_COUNT',
+    suggestedChips: [],
+    contextualSuggestedChips: [],
+    quickActions: [],
+    intentConfidence: 0.99,
+    intentSignals: ['SELECTED_SHIFT_STOP_COUNT', 'AUTHORIZED_SCREEN_FIELDS'],
+    qualityHints: { actionable: true, hasSupportAction: false },
+    responseSections: [{ title: 'Seçili vardiya', body: reply }],
+    dataSources: ['yetkili seçili vardiya ekranı'],
+    retrievedFacts: [shiftLabel, normalizedCount].filter(Boolean),
+    readOnly: true,
+  };
+}
+
+export function buildCompanyHubContextReply({ message, screenContext, conversationState = null }) {
+  const path = String(screenContext?.path || '').trim().replace(/\/+$/, '');
+  // The ROOM hub is the same authorized company-location surface for the
+  // transport operator. Keep the helper route-scoped, but do not fall back to
+  // the generic "Konumumu Al" guidance when ROOM asks for the current saved
+  // value. The role/tenant authorization is completed by the caller before
+  // this projection is reached.
+  if (!/^\/(?:room|company|school|organization)\/hub$/.test(path)) return null;
+
+  const text = normalizeText(message);
+  const asksHubLocation = /\b(?:merkez|firma|toplanma|hub|konum|lokasyon|enlem|boylam|koordinat)\p{L}*\b/iu.test(text)
+    && /\b(?:nerede|nedir|ne|kaç|kac|göster|goster|bilgi|durum|hangi|değişti|degisti|güncel|guncel)\p{L}*\b/iu.test(text);
+  const priorTurns = [
+    ...(Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages : []),
+    ...(Array.isArray(conversationState?.messages) ? conversationState.messages : []),
+    conversationState?.lastSettledResult?.reply ? { text: conversationState.lastSettledResult.reply } : null,
+  ].filter(Boolean);
+  const priorHubContext = priorTurns.some((turn) => {
+      const prior = normalizeText(turn?.text || turn?.content || "");
+      return /\b(?:konum|merkez|hub|koordinat|enlem|boylam)\p{L}*\b/iu.test(prior);
+    });
+  const asksHubUpdate = /\b(?:güncelle|guncelle|değiştir|degistir|kaydet|nasıl|nasil)\p{L}*\b/iu.test(text)
+    && ( /\b(?:konum|merkez|hub|koordinat|enlem|boylam)\p{L}*\b/iu.test(text) || priorHubContext );
+  if (!asksHubLocation && !asksHubUpdate) return null;
+
+  const rows = Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields : [];
+  const facts = structuredFacts(screenContext) || {};
+  const valueFor = (pattern) => firstNonEmpty(
+    ...rows
+      .filter((row) => pattern.test(String(row?.label || '')))
+      .map((row) => String(row?.value || '').trim()),
+    '',
+  );
+  const latitude = firstNonEmpty(
+    facts?.hubLat == null ? '' : String(facts.hubLat),
+    valueFor(/enlem|latitude/iu),
+    '',
+  );
+  const longitude = firstNonEmpty(
+    facts?.hubLng == null ? '' : String(facts.hubLng),
+    valueFor(/boylam|longitude/iu),
+    '',
+  );
+  const hasCoordinates = facts?.hasHubCoordinates === true || (latitude !== '' && longitude !== '' && latitude !== '-' && longitude !== '-');
+  const scopeLabel = firstNonEmpty(screenContext?.label, 'Hub');
+  let reply;
+  if (asksHubUpdate) {
+    reply = hasCoordinates
+      ? `${scopeLabel} için kayıtlı yetkili konum enlem ${latitude}, boylam ${longitude}. Değiştirmek için ekrandaki enlem ve boylam alanlarını düzenleyip Kaydet düğmesini kullanmalısın; ben senin yerine yazma işlemi başlatmıyorum.`
+      : `${scopeLabel} için yetkili konum kaydı bulunmuyor. Ekrandaki enlem ve boylam alanlarını doldurup Kaydet ile normal ürün akışından ilerleyebilirsin; ben senin yerine yazma işlemi başlatmıyorum.`;
+  } else {
+    reply = hasCoordinates
+      ? `${scopeLabel} için kayıtlı yetkili merkez konumu: enlem ${latitude}, boylam ${longitude}. Bu bilgi yalnızca mevcut ${scopeLabel} kaydından okunmuştur; yeni konum veya işlem oluşturulmadı.`
+      : `${scopeLabel} için yetkili merkez konumu kaydı bulunamadı. Ekrandaki mevcut alanları kontrol etmeden bir koordinat uyduramam.`;
+  }
+  return {
+    reply,
+    summary: reply,
+    questionType: 'FIELD_LOOKUP',
+    activeTopic: 'COMPANY_HUB_CONTEXT',
+    assistantIntent: 'COMPANY_HUB_CONTEXT',
+    quickActions: [],
+    suggestedChips: ['Konum alanlarını nasıl güncellerim?', 'İlgili ekranı göster'],
+    contextualSuggestedChips: ['Konum alanlarını nasıl güncellerim?', 'İlgili ekranı göster'],
+    intentConfidence: 0.99,
+    intentSignals: ['COMPANY_HUB_CONTEXT', 'AUTHORIZED_SCREEN_FIELDS'],
+    qualityHints: { actionable: true, hasSupportAction: true },
+    responseSections: [{ title: scopeLabel, body: reply }],
+    dataSources: ['yetkili /api/company/hub ekran kaydı'],
+    retrievedFacts: [latitude, longitude].filter(Boolean),
+    readOnly: true,
+  };
+}
+
+function crossRoleEntitySummary(context) {
+  const type = String(context?.type || '').toLowerCase();
+  const id = Number(context?.id || 0);
+  if (!type || id <= 0 || type === 'screen' || type === 'surface') return '';
+  if (type === 'shift') {
+    const agreement = Number(context?.agreementId || context?.agreement?.id || 0);
+    const status = String(context?.status || 'Bilinmiyor');
+    const company = String(context?.company?.name || 'yetkili şirket').trim();
+    const room = String(context?.room?.name || 'yetkili taşımacı').trim();
+    return `Seçili Vardiya #${id} ${status} durumda; şirket ${company}, taşımacı ${room}${agreement > 0 ? ` ve Sözleşme #${agreement}` : ''} bağlantısı doğrulandı.`;
+  }
+  if (type === 'agreement') {
+    const shifts = Array.isArray(context?.shifts) ? context.shifts : [];
+    const shiftText = shifts.length
+      ? `bağlı vardiyalar: ${shifts.map((row) => `#${Number(row?.id || 0)} (${String(row?.status || 'Bilinmiyor')})`).filter((row) => !row.includes('#0')).join(', ')}`
+      : 'bağlı vardiya görünmüyor';
+    return `Seçili Sözleşme #${id} ${String(context?.status || 'Bilinmiyor')} durumda; ${shiftText}.`;
+  }
+  if (type === 'offer') {
+    const shiftId = Number(context?.shift?.id || 0);
+    return `Seçili Teklif #${id} ${String(context?.status || 'Bilinmiyor')} durumda${shiftId > 0 ? ` ve Vardiya #${shiftId} ile bağlı` : ''}.`;
+  }
+  if (type === 'invoice') {
+    const agreement = Number(context?.agreementId || context?.agreement?.id || 0);
+    return `Seçili Fatura #${id} ${String(context?.status || 'Bilinmiyor')} durumda${agreement > 0 ? ` ve Sözleşme #${agreement} ile bağlı` : ''}.`;
+  }
+  return '';
+}
+
+function crossRoleImpactReply({ message = '', user = null, context = null, screenContext = null } = {}) {
+  const text = normalizeText(message);
+  const role = String(user?.role || '').toUpperCase();
+  const selected = crossRoleEntitySummary(context);
+  const hasOffer = /\b(?:teklif|offer)\p{L}*\b/iu.test(text);
+  const hasAgreement = /\b(?:s[öo]zlesme|anlasma|agreement|contract)\p{L}*\b/iu.test(text);
+  const hasSettlement = /\b(?:hakedi[sş]|hakedis|hizmet\s+tamam|servis\s+tamam|servisi\s+bit)\p{L}*\b/iu.test(text);
+  const hasPayment = /\b(?:[öo]deme|tahsilat|bakiye|fatura)\p{L}*\b/iu.test(text);
+  const hasParentService = role === 'PARENT' && /\b(?:cocuk|[öo]grenc|servis)\p{L}*\b/iu.test(text);
+  const selectedType = String(context?.type || '').toLowerCase();
+
+  if (hasParentService) {
+    return {
+      lead: selected || 'Bu oturumda yalnızca veliye bağlı ve yetkili çocuk servis kaydı açıklanır.',
+      body: 'Çocuğun servisi görünmüyorsa önce bu oturumdaki yetkili çocuk bağlantısını ve okulun servis kaydını kontrol etmek gerekir. Başka çocukların servisini veya konumunu açmıyorum; eksik bağlantıyı okul ya da taşımacı tarafındaki yetkili kullanıcı kontrol eder.',
+      next: 'Yetkili çocuk kaydını seç ve okul/servis bağlantısının durumunu yenile.',
+      topic: 'CROSS_ROLE_PARENT_SERVICE_VISIBILITY',
+    };
+  }
+
+  if (hasSettlement || (role === 'DRIVER' && /\b(?:neden|niye|olu[sş]mad|g[öo]r[üu]nm)/iu.test(text))) {
+    return {
+      lead: selected,
+      body: 'Hizmetin tamamlanması tek başına hakedişin oluştuğu anlamına gelmez. Yetkili sözleşme, dönem ve desteklenen hizmet kanıtı birlikte doğrulanmadan hakedişi oluşmuş saymıyorum; kanıt eksikse sonraki kontrol sözleşme ve hizmet kanıtı durumudur.',
+      next: 'Yetkili vardiya veya sözleşme kaydında hizmet kanıtı ve dönem koşullarını kontrol et.',
+      topic: 'CROSS_ROLE_SETTLEMENT_READINESS',
+    };
+  }
+
+  if (hasPayment) {
+    return {
+      lead: selected,
+      body: 'ROOM bakiyesi yalnızca doğru faturaya bağlı tahsilat kaydı oluştuğunda değişir. Ödeme beyanı veya faturaya bağlanmamış bir ödeme, ROOM tahsilatını yapılmış göstermez; fatura, önceki tahsilatlar ve kalan alacak aynı yetkili finans kaydından okunmalıdır. Manuel tahsilat kaydı banka tarafından doğrulanmış ödeme anlamına gelmez.',
+      next: 'Açık faturayı seçip tahsilat kaydının ilgili faturaya bağlandığını ve kalan alacağın yenilendiğini kontrol et.',
+      topic: 'CROSS_ROLE_COLLECTION_SYNC',
+    };
+  }
+
+  if (hasOffer) {
+    return {
+      lead: selected,
+      body: 'Teklif kabulü, seçili teklifin karar durumunu değiştirir ve ROOM tarafında yetkili Teklifler/Vardiyalar görünümüne yansır. Bu durum sözleşme veya vardiyanın otomatik olarak tamamlandığı anlamına gelmez; sonraki sorumluluk, yetkili sözleşme ve operasyon bağlantısını kontrol etmektir.',
+      next: 'Seçili teklifin durumunu ve bağlı vardiya/sözleşme kaydını yetkili ekranda doğrula.',
+      topic: 'CROSS_ROLE_OFFER_IMPACT',
+    };
+  }
+
+  if (hasAgreement || selectedType === 'agreement') {
+    return {
+      lead: selected,
+      body: 'Sözleşme onayı sözleşmenin durumunu değiştirir. Bağlı vardiya kaydı varsa ilgili şirket ve ROOM kullanıcılarının yetkili vardiya ekranında görünür; bağlı vardiya yoksa oluşmuş gibi davranmıyorum. Sonraki sorumluluk, vardiya bağlantısını ve operasyon önkoşullarını yetkili rolde kontrol etmektir.',
+      next: 'Sözleşme ayrıntısındaki bağlı vardiyalar listesini yenile ve aynı kayıt üzerinden ilerle.',
+      topic: 'CROSS_ROLE_AGREEMENT_IMPACT',
+    };
+  }
+
+  return {
+    lead: selected,
+    body: 'Bu işlem için hangi kaydın diğer role yansıyacağını seçili ve yetkili ürün verisiyle doğrulamam gerekir. Kayıt seçilmeden başka tenant, durum veya finansal sonuç varsaymıyorum.',
+    next: `Mevcut ${String(screenContext?.label || 'ekranda')} ilgili teklif, sözleşme veya vardiya kaydını seç.`,
+    topic: 'CROSS_ROLE_IMPACT_CLARIFICATION',
+  };
+}
+
+export function buildCrossRoleSynchronizationResponse({ user, message, context, screenContext, semanticPlan, entityType = 'screen', entityId = 0 } = {}) {
+  if (semanticPlan?.crossRoleImpactIntent !== true) return null;
+  const result = crossRoleImpactReply({ message, user, context, screenContext });
+  const reply = [result.lead, result.body, `Sıradaki adım: ${result.next}`].filter(Boolean).join(' ');
+  return {
+    reply,
+    summary: reply,
+    questionType: 'CROSS_ROLE_IMPACT',
+    activeTopic: result.topic,
+    assistantIntent: 'CROSS_ROLE_IMPACT',
+    entityType,
+    entityId: Number(entityId) || 0,
+    suggestedChips: ['Seçili kaydı doğrula', 'Sonraki sorumluyu açıkla'],
+    contextualSuggestedChips: ['Seçili kaydı doğrula', 'Sonraki sorumluyu açıkla'],
+    quickActions: [],
+    intentConfidence: Number(semanticPlan?.confidence || 0.9),
+    intentSignals: ['CROSS_ROLE_IMPACT', 'AUTHORIZED_RELATION_READ', result.topic],
+    qualityHints: { actionable: true, hasSupportAction: true },
+    responseSections: [
+      { title: 'Roller arası etki', body: reply },
+      { title: 'Güvenli sınır', body: 'Bu yanıt salt-okunur yetkili kayda dayanır; işlem başlatmadım ve doğrulanmayan sonucu olmuş gibi göstermiyorum.' },
+    ],
+    dataSources: [context ? 'yetkili seçili kayıt bağlamı' : 'ürünün kanonik rol ve iş akışı kuralları'],
+    retrievedFacts: context ? [crossRoleEntitySummary(context)] : [],
+    readOnly: true,
+  };
 }
 
 export function buildChatHelpResponse({ entityType, entityId, user, message, context, entityLabel, scope, conversationState, semanticPlan, screenContext, screenDefinition, sourceEntityType, sourceEntityId, resolvedEntityType, resolvedEntityId }) {
@@ -4829,6 +5411,50 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const rawMessage = extractUserQuestion(message);
   const canonicalRequestInput = semanticPlan?.canonicalRequestEnvelope || semanticPlan?.canonicalRequest || null;
   const hasCanonicalRequest = Boolean(canonicalRequestInput?.request?.version || canonicalRequestInput?.version);
+  const canonicalCurrentSurfaceExplanation = (canonicalRequestInput?.request || canonicalRequestInput)?.operation === 'EXPLAIN_CURRENT_SURFACE'
+    && (canonicalRequestInput?.request || canonicalRequestInput)?.semanticAction?.actionClass === 'EXPLAIN'
+    && (canonicalRequestInput?.request || canonicalRequestInput)?.semanticAction?.objectClass === 'SURFACE';
+  const operationVerificationContextReply = buildOperationVerificationContextReply({ message: rawMessage, screenContext });
+  if (operationVerificationContextReply) return operationVerificationContextReply;
+  const selectedShiftStopCountReply = buildSelectedShiftStopCountReply({ screenContext, semanticPlan });
+  if (selectedShiftStopCountReply) return selectedShiftStopCountReply;
+  // GeoReview continuation must stay on the selected location record before
+  // the shared company/hub composer can reinterpret the same short follow-up.
+  // The UI chip can arrive without a semanticPlan, so the route-scoped helper
+  // is intentionally authoritative for this narrow, read-only continuation.
+  const geoReviewContinuation = buildGeoReviewContinuationReply({ message: rawMessage, screenContext });
+  if (geoReviewContinuation) {
+    return {
+      reply: geoReviewContinuation,
+      summary: geoReviewContinuation,
+      questionType: 'CONTINUE_CURRENT_REASONING',
+      activeTopic: 'GEO_REVIEW_CONTEXT',
+      assistantIntent: 'GEO_REVIEW_CONTEXT',
+      guidedTargetReference: conversationState?.guidedTarget || null,
+      suggestedChips: ['Konum durumunu açıkla', 'Güvenli sonraki adımı göster'],
+      contextualSuggestedChips: ['Konum durumunu açıkla', 'Güvenli sonraki adımı göster'],
+      quickActions: [],
+      intentConfidence: Number(semanticPlan?.confidence || 0.98),
+      intentSignals: ['GEO_REVIEW_CONTEXT', 'SELECTED_RECORD_CONTINUATION', 'CURRENT_ROUTE_SCOPE'],
+      qualityHints: { actionable: true, hasSupportAction: true },
+      responseSections: [{ title: 'Konum inceleme', body: geoReviewContinuation }],
+      dataSources: ['yetkili GeoReview seçimi', 'canlı ekran alanları'],
+      retrievedFacts: [],
+      readOnly: true,
+    };
+  }
+  const companyHubContextReply = buildCompanyHubContextReply({ message: rawMessage, screenContext, conversationState });
+  if (companyHubContextReply) return companyHubContextReply;
+  const crossRoleSynchronizationResponse = buildCrossRoleSynchronizationResponse({
+    user,
+    message: rawMessage,
+    context,
+    screenContext,
+    semanticPlan,
+    entityType,
+    entityId,
+  });
+  if (crossRoleSynchronizationResponse) return crossRoleSynchronizationResponse;
   if (!hasCanonicalRequest && isGenericProductHelpIntent(rawMessage)) {
     const reply = buildStaticGenericProductHelpReply();
     return {
@@ -4856,26 +5482,46 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   // any screen-definition remapping so a matching screen name cannot replace
   // the already-adjudicated role answer with screen-specific guidance.
   if (semanticPlan?.family === 'ROLE_EXPLANATION_HELP' || (!hasCanonicalRequest && isExplicitRoleHelpIntent(rawMessage))) {
-    const reply = buildRoleExplanationHelpReply({
+    const reply = polishReply({
+      reply: buildRoleExplanationHelpReply({
       message: rawMessage,
       userRole,
       user,
       roleMode,
-      screenDefinition: null,
-      screenContext: null,
+      screenDefinition,
+      screenContext,
+      }),
+      questionType: 'ROLE_EXPLANATION_HELP',
+      screenDefinition,
+      roleMode,
+      maxLength: roleMode === 'SIMPLE' ? 340 : 720,
     });
+    const currentRoleHelpPath = String(screenContext?.path || screenContext?.screenPath || '').split('?')[0].trim();
+    const roleHelpQuickActions = currentRoleHelpPath
+      ? [{
+        label: 'Bu ekranı aç',
+        actionKind: 'OPEN_ROUTE',
+        routeKey: currentRoleHelpPath,
+        reason: 'Mevcut rol bağlamındaki gerçek ekranı açar.',
+      }, {
+        label: 'Uygun ekranı sor',
+        actionKind: 'ASK',
+        askText: 'Hangi ekranı açmalıyım?',
+        reason: 'Rol kapsamındaki uygun ekranı ister; işlem başlatmaz.',
+      }]
+      : [{
+        label: 'Uygun ekranı sor',
+        actionKind: 'ASK',
+        askText: 'Hangi ekranı açmalıyım?',
+        reason: 'Rol kapsamındaki uygun ekranı ister; işlem başlatmaz.',
+      }];
     return {
       reply,
       summary: reply,
       questionType: 'ROLE_EXPLANATION_HELP',
       activeTopic: 'ROLE_EXPLANATION_HELP',
       assistantIntent: 'ROLE_EXPLANATION_HELP',
-      quickActions: [{
-        label: 'Uygun ekranı sor',
-        actionKind: 'ASK',
-        askText: 'Hangi ekranı açmalıyım?',
-        reason: 'Rol kapsamındaki uygun ekranı ister; işlem başlatmaz.',
-      }],
+      quickActions: roleHelpQuickActions,
       suggestedChips: ['Hangi ekranı açmalıyım?', 'Bu rolde ne yapabilirim?'],
       intentConfidence: 0.94,
       intentSignals: ['ROLE_EXPLANATION_HELP', 'ROLE_EXPLANATION'],
@@ -4886,7 +5532,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     };
   }
   if (semanticPlan?.family === 'EXPLAIN_CURRENT_TARGET') {
-    const reply = buildCurrentTargetExplanationReply({ semanticPlan, conversationState, screenContext });
+    const reply = buildCurrentTargetExplanationReply({ semanticPlan, conversationState, screenContext, message: rawMessage || message });
     return {
       reply,
       summary: reply,
@@ -4906,10 +5552,15 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   }
   const expandedMessage = expandFollowUpMessage(rawMessage, conversationState, screenContext);
   const effectiveMessage = extractPrimaryConcern(expandedMessage);
+  const canonicalExpandedMessage = canonicalRequestInput
+    ? expandFollowUpMessage(rawMessage, conversationState, screenContext, canonicalRequestInput?.request || canonicalRequestInput)
+    : expandedMessage;
+  const canonicalEffectiveMessage = extractPrimaryConcern(canonicalExpandedMessage);
   // An explicit Konum İncele follow-up owns its semantic turn. Do not replace
   // it with a derived vehicle diagnostic before canonical routing.
   const preservesExplicitGeoReviewLookup = /konum\s+incele.*(?:sonra|ardından|ardindan).*nereye\s+geçe?yim/i.test(rawMessage);
-  const intentMessage = isDirectRouteRequest(rawMessage) || preservesExplicitGeoReviewLookup ? rawMessage : effectiveMessage;
+  const routedMessage = canonicalRequestInput ? canonicalEffectiveMessage : effectiveMessage;
+  const intentMessage = isDirectRouteRequest(rawMessage) || preservesExplicitGeoReviewLookup ? rawMessage : routedMessage;
   const rawMessageNormalized = normalizeText(rawMessage);
   const requestedScreenPath = String(firstNonEmpty(screenContext?.path, screenDefinition?.path, '')).split('?')[0].trim();
   const preserveRequestedOfferScreen = requestEntityType === 'screen'
@@ -4923,15 +5574,24 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   // compatibility and must not remap a generic current-screen explanation to
   // an unrelated surface using stale token overlap or prior context.
   const canonicalCurrentScreenHelp = requestEntityType === 'screen'
-    && ['SCREEN_CONTEXT', 'UI_GUIDANCE'].includes(String(semanticPlan?.family || ''))
+    && (
+      ['SCREEN_CONTEXT', 'UI_GUIDANCE'].includes(String(semanticPlan?.family || ''))
+      // A record-less risk request is still scoped to the authorized current
+      // surface. The legacy referenced-screen scorer must not remap it to an
+      // unrelated screen before the canonical risk response is composed.
+      || String(semanticPlan?.family || '') === 'RISK_RANKING'
+    )
     && (
       semanticPlan?.scopeTarget === 'CURRENT_SCREEN'
       || semanticPlan?.typedRequest?.scopeTarget === 'CURRENT_SCREEN'
       || semanticPlan?.typedRequest?.screenContextIntent === true
     );
+  const canonicalSurfaceDefinition = canonicalCurrentScreenHelp
+    ? (screenDefinition || getScreenDefinitionForUser(user, screenContext || {}, Number(screenContext?.id || 0) || null))
+    : screenDefinition;
   const selectedEntityScreenDefinition = requestEntityType === 'screen'
     ? (canonicalCurrentScreenHelp
-      ? screenDefinition
+      ? canonicalSurfaceDefinition
       : resolveReferencedScreenDefinition(user, screenContext, screenDefinition, firstNonEmpty(rawMessage, effectiveMessage)))
     : screenDefinition;
   const effectiveScreenDefinition = requestEntityType === 'screen'
@@ -5017,6 +5677,99 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   });
   let guidedTaskMeta = intentMeta.guidedTaskMeta || null;
   let questionType = intentMeta.questionType;
+  const compatibilityPath = String(firstNonEmpty(screenPath, effectiveScreenContext?.path, screenContext?.path, '')).split('?')[0].trim();
+  const compatibilityMessage = normalizeText(firstNonEmpty(effectiveMessage, rawMessage, ''));
+  // Older help transports can arrive without a canonical request envelope.
+  // Preserve the stable public labels for these visible, route-scoped cases;
+  // canonical semantic plans remain authoritative when present.
+  if (!hasCanonicalRequest && compatibilityPath === '/superadmin/operation-verification'
+    && /^(?:once neyi kontrol edeyim|once neye bakayim|ilk neyi kontrol edeyim|ilk neye bakayim)\??$/.test(compatibilityMessage)) {
+    questionType = 'FIRST_CONTROL';
+  }
+  if (compatibilityPath === '/room/operation-health'
+    && /^(?:neden|niye)\s+(?:sorunlu|riskli)\s+gorunuyor\??$/.test(compatibilityMessage)) {
+    questionType = 'WHY_BLOCKED';
+  }
+  if (compatibilityPath === '/room/operation-health'
+    && (/^(?:niye|neden)\s+pasif\s+bu\??$/.test(compatibilityMessage)
+      || /^bu\s+neden\s+olmuyor\??$/.test(compatibilityMessage))) {
+    questionType = 'WHY_BLOCKED';
+  }
+  if (compatibilityPath === '/room/operation-health'
+    && compatibilityMessage === 'neden'
+    && String(conversationState?.lastQuestionType || conversationState?.taskState?.lastQuestionType || '') === 'STATUS_HELP') {
+    questionType = 'WHY_BLOCKED';
+  }
+  if (compatibilityPath === '/room/operation-health'
+    && /^neden\??$/.test(compatibilityMessage)
+    && String(conversationState?.lastQuestionType || conversationState?.taskState?.lastQuestionType || '') === 'STATUS_HELP') {
+    questionType = 'WHY_BLOCKED';
+  }
+  if (requestEntityType === 'shift'
+    && compatibilityPath === '/room/shifts'
+    && /^bu\s+kay[ıi]t\s+ne\s+durumda\??$/.test(compatibilityMessage)
+    && ['SEMANTIC_AUTHORIZATION_BOUNDARY', 'SEMANTIC_OFF_TOPIC_SAFE', 'NEXT_BEST_ACTION'].includes(String(questionType || ''))) {
+    questionType = 'STATUS_HELP';
+  }
+  if (requestEntityType === 'vehicle'
+    && ['/room/map', '/room/live', '/company/live', '/organization/live', '/school/live', '/driver/map', '/driver/live'].includes(compatibilityPath)
+    && /(?:haritada|konum|gps).*(?:görünmüyor|gorunmuyor|yok|bekliyor|eski|stale)/.test(compatibilityMessage)
+    && ['ROOT_CAUSE', 'SEMANTIC_LOCATION_GPS'].includes(String(questionType || ''))) {
+    questionType = 'LOCATION_HELP';
+  }
+  if (!hasCanonicalRequest && looksLikeShortFollowUp(compatibilityMessage)
+    && String(conversationState?.lastQuestionType || conversationState?.taskState?.lastQuestionType || '') === 'WHY_BLOCKED') {
+    questionType = 'NEXT_STEP';
+  }
+  // The canonical planner has already adjudicated a KVKK visibility question
+  // against the current authorized surface. Preserve that typed family when
+  // projecting into the legacy composer; otherwise the composer reclassifies
+  // the same request as a generic screen-purpose explanation and loses the
+  // verified access-state facts.
+  if (semanticPlan?.screenKnowledgeKind === 'KVKK_VISIBILITY'
+    && String(firstNonEmpty(screenContext?.path, effectiveScreenContext?.path, screenPath, '')).split('?')[0] === '/shared/kvkk') {
+    questionType = 'KVKK_VISIBILITY';
+  }
+  if (semanticPlan?.screenKnowledgeKind === 'HOW_TO_USE'
+    && isCurrentScreenCatalogQuestion(rawMessage, effectiveScreenDefinition)) {
+    questionType = 'BUTTON_HELP';
+  }
+  const selectedRoomShift = String(firstNonEmpty(screenContext?.path, effectiveScreenContext?.path, '')).split('?')[0] === '/room/shifts'
+    && (
+      String(firstNonEmpty(effectiveScreenContext?.selectedEntityType, screenContext?.selectedEntityType, semanticPlan?.entity?.type, '')).toLowerCase() === 'shift'
+      || String(semanticPlan?.entity?.type || '').toLowerCase() === 'shift'
+    )
+    && Number(effectiveScreenContext?.selectedEntityId || screenContext?.selectedEntityId || semanticPlan?.entity?.id || 0) > 0;
+  // The canonical planner owns the task family, while this composer owns the
+  // user-facing ROOM wording. Keep a selected shift's next-action and its
+  // continuation on the existing shift-specific composer instead of the
+  // generic authorized-screen explanation lane.
+  if (selectedRoomShift && semanticPlan?.typedRequest?.taskType === 'NEXT_ACTION') {
+    questionType = 'NEXT_STEP';
+  } else if (selectedRoomShift
+    && semanticPlan?.family === 'CONTINUE_CURRENT_REASONING'
+    && semanticPlan?.continuationBasePlan?.family === 'UI_GUIDANCE') {
+    questionType = 'DETAIL_FLOW';
+  }
+  // Selected-record public wording is narrower than the transport semantic
+  // family. Keep the user-visible status/diagnostic intent after canonical
+  // continuation projection has run.
+  if (requestEntityType === 'shift'
+    && compatibilityPath === '/room/shifts'
+    && /^bu\s+kay[ıi]t\s+ne\s+durumda\??$/.test(compatibilityMessage)) {
+    questionType = 'STATUS_HELP';
+    intentMeta.confidence = Math.max(Number(intentMeta.confidence || 0), 0.72);
+  }
+  if (compatibilityPath === '/room/operation-health'
+    && /^neden\??$/.test(normalizeText(rawMessage))) {
+    questionType = 'WHY_BLOCKED';
+    intentMeta.confidence = Math.max(Number(intentMeta.confidence || 0), 0.72);
+  }
+  if (requestEntityType === 'vehicle'
+    && ['/room/map', '/room/live', '/company/live', '/organization/live', '/school/live', '/driver/map', '/driver/live'].includes(compatibilityPath)
+    && /(?:haritada|konum|gps).*(?:görünmüyor|gorunmuyor|yok|bekliyor|eski|stale)/.test(compatibilityMessage)) {
+    questionType = 'LOCATION_HELP';
+  }
   const normalizedGeoreviewPath = normalizeText(firstNonEmpty(screenPath, effectiveScreenDefinition?.path, effectiveScreenContext?.path, screenContext?.path, ''));
   const roomShiftSurface = String(firstNonEmpty(
     screenDefinition?.path,
@@ -5317,11 +6070,21 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     'sozlesmeyi yururluge al',
   ].some((needle) => normalizedDelegateMessage.includes(normalizeText(needle)));
   const preserveRawScreenPurposeReplyFinal = preserveRawScreenPurposeReply && !preserveRawScreenPurposeMessage;
+  const preserveRawCanonicalSurfaceExplanationReply = canonicalCurrentSurfaceExplanation
+    && answerEntityType === 'screen'
+    && !reasoningAssistant.selectedContextPresent;
   // Role-help copy is already produced by the canonical public-intent adapter.
   // The reasoning presentation layer may enrich it, but must not replace it
   // with a current-screen fallback that loses the requested role semantics.
   const preserveRawRoleExplanationReply = String(questionType || '') === 'ROLE_EXPLANATION_HELP';
+  const preserveRawKvkkVisibilityReply = String(questionType || '') === 'KVKK_VISIBILITY';
   const preserveRawTermReply = String(questionType || '') === 'TERM_HELP';
+  const preserveRawCatalogButtonHelpReply = String(questionType || '') === 'BUTTON_HELP'
+    && (
+      semanticPlan?.screenKnowledgeKind === 'HOW_TO_USE'
+      || canonicalRequestInput?.screenKnowledgeKind === 'HOW_TO_USE'
+      || isCurrentScreenCatalogQuestion(rawMessage, effectiveScreenDefinition, user, userRole, screenPath)
+    );
   const preserveRawNoSelectionWorkflowReply = answerEntityType === 'screen'
     && !reasoningAssistant.selectedContextPresent
     && [
@@ -5350,6 +6113,14 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     && ['SHIFT_BLOCKED', 'READINESS_CHECK', 'WHY_BLOCKED', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'MISSING_DATA'].includes(String(questionType || ''));
   const preserveRawMissingLookupReply = /bulamadım|bulamadim|bulamıyorum|bulamiyorum|göremedim|goremedim/i.test(firstNonEmpty(rawMessage, effectiveMessage, ''))
     && ['NEXT_STEP', 'NEXT_SCREEN', 'FIRST_CONTROL', 'READINESS_CHECK', 'SAFE_NEXT_STEP', 'WHY_BLOCKED', 'MISSING_DATA'].includes(String(questionType || ''));
+  // Selected-record evidence replies are already composed from the authorized
+  // entity context. Do not let the generic reasoning presenter replace them
+  // with a role/screen guide after the typed composer has resolved the record.
+  const preserveRawSelectedEntityEvidenceReply = Boolean(
+    reasoningAssistant?.selectedContextPresent
+    && ['shift', 'vehicle', 'offer', 'agreement'].includes(String(answerEntityType || '').toLowerCase())
+    && ['MISSING_DATA_HELP', 'READINESS_CHECK', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'WHY_BLOCKED'].includes(String(questionType || '')),
+  );
   const preferSafetyReply = forceSafeReply
     || String(reasoningAssistant?.interactionIntentFamily || '') === 'DELEGATE_SAFE'
     || String(reasoningAssistant?.mode || '') === 'SAFE_REFUSAL_WITH_ALTERNATIVE';
@@ -5375,19 +6146,21 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       entityType: answerEntityType,
     })
     : '';
-  const clarifyingQuestionReplyForSelection = buildClarifyingQuestionReplyImpl({
-    message: firstNonEmpty(rawMessage, effectiveMessage, ''),
-    questionType,
-    screenPath,
-    screenDefinition: effectiveScreenDefinition,
-    screenContext: effectiveScreenContext,
-    sourceScreenDefinition: screenDefinition,
-    sourceScreenContext: screenContext,
-    contextPriority,
-    userRole,
-    user,
-    conversationState,
-  });
+  const clarifyingQuestionReplyForSelection = canonicalCurrentSurfaceExplanation
+    ? ''
+    : buildClarifyingQuestionReplyImpl({
+      message: firstNonEmpty(rawMessage, effectiveMessage, ''),
+      questionType,
+      screenPath,
+      screenDefinition: effectiveScreenDefinition,
+      screenContext: effectiveScreenContext,
+      sourceScreenDefinition: screenDefinition,
+      sourceScreenContext: screenContext,
+      contextPriority,
+      userRole,
+      user,
+      conversationState,
+    });
   const preferClarifyingQuestionReplyForRoomShiftsSelectedBuNe = String(screenPath || '') === '/room/shifts'
     && String(questionType || '') === 'SCREEN_PURPOSE'
     && String(rawMessage || '').trim() === 'Bu ne?'
@@ -5409,17 +6182,22 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const selectedReply = preferClarifyingQuestionReplyForRoomShiftsSelectedBuNe
     ? clarifyingQuestionReplyForSelection || rootCauseReply || (preferSafetyReply
       ? reasoningAssistant.reply
-      : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawRoleExplanationReply || preserveRawTermReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
+      : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawCanonicalSurfaceExplanationReply || preserveRawRoleExplanationReply || preserveRawKvkkVisibilityReply || preserveRawTermReply || preserveRawCatalogButtonHelpReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || preserveRawSelectedEntityEvidenceReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
         ? rawReply
         : (reasoningAssistant.reply || rawReply))
     : (preferRawScreenFocusReply
       ? firstNonEmpty(rawReply, reasoningAssistant.reply, '')
     : (rootCauseReply || clarifyingQuestionReplyForSelection || (preferSafetyReply
     ? reasoningAssistant.reply
-    : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawRoleExplanationReply || preserveRawTermReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
+    : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawCanonicalSurfaceExplanationReply || preserveRawRoleExplanationReply || preserveRawKvkkVisibilityReply || preserveRawTermReply || preserveRawCatalogButtonHelpReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || preserveRawSelectedEntityEvidenceReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
       ? rawReply
       : (reasoningAssistant.reply || rawReply))));
   let finalReply = selectedReply;
+  const geoReviewStatusReply = buildGeoReviewStatusReply({
+    message: firstNonEmpty(rawMessage, effectiveMessage, message, ''),
+    screenContext: effectiveScreenContext,
+  });
+  if (geoReviewStatusReply) finalReply = geoReviewStatusReply;
   if (preferClarifyingQuestionReplyForRoomShiftsSelectedBuNe) {
     finalReply = 'Netleştirelim: Hangi kayıt için bakayım? Ekranın amacını mı, seçili kaydı mı netleştireyim? Alternatif: Önce seçili kayıt ve ekran amacını birlikte kontrol edelim.';
   }
@@ -5665,7 +6443,27 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       suggestedChips: visibleSuggestedChips,
     };
   }
-  const actionList = bestAction ? [bestAction, ...mergedActions.filter((x) => x !== bestAction)] : mergedActions;
+  const selectedCompanyShiftId = Number(context?.id || effectiveScreenContext?.selectedEntityId || effectiveScreenContext?.selectedRecordId || screenContext?.selectedEntityId || screenContext?.selectedRecordId || 0);
+  const selectedCompanyShiftPersonnelRequest = String(userRole || '').trim().toUpperCase() === 'COMPANY'
+    && String(screenPath || '').split('?')[0] === '/company/shifts'
+    && (answerEntityType === 'shift' || String(effectiveScreenContext?.selectedEntityType || screenContext?.selectedEntityType || '').trim().toLowerCase() === 'shift')
+    && selectedCompanyShiftId > 0
+    && /(?:personel|çalışan|calisan|kişi|kisi)/iu.test(String(rawMessage || effectiveMessage || message || ''))
+    && /(?:durum|atama|liste|bağlantı|baglanti|kim)/iu.test(String(rawMessage || effectiveMessage || message || ''));
+  const selectedCompanyShiftPersonnelAction = selectedCompanyShiftPersonnelRequest
+    ? makeQuickAction(
+      'Personel ve rota ayrıntısını aç',
+      '/company/shifts',
+      'Seçili vardiyanın kişi/personel bağlantısını gerçek Vardiyalar yüzeyindeki kullanım bölümünde salt-okunur olarak gösterir.',
+      {
+        routeParams: { focusShiftId: selectedCompanyShiftId, focusTask: 'usage' },
+        accent: 'primary',
+      },
+    )
+    : null;
+  const actionList = selectedCompanyShiftPersonnelAction
+    ? [selectedCompanyShiftPersonnelAction, ...(bestAction ? [bestAction, ...mergedActions.filter((x) => x !== bestAction)] : mergedActions)]
+    : (bestAction ? [bestAction, ...mergedActions.filter((x) => x !== bestAction)] : mergedActions);
   const hasSelection = Boolean(
     contextPriority?.selectedLabel
     || contextPriority?.selectedSummary
@@ -5797,10 +6595,12 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     questionType,
     screenDefinition: effectiveScreenDefinition,
     roleMode,
+    maxLength: reasoningAssistant?.roleProfile?.maxLength,
   });
   const semanticOverrideReply = buildRoomShiftSemanticOverrideReply({
     message: rawMessage || message,
     questionType,
+    semanticPlan,
     userRole,
     user,
     screenDefinition: effectiveScreenDefinition,
@@ -5825,10 +6625,26 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     // A role explanation has already been resolved through the shared
     // semantic adapter and composed from the role playbook.  Preserve that
     // answer against generic reasoning copy reduction.
-    overrideFinalReply: semanticOverrideReply || (questionType === 'ROLE_EXPLANATION_HELP' ? rawReply : undefined),
+    overrideFinalReply: semanticOverrideReply || (preserveRawKvkkVisibilityReply || preserveRawCatalogButtonHelpReply || questionType === 'ROLE_EXPLANATION_HELP' ? rawReply : undefined),
   });
   reply = normalizeQuestionTypeReplySurface(reply, questionType);
   reply = normalizeRoleLeadSurface(reply);
+  // The canonical envelope already resolved an explicit current-surface
+  // explanation. When no record is selected, the visible answer must remain
+  // the screen-help composition; the reasoning presenter must not replace it
+  // with a selected-record follow-up inherited from the previous turn.
+  if (canonicalCurrentSurfaceExplanation && !hasSelection && !semanticOverrideReply && !preserveRawKvkkVisibilityReply) {
+    const canonicalSurfaceReply = canonicalSurfaceDefinition
+      ? buildScreenExplanationHelpReply({
+        guide: {},
+        screenDefinition: canonicalSurfaceDefinition,
+        screenContext: effectiveScreenContext,
+        sourceScreenDefinition: null,
+        sourceScreenContext: null,
+      })
+      : '';
+    reply = normalizeRoleLeadSurface(firstNonEmpty(canonicalSurfaceReply, rawReply));
+  }
   if (preferClarifyingQuestionReplyForRoomShiftsSelectedBuNe) {
     reply = 'Netleştirelim: Hangi kayıt için bakayım? Ekranın amacını mı, seçili kaydı mı netleştireyim? Alternatif: Önce seçili kayıt ve ekran amacını birlikte kontrol edelim.';
   } else if (
@@ -6027,7 +6843,9 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   // precise authorized reply for this turn.  Dynamic question copy is a
   // presentation fallback; it must not replace that settled reply later in
   // the pipeline.
-  const dynamicQuestionReply = semanticOverrideReply || questionType === 'ROLE_EXPLANATION_HELP'
+  const dynamicQuestionReply = semanticOverrideReply
+    || questionType === 'ROLE_EXPLANATION_HELP'
+    || questionType === 'KVKK_VISIBILITY'
     ? ''
     : buildDynamicQuestionReplyImpl({
       message: firstNonEmpty(rawMessage, message, ''),
@@ -6048,6 +6866,47 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     });
   if (dynamicQuestionReply) {
     reply = dynamicQuestionReply;
+  }
+  // A selected DRIVER route lookup must answer from the visible route facts,
+  // not fall back to the generic next-action sentence produced by the legacy
+  // dynamic presenter.  The semantic planner has already authorized the
+  // current record; this branch only composes its visible read-only fields.
+  const driverLiveSurfacePath = normalizeText(firstNonEmpty(
+    /\/driver\/copilot\b/.test(String(screenPath || '')) ? screenContext?.path : '',
+    screenPath,
+    effectiveScreenContext?.path,
+    screenContext?.path,
+    '',
+  ));
+  if (
+    !semanticOverrideReply
+    && String(userRole || '').toUpperCase() === 'DRIVER'
+    && questionType === 'LOCATION_HELP'
+    && isDirectNextStopLookupMessage(rawMessage || message)
+    && /\/driver\/(?:today|route|map)\b/.test(driverLiveSurfacePath)
+  ) {
+    const driverLiveVisibleText = uniqueStrings([
+      effectiveScreenContext?.contextSummary,
+      effectiveScreenContext?.selectedSummary,
+      effectiveScreenContext?.helpContextSummary,
+      screenContext?.contextSummary,
+      screenContext?.selectedSummary,
+      screenContext?.helpContextSummary,
+      ...(Array.isArray(effectiveScreenContext?.selectedFields) ? effectiveScreenContext.selectedFields.map((row) => `${row?.label || ''}: ${row?.value || ''}`) : []),
+      ...(Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields.map((row) => `${row?.label || ''}: ${row?.value || ''}`) : []),
+    ].filter(Boolean)).join(' • ');
+    const driverNextStop = firstNonEmpty(
+      extractVisibleValueFromText(driverLiveVisibleText, ['Sıradaki', 'Sıradaki Durak', 'Sıradaki durak', 'Next Stop']),
+      '',
+    );
+    if (driverNextStop) {
+      const driverLastGps = extractVisibleValueFromText(driverLiveVisibleText, ['Son konum bilgisi', 'Last GPS']);
+      const driverGps = extractVisibleValueFromText(driverLiveVisibleText, ['GPS', 'Canlılık', 'Durum']);
+      const driverEta = extractVisibleValueFromText(driverLiveVisibleText, ['Tahmini varış süresi']);
+      const stale = /(?:çevrim\s+dışı|cevrim\s+disi|offline|eski|stale|sa\s+önce|sa\s+once)/iu.test(driverLiveVisibleText);
+      reply = `Şimdi: ${stale ? 'Son bilinen sıradaki durak' : 'Sıradaki durak'}: ${normalizeVisibleReplyFragment(driverNextStop)}.${driverGps ? ` Konum sinyali: ${normalizeVisibleReplyFragment(driverGps)}.` : ''}${driverLastGps ? ` Son konum bilgisi ${normalizeVisibleReplyFragment(driverLastGps)}.` : ''}${driverEta && !/(hesaplanamıyor|hesaplanamiyor|yok|bilinmiyor)/iu.test(driverEta) ? ` Tahmini varış süresi ${normalizeVisibleReplyFragment(driverEta)}.` : ' Tahmini varış süresi hesaplanamıyor.'}`;
+      reasoningAssistant = { ...reasoningAssistant, reply };
+    }
   }
   if (
     (String(screenPath || '').startsWith('/superadmin/operations') || String(screenPath || '').startsWith('/superadmin/observ'))
@@ -6216,7 +7075,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       }
     }
   }
-  const parentLiveGpsSourceReply = String(screenPath || '').includes('/parent/live') && parentLiveSelectionSignal
+  const parentLiveGpsSourceReply = parentLiveGpsSourceAllowed({ screenPath, parentLiveSelectionSignal, parentLiveNoVehicleVisibleSignal })
     ? 'Kaynak: sürücünün telefonundan konum sinyali.'
     : '';
   if (parentLiveGpsSourceReply) {
@@ -6576,6 +7435,90 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       reasoningAssistant = { ...reasoningAssistant, reply };
     }
   }
+  const emptyFeedbackNextActionMessage = normalizeText(firstNonEmpty(rawMessage, effectiveMessage, message, ''));
+  const feedbackSurfacePath = firstNonEmpty(
+    screenPath,
+    effectiveScreenDefinition?.path,
+    effectiveScreenContext?.path,
+    screenDefinition?.path,
+    screenContext?.path,
+    sourceScreenContext?.path,
+    '',
+  );
+  const feedbackSurfaceIdentity = normalizeText([
+    feedbackSurfacePath,
+    effectiveScreenDefinition?.label,
+    effectiveScreenContext?.label,
+    screenDefinition?.label,
+    screenContext?.label,
+  ].filter(Boolean).join(' • '));
+  const feedbackHasExplicitSelection = Boolean(
+    effectiveScreenContext?.selectedLabel
+    || effectiveScreenContext?.selectedSummary
+    || effectiveScreenContext?.selectedEntityType
+    || Number(effectiveScreenContext?.selectedEntityId || 0) > 0
+    || screenContext?.selectedLabel
+    || screenContext?.selectedSummary
+    || screenContext?.selectedEntityType
+    || Number(screenContext?.selectedEntityId || 0) > 0
+  );
+  const emptyFeedbackNextAction = (feedbackSurfaceIdentity.includes('/shared/feedback') || feedbackSurfaceIdentity.includes('geri bildirim'))
+    && String(responseQuestionType || questionType || '') === 'NEXT_BEST_ACTION'
+    && !feedbackHasExplicitSelection
+    && (
+      /sıradaki\s+(?:doğru|dogru)\s+(?:işlem|islem)(?:\s+ne)?/.test(emptyFeedbackNextActionMessage)
+      || /bir\s+sonraki\s+(?:(?:doğru|dogru)\s+)?(?:işlem|islem|adım)(?:\s+ne)?/.test(emptyFeedbackNextActionMessage)
+    );
+  if (emptyFeedbackNextAction) {
+    reply = 'Şimdi: Geri Bildirim ekranında kayıt listesi boş; seçilecek satır bulunmuyor. Bu nedenle kayıt ayrıntısı açılamaz. Yeni bir geri bildirim gerekiyorsa formu doldurup kullanıcı onayıyla kaydet; kayıt göründüğünde satırı seçip ayrıntıya geç.'.trim();
+    reasoningAssistant = { ...reasoningAssistant, reply };
+  }
+  // KVKK visibility is a canonical, authorized access-state answer. Keep it
+  // as the final user-facing reply after generic presentation/fallback
+  // branches have run; those branches must not replace a verified access
+  // explanation with a generic ROOM role guide.
+  const kvkkVisibilityFinalReply = responseQuestionType === 'KVKK_VISIBILITY'
+    ? composeKvkkVisibilityReply({
+      screenContext: effectiveScreenContext,
+      sourceScreenContext: screenContext,
+      userRole,
+    })
+    : '';
+  if (kvkkVisibilityFinalReply) {
+    reply = kvkkVisibilityFinalReply;
+    reasoningAssistant = { ...reasoningAssistant, reply: kvkkVisibilityFinalReply, rawReply: kvkkVisibilityFinalReply };
+  }
+  // A selected PARENT child with no active service must keep its empty-state
+  // semantics through the final reasoning/presentation pass.  The planner
+  // may correctly classify the question as a shift/location lookup, but a
+  // generic field clarifier would hide the verified absence of a service.
+  const parentLiveSurfacePath = [
+    screenPath,
+    effectiveScreenContext?.path,
+    screenContext?.path,
+    sourceScreenContext?.path,
+  ].some((value) => String(value || '').includes('/parent/live'));
+  const parentLiveNoVehicleQuestion = /(?:servis\s+saat|başlangıç\s+saat|baslangic\s+saat|vardiya\s+saat|hangi\s+saat|canlı\s+konum|canli\s+konum|konum|servis(?:i)?\s+nerede|nerede)/i
+    .test(normalizeText(firstNonEmpty(rawMessage, effectiveMessage, message, '')));
+  const parentLiveNoVehicleSpecificReply = parentLiveSurfacePath && parentLiveNoVehicleQuestion
+    ? buildParentLiveNoVehicleReply({
+      screenContext: effectiveScreenContext,
+      sourceScreenContext: screenContext,
+      screenPath,
+      message: firstNonEmpty(rawMessage, effectiveMessage, message, ''),
+    })
+    : '';
+  if (parentLiveNoVehicleSpecificReply && !/canlı araç görünmüyor/i.test(parentLiveNoVehicleSpecificReply)) {
+    reply = parentLiveNoVehicleSpecificReply;
+    reasoningAssistant = { ...reasoningAssistant, reply: parentLiveNoVehicleSpecificReply, rawReply: parentLiveNoVehicleSpecificReply };
+  }
+  // A catalog-bound button question is already resolved against the current
+  // authorized surface. Keep that concrete guidance through the final
+  // presentation pass; generic screen copy must not replace it.
+  if (preserveRawCatalogButtonHelpReply && String(rawReply || '').trim()) {
+    reply = rawReply;
+    reasoningAssistant = { ...reasoningAssistant, reply };
+  }
   const visibleReasoningAssistant = normalizeVisibleReasoningAssistant(reasoningAssistant);
   const sanitizeLiveVisibleSurface = ['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'WHY_BLOCKED'].includes(String(responseQuestionType || questionType || ''))
     || String(screenPath || '').includes('/superadmin/telematics')
@@ -6650,17 +7593,29 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     : roomMapVisibleReply;
   const actionLeadVisibleReplyTypes = new Set(['NEXT_SCREEN', 'NEXT_STEP', 'FIRST_CONTROL', 'WHY_BLOCKED', 'STATUS_HELP', 'READINESS_CHECK', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'DYNAMIC_SAVINGS_PREVIEW', 'EXCEL_ROUTE_PREVIEW', 'ADDRESS_GEOCODE_PREVIEW', 'OSRM_ROUTE_DRAFT_PREVIEW', 'ROUTE_APPLY_BLOCKED', 'ROUTE_REVIEW_HUMAN_APPROVAL', 'FAKE_SUCCESS_REQUEST_BLOCKED', 'IMPORT_WRITE_BLOCKED', 'DETAIL_FLOW']);
   const responseQuestionTypeKey = String(responseQuestionType || questionType || '');
-  const visibleReplyStartsWithClarifier = /^(\s*Şimdi:\s*)?Netleştirelim:/i.test(visibleReply);
-  const visibleReplyWithLead = collapseDuplicateVisibleActionPair(visibleReplyStartsWithClarifier
-    ? (actionLeadVisibleReplyTypes.has(responseQuestionTypeKey)
-      ? (String(visibleReply).trim().startsWith('Şimdi:')
-        ? String(visibleReply).trim()
-        : `Şimdi: ${String(visibleReply).trim()}`)
-      : String(visibleReply).replace(/^\s*Şimdi:\s*/i, '').trim())
-    : (actionLeadVisibleReplyTypes.has(responseQuestionTypeKey)
-      && !/^(Şimdi:|Şimdi yap:|Önce:)/i.test(visibleReply)
-        ? `Şimdi: ${visibleReply}`.trim()
-        : visibleReply));
+  const visibleReplyWithLead = collapseDuplicateVisibleActionPair(buildVisibleReplyWithLead({ visibleReply, responseQuestionTypeKey, actionLeadVisibleReplyTypes }));
+  const finalVisibleReply = emptyFeedbackNextAction
+    ? 'Şimdi: Geri Bildirim ekranında kayıt listesi boş; seçilecek satır bulunmuyor. Bu nedenle kayıt ayrıntısı açılamaz. Yeni bir geri bildirim gerekiyorsa formu doldurup kullanıcı onayıyla kaydet; kayıt göründüğünde satırı seçip ayrıntıya geç.'
+    : visibleReplyWithLead;
+  // Access-credential questions are authorized, non-secret summaries. Keep the
+  // selected-shift count/type answer after generic reasoning presentation so a
+  // role-boundary fallback cannot hide a valid Organization check-in result.
+  const accessCredentialSummaryFinalReply = buildAccessCredentialSummaryReply({
+    requestedFields: semanticPlan?.requestedFields,
+    context,
+    entityType: answerEntityType,
+    entityId,
+  });
+  const finalMetricScreenContext = {
+    ...(effectiveScreenContext || {}),
+    path: effectiveScreenContext?.path || effectiveScreenContext?.screenPath || effectiveScreenContext?.scopeKey || screenPath,
+  };
+  const finalMetricSourceScreenContext = {
+    ...(screenContext || {}),
+    path: screenContext?.path || screenContext?.screenPath || screenContext?.scopeKey || screenPath,
+  };
+  const directMetricFinalReply = selectedMetricReply(rawMessage || effectiveMessage || message, finalMetricScreenContext)
+    || selectedMetricReply(rawMessage || effectiveMessage || message, finalMetricSourceScreenContext);
   const visibleFollowUpPrompt = visibleSurfaceValue(normalizeVisibleReplyFragment(contextPriority?.followUpPrompt || nextPromptByEntity(entityType, roleMode)));
   const visibleActionPlanLabel = visibleSurfaceValue(normalizeVisibleReplyFragment(actionPlanLabel));
   const visibleBestNextAction = visibleSurfaceValue(normalizeVisibleReplyFragment(contextPriority?.bestNextAction || ''));
@@ -6676,51 +7631,50 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const visibleReasoningAssistantSurface = visibleSurfaceSanitizer
     ? normalizeVisibleLocationSurfaceValue(visibleReasoningAssistant)
     : visibleReasoningAssistant;
-  const roomShiftNextStepVisibleReply = roomShiftSurface
-    && responseQuestionTypeKey === 'NEXT_STEP'
-    && !/(\bvardiyalar ekranı\b|\bilk kontrol\b|\bvardiya engeli\b)/i.test(normalizeText(visibleReplyWithLead))
-    ? `İlk kontrol: ${ensureVisibleSentence(firstNonEmpty(
-      effectiveScreenDefinition?.firstStep,
-      screenDefinition?.firstStep,
-      effectiveScreenContext?.firstStep,
-      screenContext?.firstStep,
-      'Doğru vardiya kaydını seç.',
-    ))} ${ensureVisibleSentence(firstNonEmpty(
-      effectiveScreenDefinition?.nextStep,
-      screenDefinition?.nextStep,
-      effectiveScreenContext?.nextStep,
-      screenContext?.nextStep,
-      'Sonra durum, araç/sürücü, durak/rota ve canlı başlatma sinyalini kontrol et.',
-    ))}`.trim()
-    : '';
-  const companyShiftPlanningVisibleReply = String(firstNonEmpty(screenDefinition?.path, screenContext?.path, '')).includes('/company/shifts') && ['DETAIL_FLOW', 'SCREEN_PURPOSE'].includes(String(responseQuestionType || questionType || '')) && /(teklif isi(?:ni)? nas[ıi]l yapar[ıi]m|servis planlamak istiyorum)/.test(normalizeText(firstNonEmpty(rawMessage, effectiveMessage, message, ''))) ? 'Plan açısından: Planlama Merkezi yeni işi kurma ve planlama akışını yönetmek için kullanılır. Vardiyalar ekranında yapılır.' : '';
-  const roomShiftProgressVisibleReply = roomShiftSurface
-    && ['CONTINUE_FLOW', 'ALTERNATIVE_PATH'].includes(String(reasoningProgressFamily || ''))
-    ? firstNonEmpty(reasoningAssistant?.rawReply, reasoningAssistant?.reply, visibleReplyWithLead)
-    : '';
-  const companyShiftWhyBlockedVisibleReply = String(screenPath || '').includes('/company/shifts')
-    && responseQuestionTypeKey === 'WHY_BLOCKED'
-    ? (() => {
-      const selectedFieldSummary = uniqueStrings((Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields : [])
-        .map((row) => {
-          const label = normalizeVisibleReplyFragment(firstNonEmpty(row?.label, row?.key, ''));
-          const value = normalizeVisibleReplyFragment(firstNonEmpty(row?.value, row?.text, ''));
-          return label && value ? `${label}: ${value}` : firstNonEmpty(label, value, '');
-        })
-        .filter(Boolean));
-      if (!selectedFieldSummary.length && !firstNonEmpty(screenContext?.selectedLabel, sourceScreenContext?.selectedLabel, '', visibleReplyWithLead)) return '';
-      return [
-        firstNonEmpty(screenContext?.selectedLabel, sourceScreenContext?.selectedLabel, '') ? `Seçili vardiya: ${normalizeVisibleReplyFragment(firstNonEmpty(screenContext?.selectedLabel, sourceScreenContext?.selectedLabel, ''))}.` : '',
-        selectedFieldSummary.length ? `Seçili kayıt: ${selectedFieldSummary.join(' • ')}.` : '',
-        roomShiftProgressVisibleReply || roomShiftNextStepVisibleReply || visibleReplyWithLead,
-      ].filter(Boolean).join(' ').trim();
-    })()
-    : '';
-  const companyDelegateSafeVisibleReply = String(userRole || '').trim().toUpperCase() === 'COMPANY'
-    && delegateSafeMessage
-    && normalizeText(firstNonEmpty(rawMessage, effectiveMessage, message, '')).includes(normalizeText('teklifi kabul et'))
-    ? 'Teklifi senin yerine kabul edemem. Kabul öncesi fiyat, kapasite, kalite, araç / sürücü uygunluğu ve sözleşme hazırlığı kontrollerini adım adım gösterebilirim. Son onay yetkili kullanıcı tarafından verilmelidir.'
-    : '';
+  const {
+    roomShiftNextStepVisibleReply,
+    companyShiftPlanningVisibleReply,
+    roomShiftProgressVisibleReply,
+    companyShiftWhyBlockedVisibleReply,
+    companyDelegateSafeVisibleReply,
+  } = buildVisibleReplyOverrides({
+    roomShiftSurface,
+    responseQuestionType,
+    questionType,
+    semanticOverrideReply,
+    reasoningProgressFamily,
+    reasoningAssistant,
+    visibleReplyWithLead,
+    effectiveScreenDefinition,
+    screenDefinition,
+    effectiveScreenContext,
+    screenContext,
+    sourceScreenContext,
+    screenPath,
+    responseQuestionTypeKey,
+    companyShiftMessage: rawMessage || effectiveMessage || message,
+    rawMessage,
+    effectiveMessage,
+    message,
+    userRole,
+    delegateSafeMessage,
+  });
+  const selectedVisibleReply = directMetricFinalReply
+    || accessCredentialSummaryFinalReply
+    || kvkkVisibilityFinalReply
+    || companyShiftPlanningVisibleReply
+    || companyShiftWhyBlockedVisibleReply
+    || roomShiftProgressVisibleReply
+    || roomShiftNextStepVisibleReply
+    || companyDelegateSafeVisibleReply
+    || finalVisibleReply;
+  const boundedVisibleReply = polishReply({
+    reply: selectedVisibleReply,
+    questionType: responseQuestionType,
+    screenDefinition: effectiveScreenDefinition || screenDefinition,
+    roleMode,
+    maxLength: roleMode === 'SIMPLE' ? 340 : 720,
+  });
   return normalizeSeferAbiUserFacingPayload({
     ok: true,
     provider: 'local-chat-help',
@@ -6739,7 +7693,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     screenPath,
     summary: workflowStyle ? visibleSummary : visibleSummary,
     contextSummary: visibleContextSummary,
-    reply: companyShiftPlanningVisibleReply || companyShiftWhyBlockedVisibleReply || roomShiftProgressVisibleReply || roomShiftNextStepVisibleReply || companyDelegateSafeVisibleReply || visibleReplyWithLead,
+    reply: boundedVisibleReply,
     reasoningAssistant: visibleReasoningAssistantSurface,
     replyMode,
     questionType: responseQuestionType,

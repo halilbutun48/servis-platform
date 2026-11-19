@@ -84,7 +84,7 @@ export const createShiftSchema = z.object({
 export const createShiftOffersSchema = z.object({
   roomIds: z.array(coercePosInt).min(1).max(10),
   amountCompany: posIntOpt,
-  noteCompany: z.string().max(500).optional(),
+  noteCompany: strOrNullMax(500),
 });
 
 export const counterShiftOfferSchema = z.object({
@@ -227,6 +227,35 @@ export const addStopSchema = z.object({
   // Back-compat: if client omits type, default to MANUAL
   type: z.enum(["COMMON", "MANUAL"]).default("MANUAL"),
 });
+
+// Route evidence is deliberately narrower than the general shift update:
+// it owns only the planned route shape and never commercial/dispatch fields.
+export const routeEvidenceSchema = z
+  .object({
+    hubLat: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
+    hubLng: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
+    direction: z.enum(["INBOUND", "OUTBOUND"]).optional(),
+    pattern: z.enum(["ONE_WAY", "LOOP"]).optional(),
+    emptyDistanceKm: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().min(0).nullable()).optional(),
+    emptyDistanceEvidenceRef: z.string().trim().min(1).max(240).nullable().optional(),
+    emptyDistanceReason: z.string().trim().min(1).max(500).nullable().optional(),
+  })
+  .strict()
+  .refine((v) => Object.keys(v).length > 0, { message: "At least one route evidence field required" })
+  .refine((v) => {
+    const hasLat = Object.prototype.hasOwnProperty.call(v, "hubLat");
+    const hasLng = Object.prototype.hasOwnProperty.call(v, "hubLng");
+    return hasLat === hasLng;
+  }, { message: "hubLat+hubLng together" })
+  .refine((v) => {
+    if (v.emptyDistanceKm == null) return true;
+    return Boolean(v.emptyDistanceEvidenceRef && v.emptyDistanceReason);
+  }, { message: "Boş kilometre için kaynak ve kısa gerekçe gerekir." })
+  .refine((v) => {
+    const hasRef = v.emptyDistanceEvidenceRef != null;
+    const hasReason = v.emptyDistanceReason != null;
+    return hasRef === hasReason;
+  }, { message: "Boş kilometre kaynağı ve gerekçesi birlikte girilmeli." });
 
 export const updateStopSchema = z
   .object({

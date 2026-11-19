@@ -1,7 +1,8 @@
 import { formatDateTimeTR, formatDateTR, formatTimeTR, toDateInputTR, toDatetimeLocalTR } from "../../utils/time";
 import { getApiErrorInfo } from "../../utils/apiContract";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
-import { pillKeyFromUi } from "../../utils/uiStatus";
+import { pillKeyFromUi, uiStatusFromVehicle } from "../../utils/uiStatus";
+import { matchesVehicleStatusFilter } from "./vehicleStatusFilter";
 
 export const VEHICLE_TYPES = [
   { value: "", label: "Seç (opsiyonel)" },
@@ -26,7 +27,7 @@ export const VEHICLE_TEMPLATES_TR = [
 export const TABS = [
   { key: "status", label: "Durum" },
   { key: "manage", label: "Yönetim" },
-  { key: "assign", label: "Atamalar" },
+  { key: "assign", label: "Atamalar", copilotTarget: "room:vehicles:tab:assignments", copilotSemanticId: "product:room:vehicles:tab:assignments" },
   { key: "avail", label: "Müsaitlik" },
   { key: "telematics", label: "Konum cihazı" },
   { key: "link", label: "Bağlantı" },
@@ -40,6 +41,10 @@ export function hasGpsFix(v) {
   const lat = v?.gpsLast?.lat;
   const lng = v?.gpsLast?.lng;
   return typeof lat === "number" && typeof lng === "number";
+}
+
+export function isVehicleVisibleInStatusFilter(vehicle, { query = "", statusFilter = "ALL" } = {}) {
+  return matchesVehicleStatusFilter(vehicle, { query, statusFilter, resolveStatus: uiStatusFromVehicle });
 }
 
 export function gpsAtLabel(v) {
@@ -143,6 +148,14 @@ export function setSelMany(setter, ids, val) {
 }
 
 export function buildVehicleCopilotSelection({ focusVehicle, focusDriverLabel, focusHasDriver, ui }) {
+  const uiStatus = String(ui || "").toUpperCase();
+  const uiStatusLabel = uiStatus === "OFFLINE"
+    ? "Çevrim dışı"
+    : uiStatus === "STALE"
+      ? "Güncel değil"
+      : uiStatus === "LIVE"
+        ? "Canlı"
+        : "Bilinmiyor";
   return {
     scopeKey: "/room/vehicles",
     entityType: "vehicle",
@@ -155,7 +168,9 @@ export function buildVehicleCopilotSelection({ focusVehicle, focusDriverLabel, f
       { label: "Kapasite", value: String(focusVehicle?.capacity || "-"), help: "Araç kapasitesini gösterir." },
       { label: "Bölge", value: formatRegionOwnership(focusVehicle?.regionOwnership), help: "Aracın bağlı olduğu il / ilçe bilgisini gösterir." },
       { label: "Sürücü", value: focusDriverLabel || "-", help: "Araca bağlı sürücüyü gösterir." },
-      { label: "Durum", value: ui?.label || "-", help: "Aracın operasyon/GPS durumunu gösterir." },
+      { label: "Durum", value: uiStatusLabel, help: "Aracın operasyon/GPS durumunu gösterir." },
+      { label: "GPS Durumu", value: uiStatusLabel, help: "Aracın GPS sinyal durumunu gösterir." },
+      { label: "Son GPS", value: gpsAtLabel(focusVehicle), help: "Aracın son yetkili GPS zamanını gösterir." },
     ],
     badges: [
       { label: "Bağ", value: focusHasDriver ? "Sürücü bağlı" : "Sürücü yok", help: "Araç-sürücü bağının olup olmadığını gösterir." },
@@ -163,6 +178,8 @@ export function buildVehicleCopilotSelection({ focusVehicle, focusDriverLabel, f
     facts: {
       screenType: "VEHICLES",
       stage: pillKeyFromUi(ui),
+      gpsStatus: uiStatusLabel,
+      gpsFreshness: gpsAtLabel(focusVehicle),
       nextBestAction: focusHasDriver
         ? "Önce GPS ve durum satırını oku. Sonra gerekiyorsa konum cihazı veya atama sekmesine geç."
         : "Önce sürücü bağı var mı kontrol et. Sonra durum alanını oku.",

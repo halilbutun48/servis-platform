@@ -191,6 +191,8 @@ export function looksLikeNextBestActionQuestion(message) {
   return matchesStandalonePhrase(text, [
     'sıradaki doğru işlem',
     'siradaki dogru islem',
+    'sıradaki doğru kontrol',
+    'siradaki dogru kontrol',
     'bir sonraki doğru işlem',
     'bir sonraki dogru islem',
     'bir sonraki adım ne',

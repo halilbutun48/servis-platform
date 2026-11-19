@@ -1,16 +1,27 @@
-import { cachedGet } from "./uiDataCache";
+import { cachedGet, clearUiDataCache } from "./uiDataCache";
+import { buildDashboardBulkQuery, dashboardBulkCachePrefix } from "./dashboardBulkQuery.js";
 
 const DEFAULT_TTL_MS = 10 * 60 * 1000;
 const DEFAULT_DELAY_MS = 120;
+let actionableEventsSnapshot = null;
+const actionableEventsListeners = new Set();
 
-function buildQueryString(params = {}) {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params || {})) {
-    if (value == null || value === "") continue;
-    query.set(key, String(value));
-  }
-  const text = query.toString();
-  return text ? `?${text}` : "";
+function publishActionableEventsSnapshot(snapshot) {
+  actionableEventsSnapshot = snapshot;
+  actionableEventsListeners.forEach((listener) => {
+    try { listener(snapshot); } catch { /* one subscriber must not affect the others */ }
+  });
+}
+
+export function getActionableEventsSnapshot() {
+  return actionableEventsSnapshot;
+}
+
+export function subscribeActionableEventsSnapshot(listener) {
+  if (typeof listener !== "function") return () => {};
+  actionableEventsListeners.add(listener);
+  listener(actionableEventsSnapshot);
+  return () => actionableEventsListeners.delete(listener);
 }
 
 function normalizeItems(value) {
@@ -20,7 +31,8 @@ function normalizeItems(value) {
 }
 
 async function loadDashboardBulkBundle(bundle, { token, force = false, signal, ttlMs = DEFAULT_TTL_MS, delayMs = DEFAULT_DELAY_MS, query = {} } = {}) {
-  const qs = buildQueryString({ bundle, ...query });
+  if (force) clearUiDataCache(dashboardBulkCachePrefix(bundle));
+  const qs = buildDashboardBulkQuery(bundle, query, force);
   try {
     return await cachedGet(`/api/dashboard/bulk${qs}`, { token, force, signal, ttlMs, delayMs });
   } catch {
@@ -134,12 +146,17 @@ export async function loadActionableEventsBundle({ token, force = false, signal 
     force,
     signal,
   });
-  if (!payload) return null;
-  return {
+  if (!payload) {
+    publishActionableEventsSnapshot(null);
+    return null;
+  }
+  const normalized = {
     ...payload,
     events: normalizeItems(payload.events),
     summary: payload.summary ?? { total: 0, byGroup: {}, primaryEventId: null, primaryAction: null },
   };
+  publishActionableEventsSnapshot(normalized);
+  return normalized;
 }
 
 export { loadDashboardBulkBundle };

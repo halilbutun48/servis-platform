@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { getPath, navigate } from "../../router";
+import { normalizeCompanyPath } from "../../utils/paths";
 import { useSession } from "../../state/session";
 import JobGuideHeader from "../../components/copilot/JobGuideHeader";
 import BeforeYouStartCard from "../../components/copilot/BeforeYouStartCard";
@@ -24,7 +25,7 @@ import SeferAbiAvatar from "../../components/copilot/SeferAbiAvatar";
 import { resolveSeferAbiWidgetState, SEFER_ABI_WIDGET_STATE_LABELS } from "../../components/copilot/SeferAbiWidgetState";
 import { captureCopilotUiSurface } from "../../components/copilot/uiSurface";
 import { setGuidedTarget } from "../../copilot/guidedTargetState";
-import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
+import { copilotSelectionEventName, mergeCopilotSelection, readCopilotRouteSelection, readCopilotSelection } from "../../utils/copilotSelection";
 import { copilotAuthScopeKey, readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
 import { COPILOT_PERSONA, COPILOT_TERMINAL } from "../../utils/copilotFacts";
 import { nowIsoTR } from "../../utils/time";
@@ -42,9 +43,64 @@ import {
   safeHistoryLoad,
   saveHistory,
   screenOptionLabel,
+  selectionApplies,
 } from "../../utils/copilotPanelHelpers";
 
 const COPILOT_TERMINAL_TITLE = COPILOT_TERMINAL.title || "Sefer Abi";
+const DRAWER_STORAGE_KEY = "psv1:copilot:drawer:v4";
+const FULL_WORKSPACE_HANDOFF_KEY = "psv1:copilot:full-workspace-handoff:v1";
+
+function readFullWorkspaceHandoff(scopeKey = "") {
+  if (!scopeKey || typeof window === "undefined") return null;
+  try {
+    const handoff = JSON.parse(window.localStorage.getItem(FULL_WORKSPACE_HANDOFF_KEY) || "null");
+    if (handoff?.scopeKey !== scopeKey || !Array.isArray(handoff.messages) || !handoff.messages.length) return null;
+    return handoff;
+  } catch {
+    return null;
+  }
+}
+
+function isFullWorkspaceRoute(path) {
+  return /\/copilot$/.test(String(path || "").split("?", 1)[0]);
+}
+
+function hydrateFullWorkspaceState(scopeKey, shared) {
+  const handoff = readFullWorkspaceHandoff(scopeKey);
+  if (!handoff) return { shared: shared || null, handoff: null };
+  const routeSelection = readCopilotRouteSelection();
+  const sourceScreenPath = String(routeSelection?.scopeKey || shared?.sourceScreenPath || "").split("?", 1)[0] || null;
+  const chatContextKey = routeSelection
+    ? [sourceScreenPath || "", routeSelection.entityType || "", routeSelection.entityId || ""].join("|")
+    : String(shared?.chatContextKey || "");
+  return {
+    shared: {
+      ...(shared || {}),
+      scopeKey,
+      screenPath: "/copilot",
+      sourceScreenPath,
+      chatContextKey,
+      selection: shared?.selection || routeSelection || null,
+      selectedContext: shared?.selectedContext || shared?.selection || routeSelection || null,
+      messages: handoff.messages,
+      draft: String(handoff.draft || shared?.draft || ""),
+    },
+    handoff,
+  };
+}
+
+function roleHomePath(role) {
+  return {
+    ROOM: "/room",
+    COMPANY: "/company",
+    SCHOOL: "/school",
+    ORGANIZATION: "/organization",
+    DRIVER: "/driver/today",
+    PERSONEL: "/personel/live",
+    PARENT: "/parent/live",
+    SUPER_ADMIN: "/superadmin",
+  }[String(role || "").toUpperCase()] || "/";
+}
 
 function entityTypeLabel(value) {
   return {
@@ -86,6 +142,8 @@ const GUIDE_LEVEL_OPTIONS = [
   { value: "STEP_BY_STEP", label: "Adım adım anlat" },
   { value: "WHY", label: "Neden böyle" },
 ];
+
+const SCREEN_GUIDE_JOB_TYPES = new Set(["SCREEN_MENU_GUIDE", "BUTTON_ACTION_GUIDE", "ROLE_HELP_GUIDE"]);
 
 const INTENT_OPTIONS = [
   { value: "SHIFT_SUMMARY", label: "Vardiya Özeti", helper: "Genel operasyon özeti", entityType: "shift" },
@@ -135,13 +193,20 @@ function selectionSummaryForDisplay(selection) {
   const summary = String(selection?.summary || "").trim();
   if (!summary || !label || summary === label) return humanizeUserFacingText(summary);
   const prefix = `${label} • `;
-  return humanizeUserFacingText(summary.startsWith(prefix) ? summary.slice(prefix.length) : summary);
+  if (summary.startsWith(prefix)) return humanizeUserFacingText(summary.slice(prefix.length));
+  const sentencePrefix = `${label}. `;
+  if (summary.startsWith(sentencePrefix)) return humanizeUserFacingText(summary.slice(sentencePrefix.length));
+  if (summary.startsWith(label)) return humanizeUserFacingText(summary.slice(label.length).replace(/^[\s.•]+/, "").trim());
+  const viewMarker = summary.indexOf("Görünüm:");
+  if (viewMarker >= 0) return humanizeUserFacingText(summary.slice(viewMarker).trim());
+  return humanizeUserFacingText(summary);
 }
 
 export default function CopilotPanel() {
   const { token, me } = useSession();
   const routeContext = useCopilotRouteContext();
   const authScopeKey = copilotAuthScopeKey(token, me);
+  const authReady = Boolean(token && me?.id);
   const [panelMode, setPanelMode] = useState("CHAT");
   const [intent, setIntent] = useState("SHIFT_SUMMARY");
   const [jobType, setJobType] = useState("OFFER_REVIEW");
@@ -165,7 +230,7 @@ export default function CopilotPanel() {
   const [chatScreenId, setChatScreenId] = useState("");
   const [chatEntityType, setChatEntityType] = useState(defaultChatEntityType(me?.role));
   const [chatEntityId, setChatEntityId] = useState("");
-  const [sharedContext, setSharedContext] = useState(() => readCopilotSharedState(authScopeKey));
+  const [sharedContext, setSharedContext] = useState(() => hydrateFullWorkspaceState(authScopeKey, readCopilotSharedState(authScopeKey)).shared);
   const [chatMessages, setChatMessages] = useState(() => Array.isArray(sharedContext?.messages) ? sharedContext.messages.slice(-20) : []);
   const [chatBusy, setChatBusy] = useState(false);
   const [chatErr, setChatErr] = useState("");
@@ -188,7 +253,11 @@ export default function CopilotPanel() {
 
   const selectedIntent = useMemo(() => INTENT_OPTIONS.find((x) => x.value === intent) || INTENT_OPTIONS[0], [intent]);
   const selectedJob = useMemo(() => GUIDE_JOB_OPTIONS.find((x) => x.value === jobType) || GUIDE_JOB_OPTIONS[0], [jobType]);
-  const activeEntityType = panelMode === "GUIDE" ? selectedJob.entityType : selectedIntent.entityType;
+  // Screen-guide actions must target the current screen, even when the drawer
+  // was opened from a selected record such as a shift.
+  const activeEntityType = panelMode === "GUIDE"
+    ? (SCREEN_GUIDE_JOB_TYPES.has(jobType) ? "screen" : selectedJob.entityType)
+    : selectedIntent.entityType;
   const clearResponseTimer = useCallback(() => {
     if (responseTimerRef.current && typeof window !== "undefined") window.clearTimeout(responseTimerRef.current);
     responseTimerRef.current = null;
@@ -217,9 +286,11 @@ export default function CopilotPanel() {
     chatRequestSequenceRef.current += 1;
     chatAuthScopeRef.current = authScopeKey;
     skipSharedPersistenceRef.current = true;
-    const scoped = readCopilotSharedState(authScopeKey);
+    const hydrated = hydrateFullWorkspaceState(authScopeKey, readCopilotSharedState(authScopeKey));
+    const scoped = hydrated.shared;
+    const scopedMessages = Array.isArray(scoped?.messages) ? scoped.messages.slice(-20) : [];
     setSharedContext(scoped);
-    setChatMessages(Array.isArray(scoped?.messages) ? scoped.messages.slice(-20) : []);
+    setChatMessages(scopedMessages);
     setChatConversationState(scoped?.conversationState || null);
     setChatSuggestedChips([]);
     setChatErr("");
@@ -228,7 +299,52 @@ export default function CopilotPanel() {
     setResult(null);
     setErr("");
     resetResponsePhase();
-  }, [authScopeKey, resetResponsePhase]);
+    if (hydrated.handoff) {
+      try { window.localStorage.removeItem(FULL_WORKSPACE_HANDOFF_KEY); } catch { /* best effort */ }
+      writeCopilotSharedState({
+        scopeKey: authScopeKey,
+        messages: scopedMessages,
+        draft: String(scoped?.draft || ""),
+        screenPath: canUseFullRouteContext ? screenMetadata.path : null,
+        sourceScreenPath: canUseFullRouteContext ? String(readCopilotRouteSelection()?.scopeKey || "").split("?", 1)[0] || null : null,
+        screenLabel: canUseFullRouteContext ? screenMetadata.label : null,
+        role: me?.role || "",
+        companyKind: me?.companyKind || "",
+        routeContextStatus: routeContext.status,
+        metadataStatus: screenMetadata.metadataStatus,
+      });
+    }
+  }, [authScopeKey, authReady, canUseFullRouteContext, me?.companyKind, me?.role, resetResponsePhase, routeContext.status, screenMetadata.label, screenMetadata.metadataStatus, screenMetadata.path]);
+
+  // The drawer navigates by changing the hash after writing the handoff.  On
+  // a cold full-screen mount the auth/session and route context can settle in
+  // separate renders, so hydrate again when the route becomes available.
+  // This also runs before the auto-summary effect below and prevents the
+  // empty initial state from triggering a fallback answer.
+  useEffect(() => {
+    if (!authReady || !canUseFullRouteContext || !isFullWorkspaceRoute(routeContext.path || screenMetadata.path || getPath())) return;
+    const hydrated = hydrateFullWorkspaceState(authScopeKey, readCopilotSharedState(authScopeKey));
+    if (!hydrated.handoff) return;
+    const scoped = hydrated.shared;
+    const scopedMessages = Array.isArray(scoped?.messages) ? scoped.messages.slice(-20) : [];
+    skipSharedPersistenceRef.current = true;
+    setSharedContext(scoped);
+    setChatMessages(scopedMessages);
+    setChatConversationState(scoped?.conversationState || null);
+    try { window.localStorage.removeItem(FULL_WORKSPACE_HANDOFF_KEY); } catch { /* best effort */ }
+    writeCopilotSharedState({
+      scopeKey: authScopeKey,
+      messages: scopedMessages,
+      draft: String(scoped?.draft || ""),
+      screenPath: screenMetadata.path,
+      sourceScreenPath: String(readCopilotRouteSelection()?.scopeKey || "").split("?", 1)[0] || null,
+      screenLabel: screenMetadata.label,
+      role: me?.role || "",
+      companyKind: me?.companyKind || "",
+      routeContextStatus: routeContext.status,
+      metadataStatus: screenMetadata.metadataStatus,
+    });
+  }, [authReady, authScopeKey, canUseFullRouteContext, currentRouteContextKey, me?.companyKind, me?.role, routeContext.status, screenMetadata.label, screenMetadata.metadataStatus, screenMetadata.path]);
 
   useEffect(() => () => clearResponseTimer(), [clearResponseTimer]);
 
@@ -359,9 +475,12 @@ export default function CopilotPanel() {
   const selectedItem = useMemo(() => targetOptions.find((x) => String(x.id) === String(entityId)) || null, [targetOptions, entityId]);
   const selectedChatScreen = useMemo(() => screenOptions.find((x) => String(x.id) === String(chatScreenId)) || null, [screenOptions, chatScreenId]);
   const [chatSelection, setChatSelection] = useState(() => {
-    const current = readCopilotSelection() || null;
+    const shared = readCopilotSharedState(authScopeKey);
+    const routeSelection = readCopilotRouteSelection();
+    const current = mergeCopilotSelection(routeSelection, readCopilotSelection()) || shared?.selection || shared?.selectedContext || null;
     const path = screenMetadata.path || "";
-    return canUseFullRouteContext && String(current?.scopeKey || "") === path ? current : null;
+    const isFullWorkspace = isFullWorkspaceRoute(path);
+    return canUseFullRouteContext && (isFullWorkspace ? Boolean(routeSelection) : selectionApplies(current, path)) ? current : null;
   });
   const fullAvatarState = resolveSeferAbiWidgetState({
     busy: busy || chatBusy || autoChatBusy,
@@ -371,16 +490,91 @@ export default function CopilotPanel() {
     resultReady: responsePhase === "result-ready",
   });
   const fullAvatarStateLabel = SEFER_ABI_WIDGET_STATE_LABELS[fullAvatarState] || "Hazır";
+  const drawerReturnPath = useMemo(() => {
+    // Keep focus/query state when returning from full-screen Copilot.  The
+    // selected-record handoff uses query parameters such as focusShiftId;
+    // stripping them returns to the right page but silently loses the
+    // selected record.
+    const candidate = String(sharedContext?.sourceScreenPath || sharedContext?.screenPath || "").trim();
+    if (!candidate || /\/copilot$/.test(candidate)) return roleHomePath(me?.role);
+    const selected = chatSelection || readCopilotRouteSelection() || sharedContext?.selection || sharedContext?.selectedContext || null;
+    const entityType = String(selected?.entityType || selected?.selectedRecordType || "").trim();
+    const entityId = Number(selected?.entityId || selected?.selectedRecordId || 0);
+    const basePath = candidate.split("?", 1)[0].trim();
+    if (entityType === "shift" && Number.isSafeInteger(entityId) && entityId > 0 && /\/(?:company|school|organization|room)\/shifts$/.test(basePath)) {
+      const params = new URLSearchParams(candidate.split("?")[1] || "");
+      if (!params.has("focusShiftId")) params.set("focusShiftId", String(entityId));
+      const focusStorageKey = basePath === "/company/shifts"
+        ? "company:focusShiftId"
+        : basePath === "/room/shifts"
+          ? "room:focusShiftId"
+          : "";
+      if (focusStorageKey) {
+        try { window.localStorage.setItem(focusStorageKey, String(entityId)); } catch { /* best effort */ }
+      }
+      return `${basePath}?${params.toString()}`;
+    }
+    return candidate;
+  }, [chatSelection, me?.role, sharedContext?.screenPath, sharedContext?.sourceScreenPath, sharedContext?.selection, sharedContext?.selectedContext]);
+
+  function returnToDrawer() {
+    try {
+      const current = JSON.parse(window.localStorage.getItem(DRAWER_STORAGE_KEY) || "{}");
+      window.localStorage.setItem(DRAWER_STORAGE_KEY, JSON.stringify({ ...current, open: true, maximized: false }));
+      window.dispatchEvent(new CustomEvent("psv1:copilot:drawer-open"));
+    } catch { /* local preference is best effort */ }
+    navigate(drawerReturnPath);
+  }
   const chatTargetOptions = useMemo(() => (chatEntityType === "vehicle" ? vehicles : chatEntityType === "shift" ? recentShifts : screenOptions), [chatEntityType, vehicles, recentShifts, screenOptions]);
   const selectedChatItem = useMemo(() => {
     if (chatEntityType === "screen") return selectedChatScreen;
     return chatTargetOptions.find((x) => String(x.id) === String(chatEntityId)) || null;
   }, [chatEntityType, chatTargetOptions, chatEntityId, selectedChatScreen]);
+  const effectiveChatEntityId = chatEntityType === "screen" ? chatScreenId : chatEntityId;
+  const chatContextKey = useMemo(() => {
+    // A full-screen Copilot route is a continuation of the source screen.
+    // Use the selected record's source scope for the continuity key so the
+    // transcript is not discarded merely because /company/shifts becomes
+    // /company/copilot during the supported handoff.
+    const routeSelection = readCopilotRouteSelection();
+    const sourceScope = chatSelection?.scopeKey || routeSelection?.scopeKey || sharedContext?.sourceScreenPath || selectedChatScreen?.path || "";
+    const continuityPath = String(sourceScope).split("?", 1)[0].trim();
+    const continuityType = String(chatSelection?.entityType || routeSelection?.entityType || chatEntityType || "");
+    const continuityId = String(effectiveChatEntityId || chatSelection?.entityId || routeSelection?.entityId || "");
+    if (!continuityPath) return "";
+    return [continuityPath, continuityType, continuityId].join("|");
+  }, [chatEntityType, chatSelection?.entityId, chatSelection?.entityType, chatSelection?.scopeKey, effectiveChatEntityId, selectedChatScreen?.path, sharedContext?.sourceScreenPath]);
+  const hydratedChatContextKeyRef = useRef("");
+  useEffect(() => {
+    if (!chatContextKey) return;
+    const persistedContextKey = String(sharedContext?.chatContextKey || "");
+    const previousContextKey = hydratedChatContextKeyRef.current;
+    const contextChanged = previousContextKey && previousContextKey !== chatContextKey;
+    // A full-screen mount receives its transcript through the short-lived
+    // handoff before the source-screen context is fully reconstructed.  Do
+    // not classify that valid handoff as a legacy/mismatched transcript;
+    // otherwise the first context pass clears the messages we just received.
+    const pendingFullWorkspaceHandoff = authReady && Boolean(readFullWorkspaceHandoff(authScopeKey));
+    const legacyOrMismatchedTranscript = !previousContextKey
+      && chatMessages.length > 0
+      && !pendingFullWorkspaceHandoff
+      && (!persistedContextKey || persistedContextKey !== chatContextKey);
+    if (contextChanged || legacyOrMismatchedTranscript) {
+      setChatMessages([]);
+      setChatConversationState(null);
+      setChatSuggestedChips([]);
+      setChatErr("");
+    }
+    hydratedChatContextKeyRef.current = chatContextKey;
+  }, [authReady, authScopeKey, chatContextKey, chatMessages.length, sharedContext?.chatContextKey]);
   useEffect(() => {
     const path = selectedChatScreen?.path || "";
     const sync = () => {
-      const current = readCopilotSelection() || null;
-      const next = canUseFullRouteContext && String(current?.scopeKey || "") === path ? current : null;
+      const shared = readCopilotSharedState(authScopeKey);
+      const routeSelection = readCopilotRouteSelection();
+      const current = mergeCopilotSelection(routeSelection, readCopilotSelection()) || shared?.selection || shared?.selectedContext || null;
+      const fullWorkspaceRoute = isFullWorkspaceRoute(screenMetadata.path || getPath());
+      const next = canUseFullRouteContext && (fullWorkspaceRoute ? Boolean(routeSelection) : selectionApplies(current, path)) ? current : null;
       setChatSelection(next);
       if (next && canUseEntityChat(me?.role)) {
         const nextType = String(next.entityType || "");
@@ -399,30 +593,40 @@ export default function CopilotPanel() {
     const evt = copilotSelectionEventName();
     window.addEventListener(evt, sync);
     return () => window.removeEventListener(evt, sync);
-  }, [canUseFullRouteContext, selectedChatScreen?.path, me?.role]);
+  }, [authScopeKey, canUseFullRouteContext, me?.role, screenMetadata.path, selectedChatScreen?.path]);
 
   useEffect(() => {
     if (skipSharedPersistenceRef.current) {
       skipSharedPersistenceRef.current = false;
       return;
     }
+    if (!authReady) return;
     if (chatAuthScopeRef.current !== authScopeKey) return;
+    // On a cold full-screen mount the source drawer may still be handing off
+    // the transcript.  Do not persist the initial empty render over the
+    // handoff/shared state before hydration has a chance to settle.
+    const fullWorkspacePath = routeContext.path || screenMetadata.path || getPath();
+    if (isFullWorkspaceRoute(fullWorkspacePath) && !chatMessages.length) return;
     if (!chatMessages.length && !canUseFullRouteContext) return;
+    const routeSelection = readCopilotRouteSelection();
+    const persistedSelection = chatSelection || routeSelection || null;
+    const persistedSourcePath = String(persistedSelection?.scopeKey || "").split("?", 1)[0] || null;
     writeCopilotSharedState({
       scopeKey: authScopeKey,
       messages: chatMessages,
       screenPath: canUseFullRouteContext ? selectedChatScreen?.path || screenMetadata.path : null,
+      sourceScreenPath: canUseFullRouteContext ? persistedSourcePath : null,
       screenLabel: canUseFullRouteContext ? selectedChatScreen?.label || screenMetadata.label : null,
       role: me?.role || "",
       companyKind: me?.companyKind || "",
-      selection: canUseFullRouteContext ? chatSelection : null,
-      selectedContext: canUseFullRouteContext ? chatSelection : null,
+      selection: canUseFullRouteContext ? persistedSelection : null,
+      selectedContext: canUseFullRouteContext ? persistedSelection : null,
+      chatContextKey,
       routeContextStatus: routeContext.status,
       metadataStatus: screenMetadata.metadataStatus,
       conversationState: chatConversationState,
     });
-  }, [authScopeKey, canUseFullRouteContext, chatMessages, chatSelection, chatConversationState, me?.role, me?.companyKind, routeContext.status, screenMetadata.label, screenMetadata.metadataStatus, screenMetadata.path, selectedChatScreen?.label, selectedChatScreen?.path]);
-  const effectiveChatEntityId = chatEntityType === "screen" ? chatScreenId : chatEntityId;
+  }, [authReady, authScopeKey, canUseFullRouteContext, chatContextKey, chatMessages, chatSelection, chatConversationState, me?.role, me?.companyKind, routeContext.status, screenMetadata.label, screenMetadata.metadataStatus, screenMetadata.path, selectedChatScreen?.label, selectedChatScreen?.path]);
   const autoRunKey = useMemo(() => {
     if (panelMode !== "CHAT" || !canUseFullRouteContext || !selectedChatScreen || !effectiveChatEntityId) return "";
     return `${selectedChatScreen.id}|${selectedChatScreen.path}|${chatEntityType}|${effectiveChatEntityId}`;
@@ -430,7 +634,7 @@ export default function CopilotPanel() {
 
   const runChat = useCallback(async (messageText = "", options = {}) => {
     const isAuto = Boolean(options?.auto);
-    if (!token || !canUseFullRouteContext || !selectedChatScreen || !effectiveChatEntityId || chatRequestInFlightRef.current) return;
+    if (!token || !canUseFullRouteContext || !selectedChatScreen || (!effectiveChatEntityId && !selectedChatScreen?.id) || chatRequestInFlightRef.current) return;
     const requestScopeKey = authScopeKey;
     const requestRouteContextKey = currentRouteContextKey;
     const requestId = chatRequestSequenceRef.current + 1;
@@ -447,13 +651,25 @@ export default function CopilotPanel() {
       if (String(messageText || "").trim()) {
         setChatMessages((prev) => [...prev, { role: "user", text: String(messageText || "").trim() }]);
       }
-      const latestSelection = readCopilotSelection();
-      const liveSelection = String(latestSelection?.scopeKey || "") === String(selectedChatScreen?.path || "") ? latestSelection : null;
+      const latestSelection = mergeCopilotSelection(readCopilotRouteSelection(), readCopilotSelection());
+      const liveSelection = selectionApplies(latestSelection, selectedChatScreen?.path || "") ? latestSelection : null;
       const scopedChatSelection = chatSelection
-        && String(chatSelection?.scopeKey || "") === String(selectedChatScreen?.path || "")
+        && selectionApplies(chatSelection, selectedChatScreen?.path || "")
         ? chatSelection
         : null;
-      const requestSelection = liveSelection || scopedChatSelection || null;
+      const fallbackEntitySelection = selectedChatItem && chatEntityType !== "screen"
+        ? {
+            entityType: chatEntityType,
+            entityId: Number(chatEntityId || selectedChatItem.id) || 0,
+            label: optionLabel(chatEntityType, selectedChatItem),
+            summary: optionLabel(chatEntityType, selectedChatItem),
+            fields: [],
+            badges: [],
+            facts: null,
+          }
+        : null;
+      const requestSelection = liveSelection || scopedChatSelection || fallbackEntitySelection;
+      const sourceScreenPath = String(requestSelection?.scopeKey || '').split('?')[0].trim();
       const uiSurface = captureCopilotUiSurface();
       const chatDiagnosticSignals = Array.isArray(requestSelection?.facts?.copilotSignals) ? requestSelection.facts.copilotSignals : [];
       const chatDiagnosticSummary = String(requestSelection?.facts?.copilotSummary || "");
@@ -470,6 +686,7 @@ export default function CopilotPanel() {
           ].slice(-8),
           uiSurface,
           lastScreenPath: selectedChatScreen.path,
+          sourceScreenPath: sourceScreenPath || null,
           lastScreenLabel: selectedChatScreen.label,
           selectedLabel: requestSelection?.label || "",
           selectedEntityType: requestSelection?.entityType || "",
@@ -478,12 +695,18 @@ export default function CopilotPanel() {
         screenContext: {
           id: Number(selectedChatScreen.id),
           path: selectedChatScreen.path,
+          sourcePath: sourceScreenPath || null,
           label: selectedChatScreen.label,
           role: me?.role || "",
           companyKind: me?.companyKind || "",
           selectedLabel: requestSelection?.label || "",
           selectedEntityType: requestSelection?.entityType || "",
           selectedEntityId: Number(requestSelection?.entityId || 0) || null,
+          selectedFields: Array.isArray(requestSelection?.fields) ? requestSelection.fields : [],
+          selectedBadges: Array.isArray(requestSelection?.badges) ? requestSelection.badges : [],
+          structuredFacts: requestSelection?.facts && typeof requestSelection.facts === "object"
+            ? requestSelection.facts
+            : null,
           uiHints: uiSurface,
         },
         format: "json",
@@ -547,9 +770,11 @@ export default function CopilotPanel() {
         if (chatRequestControllerRef.current === controller) chatRequestControllerRef.current = null;
       }
     }
-  }, [authScopeKey, canUseFullRouteContext, currentRouteContextKey, token, selectedChatScreen, effectiveChatEntityId, chatConversationState, chatMessages, chatSelection, me?.role, me?.companyKind, markResponseReady, resetResponsePhase]);
+  }, [authScopeKey, canUseFullRouteContext, currentRouteContextKey, token, selectedChatScreen, selectedChatItem, chatEntityType, chatEntityId, effectiveChatEntityId, chatMessages, chatSelection, me?.role, me?.companyKind, markResponseReady, resetResponsePhase]);
 
-  const shouldAutoRunChat = panelMode === "CHAT" && canUseFullRouteContext && Boolean(selectedChatScreen) && Boolean(effectiveChatEntityId) && chatMessages.length === 0 && !chatBusy && !autoChatBusy && Boolean(autoRunKey) && lastAutoRunKeyRef.current !== autoRunKey;
+  const hasPendingFullWorkspaceHandoff = authReady && Boolean(readFullWorkspaceHandoff(authScopeKey));
+  const isFullWorkspace = isFullWorkspaceRoute(routeContext.path || screenMetadata.path || getPath());
+  const shouldAutoRunChat = authReady && !isFullWorkspace && !hasPendingFullWorkspaceHandoff && panelMode === "CHAT" && canUseFullRouteContext && Boolean(selectedChatScreen) && Boolean(effectiveChatEntityId) && chatMessages.length === 0 && !chatBusy && !autoChatBusy && Boolean(autoRunKey) && lastAutoRunKeyRef.current !== autoRunKey;
 
   useEffect(() => {
     if (!shouldAutoRunChat || !autoRunKey) return;
@@ -565,10 +790,13 @@ export default function CopilotPanel() {
   }, [panelMode]);
 
   function openChatGuide(guide) {
+    const nextJobType = guide?.jobType || "SCREEN_MENU_GUIDE";
+    const screenGuide = SCREEN_GUIDE_JOB_TYPES.has(nextJobType);
     setPanelMode("GUIDE");
-    setJobType(guide?.jobType || "SCREEN_MENU_GUIDE");
+    setJobType(nextJobType);
     setGuideLevel(guide?.guideLevel || "SHORT");
-    setEntityId(String(effectiveChatEntityId || chatScreenId || ""));
+    setEntityType(screenGuide ? "screen" : (guide?.entityType || activeEntityType));
+    setEntityId(String(screenGuide ? chatScreenId : (effectiveChatEntityId || chatScreenId || "")));
     setResult(null);
     setErr("");
   }
@@ -667,7 +895,34 @@ export default function CopilotPanel() {
 
 
   function openGuideAction(action) {
-    const path = resolveGuideRoute(me, action?.routeKey);
+    if (String(action?.actionKind || '').toUpperCase() === 'CLEAR_FILTER') {
+      const targetKey = String(action?.targetKey || '').trim();
+      const target = typeof document !== 'undefined'
+        ? Array.from(document.querySelectorAll('[data-copilot-target]'))
+          .find((node) => String(node.getAttribute('data-copilot-target') || '').trim() === targetKey)
+        : null;
+      if (!target || typeof target.click !== 'function') {
+        setCopyMsg('Bu ekranda canlı filtre temizleme hedefi bulunamadı.');
+        setTimeout(() => setCopyMsg(''), 1800);
+        return;
+      }
+      if (target.disabled || String(target.getAttribute('aria-disabled') || '').toLowerCase() === 'true') {
+        setCopyMsg('Filtre temizleme kontrolü şu anda kullanılamıyor.');
+        setTimeout(() => setCopyMsg(''), 1800);
+        return;
+      }
+      target.scrollIntoView?.({ block: 'center', inline: 'nearest' });
+      target.click();
+      return;
+    }
+    // Newer backend responses carry the concrete safe path (and optional
+    // focus parameters) directly. Keep the route-key fallback for older
+    // responses, but do not discard a validated path: doing so rendered a
+    // visible "go to shifts" action that silently stayed on Copilot.
+    const rawPath = action?.path || action?.href;
+    const path = rawPath
+      ? normalizeCompanyPath(me, rawPath)
+      : resolveGuideRoute(me, action?.routeKey);
     if (!path) {
       setCopyMsg("Bu bağlantı bu rolde açılamıyor.");
       setTimeout(() => setCopyMsg(""), 1800);
@@ -719,7 +974,7 @@ export default function CopilotPanel() {
     <div className="wrap wrap--fluid" style={{ display: "grid", gap: 10 }}>
       <div className="card">
         <div className="copilotWorkspaceIdentity">
-          <SeferAbiAvatar state={fullAvatarState} size={52} />
+          <SeferAbiAvatar state={fullAvatarState} size={80} />
           <div>
             <div className="title">{COPILOT_TERMINAL_TITLE}</div>
             <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
@@ -727,6 +982,9 @@ export default function CopilotPanel() {
             </div>
             <div className={`copilotDrawerState copilotDrawerState--${fullAvatarState}`} aria-live="polite">{fullAvatarStateLabel}</div>
           </div>
+          <button type="button" className="btn sm copilotToolBtn" onClick={returnToDrawer} title="Önceki ekrana sağ panel olarak dön">
+            Sağ panele dön
+          </button>
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
           {COPILOT_TERMINAL.subtitle}

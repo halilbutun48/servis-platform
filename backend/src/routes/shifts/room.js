@@ -17,6 +17,8 @@ import {
   sendCapacityConflict,
   sendPenaltyError,
   sendShiftConflict,
+  resolveApprovalRetry,
+  resolveRoomApprovalScope,
   toInt,
 } from "./roomShared.js";
 
@@ -41,6 +43,7 @@ import {
   getShiftDemandSnapshot,
   buildCapacityConflict,
 } from "../../services/roomPoolPlanner.js";
+import { invalidateAutomaticAllocationsForShiftReassignment } from "../../finance/roomCostLedger.js";
 
 // ROOM + SUPER_ADMIN endpoints (approve/reject/start/room-offer + M7 suggestions)
 export function attachShiftRoomRoutes(r, io) {
@@ -121,7 +124,9 @@ export function attachShiftRoomRoutes(r, io) {
         req.body
       );
 
-      const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+      const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user, {
+        allowRoomOfferScope: true,
+      });
 
         // ✅ M54: Agreement kaynaklı shiftlerde pazarlık/offer kapalı
         if (shift?.agreementId) {
@@ -138,9 +143,40 @@ export function attachShiftRoomRoutes(r, io) {
         return sendErrorResponse(res, httpError(400, "vehicleId/driverId required"));
       }
 
-      // scope validation: vehicle and driver must belong to this shift's room
+      const approvalRetry = resolveApprovalRetry({
+        shiftStatus: shift.status,
+        assignedVehicleId: shift.vehicleId,
+        assignedDriverId: shift.driverId,
+        requestedVehicleId: vehicleId,
+        requestedDriverId: driverId,
+      });
+      if (approvalRetry?.code === "SHIFT_ALREADY_APPROVED") {
+        return sendErrorResponse(res, httpError(409, approvalRetry.code, "Bu vardiya zaten onaylandı; değişiklik için yeniden atama akışını kullanın."));
+      }
+      if (approvalRetry?.code === "IDEMPOTENT_APPROVAL") {
+        const current = await prisma.shift.findUnique({
+          where: { id: shiftId },
+          include: {
+            stops: { orderBy: { order: "asc" } },
+            progress: true,
+            vehicle: true,
+            driver: true,
+            company: true,
+            room: true,
+          },
+        });
+        return res.json(decorateShiftWithRegionContext(current));
+      }
+
+      const approvalScope = resolveRoomApprovalScope({
+        shiftRoomId: shift.roomId,
+        userRoomId: req.user?.role === "ROOM" ? req.user.roomId : null,
+      });
+
+      // scope validation: market shifts use the authenticated ROOM's offer scope;
+      // assigned shifts retain their persisted room scope.
       const { vehicle } = await ensureVehicleDriverScopeOrThrow({
-        scopeRoomId: Number(shift.roomId),
+        scopeRoomId: approvalScope.scopeRoomId,
         vehicleId,
         driverId,
       });
@@ -173,6 +209,7 @@ export function attachShiftRoomRoutes(r, io) {
           status: "APPROVED",
           vehicleId,
           driverId,
+          ...(approvalScope.claimRoomId != null ? { roomId: approvalScope.claimRoomId } : {}),
         },
         include: {
           stops: { orderBy: { order: "asc" } },
@@ -256,18 +293,31 @@ export function attachShiftRoomRoutes(r, io) {
           return sendPenaltyError(res, e);
         }
 
-        const updated = await prisma.shift.update({
-          where: { id: shiftId },
-          data: { vehicleId, driverId },
-          include: {
-            stops: { orderBy: { order: "asc" } },
-            progress: true,
-            vehicle: true,
-            driver: { include: { user: true } },
-            company: true,
-            room: true,
-          },
-        });
+        const { updated, invalidatedAllocations } = await prisma.$transaction(async (tx) => {
+          const reassigned = await tx.shift.update({
+            where: { id: shiftId },
+            data: { vehicleId, driverId },
+            include: {
+              stops: { orderBy: { order: "asc" } },
+              progress: true,
+              vehicle: true,
+              driver: { include: { user: true } },
+              company: true,
+              room: true,
+            },
+          });
+
+          const invalidation = await invalidateAutomaticAllocationsForShiftReassignment({
+            tx,
+            actor: req.user,
+            roomId: shift.roomId,
+            shiftId: shift.id,
+            from: { vehicleId: shift.vehicleId, driverId: shift.driverId },
+            to: { vehicleId: reassigned.vehicleId, driverId: reassigned.driverId },
+          });
+
+          return { updated: reassigned, invalidatedAllocations: invalidation };
+        }, { isolationLevel: "Serializable" });
 
         const meta = {
           reason,
@@ -299,7 +349,15 @@ export function attachShiftRoomRoutes(r, io) {
         const decoratedUpdated = decorateShiftWithRegionContext(updated);
         emitShift(io, decoratedUpdated, "shift:update", { action: "reassign", reason });
         emitShift(io, decoratedUpdated, "route:plan", { action: "reassign", reason });
-        return res.json({ ok: true, shift: decoratedUpdated, event: meta });
+        return res.json({
+          ok: true,
+          shift: decoratedUpdated,
+          event: meta,
+          invalidatedAllocations: {
+            count: invalidatedAllocations.invalidatedCount,
+            lines: invalidatedAllocations.invalidatedLines,
+          },
+        });
       } catch (e) {
         return sendErrorResponse(res, e);
       }

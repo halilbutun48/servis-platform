@@ -39,7 +39,7 @@ export default function CompanyAgreementsOverviewSection({
             Filtre
             <input value={filterQ} onChange={(e) => onFilterChange(e.target.value)} placeholder="Taşımacılık Firması / durum / not / tarih" disabled={busy} />
           </label>
-          <button type="button" disabled={busy} onClick={onReload}>
+          <button type="button" disabled={busy} onClick={() => onReload?.()}>
             Yenile
           </button>
         </div>

@@ -8,14 +8,15 @@ const __filename = fileURLToPath(import.meta.url);
 const backendRoot = path.resolve(path.dirname(__filename), "..");
 const prismaCli = path.join(backendRoot, "node_modules", "prisma", "build", "index.js");
 const canonicalSchema = "prisma/schema.prisma";
-const localDevelopmentDatabaseUrl = "postgresql://servis:servispass@127.0.0.1:5433/servisdb?schema=public";
 
 function run(args) {
+  const databaseUrl = String(process.env.DATABASE_URL || "").trim();
+  if (!databaseUrl) throw new Error("DATABASE_URL_REQUIRED: migration owner never falls back to historical servisdb");
   const result = spawnSync(process.execPath, [prismaCli, ...args], {
     cwd: backendRoot,
     env: {
       ...process.env,
-      DATABASE_URL: process.env.DATABASE_URL || (process.env.NODE_ENV === "production" ? "" : localDevelopmentDatabaseUrl),
+      DATABASE_URL: databaseUrl,
       PRISMA_GENERATE_SKIP_AUTOINSTALL: "1",
       NPM_CONFIG_UPDATE_NOTIFIER: "false",
     },

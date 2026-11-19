@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { navigate } from "../../router";
+import { getPath, navigate } from "../../router";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -53,10 +53,16 @@ import {
 import { consumeAgreementPrefill } from "../../utils/agreementPrefill";
 import { getAgreementOrigins } from "../../utils/agreementOriginLink";
 import { buildAgreementCopilotFacts } from "../../utils/agreementCopilotFacts";
+import { resolveAgreementCopilotRoute } from "../../utils/agreementCopilotRoute.js";
 import { companyPath } from "../../utils/paths";
 import { AGREEMENT_STATUS_OPTIONS, agreementStatusText } from "../../utils/agreementLabels";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { buildDynamicSavingsPreview, routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
+import {
+  COMPANY_DECISION_CONFIRMATION_TOKEN,
+  buildCompanyDecisionPayload,
+  buildCompanyDecisionSummary,
+} from "./companyAgreementDecisionPresentation";
 
 const EMPTY_QUALITY_BRIDGE_LIST = [];
 
@@ -68,6 +74,7 @@ const AGREEMENTS_VIEW_TABS = [
 
 export default function AgreementsPanel() {
   const { token, me } = useSession();
+  const agreementCopilotRoute = resolveAgreementCopilotRoute(getPath());
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -103,6 +110,7 @@ export default function AgreementsPanel() {
   const [routeRefreshNonce, setRouteRefreshNonce] = useState(0);
   const [viewMode, setViewMode] = useState("list");
   const [bridgeDetailsRequested, setBridgeDetailsRequested] = useState(false);
+  const [companyDecisionApproval, setCompanyDecisionApproval] = useState(null);
 
   const [roomId, _setRoomId] = useState("");
 
@@ -168,7 +176,10 @@ export default function AgreementsPanel() {
         if (typeof window === "undefined") return;
         const hash = String(window.location.hash || "");
         const query = hash.includes("?") ? hash.slice(hash.indexOf("?") + 1) : "";
-        const detailMode = new URLSearchParams(query).get("detail");
+        const params = new URLSearchParams(query);
+        const detailMode = params.get("detail");
+        const focusAgreementId = Number(params.get("focusAgreementId") || 0);
+        if (focusAgreementId > 0) setSelectedAgreementId(focusAgreementId);
         if (detailMode === "bridge") {
           setViewMode("bridge");
         }
@@ -425,27 +436,38 @@ export default function AgreementsPanel() {
     }
   }
 
-  async function acceptCounter(id) {
-    setErr("");
-    setBusy(true);
-    try {
-      await api(`/api/agreements/${id}/accept-counter`, { token, method: "PUT", body: {} });
-      await load();
-    } catch (e) {
-      setErr(e?.message || "Accept counter failed");
-    } finally {
-      setBusy(false);
+  function openCompanyDecision(id, decision) {
+    const row = (items || []).find((item) => Number(item?.id || 0) === Number(id || 0));
+    if (!row || String(row.status || "").toUpperCase() !== "COUNTERED") {
+      setErr("Bu teklif artık karar vermeye açık değil.");
+      return;
     }
+    setErr("");
+    setSelectedAgreementId(Number(id));
+    setCompanyDecisionApproval({ agreement: row, decision: String(decision || "").toUpperCase() });
   }
 
-  async function rejectCounter(id) {
+  async function submitCompanyDecision() {
+    const approval = companyDecisionApproval;
+    if (!approval?.agreement || !["ACCEPT", "REJECT"].includes(String(approval.decision || "").toUpperCase())) return;
     setErr("");
     setBusy(true);
     try {
-      await api(`/api/agreements/${id}/reject-counter`, { token, method: "PUT", body: {} });
+      const decision = String(approval.decision).toUpperCase();
+      const body = buildCompanyDecisionPayload({
+        agreement: approval.agreement,
+        confirmed: true,
+        confirmationToken: COMPANY_DECISION_CONFIRMATION_TOKEN,
+      });
+      await api(`/api/agreements/${approval.agreement.id}/${decision === "ACCEPT" ? "accept-counter" : "reject-counter"}`, {
+        token,
+        method: "PUT",
+        body,
+      });
       await load();
+      setCompanyDecisionApproval(null);
     } catch (e) {
-      setErr(e?.message || "Reject counter failed");
+      setErr(e?.message || "Teklif kararı uygulanamadı.");
     } finally {
       setBusy(false);
     }
@@ -615,10 +637,12 @@ export default function AgreementsPanel() {
   );
   const selectedAgreementBridgeReadOnly = useMemo(() => {
     if (!selectedAgreementBridge) return null;
+    // COMPANY may inspect the operational evidence that belongs to its
+    // agreement. Keep vehicle/driver identity scoped to the owning ROOM role,
+    // but do not erase the generated-shift count or last-shift status: doing
+    // so contradicts the read-only evidence plan shown in the same card.
     return {
       ...selectedAgreementBridge,
-      generatedCount: 0,
-      lastShift: null,
       agreementVehicle: null,
       agreementDriver: null,
     };
@@ -874,7 +898,7 @@ export default function AgreementsPanel() {
     const selectedRecordLabel = `Sözleşme #${a.id}`;
     const selectedRecordType = 'agreement';
     const selectionFacts = buildAgreementCopilotFacts(a, {
-      screenPath: '/company/agreements',
+      screenPath: agreementCopilotRoute,
       screenTitle: 'Hizmet Alan Firma Sözleşmeleri',
       selectedRecordType,
       selectedRecordLabel,
@@ -1074,6 +1098,7 @@ export default function AgreementsPanel() {
     platformFeeScoreText,
     platformFeeEvidence,
     platformFeeSignals,
+    agreementCopilotRoute,
   ]);
   const selectedAgreementDetailRef = useRef(null);
   const selectedAgreement = selectedAgreementRow?.a || null;
@@ -1088,11 +1113,11 @@ export default function AgreementsPanel() {
 
   useEffect(() => {
     if (!selectedAgreementCopilotContext) {
-      clearCopilotSelection('/company/agreements');
+      clearCopilotSelection(agreementCopilotRoute);
       return;
     }
     setCopilotSelection({
-      scopeKey: '/company/agreements',
+      scopeKey: agreementCopilotRoute,
       // Preserve the actual selected agreement identity. A screen placeholder
       // (and especially a fallback ID) lets a later query project another
       // agreement's facts into the visible card.
@@ -1111,7 +1136,7 @@ export default function AgreementsPanel() {
         selectedRecordSummary: selectedAgreementCopilotContext.selectedRecordSummary,
       },
     });
-  }, [selectedAgreementCopilotContext]);
+  }, [agreementCopilotRoute, selectedAgreementCopilotContext]);
 
   return (
     <div className="companyActionClarityScope">
@@ -1145,6 +1170,35 @@ export default function AgreementsPanel() {
       />
 
         {err ? <div className="muted" style={{ color: "crimson" }}>{String(err)}</div> : null}
+
+        {companyDecisionApproval?.agreement ? (() => {
+          const summary = buildCompanyDecisionSummary({
+            agreement: companyDecisionApproval.agreement,
+            roomName: roomById.get(Number(companyDecisionApproval.agreement.roomId || 0))?.name || "Taşımacılık Firması",
+          });
+          const accepting = companyDecisionApproval.decision === "ACCEPT";
+          return (
+            <div className="card" data-testid="company-decision-confirmation" style={{ marginTop: 10, border: "1px solid rgba(217, 119, 6, 0.38)", background: "rgba(217, 119, 6, 0.06)" }}>
+              <div style={{ fontWeight: 900 }}>Teklif kararını onayla</div>
+              <div className="muted" style={{ marginTop: 6 }}>Bu karar yalnızca yetkili şirket hesabınızın açık onayından sonra uygulanır.</div>
+              <div className="grid2" style={{ marginTop: 10 }}>
+                <div><b>{summary.agreementLabel}</b><div className="muted">Müşteri: {summary.roomName}</div></div>
+                <div><b>Teklif: {summary.offerText}</b><div className="muted">Hizmet dönemi: {summary.periodText}</div></div>
+              </div>
+              <div style={{ marginTop: 10 }}>
+                {accepting
+                  ? "Kabul ederseniz teklif ROOM tarafına kabul edildi olarak iletilir ve sözleşme mevcut ROOM onay/planlama adımına döner. Operasyon kendiliğinden başlamaz."
+                  : "Reddederseniz bu karşı teklif kapanır ve ROOM tarafına yeni teklif görüşmesi için bildirim gönderilir."}
+              </div>
+              <div className="row" style={{ gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                <button type="button" data-testid={`company-decision-confirm-${accepting ? "accept" : "reject"}`} disabled={busy} onClick={submitCompanyDecision}>
+                  {accepting ? "Onayla ve kabul et" : "Onayla ve reddet"}
+                </button>
+                <button type="button" className="btn" disabled={busy} onClick={() => setCompanyDecisionApproval(null)}>Geri</button>
+              </div>
+            </div>
+          );
+        })() : null}
 
         <PanelSegmentTabs
         ariaLabel="Sözleşme görünümü"
@@ -1242,8 +1296,8 @@ export default function AgreementsPanel() {
               hasPendingRouteRefresh={hasPendingRouteRefresh}
               routeRefreshActionLabel={routeRefreshActionLabel}
               onSelectAgreement={setSelectedAgreementId}
-              onAcceptCounter={acceptCounter}
-              onRejectCounter={rejectCounter}
+              onAcceptCounter={(id) => openCompanyDecision(id, "ACCEPT")}
+              onRejectCounter={(id) => openCompanyDecision(id, "REJECT")}
               onAskCompanyCounter={askCompanyCounter}
               onCancelAgreement={cancelAgreement}
               onAcceptExtendCounter={acceptExtendCounter}
@@ -1290,11 +1344,11 @@ export default function AgreementsPanel() {
                     </td>
                     <td className="muted">{userFacingDirectionLabel(a.direction)} / {userFacingPatternLabel(a.pattern)}</td>
                     <td className="muted" title={a.companyOfferNote ? `📝 ${a.companyOfferNote}` : ""}>
-                      {a.companyOfferAmount != null ? `₺${a.companyOfferAmount}` : "-"}
+                      {a.companyOfferAmount != null ? moneyTry(a.companyOfferAmount) : "-"}
                       {a.companyOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}
                     </td>
                     <td className="muted" title={a.roomOfferNote ? `📝 ${a.roomOfferNote}` : ""}>
-                      {a.roomOfferAmount != null ? `₺${a.roomOfferAmount}` : "-"}
+                      {a.roomOfferAmount != null ? moneyTry(a.roomOfferAmount) : "-"}
                       {a.roomOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}
                     </td>
                     <td><CompanyAgreementShiftSummary st={shiftStats?.[a.id]} /></td>
@@ -1302,13 +1356,13 @@ export default function AgreementsPanel() {
                       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                         {String(a.status || "").toUpperCase() === "COUNTERED" ? (
                           <>
-                            <button type="button" disabled={busy} onClick={() => acceptCounter(a.id)}>
+                            <button type="button" disabled={busy} onClick={() => openCompanyDecision(a.id, "ACCEPT")}>
                               Kabul Et
                             </button>
                           <button type="button" className="btn" disabled={busy} onClick={() => askCompanyCounter(a)}>
                             Yeni Teklif Gönder
                           </button>
-                          <button type="button" className="btn" disabled={busy} onClick={() => rejectCounter(a.id)}>
+                          <button type="button" className="btn" disabled={busy} onClick={() => openCompanyDecision(a.id, "REJECT")}>
                             Reddet
                           </button>
                         </>

@@ -6,6 +6,8 @@ import { getGuidedTarget, setGuidedTarget, shouldRestoreGuidedTargetAfterRouteCh
 import { personLabel } from "../../utils/labels";
 import { planCenterOverlayLayerEventName, readPlanCenterOverlayLayer, setPlanCenterOverlayLayer } from "../../utils/planCenterOverlayLayer";
 import { getApiErrorMessage } from "../../utils/apiContract";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildShiftFacts } from "../../utils/copilotFacts";
 import {
   WEEKDAYS,
   weekdayBitFromYmdUTC as _weekdayBitFromYmdUTC,
@@ -17,6 +19,7 @@ import {
   addDaysISO,
 } from "../../utils/agreementUi";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
+import { formatOfferAmountMinor } from "../shared/offerAmountPresentation";
 import {
   PACKS,
   buildGuidedPlanDestinationAudit,
@@ -27,9 +30,11 @@ import {
   buildGuidedPlanModalDraftStorageKey,
   buildGuidedPlanModalResetState,
   buildGuidedPlanModalRouteRefreshPrefill,
+  buildGuidedDraftCopilotSelection,
   coordNum,
   createAdditionalCustomSlot,
   createDefaultCustomSlots,
+  createGuidedBatchIdempotencyKey,
   createDurationOptions,
   createFallbackCustomSlots as _createFallbackCustomSlots,
   createInitialEndDate,
@@ -45,6 +50,7 @@ import {
   readGuidedTempShiftIds,
   readGuidedPlanModalDraftState,
   normalizePersistedGuidedPlanDraftState,
+  buildGuidedResumeFormState,
   stepTitle,
   toHHMM,
   todayYmd,
@@ -75,16 +81,17 @@ import {
   setDestinationCoordFieldInList,
   setDestinationFieldInList,
 } from "./guidedPlanModalDestinationHelpers";
+import { alignGuidedPlanResetBaseline, shouldDiscoverGuidedDraftCandidates } from "./guidedPlanModalHydration";
 
 function guidedModalTargetLabel(step, organization) {
   if (step === 0) return "Konumumu al";
   if (step === 1) return "Taslak vardiya oluştur";
-  if (step === 2) return organization ? "İleri" : "Adres Temizle ve İlerle";
+  if (step === 2) return organization ? "İleri" : "Dosya seç";
   return organization ? "Toplu Teklifleri Gönder" : "Toplu Teklifleri Gönder";
 }
 
 function guidedModalTargetKey(step, organization) {
-  if (step === 2 && !organization) return 'company-shifts:step3:address-next';
+  if (step === 2 && !organization) return 'company-shifts:step3:personnel-import';
   return `${getPath()}:button:${guidedModalTargetLabel(step, organization)}`;
 }
 
@@ -104,6 +111,7 @@ export default function GuidedPlanModal({
   const { token, me } = useSession();
   const who = personLabel(me);
   const organization = me?.companyKind === "ORGANIZATION";
+  const school = me?.companyKind === "SCHOOL";
   const appliedLaunchNonceRef = useRef(0);
   const routeRefreshMode = String(launchContext?.mode || "").toUpperCase() === "ROUTE_REFRESH";
   const [step, setStep] = useState(0);
@@ -153,6 +161,7 @@ export default function GuidedPlanModal({
 
   const [draftShiftIds, setDraftShiftIds] = useState([]);
   const [draftShifts, setDraftShifts] = useState([]);
+  const [guidedBatchIdempotencyKey, setGuidedBatchIdempotencyKey] = useState(() => createGuidedBatchIdempotencyKey());
   const [resumeCandidates, setResumeCandidates] = useState([]);
   const [resumeChooserOpen, setResumeChooserOpen] = useState(false);
   const [resumeSelectionBusy, setResumeSelectionBusy] = useState(false);
@@ -171,10 +180,13 @@ export default function GuidedPlanModal({
   const [offerOutcome, setOfferOutcome] = useState("idle");
   const [companyGeoGate, setCompanyGeoGate] = useState({ blocking: false, ready: true, geoStats: { ok: 0, review: 0, failed: 0, total: 0 }, stopSummary: null });
 
-  const [resetStateBaseline, setResetStateBaseline] = useState(() => normalizePersistedGuidedPlanDraftState(buildGuidedPlanModalResetState()));
+  const [resetStateBaseline, setResetStateBaseline] = useState(() => normalizePersistedGuidedPlanDraftState(
+    alignGuidedPlanResetBaseline(buildGuidedPlanModalResetState(), guidedBatchIdempotencyKey),
+  ));
   const hydratingDraftRef = useRef(false);
   const skipPersistOnceRef = useRef(false);
   const skipStep3ResetOnceRef = useRef(false);
+  const resumedFromServerRef = useRef(false);
   const guidedPlanDraftStorageKey = useMemo(
     () => buildGuidedPlanModalDraftStorageKey({ me, persistenceScope, launchContext, routeRefreshMode }),
     [me, persistenceScope, launchContext, routeRefreshMode]
@@ -205,6 +217,7 @@ export default function GuidedPlanModal({
         mapPickPoint,
         draftShiftIds,
         draftShifts,
+         guidedBatchIdempotencyKey,
         osrmResById,
         roomQ,
         onlyHubRooms: _onlyHubRooms,
@@ -237,6 +250,7 @@ export default function GuidedPlanModal({
       mapPickPoint,
       draftShiftIds,
       draftShifts,
+      guidedBatchIdempotencyKey,
       osrmResById,
       roomQ,
       _onlyHubRooms,
@@ -260,7 +274,29 @@ export default function GuidedPlanModal({
     setInfo("");
     setMapPickIdx(null);
     setMapPickPoint(null);
+    resumedFromServerRef.current = false;
+    clearCopilotSelection(getPath());
     onClose?.();
+  }
+
+  function applyResumedDraftForm(shift) {
+    const restored = buildGuidedResumeFormState(shift);
+    setPackKey(restored.packKey);
+    setCustomSlots(restored.customSlots);
+    setStartDate(restored.startDate);
+    setEndDate(restored.endDate);
+    setDurationKey(restored.durationKey);
+    setDaysSel(restored.daysSel);
+    setHubLat(restored.hubLat);
+    setHubLng(restored.hubLng);
+    setOrgEstimatedPax(restored.orgEstimatedPax);
+    setOrgReturnType(restored.orgReturnType);
+    setOrgDestinations(restored.orgDestinations);
+
+    const id = Number(shift?.id || 0);
+    if (!Number.isSafeInteger(id) || id <= 0) return;
+    const selection = buildGuidedDraftCopilotSelection(shift, buildShiftFacts({ shift, itemCount: 1 }));
+    if (selection) setCopilotSelection({ scopeKey: getPath(), ...selection });
   }
 
   useEffect(() => {
@@ -471,7 +507,7 @@ export default function GuidedPlanModal({
       const resumeMode = resumeStep != null && Number(resumeNonce || 0) > 0;
       const lingeringIds = readGuidedTempShiftIds();
       let candidates = [];
-      if (!routeRefreshMode) {
+      if (shouldDiscoverGuidedDraftCandidates({ token, routeRefreshMode })) {
         try {
           candidates = await loadGuidedDraftCandidates({ token });
         } catch {
@@ -510,15 +546,21 @@ export default function GuidedPlanModal({
         setMapPickPoint(next.mapPickPoint);
         setDraftShiftIds(next.draftShiftIds);
         setDraftShifts(next.draftShifts);
+         setGuidedBatchIdempotencyKey(next.guidedBatchIdempotencyKey);
         setOsrmBatch({ running: false, done: 0, total: 0 });
         setOsrmResById(next.osrmResById);
         setRoomQ(next.roomQ);
         setOnlyHubRooms(next.onlyHubRooms);
         setSelRoomIds(next.selRoomIds);
         setRoomScores({});
-        setOfferAmount(next.offerAmount);
-        setOfferNote(next.offerNote);
-        setSentOk(next.sentOk);
+        const restoredRouteRefreshAmount = routeRefreshMode
+          ? (launchContext?.currentCompanyOfferAmount != null
+            ? formatOfferAmountMinor(launchContext.currentCompanyOfferAmount)
+            : next.offerAmount)
+          : next.offerAmount;
+        setOfferAmount(restoredRouteRefreshAmount);
+        setOfferNote(routeRefreshMode ? "" : next.offerNote);
+        setSentOk(routeRefreshMode ? false : next.sentOk);
         setOfferOutcome(next.offerOutcome);
         setCompanyGeoGate(next.companyGeoGate);
         _writeGuidedTempShiftIds(next.draftShiftIds);
@@ -556,6 +598,7 @@ export default function GuidedPlanModal({
           const items = await loadGuidedResumeDraftShifts({ token, ids: lingeringIds });
           if (!alive) return;
           setDraftShifts(items);
+          if (items[0]) applyResumedDraftForm(items[0]);
           setStep(safeStep);
           skipStep3ResetOnceRef.current = safeStep === 2;
         } catch {
@@ -563,7 +606,7 @@ export default function GuidedPlanModal({
           setDraftShifts([]);
           setInfo("Taslak ayrıntıları alınamadı; güvenli başlangıç adımından devam edebilirsin.");
         }
-      } else if (candidates.length && !routeRefreshMode) {
+      } else if (candidates.length) {
         setResumeCandidates(candidates);
         setResumeChooserOpen(true);
       } else if (resumeMode && lingeringIds.length) {
@@ -588,7 +631,7 @@ export default function GuidedPlanModal({
     return () => {
       alive = false;
     };
-  }, [open, token, resumeStep, resumeNonce, isPristineGuidedPlanDraft, guidedPlanDraftStorageKey]);
+  }, [open, token, resumeStep, resumeNonce, isPristineGuidedPlanDraft, guidedPlanDraftStorageKey, routeRefreshMode]);
 
   useEffect(() => {
     if (!open || !hubLoaded) return;
@@ -625,15 +668,20 @@ export default function GuidedPlanModal({
   useEffect(() => {
     if (!open) return;
     if (step !== 3) return;
+    const routeRefreshOfferAmount = routeRefreshMode
+      ? (launchContext?.currentCompanyOfferAmount != null
+        ? formatOfferAmountMinor(launchContext.currentCompanyOfferAmount)
+        : "")
+      : "";
     if (skipStep3ResetOnceRef.current) {
       skipStep3ResetOnceRef.current = false;
+      if (routeRefreshMode && routeRefreshOfferAmount) {
+        setOfferAmount(routeRefreshOfferAmount);
+      }
       return;
     }
     setSelRoomIds({});
-    const initialRouteRefreshAmount = routeRefreshMode
-      ? (launchContext?.currentCompanyOfferAmount != null ? String(launchContext.currentCompanyOfferAmount) : "")
-      : "";
-    setOfferAmount(initialRouteRefreshAmount);
+    setOfferAmount(routeRefreshOfferAmount);
     setOfferNote("");
     setSentOk(false);
   }, [open, step, draftShiftIdsKey, routeRefreshMode, launchContext]);
@@ -675,6 +723,7 @@ export default function GuidedPlanModal({
   } = useGuidedPlanModalActions({
     token,
     organization,
+    school,
     routeRefreshMode,
     launchContext,
     guidedPlanDraftStorageKey,
@@ -699,6 +748,9 @@ export default function GuidedPlanModal({
     endDate,
     draftShiftIds,
     draftShifts,
+    guidedBatchIdempotencyKey,
+    persistedGuidedPlanDraftSnapshot,
+    resumedFromServer: resumedFromServerRef.current,
     selectedRoomIds,
     offerAmount,
     offerNote,
@@ -708,6 +760,7 @@ export default function GuidedPlanModal({
     orgDestinationAudit,
     hubSaveFeedback: {
       organization: "Toplanma konumu kaydedildi.",
+      school: "Okul konumu kaydedildi.",
       company: "Firma konumu kaydedildi.",
     },
     getApiErrorMessage,
@@ -736,6 +789,7 @@ export default function GuidedPlanModal({
     setMapPickPoint,
     setDraftShiftIds,
     setDraftShifts,
+    setGuidedBatchIdempotencyKey,
     setOsrmBatch,
     setOsrmResById,
     setRoomQ,
@@ -772,10 +826,8 @@ export default function GuidedPlanModal({
       const shift = items[0];
       setDraftShiftIds([selectedId]);
       setDraftShifts(items);
-      setHubLat(shift?.hubLat == null ? "" : String(shift.hubLat));
-      setHubLng(shift?.hubLng == null ? "" : String(shift.hubLng));
-      setStartDate(String(shift?.startAt || "").slice(0, 10) || todayYmd());
-      setEndDate(String(shift?.endAt || "").slice(0, 10) || createInitialEndDate());
+      resumedFromServerRef.current = true;
+      applyResumedDraftForm(shift);
       setHubLoaded(true);
       setStep(Math.max(0, Math.min(3, Number(latest.resumeStep) || 0)));
       skipStep3ResetOnceRef.current = Number(latest.resumeStep) === 2;
@@ -797,6 +849,9 @@ export default function GuidedPlanModal({
     setResumeConfirmDeleteId(null);
     setDraftShiftIds([]);
     setDraftShifts([]);
+    setGuidedBatchIdempotencyKey(createGuidedBatchIdempotencyKey());
+    resumedFromServerRef.current = false;
+    clearCopilotSelection(getPath());
     _writeGuidedTempShiftIds([]);
     setStep(0);
     setInfo("Yeni plan başlatıldı. Mevcut taslaklar korunuyor.");
@@ -877,7 +932,7 @@ export default function GuidedPlanModal({
       <div className="guidedPlanModalHeader row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <div>
           <div data-dialog-title className="guidedPlanModalTitle" style={{ fontWeight: 900, fontSize: 18 }}>{routeRefreshMode ? "Rehberli Mod → Rota Güncelle" : "Rehberli Mod → Yeni Plan"}</div>
-          <div className="guidedPlanModalStepTitle muted" style={{ marginTop: 4 }}>{resumeChooserOpen ? "Kayıtlı taslaklar" : stepTitle(step, who, organization)}</div>
+          <div className="guidedPlanModalStepTitle muted" style={{ marginTop: 4 }}>{resumeChooserOpen ? "Kayıtlı taslaklar" : stepTitle(step, who, organization, school)}</div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           <button type="button" className="guidedPlanSecondaryAction" onClick={closeGuidedPlanModal} disabled={busy}>Kapat</button>
@@ -968,6 +1023,7 @@ export default function GuidedPlanModal({
       {!resumeChooserOpen && step === 0 ? (
         <GuidedHubStep
           organization={organization}
+          school={school}
           busy={busy}
           useGeolocation={useGeolocation}
           addr={addr}
@@ -997,6 +1053,8 @@ export default function GuidedPlanModal({
           createAdditionalCustomSlot={createAdditionalCustomSlot}
           startDate={startDate}
           setStartDate={setStartDate}
+          draftAmount={draftAmount}
+          setDraftAmount={setDraftAmount}
           durationOptions={durationOptions}
           durationKey={durationKey}
           setDurationKey={setDurationKey}

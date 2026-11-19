@@ -1,14 +1,9 @@
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { formatOfferAmountMinor } from "./offerAmountPresentation";
+import { getShiftOfferPresentation } from "./shiftOfferPresentation";
 
 function hasValue(value) {
   return value !== null && value !== undefined && String(value).trim() !== "";
-}
-
-function formatTry(value) {
-  if (!hasValue(value)) return null;
-  const number = Number(value);
-  if (!Number.isFinite(number)) return null;
-  return `${new Intl.NumberFormat("tr-TR").format(number)} ₺`;
 }
 
 function offerDecisionLabel(value) {
@@ -47,8 +42,13 @@ function hakedişStatus(shift) {
 
 export function ShiftCommercialSummary({ shift, restricted = false }) {
   if (restricted) return null;
-  const companyAmount = formatTry(shift?.companyOfferAmount);
-  const roomAmount = formatTry(shift?.roomOfferAmount);
+  const offerPresentation = getShiftOfferPresentation(shift);
+  const companyAmount = hasValue(offerPresentation.companyOfferAmount)
+    ? `${formatOfferAmountMinor(offerPresentation.companyOfferAmount)} ₺`
+    : null;
+  const roomAmount = hasValue(offerPresentation.roomOfferAmount)
+    ? `${formatOfferAmountMinor(offerPresentation.roomOfferAmount)} ₺`
+    : null;
 
   return (
     <div className="shiftCardCommercialSummary" data-testid="shift-commercial-summary">
@@ -66,13 +66,18 @@ export function ShiftCommercialSummary({ shift, restricted = false }) {
 }
 
 export function ShiftOfferDetails({ shift }) {
-  const companyAmount = formatTry(shift?.companyOfferAmount);
-  const roomAmount = formatTry(shift?.roomOfferAmount);
-  const decisionCode = String(shift?.roomOfferDecision || shift?.offerDecision || "").trim().toUpperCase();
+  const offerPresentation = getShiftOfferPresentation(shift);
+  const companyAmount = hasValue(offerPresentation.companyOfferAmount)
+    ? `${formatOfferAmountMinor(offerPresentation.companyOfferAmount)} ₺`
+    : null;
+  const roomAmount = hasValue(offerPresentation.roomOfferAmount)
+    ? `${formatOfferAmountMinor(offerPresentation.roomOfferAmount)} ₺`
+    : null;
+  const decisionCode = String(offerPresentation.roomOfferDecision || shift?.offerDecision || "").trim().toUpperCase();
   const decision = offerDecisionLabel(decisionCode);
   const decisionAlreadyShownByStatus = decisionCode && ["ACCEPTED", "APPROVED"].includes(decisionCode)
     && ["ACCEPTED", "APPROVED"].includes(String(shift?.status || "").trim().toUpperCase());
-  const hasNote = hasValue(shift?.companyOfferNote) || hasValue(shift?.roomOfferNote) || hasValue(shift?.roomOfferDecisionNote);
+  const hasNote = hasValue(offerPresentation.companyOfferNote) || hasValue(offerPresentation.roomOfferNote) || hasValue(shift?.roomOfferDecisionNote);
   if (!companyAmount && !roomAmount && (!decision || decisionAlreadyShownByStatus) && !hasNote) {
     return <div className="shiftCardSubtle">Teklif ayrıntısı bulunmuyor.</div>;
   }
@@ -81,8 +86,8 @@ export function ShiftOfferDetails({ shift }) {
       {companyAmount ? <div className="shiftCardSubtle"><b>Hizmet Alan Firma teklifi:</b> {companyAmount}</div> : null}
       {roomAmount ? <div className="shiftCardSubtle"><b>Taşımacılık Firması karşı teklifi:</b> {roomAmount}</div> : null}
       {decision && !decisionAlreadyShownByStatus ? <div className="shiftCardSubtle"><b>Karar:</b> {decision}</div> : null}
-      {shift?.companyOfferNote ? <div className="shiftCardSubtle"><b>Firma notu:</b> {shift.companyOfferNote}</div> : null}
-      {shift?.roomOfferNote ? <div className="shiftCardSubtle"><b>Taşımacılık Firması notu:</b> {shift.roomOfferNote}</div> : null}
+      {offerPresentation.companyOfferNote ? <div className="shiftCardSubtle"><b>Firma notu:</b> {offerPresentation.companyOfferNote}</div> : null}
+      {offerPresentation.roomOfferNote ? <div className="shiftCardSubtle"><b>Taşımacılık Firması notu:</b> {offerPresentation.roomOfferNote}</div> : null}
       {shift?.roomOfferDecisionNote ? <div className="shiftCardSubtle"><b>Karar notu:</b> {shift.roomOfferDecisionNote}</div> : null}
     </div>
   );
@@ -141,10 +146,16 @@ export function ShiftCardPrimaryAction({ label, onClick, disabled = false, note 
   );
 }
 
-export function ShiftCardDetails({ children }) {
+export function ShiftCardDetails({ children, dataCopilotTarget = undefined, dataCopilotSemanticId = undefined, dataCopilotLabel = undefined }) {
   return (
     <details className="shiftCardDisclosure">
-      <summary>Detayları göster</summary>
+      <summary
+        data-copilot-target={dataCopilotTarget}
+        data-copilot-semantic-id={dataCopilotSemanticId}
+        data-copilot-label={dataCopilotLabel}
+      >
+        Detayları göster
+      </summary>
       <div className="shiftCardDisclosureBody">{children}</div>
     </details>
   );

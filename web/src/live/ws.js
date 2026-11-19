@@ -219,7 +219,7 @@ function connect() {
   try {
     socket = io(base, {
       path: "/socket.io",
-      transports: ["websocket"],
+      transports: ["polling", "websocket"],
       reconnection: false,
       auth: { token: tokenRef },
       query: { token: tokenRef },

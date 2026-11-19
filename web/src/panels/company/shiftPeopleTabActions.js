@@ -340,10 +340,11 @@ export function buildShiftPeopleTabActions(ctx) {
           const warnings = Array.isArray(payload?.warnings) ? payload.warnings : [];
           setImportWarnings(warnings);
           const first = Array.isArray(payload?.firstErrors) ? payload.firstErrors[0] : null;
+          const visibleMessage = getApiErrorMessage(e, "Dosya içe aktarılamadı.");
           if (first?.rowNo) {
-            setErr(`${payload?.error || e?.message || String(e)}${first?.rowNo ? ` (İlk sorun satır ${first.rowNo}: ${first.message})` : ""}`.trim());
+            setErr(`${visibleMessage} (İlk sorun satır ${first.rowNo}: ${first.message})`.trim());
           } else {
-            setErr(String(payload?.error || e?.message || e));
+            setErr(visibleMessage);
           }
           return;
         }

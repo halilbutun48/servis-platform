@@ -12,6 +12,8 @@ concurrency:
 jobs:
   repo-verification:
     runs-on: ubuntu-latest
+    env:
+      SEFERPAKT_DATABASE_MODE: isolated
     services:
       postgres:
         image: postgres:16
@@ -89,6 +91,8 @@ jobs:
   prisma-migration-baseline:
     name: Prisma migration baseline and live-adoption validation
     runs-on: ubuntu-latest
+    env:
+      SEFERPAKT_DATABASE_MODE: isolated
     services:
       postgres:
         image: postgres:16
@@ -234,6 +238,8 @@ jobs:
   prisma-linux-runtime:
     name: Prisma Linux runtime (GitHub Ubuntu)
     runs-on: ubuntu-latest
+    env:
+      SEFERPAKT_DATABASE_MODE: isolated
     services:
       postgres:
         image: postgres:16
@@ -299,6 +305,8 @@ jobs:
   prisma-container-parity:
     name: Prisma container parity
     runs-on: ubuntu-latest
+    env:
+      SEFERPAKT_DATABASE_MODE: isolated
     services:
       postgres:
         image: postgres:16
@@ -362,6 +370,7 @@ jobs:
           trap cleanup EXIT
           docker run --detach --name "$container_name" --network host \
             --env NODE_ENV=ci \
+            --env SEFERPAKT_DATABASE_MODE=isolated \
             --env PORT=3000 \
             --env JWT_SECRET=prisma-ci-runtime-secret \
             --env DATABASE_URL="$DATABASE_URL" \

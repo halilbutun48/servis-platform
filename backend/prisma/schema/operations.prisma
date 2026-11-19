@@ -95,6 +95,10 @@ model Shift {
   routeSnapshotDurationSec Int?
   routeSnapshotValidatedAt DateTime?
   routeSnapshotInputHash   String?
+  // Optional empty-kilometre evidence used only when a fuel/route calculation needs it.
+  emptyDistanceKm          Float?
+  emptyDistanceEvidenceRef String?
+  emptyDistanceReason      String?
 
   // COMPANY → ROOM teklif
   companyOfferVehicleId Int?
@@ -150,13 +154,16 @@ model Shift {
   organizationPlan   OrganizationPlan? @relation(fields: [organizationPlanId], references: [id], onDelete: SetNull)
 
   // ✅ M19: learned route sample (1:1, generated after shift complete)
-  routeLearnSample      RouteLearnSample?
-  penalties             DriverPenalty[]
-  checkinEvents         CheckinEvent[]
-  passengerLiveLinks    PassengerLiveLink[]
-  commercialSourcesRoot CommercialSource[]  @relation("CommercialSourceShiftRoot")
+  routeLearnSample        RouteLearnSample?
+  penalties               DriverPenalty[]
+  checkinEvents           CheckinEvent[]
+  passengerLiveLinks      PassengerLiveLink[]
+  commercialSourcesRoot   CommercialSource[]       @relation("CommercialSourceShiftRoot")
+  roomCostEntries         RoomCostEntry[]          @relation("ShiftRoomCostEntries")
+  roomCostAllocationLines RoomCostAllocationLine[] @relation("ShiftRoomCostAllocationLines")
 
   @@unique([agreementId, startAt])
+  @@unique([roomId, id])
   @@index([companyId])
   @@index([roomId])
   @@index([vehicleId])

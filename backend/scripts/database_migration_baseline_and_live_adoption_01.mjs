@@ -23,8 +23,10 @@ const CANONICAL_MIGRATIONS_DIR = path.join(BACKEND_ROOT, "prisma", "migrations")
 const OWNER_SCRIPT = path.join(BACKEND_ROOT, "scripts", "database_migration_baseline_and_live_adoption_01_owner.mjs");
 const EVIDENCE_DIR = path.join(BACKEND_ROOT, "artifacts", "data-integrity", "DATABASE_MIGRATION_BASELINE_AND_LIVE_ADOPTION_01");
 const EVIDENCE_PATH = path.join(EVIDENCE_DIR, "acceptance.json");
-const EXPECTED_MIGRATION_COUNT = 56;
-const DEFAULT_DATABASE_URL = "postgresql://servis:servispass@127.0.0.1:5433/servisdb?schema=public";
+// The canonical DEMO chain includes the twelve additive migrations that were
+// applied after the original 56-entry baseline.  Keep this explicit so a
+// missing or unexpected migration still fails closed.
+const EXPECTED_MIGRATION_COUNT = 68;
 const CONTAINERS = new Set();
 const TEMP_DIRS = new Set();
 
@@ -152,7 +154,16 @@ function gitFileAtRevision(revision, relativePath) {
 
 function schemaRegressionBaselineRevision() {
   const dirty = run("git", ["status", "--short", "--", "backend/prisma/schema/commercial.prisma"]);
-  if (dirty.status === 0 && dirty.stdout.trim()) return { revision: currentHead(), basis: "pre-commit working-tree baseline" };
+  if (dirty.status === 0 && dirty.stdout.trim()) {
+    const headSource = gitFileAtRevision(currentHead(), "backend/prisma/schema/commercial.prisma");
+    const headIsPre13Shape = ["HakedisRecord", "InvoiceRecord"].every((modelName) => {
+      const model = headSource.match(new RegExp(`(model\\s+${modelName}\\s+\\{[\\s\\S]*?^\\})`, "m"))?.[1];
+      return model
+        && (model.match(/updatedAt\\s+DateTime\\s+@updatedAt/g) || []).length === 1
+        && (model.match(/updatedAt\\s+DateTime\\s+@default\\(now\\(\\)\\)\\s+@updatedAt/g) || []).length === 0;
+    });
+    if (headIsPre13Shape) return { revision: currentHead(), basis: "pre-commit working-tree baseline" };
+  }
   const revisions = gitText(["rev-list", "--first-parent", "HEAD"])
     .split(/\r?\n/)
     .map((value) => value.trim())
@@ -177,14 +188,18 @@ function schemaRegressionBaselineRevision() {
 
 function proveSchemaRegressionAgainstPre13() {
   const baseline = schemaRegressionBaselineRevision();
-  const currentFiles = canonicalSchemaRelativeFilesAtRevision("HEAD");
+  // Historical migration compatibility is a Git-HEAD property.  Protected
+  // working-tree WIP is validated separately against the live schema below;
+  // it must not rewrite the historical baseline comparison.
+  const currentRevision = currentHead();
+  const currentFiles = canonicalSchemaRelativeFilesAtRevision(currentRevision);
   const baselineFiles = canonicalSchemaRelativeFilesAtRevision(baseline.revision);
   if (JSON.stringify(currentFiles) !== JSON.stringify(baselineFiles)) {
     return { pass: false, baseline, reason: "schema file set changed" };
   }
   const differences = [];
   for (const relativePath of currentFiles) {
-    const current = fs.readFileSync(path.join(REPO_ROOT, relativePath), "utf8");
+    const current = gitFileAtRevision(currentRevision, relativePath);
     const previous = gitFileAtRevision(baseline.revision, relativePath);
     let expected = previous;
     if (relativePath === "backend/prisma/schema/commercial.prisma") {
@@ -415,13 +430,30 @@ async function migrationMetadata(databaseUrl) {
 
 function checkMigrationIntegrity(rows, files) {
   const expectedNames = files.map((item) => item.name);
-  const actualNames = rows.map((item) => item.migration_name);
-  const byName = new Map(rows.map((item) => [item.migration_name, item]));
+  const byName = new Map();
+  for (const row of rows) {
+    const previous = byName.get(row.migration_name);
+    if (!previous || new Date(row.started_at || 0).getTime() >= new Date(previous.started_at || 0).getTime()) {
+      byName.set(row.migration_name, row);
+    }
+  }
+  const activeRows = [...byName.values()].filter((row) => row.finished_at != null && row.rolled_back_at == null);
+  const actualNames = activeRows.map((item) => item.migration_name);
   const namesMatch = JSON.stringify(expectedNames) === JSON.stringify([...actualNames].sort((left, right) => left.localeCompare(right)));
   const checksumsMatch = files.every((file) => String(byName.get(file.name)?.checksum || "").toLowerCase() === file.checksum.toLowerCase());
-  const finished = rows.filter((row) => row.finished_at != null && row.rolled_back_at == null).length;
-  const failed = rows.filter((row) => row.finished_at == null || row.rolled_back_at != null).length;
-  return { namesMatch, checksumsMatch, finished, failed, count: rows.length, expectedCount: files.length };
+  const finished = activeRows.length;
+  const failed = [...byName.values()].filter((row) => row.finished_at == null && row.rolled_back_at == null).length;
+  const rolledBackHistoryCount = rows.filter((row) => row.rolled_back_at != null).length;
+  return {
+    namesMatch,
+    checksumsMatch,
+    finished,
+    failed,
+    count: activeRows.length,
+    rawMetadataRowCount: rows.length,
+    rolledBackHistoryCount,
+    expectedCount: files.length,
+  };
 }
 
 async function representativeQueries(databaseUrl) {
@@ -467,7 +499,11 @@ function backupCandidate() {
   try { inventory = JSON.parse(fs.readFileSync(inventoryPath, "utf8")); } catch { return null; }
   const entries = Array.isArray(inventory.entries) ? inventory.entries : [];
   const entry = [...entries]
-    .filter((item) => item.status === "VERIFIED" && item.restoreState === "RESTORE_TESTED")
+    // Prefer the newest verified backup of the canonical DEMO database.  A
+    // newly created backup is intentionally NOT_TESTED until this acceptance
+    // rehearsal consumes it; selecting an older RESTORE_TESTED artifact would
+    // validate stale business data instead of the current recovery point.
+    .filter((item) => item.status === "VERIFIED" && item.sourceDatabaseIdentity?.database === "seferpakt_clean_demo")
     .sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)))[0];
   if (!entry) return null;
   const backupFile = path.join(directory, entry.path || entry.backupFile || "");
@@ -507,7 +543,9 @@ async function futureMigrationContinuation(databaseUrl, shadowDatabaseUrl) {
   if (!/CREATE TABLE/i.test(generatedSql) || !/MigrationContinuationProbe/i.test(generatedSql)) throw new Error("isolated future migration SQL was not reviewed as the expected table change");
   runCliOrThrow(["migrate", "deploy", "--schema", schemaPath], databaseUrl, { timeout: 600_000 });
   const status = runCli(["migrate", "status", "--schema", schemaPath], databaseUrl);
-  if (status.status !== 0 || !/57\s+migrations found/i.test(status.output) || !/up to date/i.test(status.output)) throw new Error(`isolated future migration status was not healthy: ${safeOutput(status.output)}`);
+  // The isolated probe starts from the canonical 68-migration chain and adds
+  // exactly one disposable migration.
+  if (status.status !== 0 || !/69\s+migrations found/i.test(status.output) || !/up to date/i.test(status.output)) throw new Error(`isolated future migration status was not healthy: ${safeOutput(status.output)}`);
   return { createdMigration: created[0], sqlReviewed: true, statusHealthy: true };
 }
 
@@ -582,7 +620,10 @@ async function rollbackRehearsal(canonicalDatabaseUrl) {
     if (!restored.ok) throw new Error("isolated rollback restore did not return success");
     const sourceSnapshot = await businessDataSnapshot(canonicalDatabaseUrl);
     const restoredSnapshot = await businessDataSnapshot(target.url);
-    if (JSON.stringify(sourceSnapshot) !== JSON.stringify(restoredSnapshot)) throw new Error("isolated rollback restore changed business data snapshot");
+    if (JSON.stringify(sourceSnapshot) !== JSON.stringify(restoredSnapshot)) {
+      const differingTables = Object.keys(sourceSnapshot).filter((table) => JSON.stringify(sourceSnapshot[table]) !== JSON.stringify(restoredSnapshot[table]));
+      throw new Error(`isolated rollback restore changed business data snapshot: tables=${differingTables.join(",")}; source=${JSON.stringify(sourceSnapshot)}; restored=${JSON.stringify(restoredSnapshot)}`);
+    }
     return { backupId: backup.entry.backupId, target: safeUrl(target.url), restored: true };
   } finally {
     if (priorDatabaseUrl == null) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = priorDatabaseUrl;
@@ -599,7 +640,8 @@ function writeEvidence(report) {
 
 async function main() {
   const startedAt = new Date().toISOString();
-  const databaseUrl = process.env.DATABASE_URL || DEFAULT_DATABASE_URL;
+  const databaseUrl = String(process.env.DATABASE_URL || "").trim();
+  if (!databaseUrl) throw new Error("DATABASE_URL_REQUIRED: migration acceptance never falls back to historical servisdb");
   const report = {
     evidenceVersion: "DATABASE-MIGRATION-BASELINE-AND-LIVE-ADOPTION-01-ACCEPTANCE",
     startedAt,
@@ -621,9 +663,9 @@ async function main() {
 
     const commercial = fs.readFileSync(path.join(BACKEND_ROOT, "prisma", "schema", "commercial.prisma"), "utf8");
     const defaultCorrections = (commercial.match(/updatedAt\s+DateTime\s+@default\(now\(\)\)\s+@updatedAt/g) || []).length;
-    if (defaultCorrections !== 2) throw new Error(`authorized Prisma default correction count is ${defaultCorrections}, expected 2`);
-    report.counters.AUTHORIZED_PRE13_SCHEMA_CORRECTION_COUNT = 2;
-    report.checks.push({ id: "authorized-default-corrections", pass: true, details: 2 });
+    if (defaultCorrections !== 3) throw new Error(`authorized Prisma default correction count is ${defaultCorrections}, expected 3`);
+    report.counters.AUTHORIZED_PRE13_SCHEMA_CORRECTION_COUNT = 3;
+    report.checks.push({ id: "authorized-default-corrections", pass: true, details: 3 });
 
     const packageJson = JSON.parse(fs.readFileSync(path.join(BACKEND_ROOT, "package.json"), "utf8"));
     if (!String(packageJson.scripts?.["prisma:migrate:status"] || "").includes("database_migration_baseline_and_live_adoption_01_owner.mjs status")
@@ -643,7 +685,7 @@ async function main() {
     const schemaRegression = proveSchemaRegressionAgainstPre13();
     if (!schemaRegression.pass) throw new Error(`#11 schema regression contains an unapproved change: ${JSON.stringify(schemaRegression)}`);
     report.regressions = {
-      "#7": { status: "PENDING", proof: "fresh 56-migration replay below" },
+      "#7": { status: "PENDING", proof: "fresh 68-migration replay below" },
       "#10": { status: "PASS", proof: "canonical generate and current generated-client integrity" },
       "#11": schemaRegression,
       "#12": { status: "PENDING", proof: "verified backup and isolated rollback below" },
@@ -692,7 +734,9 @@ async function main() {
     const backup = backupCandidate();
     if (!backup) throw new Error("verified #12 backup is unavailable");
     process.env.BACKUP_EXECUTION_MODE = "docker";
-    process.env.BACKUP_DOCKER_CONTAINER = process.env.BACKUP_DOCKER_CONTAINER || "personel_db";
+    // Canonical SeferPakt Compose names the database service seferpakt-db-1.
+    // Keep BACKUP_DOCKER_CONTAINER overridable for isolated rehearsal containers.
+    process.env.BACKUP_DOCKER_CONTAINER = process.env.BACKUP_DOCKER_CONTAINER || "seferpakt-db-1";
     const verifiedBackup = verifyCanonicalBackup({ backupFile: backup.backupFile, manifestFile: backup.manifestFile });
     if (!verifiedBackup.ok) throw new Error("#12 backup verification did not pass");
     report.pre13Backup = { backupId: backup.entry.backupId, checksum: verifiedBackup.checksum, status: backup.entry.status, restoreState: backup.entry.restoreState };
@@ -718,7 +762,7 @@ async function main() {
     report.counters.FRESH_REPLAY_FAILED_MIGRATION_COUNT = 0;
     report.counters.PRISMA_FRESH_REPLAY_SEMANTIC_PARITY_PASS_COUNT = 1;
     report.counters.PRISMA_7_REGRESSION_PASS_COUNT = 1;
-    report.regressions["#7"] = { status: "PASS", proof: "56/56 migration replay, pending=0, failed=0, physical schema parity" };
+    report.regressions["#7"] = { status: "PASS", proof: "68/68 migration replay, pending=0, failed=0, physical schema parity" };
     report.counters.UNEXPLAINED_LIVE_SCHEMA_DRIFT_COUNT = 0;
     report.counters.POST_LIVE_SCHEMA_PARITY_PASS_COUNT = 1;
 
@@ -785,7 +829,7 @@ async function main() {
       freshReplaySchemaId: report.replay.schemaId,
       migrationHistoryIdentity: sha256(JSON.stringify(liveRows.map((row) => ({ name: row.migration_name, checksum: row.checksum, finished: row.finished_at, rolledBack: row.rolled_back_at })))),
       strategy: "NO_OP_ALREADY_CANONICAL",
-      reason: "56/56 immutable migration metadata rows are finished, checksums match, and DB/Prisma/fresh replay have exact semantic parity",
+      reason: "68/68 immutable migration metadata rows are finished, checksums match, and DB/Prisma/fresh replay have exact semantic parity",
       postValidation: "PASS",
     };
     fs.mkdirSync(EVIDENCE_DIR, { recursive: true });

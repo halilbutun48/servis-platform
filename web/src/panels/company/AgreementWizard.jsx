@@ -15,6 +15,7 @@ import {
   addDaysISO,
 } from "../../utils/agreementUi";
 import { isoFromTRYmdMin, ymdTR } from "../../utils/time";
+import { parseOfferAmountInput } from "../shared/offerAmountPresentation";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
 import { cachedGet } from "../../utils/uiDataCache";
 import { linkAgreementsToOrigin } from "../../utils/agreementOriginLink";
@@ -57,11 +58,7 @@ function trimOrNull(s) {
 }
 
 function parseTryInput(raw) {
-  if (raw == null) return null;
-  const cleaned = String(raw).replace(/\./g, "").replace(/[^\d]/g, "");
-  if (!cleaned) return null;
-  const n = Number(cleaned);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  return parseOfferAmountInput(raw);
 }
 
 const PACKS = AGREEMENT_WIZARD_PACKS;
@@ -753,7 +750,7 @@ function guessPackKey(prefill) {
                 Sadece toplanma konumu olan
               </label>
               {onReloadRooms ? (
-                <button type="button" disabled={busy} onClick={onReloadRooms}>Yenile</button>
+                <button type="button" disabled={busy} onClick={() => onReloadRooms?.()}>Yenile</button>
               ) : null}
             </div>
 

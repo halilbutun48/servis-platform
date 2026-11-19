@@ -48,6 +48,7 @@ const TECHNICAL_REFERENCES = Object.freeze({
 const PRECEDENCE = Object.freeze([
   "USER_ACTUAL",
   "PLATFORM_OBSERVED_REFERENCE",
+  "DEMO_PLANNING_ASSUMPTION",
   "TECHNICAL_CLASS_REFERENCE",
   "NO_DATA",
 ]);
@@ -177,6 +178,43 @@ function layerFromPlatform({ vehicleClass, fuelType, platformReference }) {
   };
 }
 
+function layerFromPlanning({ vehicleClass, fuelType, planningReference, planningValue }) {
+  const reference = planningReference && typeof planningReference === "object" ? planningReference : {};
+  const value = positiveValue(planningValue ?? reference.valueLitersPer100Km ?? reference.value ?? reference.normalizedReference);
+  const range = normalizedRange(reference.range);
+  if (value === null && !range) return {
+    layer: "DEMO_PLANNING_ASSUMPTION",
+    sourceKind: "DEMO_PLANNING_ASSUMPTION",
+    available: false,
+    vehicleClass: vehicleClass || null,
+    fuelType: fuelType || reference.fuelType || null,
+    unit: UNIT,
+    selectionReason: "Bu aday için açık planlama tüketim varsayımı yok.",
+  };
+  return {
+    layer: "DEMO_PLANNING_ASSUMPTION",
+    sourceKind: "DEMO_PLANNING_ASSUMPTION",
+    available: true,
+    vehicleClass: vehicleClass || reference.vehicleClass || null,
+    subtype: reference.subtype || null,
+    fuelType: fuelType || reference.fuelType || null,
+    valueLitersPer100Km: value,
+    range,
+    normalizedReference: value,
+    unit: UNIT,
+    sourceName: reference.sourceName || "Kanonik araç planlama varsayımı",
+    sourceDate: reference.sourceDate || reference.asOf || null,
+    reviewedAt: reference.reviewedAt || REVIEWED_AT,
+    version: reference.version || VERSION,
+    confidence: reference.confidence || "MEDIUM",
+    geography: reference.geography || null,
+    applicabilityLimits: reference.applicabilityLimits || "Bu tüketim gerçekleşmiş araç ölçümü değildir; açık planlama varsayımıdır.",
+    dataClass: "DEMO_PLANNING_ASSUMPTION",
+    actual: false,
+    selectionReason: "Aday için açık planlama tüketim varsayımı kullanıldı; gerçekleşmiş araç tüketimi değildir.",
+  };
+}
+
 function fuelTypeCompatible(layer, fuelType) {
   if (!fuelType) return true;
   return !layer.fuelType || layer.fuelType === fuelType;
@@ -188,13 +226,16 @@ export function resolveVehicleConsumptionReference({
   actualReference = null,
   actualValue = null,
   platformReference = null,
+  planningReference = null,
+  planningValue = null,
 } = {}) {
   const vehicleClass = normalizeClass(vehicleType);
   const normalizedFuel = normalizeFuelType(fuelType);
   const actual = layerFromActual({ vehicleClass, fuelType: normalizedFuel, actualReference, actualValue });
   const platform = layerFromPlatform({ vehicleClass, fuelType: normalizedFuel, platformReference });
+  const planning = layerFromPlanning({ vehicleClass, fuelType: normalizedFuel, planningReference, planningValue });
   const technical = layerFromTechnical(vehicleClass);
-  const candidates = [actual, platform, technical].filter((layer) => fuelTypeCompatible(layer, normalizedFuel));
+  const candidates = [actual, platform, planning, technical].filter((layer) => fuelTypeCompatible(layer, normalizedFuel));
   const selected = candidates.find((layer) => layer.available) || {
     layer: null,
     sourceKind: "NO_DATA",
@@ -216,7 +257,7 @@ export function resolveVehicleConsumptionReference({
     fuelType: normalizedFuel,
     unit: UNIT,
     selected: { ...selected, authority: selected.sourceKind === "NO_DATA" ? "NO_DATA" : selected.sourceKind },
-    layers: [actual, platform, technical],
+    layers: [actual, platform, planning, technical],
     precedence: PRECEDENCE,
     status: selected.available ? "RESOLVED" : "NO_DATA",
     missingData,
@@ -228,6 +269,18 @@ export function resolveVehicleConsumptionReference({
 export function technicalVehicleConsumptionReference(vehicleType) {
   const vehicleClass = normalizeClass(vehicleType);
   return vehicleClass ? layerFromTechnical(vehicleClass) : null;
+}
+
+export function canonicalFuelTypeForVehicle(vehicleType) {
+  return technicalVehicleConsumptionReference(vehicleType)?.fuelType || null;
+}
+
+export function canonicalEmptyDistanceForRoute({ emptyDistanceKm, emptyDistanceEvidence = false } = {}) {
+  // A loop or a route snapshot does not prove depot/reposition distance. Only
+  // an explicit canonical evidence path may provide this component; otherwise
+  // the caller must keep it unknown and block exact fuel/net claims.
+  const value = Number(emptyDistanceKm);
+  return emptyDistanceEvidence && Number.isFinite(value) && value >= 0 ? value : null;
 }
 
 export const VEHICLE_CONSUMPTION_REFERENCE_VERSION = VERSION;

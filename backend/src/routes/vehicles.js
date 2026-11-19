@@ -2,10 +2,61 @@
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { audit } from "../audit.js";
 import { createVehicleSchema } from "../validators.js";
 import { sanitizeVehicleDirectoryItem } from "../kvkk/enforcement.js";
 import { resolveRoomOwnership } from "../region/ownership.js";
 import logger from "../lib/logger.js";
+import { gpsStatusFromAt } from "../gps/status.js";
+
+// Vehicle reads stay explicit for KVKK and payload stability. P9 makes the
+// HGS class available, but it remains nullable and is never inferred from the
+// vehicle type.
+function vehicleDirectorySelect({ withShifts = false, withRoom = false } = {}) {
+  return {
+    id: true,
+    roomId: true,
+    plate: true,
+    capacity: true,
+    status: true,
+    speedLimitKmh: true,
+    driverId: true,
+    type: true,
+    hgsClass: true,
+    brand: true,
+    model: true,
+    modelYear: true,
+    color: true,
+    vin: true,
+    note: true,
+    inspectionDueAt: true,
+    insuranceDueAt: true,
+    cascoDueAt: true,
+    lastServiceAt: true,
+    lastServiceKm: true,
+    serviceIntervalKm: true,
+    serviceIntervalDays: true,
+    odometerKm: true,
+    odometerUpdatedAt: true,
+    odometerSource: true,
+    nextMaintenanceAt: true,
+    archivedAt: true,
+    archivedReason: true,
+    createdAt: true,
+    gpsLast: true,
+    gpsState: true,
+    driver: true,
+    ...(withRoom ? { room: true } : {}),
+    ...(withShifts ? {
+      shifts: {
+        where: { status: { in: ["APPROVED", "ACTIVE"] } },
+        include: { company: true, driver: true, stops: { orderBy: { order: "asc" } } },
+        orderBy: { startAt: "asc" },
+        take: 5,
+      },
+    } : {}),
+  };
+}
 
 export function vehiclesRouter(io) {
   const r = express.Router();
@@ -29,6 +80,16 @@ export function vehiclesRouter(io) {
 
   // "Silme engeli" sayacağımız shift status'leri
   const BLOCKING_SHIFT_STATUSES = ["APPROVED", "ACTIVE"];
+
+  function sanitizeRoomVehicle(item, role) {
+    const sanitized = sanitizeVehicleDirectoryItem(item, { role });
+    const freshness = gpsStatusFromAt(item?.gpsLast?.at);
+    return {
+      ...sanitized,
+      gpsCanonicalStatus: freshness.status,
+      gpsAgeSec: freshness.ageSec,
+    };
+  }
 
   function emitRoom(roomId, event, payload) {
     try {
@@ -147,22 +208,12 @@ export function vehiclesRouter(io) {
 
       const items = await prisma.vehicle.findMany({
         where,
-        include: {
-          gpsLast: true,
-          gpsState: true,
-          driver: true,
-          shifts: {
-            where: { status: { in: ["APPROVED", "ACTIVE"] } },
-            include: { company: true, driver: true, stops: { orderBy: { order: "asc" } } },
-            orderBy: { startAt: "asc" },
-            take: 5,
-          },
-        },
+        select: vehicleDirectorySelect({ withShifts: true }),
         orderBy: { id: "asc" },
         take,
       });
       return res.json(items.map((x) => ({
-        ...sanitizeVehicleDirectoryItem(x, { role: u.role }),
+        ...sanitizeRoomVehicle(x, u.role),
         regionOwnership: roomOwnership,
       })));
     }
@@ -185,7 +236,7 @@ export function vehiclesRouter(io) {
 
       const items = await prisma.vehicle.findMany({
         where: { id: { in: vehicleIds }, archivedAt: null, ...qWhere },
-        include: { gpsLast: true, gpsState: true, room: true, driver: true },
+        select: vehicleDirectorySelect({ withRoom: true }),
         orderBy: { id: "asc" },
         take,
       });
@@ -205,7 +256,7 @@ export function vehiclesRouter(io) {
 
       const items = await prisma.vehicle.findMany({
         where: { id: { in: vehicleIds }, archivedAt: null, ...qWhere },
-        include: { gpsLast: true, gpsState: true, room: true, driver: true },
+        select: vehicleDirectorySelect({ withRoom: true }),
         orderBy: { id: "asc" },
         take,
       });
@@ -231,7 +282,7 @@ export function vehiclesRouter(io) {
 
       const items = await prisma.vehicle.findMany({
         where: { id: { in: vehicleIds }, archivedAt: null, ...qWhere },
-        include: { gpsLast: true, gpsState: true },
+        select: vehicleDirectorySelect(),
         orderBy: { id: "asc" },
         take,
       });
@@ -245,7 +296,7 @@ export function vehiclesRouter(io) {
 
     const items = await prisma.vehicle.findMany({
       where,
-      include: { gpsLast: true, gpsState: true, room: true, driver: true },
+        select: vehicleDirectorySelect({ withRoom: true }),
       orderBy: { id: "asc" },
       take,
     });
@@ -360,6 +411,13 @@ export function vehiclesRouter(io) {
 
     // optional meta (null ile temizlenebilir)
     if (has("type")) data.type = b.type ? String(b.type) : null;
+    if (has("hgsClass")) {
+      const value = b.hgsClass == null || b.hgsClass === "" ? null : Number(b.hgsClass);
+      if (value !== null && (!Number.isSafeInteger(value) || value < 1 || value > 6)) {
+        return res.status(400).json({ code: "BAD_REQUEST", message: "HGS sınıfı 1 ile 6 arasında olmalı" });
+      }
+      data.hgsClass = value;
+    }
     if (has("brand")) data.brand = upperTrOrNull(b.brand);
     if (has("model")) data.model = upperTrOrNull(b.model);
     if (has("modelYear")) data.modelYear = b.modelYear == null || b.modelYear === "" ? null : Number(b.modelYear);
@@ -515,6 +573,7 @@ export function vehiclesRouter(io) {
       nextMaintenanceAt,
 
       type,
+      hgsClass,
       brand,
       model,
       modelYear,
@@ -550,6 +609,7 @@ export function vehiclesRouter(io) {
           speedLimitKmh: speedLimitKmh ?? 80,
 
           type: type ?? null,
+          hgsClass: hgsClass ?? null,
           brand: normalizedBrand,
           model: normalizedModel,
           modelYear: modelYear ?? null,
@@ -576,6 +636,18 @@ export function vehiclesRouter(io) {
           archivedReason: null,
         },
         include: { gpsLast: true, gpsState: true, driver: true },
+      });
+
+      await audit(req, {
+        action: "ROOM_VEHICLE_CREATE",
+        entity: "Vehicle",
+        entityId: vehicle.id,
+        meta: {
+          vehicleId: vehicle.id,
+          roomId: u.roomId,
+          plate: vehicle.plate,
+          source: "ROOM_MANAGEMENT_UI",
+        },
       });
 
       emitRoom(u.roomId, "vehicle:update", { vehicleId: vehicle.id, action: "created" });

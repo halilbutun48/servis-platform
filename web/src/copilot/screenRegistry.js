@@ -41,6 +41,7 @@ const REGISTRY = {
     { id: 1114, path: "/room/operation-health", label: "Operasyon Sağlığı" },
     { id: 1115, path: "/room/commercial-flow", label: "Ticari Akışım" },
     { id: 1116, path: "/room/reports", label: "Raporlar" },
+    { id: 1119, path: "/room/cost-scenarios", label: "Maliyet Senaryoları" },
     ...SHARED,
   ],
   COMPANY: [
@@ -49,6 +50,7 @@ const REGISTRY = {
     { id: 2102, path: "/company/shifts", label: "Vardiyalar" },
     { id: 2103, path: "/company/agreements", label: "Sözleşmeler" },
     { id: 2104, path: "/company/access-links", label: "Personel bağlantıları" },
+    { id: 2120, path: "/company/personel-access", label: "Personel erişimi" },
     { id: 2105, path: "/company/copilot", label: COPILOT_MENU_LABEL },
     { id: 2106, path: "/company/hub", label: hubLabelForKind("COMPANY") },
     { id: 2107, path: "/company/checkin", label: "Biniş kayıtları" },
@@ -61,7 +63,7 @@ const REGISTRY = {
     ...SHARED,
   ],
   SCHOOL: [
-    { id: 2201, path: "/school", label: "Okul Merkezi" },
+    { id: 2201, path: "/school", label: "Planlama Merkezi" },
     { id: 2218, path: "/school/operations", label: "Okul Operasyon Paneli" },
     { id: 2202, path: "/school/shifts", label: "Vardiyalar" },
     { id: 2203, path: "/school/agreements", label: "Sözleşmeler" },

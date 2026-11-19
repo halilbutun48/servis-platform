@@ -1,6 +1,9 @@
 const USER_FACING_TOKEN_REPLACEMENTS = [
   // Backend enums and workflow/state identifiers stay internal. They are
   // rendered into Turkish before entering any user-visible response field.
+  // TEST_SIMULATED is a provenance marker, not user-facing copy. Preserve the
+  // important DEMO distinction without exposing the internal enum.
+  [/\bTEST_SIMULATED\b/giu, "DEMO"],
   [/\bNEEDS_REVIEW\b/giu, "İnceleme gerekli"],
   [/\bREVIEW_NEEDED\b/giu, "İnceleme gerekli"],
   [/\bNEEDS_RECHECK\b/giu, "Tekrar kontrol gerekli"],
@@ -94,7 +97,7 @@ const USER_FACING_OBJECT_KEYS = new Set([
 const INTERNAL_IDENTITY_KEYS = new Set([
   "targetKey", "semanticId", "blockKey", "screenPath", "identitySource", "semanticType",
   "authorizedContext", "anchor", "locator", "routeKey", "actionKind", "guideJobType", "jobType",
-  "path",
+  "path", "kind",
   "activeGoal", "activeWorkflow", "activeStep", "currentExpectedStep", "currentSurface", "currentRole",
   "effectiveRole", "mode", "provider", "providerSummary", "questionType", "assistantIntent", "intent", "intentLabel",
   "lastReasoningAssistantRole", "lastReasoningAssistantMode", "lastReasoningAssistantFingerprint",
@@ -134,6 +137,16 @@ function normalizeTurkishComposition(value, renderState = null) {
   text = text.replace(/(?:Sözleşme|sözleşme)\s+(?=(?:Sözleşme|sözleşme)(?:\s|$))/gu, "");
   text = text.replace(/tamamlandı\s*•\s*tamamlandı/giu, "tamamlandı");
   text = text.replace(/(?:konum\/)?GPS\/konum(?:\/konum)?/giu, "GPS/konum");
+  // GPS is rendered as the user-facing "GPS/konum" label above.  Preserve
+  // Turkish suffixes instead of leaving the old apostrophe attached to the
+  // expanded label (for example, "GPS/konum'i").
+  text = text
+    .replace(/\bGPS\/konum['’]ini\b/giu, "GPS/konumunu")
+    .replace(/\bGPS\/konum['’]inden\b/giu, "GPS/konumundan")
+    .replace(/\bGPS\/konum['’]ine\b/giu, "GPS/konumuna")
+    .replace(/\bGPS\/konum['’]i\b/giu, "GPS/konumu")
+    .replace(/\bGPS\/konumu\s+bilgisini\b/giu, "GPS/konum bilgisini")
+    .replace(/\bGPS\/konumu\s+tarafını\b/giu, "GPS/konum tarafını");
   text = text.replace(/(?<!\()\bETA\b/giu, "tahmini varış zamanı (ETA)");
   // Known tokens receive precise copy above. Unknown structured tokens must
   // fail closed; heuristic humanization can both leak implementation detail
@@ -172,6 +185,11 @@ function normalizeVisibleObject(value, family, key = "", visibleScope = false, r
   const result = { ...value };
   for (const [childKey, childValue] of Object.entries(result)) {
     if (INTERNAL_IDENTITY_KEYS.has(childKey)) continue;
+    // ROOM cost conversation state is a transport envelope consumed by the
+    // next turn. Its subject/continuation/category values are machine
+    // contracts, not visible copy; translating them would destroy draft
+    // continuity while the visible reply remains correct.
+    if (key === "conversationState" && childKey === "roomCost") continue;
     // Guided-target/task envelopes carry machine status values that the web
     // client compares as canonical identity.  Keep those transport fields
     // intact while still normalizing status text in visible records/cards.

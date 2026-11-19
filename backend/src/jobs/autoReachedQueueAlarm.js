@@ -1,4 +1,4 @@
-import { prisma } from "../prisma.js";
+import { workerPrisma } from "../prisma.js";
 import { createAndEmitNotification, createNotification } from "../notifications/service.js";
 import {
   buildAutoReachedQueueIncidentSnapshot,
@@ -120,7 +120,8 @@ export function buildAutoReachedQueueAlarmNotificationPayload({ proof, incident,
   };
 }
 
-export async function syncAutoReachedQueueAlarmNotifications({ io = null, prismaClient = prisma, includeRecovery = true } = {}) {
+export async function syncAutoReachedQueueAlarmNotifications({ io = null, prismaClient = workerPrisma, includeRecovery = true } = {}) {
+  if (!prismaClient) return { ok: false, reason: "WORKER_DATABASE_URL_REQUIRED", synced: 0 };
   const proof = await getAutoReachedQueueAlarmProofSnapshot();
   const alarm = proof?.alarm || buildAutoReachedQueueAlarmSnapshot(proof?.health || {});
   const incident = proof?.incident || alarm?.incident || buildAutoReachedQueueIncidentSnapshot(proof?.health || {});

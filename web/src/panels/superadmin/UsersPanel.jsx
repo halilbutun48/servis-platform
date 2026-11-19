@@ -293,19 +293,19 @@ export default function UsersPanel() {
         />
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 12 }}>
-          <div className="card" style={{ margin: 0, padding: 12 }}>
+          <div className="card" style={{ margin: 0, padding: 12 }} data-copilot-metric="true" data-copilot-metric-label="Kayıt sayısı" data-copilot-metric-value={summary.total}>
             <div className="muted">Kayıt sayısı</div>
             <div style={{ fontSize: 28, fontWeight: 800 }}>{summary.total}</div>
           </div>
-          <div className="card" style={{ margin: 0, padding: 12 }}>
+          <div className="card" style={{ margin: 0, padding: 12 }} data-copilot-metric="true" data-copilot-metric-label="Aktif kullanıcı" data-copilot-metric-value={summary.activeCount}>
             <div className="muted">Aktif kullanıcı</div>
             <div style={{ fontSize: 28, fontWeight: 800 }}>{summary.activeCount}</div>
           </div>
-          <div className="card" style={{ margin: 0, padding: 12 }}>
+          <div className="card" style={{ margin: 0, padding: 12 }} data-copilot-metric="true" data-copilot-metric-label="Pasif kullanıcı" data-copilot-metric-value={summary.disabledCount}>
             <div className="muted">Pasif kullanıcı</div>
             <div style={{ fontSize: 28, fontWeight: 800 }}>{summary.disabledCount}</div>
           </div>
-          <div className="card" style={{ margin: 0, padding: 12 }}>
+          <div className="card" style={{ margin: 0, padding: 12 }} data-copilot-metric="true" data-copilot-metric-label="Rol sayısı" data-copilot-metric-value={summary.rolesCount}>
             <div className="muted">Rol sayısı</div>
             <div style={{ fontSize: 28, fontWeight: 800 }}>{summary.rolesCount}</div>
           </div>

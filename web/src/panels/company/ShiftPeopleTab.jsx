@@ -1,8 +1,4 @@
 
-const normalizeCoord = (value) => {
-  const n = safeNum(value);
-  return Number.isFinite(n) ? n : null;
-};
 // web/src/panels/company/ShiftPeopleTab.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
@@ -13,6 +9,7 @@ import { navigate } from "../../router";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import { clearUiDataCache } from "../../utils/uiDataCache";
 import { buildShiftPeopleTabActions } from "./shiftPeopleTabActions";
+import { guidedRoomText } from "./guidedPlanUserCopy";
 
 import { getApiErrorMessage } from "../../utils/apiContract";
 import {
@@ -20,7 +17,6 @@ import {
   parseCsv,
   parseSheetRowsToPeople,
   sanitizeAddress,
-  safeNum,
   computeGeoMeta,
   computeGeoStatus,
   clusterPeople,
@@ -29,6 +25,7 @@ import {
   stripHubStop,
   withHubStop,
   mapPersistedStopsForDisplay,
+  normalizeCoord,
   buildStopSummary,
   readPeopleFromStorage,
   writePeopleToStorage,
@@ -198,10 +195,12 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     const sid = String(selectedShiftId);
 
     (async () => {
+      let backendAvailable = false;
       try {
         const list = await apiOr404Fallback(
           async () => {
             const data = await loadPeopleFromBackendApi(api, token, sid);
+            backendAvailable = true;
             setPeopleBackend("on");
             return data;
           },
@@ -214,9 +213,26 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         if (!alive) return;
         peoplePersistedBaselineRef.current = peopleSnapshot(list);
         setPeople(list);
-        const persistedStops = Array.isArray(selectedShiftBase?.stops)
+        // The guided-drafts response contains the stop rows, but its payload
+        // is intentionally sanitized and may not carry per-stop assignment
+        // counts.  Re-read the scoped stop endpoint after a server-backed
+        // resume so a real persisted stop does not reappear as
+        // "outside/skipped" after the modal is closed and reopened.
+        let persistedStops = Array.isArray(selectedShiftBase?.stops)
           ? mapPersistedStopsForDisplay(selectedShiftBase.stops, selectedShiftBase)
           : null;
+        if (backendAvailable) {
+          try {
+            const stopResponse = await api(`/api/shifts/${sid}/stops`, { token });
+            const stopRows = Array.isArray(stopResponse)
+              ? stopResponse
+              : stopResponse?.items ?? stopResponse?.stops ?? [];
+            persistedStops = mapPersistedStopsForDisplay(stopRows, selectedShiftBase);
+          } catch {
+            // Keep the already loaded guided-draft rows as a safe read-only
+            // fallback.  A stop-read failure must not infer a deletion.
+          }
+        }
         if (persistedStops) {
           setDraftStops(persistedStops);
           setStopSummary(buildStopSummary({
@@ -381,7 +397,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     const dir = String(hubDirection || "INBOUND").toUpperCase();
     setBusy(true);
     try {
-      const updated = await api(`/api/shifts/${sid}`, {
+      const updated = await api(`/api/shifts/${sid}/route-evidence`, {
         token,
         method: "PUT",
         body: { hubLat: lat, hubLng: lng, direction: dir },
@@ -416,7 +432,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     if (!sid) return;
     setBusy(true);
     try {
-      await api(`/api/shifts/${sid}`, { token, method: "PUT", body: { hubLat: null, hubLng: null } });
+      await api(`/api/shifts/${sid}/route-evidence`, { token, method: "PUT", body: { hubLat: null, hubLng: null } });
       setShiftPatchById((prev) => ({ ...(prev || {}), [String(sid)]: { ...(prev?.[String(sid)] || {}), hubLat: null, hubLng: null } }));
       setHubLat("");
       setHubLng("");
@@ -579,9 +595,10 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           setImportWarnings(warnings);
           if (warnings.length) {
             const first = warnings[0];
-            setErr(`${payload?.error || e?.message || String(e)}${first?.rowNo ? ` (İlk sorun satır ${first.rowNo}: ${first.message})` : ""}`.trim());
+            const visibleMessage = getApiErrorMessage(e, "Dosya içe aktarılamadı.");
+            setErr(`${visibleMessage}${first?.rowNo ? ` (İlk sorun satır ${first.rowNo}: ${first.message})` : ""}`.trim());
           } else {
-            setErr(String(payload?.error || e?.message || e));
+            setErr(getApiErrorMessage(e, "Dosya içe aktarılamadı."));
           }
           return;
         }
@@ -653,6 +670,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     importMode,
     importPeopleToBackendApi,
     loadPeopleFromBackendApi,
+    mapPersistedStopsForDisplay,
     me,
     mirrorIds,
     maxWalkM,
@@ -710,9 +728,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
 
   const roomText = useMemo(() => {
-    if (!selectedShift) return "-";
-    const r = roomsById?.get ? roomsById.get(Number(selectedShift.roomId)) : null;
-    return r ? `${r.name || r.title || `Taşımacılık Firması #${r.id}`} (#${r.id})` : `#${selectedShift.roomId}`;
+    return guidedRoomText(selectedShift, roomsById);
   }, [selectedShift, roomsById]);
 
   const importWarningSummary = useMemo(() => summarizeWarnings(importWarnings), [importWarnings]);
@@ -771,6 +787,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         importMode={importMode}
         setImportMode={setImportMode}
         onImportFile={importFile}
+        guidedMode={guidedMode}
         importSummary={importSummary}
         onRunImportQuickGeocode={runImportQuickGeocode}
         importQuickBusy={importQuickBusy}

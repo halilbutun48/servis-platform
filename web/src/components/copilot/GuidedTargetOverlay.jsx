@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { getPath } from '../../router';
-import { clearGuidedTarget, getGuidedTarget, setGuidedTarget, shouldRestoreGuidedTargetAfterRouteChange, subscribeGuidedTarget } from '../../copilot/guidedTargetState';
+import { getPath, navigate } from '../../router';
+import { clearGuidedTarget, getGuidedTarget, setGuidedTarget, shouldNavigateGuidedTarget, shouldRestoreGuidedTargetAfterRouteChange, subscribeGuidedTarget } from '../../copilot/guidedTargetState';
 
 function normalize(value) {
   return String(value || '')
@@ -99,9 +99,9 @@ function findTarget(target) {
   // workflow must publish a fresh canonical target before it can be shown.
   if (!shouldRestoreGuidedTargetAfterRouteChange(target, getPath())) return null;
   const exact = normalize(target.label);
-  const nodes = Array.from(document.querySelectorAll('button,[role="button"],a[href],[role="tab"],input,select,summary,[data-copilot-label],[data-copilot-block-key],[data-copilot-semantic-id],h1,h2,h3,[data-page-title]'))
-    .filter((el) => !el.closest?.('.copilotDrawer,.copilotFab,.copilotPanel,[data-copilot-ignore="true"]'))
-    .filter(visible);
+  const allNodes = Array.from(document.querySelectorAll('button,[role="button"],a[href],[role="tab"],input,select,summary,[data-copilot-label],[data-copilot-block-key],[data-copilot-semantic-id],h1,h2,h3,[data-page-title]'))
+    .filter((el) => !el.closest?.('.copilotDrawer,.copilotFab,.copilotPanel,[data-copilot-ignore="true"]'));
+  const nodes = allNodes.filter(visible);
   const canonicalIdentity = String(target.targetKey || target.blockKey || target.semanticId || '').trim();
   const isBlock = String(target.targetKind || '').toUpperCase() === 'BLOCK' || Boolean(target.blockKey);
   const candidates = isBlock ? nodes : nodes.filter(topmostActionable);
@@ -112,14 +112,22 @@ function findTarget(target) {
     // revealed and re-resolved rather than replaced by a nearby control.
     const expectedSemanticId = String(target.semanticId || '').trim();
     const expectedBlockKey = String(target.blockKey || '').trim();
-    const exactIdentity = nodes.find((el) => {
+    const matchesCanonicalIdentity = (el) => {
       const targetKey = String(el.getAttribute?.(isBlock ? 'data-copilot-block-key' : 'data-copilot-target') || '').trim();
       const semanticId = String(el.getAttribute?.('data-copilot-semantic-id') || '').trim();
       const blockKey = String(el.getAttribute?.('data-copilot-block-key') || '').trim();
       return targetKey === canonicalIdentity
         || (expectedSemanticId && semanticId === expectedSemanticId)
         || (isBlock && expectedBlockKey && blockKey === expectedBlockKey);
-    });
+    };
+    const exactIdentity = nodes.find(matchesCanonicalIdentity)
+      // A canonical control can live inside a closed disclosure. Preserve
+      // its identity long enough for revealClosedContainingSurface() to open
+      // that disclosure; do not substitute a nearby visible control.
+      || allNodes.find((el) => {
+        const details = el.closest?.('details');
+        return details && !details.open && matchesCanonicalIdentity(el);
+      });
     // A canonical identity is authoritative. Never substitute a label or a
     // nearby node when the exact semantic target is absent.
     if (exactIdentity) return exactIdentity;
@@ -143,10 +151,21 @@ function revealClosedContainingSurface(el) {
   return true;
 }
 
+function revealFinanceSectionForTarget(target) {
+  const targetKey = String(target?.targetKey || target?.blockKey || target?.semanticId || '').trim();
+  if (!targetKey) return false;
+  const tab = Array.from(document.querySelectorAll('[role="tab"][data-copilot-reveals-target]'))
+    .filter(visible)
+    .find((candidate) => String(candidate.getAttribute('data-copilot-reveals-target') || '').split(/[,\s]+/u).includes(targetKey));
+  if (!tab || String(tab.getAttribute('aria-selected') || '').toLowerCase() === 'true') return false;
+  tab.click();
+  return true;
+}
+
 function revealMobileNavigationForTarget(target) {
   if (typeof window === 'undefined' || window.innerWidth > 720) return false;
   const targetKey = String(target?.targetKey || '').trim();
-  if (!/^room:[^:]+$/u.test(targetKey)) return false;
+  if (!/^(?:room|company|school|organization|driver|personel|parent|superadmin):[^:]+$/u.test(targetKey)) return false;
   const trigger = document.querySelector('.shellTopMenu[aria-controls="shell-nav-dock"]');
   if (!trigger || String(trigger.getAttribute('aria-expanded') || '').toLowerCase() === 'true') return false;
   trigger.click();
@@ -155,7 +174,7 @@ function revealMobileNavigationForTarget(target) {
 
 function mobileNavigationTargetReady(target, el) {
   const targetKey = String(target?.targetKey || '').trim();
-  if (typeof window === 'undefined' || window.innerWidth > 720 || !/^room:[^:]+$/u.test(targetKey)) return true;
+  if (typeof window === 'undefined' || window.innerWidth > 720 || !/^(?:room|company|school|organization|driver|personel|parent|superadmin):[^:]+$/u.test(targetKey)) return true;
   const nav = document.querySelector('#shell-nav-dock.navDock--mobileOpen');
   if (!nav || !el) return false;
   const navRect = nav.getBoundingClientRect();
@@ -182,6 +201,10 @@ export default function GuidedTargetOverlay() {
 
   useEffect(() => {
     if (!target || target.status === 'FOUND' || target.status === 'UNAUTHORIZED') return undefined;
+    // A not-yet-arrived navigation target belongs to the destination route.
+    // Never replace it with an unrelated workflow marker on the current
+    // source screen; the quick action must remain bound to its real target.
+    if (!shouldRestoreGuidedTargetAfterRouteChange(target, getPath())) return undefined;
     const workflow = document.querySelector('[data-copilot-workflow-id]');
     const workflowTargetKey = String(workflow?.getAttribute?.('data-copilot-workflow-target-key') || '').trim();
     const workflowTargetLabel = String(workflow?.getAttribute?.('data-copilot-workflow-target-label') || '').replace(/\s+/g, ' ').trim();
@@ -199,7 +222,14 @@ export default function GuidedTargetOverlay() {
   useEffect(() => {
     const clearOnRouteChange = () => {
       const active = getGuidedTarget();
-      if (active?.status === 'FOUND') clearGuidedTarget('STATE_CHANGED');
+      if (active && active.status !== 'CLEARED') {
+        // A route transition invalidates every transient target, including a
+        // recovery status left by the pre-navigation surface.  The destination
+        // screen must resolve its own canonical target; carrying the old
+        // recovery message forward falsely tells the user that a successful
+        // navigation failed.
+        clearGuidedTarget('CLEARED');
+      }
     };
     window.addEventListener('hashchange', clearOnRouteChange);
     return () => window.removeEventListener('hashchange', clearOnRouteChange);
@@ -207,11 +237,50 @@ export default function GuidedTargetOverlay() {
 
   useEffect(() => {
     if (!target || target.status !== 'FOUND') return undefined;
+
+    const isInsideAssistant = (node) => Boolean(node?.closest?.('.copilotDrawer,.copilotFab,.copilotAttentionBubble,.copilotProactiveBubble'));
+    const isGuidedTarget = (node) => {
+      const activeElement = targetRef.current;
+      return Boolean(activeElement && node && (node === activeElement || activeElement.contains?.(node)));
+    };
+    const clearWhenUserLeavesGuidance = (event) => {
+      const node = event.target;
+      if (!node || isInsideAssistant(node) || isGuidedTarget(node)) return;
+      // A click on another tab, button, link, disclosure or form control is a
+      // new user intent. Do not keep painting a previous target over that
+      // surface; the next assistant answer may publish a fresh target.
+      if (node.closest?.('button,[role="button"],a[href],[role="tab"],input,select,textarea,summary,[data-copilot-target]')) {
+        clearGuidedTarget('USER_LEFT_GUIDANCE');
+      }
+    };
+    const clearOnEscape = (event) => {
+      if (event.key === 'Escape') clearGuidedTarget('USER_LEFT_GUIDANCE');
+    };
+    document.addEventListener('pointerdown', clearWhenUserLeavesGuidance, true);
+    document.addEventListener('keydown', clearOnEscape, true);
+    return () => {
+      document.removeEventListener('pointerdown', clearWhenUserLeavesGuidance, true);
+      document.removeEventListener('keydown', clearOnEscape, true);
+    };
+  }, [target]);
+
+  useEffect(() => {
+    if (!target || target.status !== 'FOUND') return undefined;
+    if (shouldNavigateGuidedTarget(target, getPath())) {
+      navigate(String(target.screenPath || '').trim());
+      return undefined;
+    }
     let disposed = false;
     const place = () => {
       if (disposed) return;
       const el = findTarget(target);
       if (!el) {
+        if (revealFinanceSectionForTarget(target)) {
+          targetRef.current = null;
+          placedRef.current = false;
+          setRect(null);
+          return;
+        }
         if (revealMobileNavigationForTarget(target)) {
           targetRef.current = null;
           placedRef.current = false;

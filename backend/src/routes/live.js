@@ -78,11 +78,17 @@ export function liveRouter() {
       const driver = await prisma.driver.findFirst({ where: { userId: u.id }, select: { id: true } });
       if (!driver) return res.json([]);
 
+      // Keep the live surface aligned with /shifts/my: an approved historical
+      // shift must not expose its vehicle to a driver with no current/next
+      // authorized service.  The driver may only see vehicles from a shift
+      // whose service window has not ended.
+      const now = new Date();
       const shifts = await prisma.shift.findMany({
         where: {
           driverId: driver.id,
           status: { in: ["APPROVED", "ACTIVE"] },
           vehicleId: { not: null },
+          endAt: { gt: now },
         },
         select: { vehicleId: true },
       });

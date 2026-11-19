@@ -1,13 +1,21 @@
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { ensureM18RoomFinanceFoundation } from "./m18DemoFixtureFoundation.js";
+import { ensureSeferpakt2026CanonicalDemo } from "./seferpakt2026CanonicalDemoSeed.js";
+import { assertDatabaseTarget, DATABASE_MODES } from "../src/databaseTarget.js";
 
+const seedDatabaseMode = process.env.SEFERPAKT_DATABASE_MODE === DATABASE_MODES.ISOLATED
+  && process.env.SEFERPAKT_ALLOW_ISOLATED_SEED === "1"
+  ? DATABASE_MODES.ISOLATED
+  : DATABASE_MODES.CANONICAL_DEMO;
+assertDatabaseTarget({ mode: seedDatabaseMode });
 const prisma = new PrismaClient();
 
 const PASSWORD = "demo123";
+const DEMO_REFERENCE_DATE = new Date("2026-10-22T00:00:00.000Z");
 
 function dtPlusDays(days) {
-  const d = new Date();
+  const d = new Date(DEMO_REFERENCE_DATE);
   d.setDate(d.getDate() + days);
   return d;
 }
@@ -225,9 +233,9 @@ async function main() {
   });
 
   // Shift (Company creates -> requested; Room approves assigns vehicle+driver)
-  const startAt = new Date();
+  const startAt = new Date("2026-10-22T08:00:00.000Z");
   startAt.setHours(8, 0, 0, 0);
-  const endAt = new Date();
+  const endAt = new Date("2026-10-22T18:00:00.000Z");
   endAt.setHours(18, 0, 0, 0);
 
   const shift = await prisma.shift.upsert({
@@ -374,7 +382,13 @@ async function main() {
     skipDuplicates: true,
   });
 
-  await ensureM18RoomFinanceFoundation(prisma);
+  await ensureSeferpakt2026CanonicalDemo(prisma);
+
+  // Historical M18 finance fixtures are negative/coverage data only. They are
+  // never part of normal demo seeding and require an explicit local opt-in.
+  if (process.env.LOCAL_M18_FINANCE_FIXTURE === "1" && process.env.LOCAL_MAINTENANCE_SCOPE === "DEMO_FIXTURE_ONLY") {
+    await ensureM18RoomFinanceFoundation(prisma);
+  }
 
   console.log("✅ Seed tamamlandı. Şifre (hepsi): demo123");
   console.log("Users:", {

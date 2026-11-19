@@ -1,5 +1,6 @@
 import fs from "fs";
 import { promises as fsp } from "fs";
+import { randomUUID } from "node:crypto";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -33,7 +34,7 @@ export function createJsonFileStore(filename, options = {}) {
     try {
       await fsp.access(filePath);
     } catch {
-      await atomicWriteAsync(serialize(ensureDefaultValue()));
+      await atomicWriteAsync(serialize(ensureDefaultValue()), { allowExistingTarget: true });
     }
   }
 
@@ -154,14 +155,28 @@ export function createJsonFileStore(filename, options = {}) {
     }
   }
 
-  async function atomicWriteAsync(content) {
-    const tmp = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+  async function atomicWriteAsync(content, options = {}) {
+    const tmp = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
     await fsp.writeFile(tmp, content, "utf8");
-    await fsp.rename(tmp, filePath);
+    try {
+      await fsp.rename(tmp, filePath);
+    } catch (error) {
+      if (options.allowExistingTarget && ["EEXIST", "EPERM"].includes(error?.code)) {
+        try {
+          await fsp.access(filePath);
+          await fsp.unlink(tmp).catch(() => null);
+          return;
+        } catch {
+          // The destination was not actually created; preserve the original error.
+        }
+      }
+      await fsp.unlink(tmp).catch(() => null);
+      throw error;
+    }
   }
 
   function atomicWriteSync(content) {
-    const tmp = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+    const tmp = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
     fs.writeFileSync(tmp, content, "utf8");
     fs.renameSync(tmp, filePath);
   }

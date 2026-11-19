@@ -19,6 +19,7 @@ export default function AppShell({ path, routeContext, children }) {
   const isSchool = role === "COMPANY" && me?.companyKind === "SCHOOL";
   const isOrganization = role === "COMPANY" && me?.companyKind === "ORGANIZATION";
   const isTabletOpsRole = role === "ROOM" || role === "COMPANY";
+  const isRoomFinanceRoute = /^\/room\/financial-operations(?:\?|$)/.test(String(path || ""));
   const isAgreementsDetailRoute = /\/(company|organization|school|room)\/agreements(?:\?|$)/.test(String(path || ""));
   const stepUpProvider = getStepUpProvider();
   const shouldShowStepUpCard = isStepUpEnabled() && stepUpProvider !== "none";
@@ -119,7 +120,7 @@ export default function AppShell({ path, routeContext, children }) {
           <div className={isFluid ? "page page--fluid" : "page"}>
             {shouldShowStepUpCard ? <TotpStepUpCard /> : null}
             <KvkkConsentGate />
-            {isTabletOpsRole ? <TabletOpsQuickBar role={role} me={me} path={path} /> : null}
+            {isTabletOpsRole && !isRoomFinanceRoute ? <TabletOpsQuickBar role={role} me={me} path={path} /> : null}
             {children}
             <FloatingCopilotDrawer path={path} routeContext={routeContext} />
           </div>

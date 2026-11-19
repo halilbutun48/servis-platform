@@ -4,6 +4,8 @@ import { useSession } from "../../state/session";
 import { makeHashLink } from "../../utils/publicBaseUrl";
 import { formatDateTimeTR } from "../../utils/time";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildSchoolParentCopilotSelection } from "./parentInviteCopilotSelection";
 
 function fmt(dt) {
   try { return formatDateTimeTR(dt); } catch { return String(dt || "-"); }
@@ -33,6 +35,23 @@ export default function SchoolParentInvitePanel() {
   const [err, setErr] = useState("");
 
   const selectedStudent = useMemo(() => students.find((x) => String(x.id) === String(childPersonelId)) || null, [students, childPersonelId]);
+
+  useEffect(() => {
+    const selection = buildSchoolParentCopilotSelection({ selectedStudent, items, companyId: me?.companyId });
+    if (!selection) {
+      clearCopilotSelection("/school/parents");
+      return undefined;
+    }
+    setCopilotSelection(selection);
+    // The floating drawer can mount after this lazy panel. Replay once after
+    // the current effect flush so its route-bound listener receives the
+    // selected student without persisting a broader cross-route context.
+    const replayTimer = window.setTimeout(() => setCopilotSelection(selection), 0);
+    return () => {
+      window.clearTimeout(replayTimer);
+      clearCopilotSelection("/school/parents");
+    };
+  }, [items, me?.companyId, selectedStudent]);
 
   async function loadAll() {
     setErr("");

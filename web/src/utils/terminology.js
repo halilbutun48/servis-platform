@@ -12,6 +12,7 @@ const ROLE_LABELS = Object.freeze({
 // This is the canonical visible-status boundary. Backend enums stay intact;
 // presentation code imports this map instead of recreating partial versions.
 export const STATUS_LABELS = Object.freeze({
+  OK: "Hazır",
   LIVE: "Canlı",
   ONLINE: "Bağlı",
   STALE: "Güncel değil",
@@ -22,8 +23,11 @@ export const STATUS_LABELS = Object.freeze({
   ACCEPTED: "Kabul edildi",
   REJECTED: "Reddedildi",
   ACTIVE: "Aktif",
+  QR: "QR erişim kodu",
+  NFC: "NFC erişim kodu",
   DONE: "Tamamlandı",
   CANCELLED: "İptal edildi",
+  REVOKED: "İptal edildi",
   ERROR: "Hata",
   WARN: "Uyarı",
   UNKNOWN: "Belirsiz",
@@ -317,6 +321,15 @@ export function humanizeUserFacingText(value, fallback = "-") {
     .replace(/\breadiness\b/gi, "hazırlık")
     .replace(/\bquote floor\b/gi, "teklif alt sınırı")
     .replace(/\bselected shift\b/gi, "seçili vardiya")
+    .replace(/\bSözleşme\s+ID\s+(\d+)\b/giu, "Sözleşme #$1")
+    .replace(/\bGüven\s*:\s*HIGH\b/giu, "Güven seviyesi: yüksek")
+    .replace(/\bscn_[a-z0-9_-]+\b/gi, "seçili plan senaryosu")
+    .replace(/\bscenarioId\b/gi, "plan senaryosu")
+    .replace(/\bNOT_PROVEN\b/gi, "Henüz doğrulanmadı")
+    .replace(/\bamount\b/gi, "Tutar")
+    .replace(/\bsource\s+shift\b/gi, "Kaynak vardiya")
+    .replace(/\bHIGH\b/gi, "yüksek")
+    .replace(/₺\s*Tahmin\b/gi, "₺ · Tahmin")
     // Turkish letters are not all treated as word characters by JavaScript's
     // ASCII \b boundary. Use Unicode letter guards so a canonical label such
     // as "Rehberi Başlat" cannot turn its final "lat" into "koordinat".
@@ -345,6 +358,7 @@ export function humanizeUserFacingText(value, fallback = "-") {
     .replace(/\bscope\b/gi, "kapsam")
     .replace(/\bseverity\b/gi, "önem düzeyi")
     .replace(/\bsource\b/gi, "kaynak")
+    .replace(/\bkaynak\s+Vardiya\b/giu, "Kaynak vardiya")
     .replace(/\bcizgisinde kalir\b/gi, "çizgisinde kalır")
     .replace(/\bsimdi ne yap\b/gi, "şimdi ne yapmalıyım")
     .replace(/\bsonraki adim\b/gi, "sonraki adım")
@@ -353,7 +367,6 @@ export function humanizeUserFacingText(value, fallback = "-") {
     .replace(/\bise yaramadi\b/gi, "işe yaramadı")
     .replace(/\bcok teknikti\b/gi, "çok teknikti")
     .replace(/\byanlis anladi\b/gi, "yanlış anladı")
-    .replace(/\bM\d+(?:\.\d+)?\b/gi, "bu sürüm")
     .replace(/#\d+(?:_[A-Z0-9]+(?:_[A-Z0-9]+)*)+/g, "ilgili kapsam")
     .replace(/\bcanonical\b|\bkanonik\b/gi, "mevcut plan")
     .replace(/\bbaseline\b/gi, "mevcut plan")

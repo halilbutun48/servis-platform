@@ -2,10 +2,7 @@ import { useState } from "react";
 import { changeDriverPin } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
-
-function firstErr(err) {
-  return String(err?.payload?.message || err?.payload?.error || err?.message || err || "İşlem başarısız");
-}
+import { firstPinChangeErrorMessage } from "./pinChangeErrorMessage.js";
 
 export default function PinChangePanel() {
   const { token, loadMe } = useSession();
@@ -34,7 +31,7 @@ export default function PinChangePanel() {
       await loadMe(token);
       navigate("/driver/today");
     } catch (e2) {
-      setErr(firstErr(e2));
+      setErr(firstPinChangeErrorMessage(e2));
     } finally {
       setBusy(false);
     }

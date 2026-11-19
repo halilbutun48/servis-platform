@@ -164,8 +164,24 @@ const expectedRoleVisibility = {
   DRIVER: [],
   PERSONEL: [],
   PARENT: [],
-  SCHOOL: [],
-  ORGANIZATION: [],
+  SCHOOL: [
+    'financial_overview',
+    'company_budget',
+    'company_service_cost',
+    'cost_per_person',
+    'supplier_price_quality_compare',
+    'hakedis_invoice_reconciliation_preview',
+    'scenario_forecast_savings',
+  ],
+  ORGANIZATION: [
+    'financial_overview',
+    'company_budget',
+    'company_service_cost',
+    'cost_per_person',
+    'supplier_price_quality_compare',
+    'hakedis_invoice_reconciliation_preview',
+    'scenario_forecast_savings',
+  ],
   DEFAULT: [],
 };
 
@@ -197,8 +213,8 @@ const blockedScopeNeedles = [
   'e-Fatura',
   'e-Defter',
   'vergi programı',
-  'payment/hakediş execute',
-  'invoice create/update/delete',
+  'payment execution',
+  'invoice update/delete',
   'accounting posting',
   'DB migration',
   'backend write route',
@@ -219,7 +235,6 @@ const readOnlyActionCases = [
   'company_service_cost',
   'cost_per_person',
   'supplier_price_quality_compare',
-  'hakedis_invoice_reconciliation_preview',
   'scenario_forecast_savings',
   'accounting_export_contract',
   'overview',
@@ -345,7 +360,7 @@ function main() {
     check(Boolean(surface), `surface registry contains ${surfaceId}`);
     check(surface.id === surfaceId, `surface registry id matches ${surfaceId}`);
     check(textHas(surface.title, ' '), `surface title is readable for ${surfaceId}`);
-    check(textHas(surface.summary, 'önizleme') || textHas(surface.summary, 'kartı') || textHas(surface.summary, 'yüzeyi') || textHas(surface.summary, 'kontrat') || textHas(surface.summary, 'karşılaştırma'), `surface summary is descriptive for ${surfaceId}`);
+    check(textHas(surface.summary, 'önizleme') || textHas(surface.summary, 'kartı') || textHas(surface.summary, 'yüzeyi') || textHas(surface.summary, 'kontrat') || textHas(surface.summary, 'karşılaştırma') || textHas(surface.summary, 'uyuşmazlığı'), `surface summary is descriptive for ${surfaceId}`);
     check(Array.isArray(surface.visibleToRoles), `surface visible roles array for ${surfaceId}`);
     check(surface.visibleToRoles.length > 0, `surface has visible roles for ${surfaceId}`);
     check(Array.isArray(surface.reuseCapabilities), `surface reuse capability array for ${surfaceId}`);
@@ -359,15 +374,15 @@ function main() {
     check(describedSuper.allowed === true, `super admin can view ${surfaceId}`);
     check(describedRoom.exists === true, `room describe exists for ${surfaceId}`);
     check(describedCompany.exists === true, `company describe exists for ${surfaceId}`);
-    check(describedCompany.previewOnly === (surfaceId !== 'company_budget'), `company previewOnly flag for ${surfaceId}`);
+    check(describedCompany.previewOnly === !['company_budget', 'hakedis_invoice_reconciliation_preview'].includes(surfaceId), `company previewOnly flag for ${surfaceId}`);
     check(scope.canViewFinancialSurface('SUPER_ADMIN', surfaceId) === true, `super admin access for ${surfaceId}`);
     check(scope.canViewFinancialSurface('ROOM', surfaceId) === expectedRoleVisibility.ROOM.includes(surfaceId), `room access for ${surfaceId}`);
     check(scope.canViewFinancialSurface('COMPANY', surfaceId) === expectedRoleVisibility.COMPANY.includes(surfaceId), `company access for ${surfaceId}`);
     check(scope.canViewFinancialSurface('DRIVER', surfaceId) === false, `driver denied for ${surfaceId}`);
     check(scope.canViewFinancialSurface('PERSONEL', surfaceId) === false, `personel denied for ${surfaceId}`);
     check(scope.canViewFinancialSurface('PARENT', surfaceId) === false, `parent denied for ${surfaceId}`);
-    check(scope.canViewFinancialSurface('SCHOOL', surfaceId) === false, `school denied for ${surfaceId}`);
-    check(scope.canViewFinancialSurface('ORGANIZATION', surfaceId) === false, `organization denied for ${surfaceId}`);
+    check(scope.canViewFinancialSurface('SCHOOL', surfaceId) === expectedRoleVisibility.SCHOOL.includes(surfaceId), `school access for ${surfaceId}`);
+    check(scope.canViewFinancialSurface('ORGANIZATION', surfaceId) === expectedRoleVisibility.ORGANIZATION.includes(surfaceId), `organization access for ${surfaceId}`);
     check(scope.canViewFinancialSurface('UNKNOWN_ROLE', surfaceId) === false, `unknown role denied for ${surfaceId}`);
     check(scope.listFinancialSurfacesForRole('SUPER_ADMIN').some((item) => item.id === surfaceId), `super admin surface list contains ${surfaceId}`);
     if (expectedRoleVisibility.ROOM.includes(surfaceId)) {
@@ -381,8 +396,8 @@ function main() {
       check(scope.listFinancialSurfacesForRole('COMPANY').every((item) => item.id !== surfaceId), `company surface list excludes ${surfaceId}`);
     }
     check(scope.buildFinancialOperationsEmptyState('SUPER_ADMIN', surfaceId).allowed === true, `super admin empty state allowed for ${surfaceId}`);
-    check(scope.buildFinancialOperationsEmptyState('ROOM', surfaceId).readOnly === true, `room empty state is read-only for ${surfaceId}`);
-    check(scope.buildFinancialOperationsEmptyState('COMPANY', surfaceId).readOnly === (surfaceId === 'company_budget' ? false : true), `company empty state readOnly flag for ${surfaceId}`);
+    check(scope.buildFinancialOperationsEmptyState('ROOM', surfaceId).readOnly === (surfaceId !== 'hakedis_invoice_reconciliation_preview'), `room empty state is read-only for ${surfaceId}`);
+    check(scope.buildFinancialOperationsEmptyState('COMPANY', surfaceId).readOnly === !['company_budget', 'hakedis_invoice_reconciliation_preview'].includes(surfaceId), `company empty state readOnly flag for ${surfaceId}`);
   }
 
   check(scope.getFinancialOperationsAccessForRole('SUPER_ADMIN').visibleSurfaceIds.length === expectedRoleVisibility.SUPER_ADMIN.length, 'super admin sees all surfaces');
@@ -391,8 +406,8 @@ function main() {
   check(scope.getFinancialOperationsAccessForRole('DRIVER').visibleSurfaceIds.length === 0, 'driver sees zero surfaces');
   check(scope.getFinancialOperationsAccessForRole('PERSONEL').visibleSurfaceIds.length === 0, 'personel sees zero surfaces');
   check(scope.getFinancialOperationsAccessForRole('PARENT').visibleSurfaceIds.length === 0, 'parent sees zero surfaces');
-  check(scope.getFinancialOperationsAccessForRole('SCHOOL').visibleSurfaceIds.length === 0, 'school sees zero surfaces');
-  check(scope.getFinancialOperationsAccessForRole('ORGANIZATION').visibleSurfaceIds.length === 0, 'organization sees zero surfaces');
+  check(scope.getFinancialOperationsAccessForRole('SCHOOL').visibleSurfaceIds.length === expectedRoleVisibility.SCHOOL.length, 'school sees buyer surfaces');
+  check(scope.getFinancialOperationsAccessForRole('ORGANIZATION').visibleSurfaceIds.length === expectedRoleVisibility.ORGANIZATION.length, 'organization sees buyer surfaces');
   check(scope.getFinancialOperationsAccessForRole('DEFAULT').visibleSurfaceIds.length === 0, 'default sees zero surfaces');
 
   for (const role of Object.keys(expectedRoleVisibility)) {
@@ -448,12 +463,12 @@ function main() {
   check(textHas(denial.summaryText, 'read-only/preview'), 'rbac denial keeps preview wording');
 
   check(textHas(helperText, 'tenant isolation preserved'), 'helper keeps tenant isolation boundary');
-  check(textHas(helperText, 'no payment/hakediş execute'), 'helper blocks payment execute');
-  check(textHas(helperText, 'no invoice create/update/delete'), 'helper blocks invoice write');
+  check(textHas(helperText, 'no payment execution or assistant/copilot hakediş execution'), 'helper blocks payment execute');
+  check(textHas(helperText, 'no invoice update/delete; explicit ROOM income-chain creation is bounded separately'), 'helper blocks invoice write');
   check(textHas(helperText, 'no accounting posting'), 'helper blocks accounting posting');
   check(textHas(helperText, 'no ERP live integration'), 'helper blocks ERP integration');
   check(textHas(helperText, 'no DB write'), 'helper blocks DB write');
-  check(textHas(helperText, 'no backend write route'), 'helper blocks backend write route');
+  check(textHas(helperText, 'no assistant/copilot backend write route; bounded ROOM income route only'), 'helper blocks backend write route');
   check(textHas(helperText, 'preview surfaces plus company budget lifecycle'), 'helper boundary reflects lifecycle split');
   check(textHas(helperText, 'Next milestone summary'), 'helper next milestone summary present');
   check(textHas(helperText, 'OPERATIONAL-COST-MODEL-01'), 'helper mentions next milestone');

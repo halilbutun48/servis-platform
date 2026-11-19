@@ -5,15 +5,17 @@ import SeferScorePreviewCard from "../shared/SeferScorePreviewCard";
 import AgreementConflictBox from "../../components/AgreementConflictBox";
 import CollapsibleSection from "../../components/CollapsibleSection";
 import { moneyTry } from "./roomAgreementsPanelHelpers";
+import { friendlyAgreementNote } from "./roomAgreementDisplay";
 
 export default function RoomAgreementsBridgeSection({
   busy,
   copilotAgreementTarget,
   opsBridge,
   bridgeDetailsRequested,
-  onRequestBridgeDetails,
   onOpenShift,
   onOpenPreview,
+  onStartApproval,
+  onSyncOperation,
   qualityPaymentBridgePreview,
   seferScorePreviewData,
   seferScorePreview,
@@ -40,38 +42,23 @@ export default function RoomAgreementsBridgeSection({
 }) {
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <div className="card roomCriticalFixScope" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
-        <div style={{ fontWeight: 900 }}>Operasyon Köprüsü</div>
-        <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-          Detayları aç ile köprü kartını genişlet; ardından Vardiyaya git veya Rota Önizleme ile ilerle.
-        </div>
-        <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>
-          Bu alan önizlemedir; işlem başlatmaz.
-        </div>
-        <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>
-          Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.
-        </div>
-        <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            className="btn sm primary roomActionCTA"
-            data-copilot-target={copilotAgreementTarget?.id ? `room:agreements:agreement:${Number(copilotAgreementTarget.id)}:operation-bridge` : undefined}
-            data-copilot-semantic-id={copilotAgreementTarget?.id ? `product:room:agreement:${Number(copilotAgreementTarget.id)}:operation-bridge` : undefined}
-            onClick={onRequestBridgeDetails}
-          >
-            Detayı aç
-          </button>
-        </div>
-      </div>
-
       {copilotAgreementTarget ? (
-        <div style={{ display: "grid", gap: 8 }}>
+        <div
+          data-room-operation-bridge={String(copilotAgreementTarget.id)}
+          tabIndex={-1}
+          aria-label={`Sözleşme #${copilotAgreementTarget.id} operasyon köprüsü`}
+          style={{ display: "grid", gap: 8 }}
+        >
           <AgreementOpsBridgeCard
             key={`room-bridge-${copilotAgreementTarget.id}-${bridgeDetailsRequested ? "open" : "closed"}`}
             agreement={copilotAgreementTarget}
             bridge={opsBridge?.[copilotAgreementTarget.id] || null}
             onOpenShift={onOpenShift}
             onOpenPreview={onOpenPreview}
+            onPrimaryAction={onStartApproval}
+            onSyncOperation={onSyncOperation}
+            showPrimaryAction={false}
+            compact
             initialDetailsOpen={bridgeDetailsRequested}
           />
         </div>
@@ -79,16 +66,12 @@ export default function RoomAgreementsBridgeSection({
         <div className="card muted">Operasyon köprüsü için bir sözleşme seç.</div>
       )}
 
-      <div className="muted" style={{ fontSize: 12, lineHeight: 1.45 }}>
-        İpucu: Detayı aç ile köprü kartını genişlet; ardından Vardiyaya git veya Rota Önizleme ile ilerle.
-      </div>
-
       {copilotAgreementTarget ? (
         <div style={{ display: "grid", gap: 8 }}>
           <CollapsibleSection
             title="Kalite / hakediş önizlemesi"
             subtitle="Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz."
-            badge={copilotAgreementTarget?.id ? `Sözleşme ID ${copilotAgreementTarget.id}` : "Seçili"}
+            badge={copilotAgreementTarget?.id ? `Sözleşme #${copilotAgreementTarget.id}` : "Seçili"}
             defaultOpen={false}
             compact
           >
@@ -118,11 +101,11 @@ export default function RoomAgreementsBridgeSection({
 
       {counterTarget ? (
         <div className="card">
-          <div style={{ fontWeight: 900 }}>Karşı Teklif • Sözleşme ID {counterTarget.id}</div>
+          <div style={{ fontWeight: 900 }}>Karşı Teklif • Sözleşme #{counterTarget.id}</div>
 
           <div className="muted" style={{ marginTop: 6 }}>
             Hizmet Alan Firma teklifi: <b>{moneyTry(counterTarget.companyOfferAmount)}</b>
-            {counterTarget.companyOfferNote ? <span> — {counterTarget.companyOfferNote}</span> : null}
+            {friendlyAgreementNote(counterTarget.companyOfferNote) ? <span> — {friendlyAgreementNote(counterTarget.companyOfferNote)}</span> : null}
           </div>
 
           <div className="fieldRow" style={{ marginTop: 12 }}>
@@ -154,11 +137,15 @@ export default function RoomAgreementsBridgeSection({
 
       {approveTarget ? (
         <div className="card">
-          <div style={{ fontWeight: 900 }}>Kabul Akışı • Sözleşme ID {approveTarget.id}</div>
+          <div style={{ fontWeight: 900 }}>Kabul Akışı • Sözleşme #{approveTarget.id}</div>
 
           <div className="muted" style={{ marginTop: 6 }}>
             Hizmet Alan Firma teklifi: <b>{moneyTry(approveTarget.companyOfferAmount)}</b>
-            {approveTarget.companyOfferNote ? <span> — {approveTarget.companyOfferNote}</span> : null}
+            {friendlyAgreementNote(approveTarget.companyOfferNote) ? <span> — {friendlyAgreementNote(approveTarget.companyOfferNote)}</span> : null}
+          </div>
+
+          <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>
+            Bu karar sözleşme kabulünü kaydeder; operasyon kanıtı oluşturmaz. Vardiya, GPS, biniş ve gerçek tamamlanma kayıtları ayrı izlenir.
           </div>
 
           <div className="fieldRow" style={{ marginTop: 12 }}>
@@ -174,7 +161,7 @@ export default function RoomAgreementsBridgeSection({
                 <option value="">Seç</option>
                 {vehicles.map((v) => (
                   <option key={v.id} value={v.id}>
-                    {v.plate ?? `Araç ID ${v.id}`}
+                    {v.plate ?? `Araç #${v.id}`}
                   </option>
                 ))}
               </select>
@@ -192,7 +179,7 @@ export default function RoomAgreementsBridgeSection({
                 <option value="">Seç</option>
                 {drivers.map((d) => (
                   <option key={d.id} value={d.id}>
-                    {d.fullName ?? `Sürücü ID ${d.id}`}
+                    {d.fullName ?? `Sürücü #${d.id}`}
                   </option>
                 ))}
               </select>

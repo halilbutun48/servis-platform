@@ -2,7 +2,7 @@ import { prisma } from "../prisma.js";
 import { rememberResponse } from "../utils/responseCache.js";
 import { decorateGeoItem } from "./geoState.js";
 import { sanitizeCompanyPersonelItem, sanitizeInviteItem } from "../kvkk/enforcement.js";
-import { buildBoardingChangeRequestView } from "./boardingChangeRequestView.js";
+import { buildBoardingChangeRequestView, loadBoardingChangeRequestAuditMap } from "./boardingChangeRequestView.js";
 import { buildRoomObservabilitySummary, buildRoomObservabilityDrivers, buildRoomObservabilityIssues } from "../ops/observabilityManifest.js";
 import { buildRoomCommercialSummary, buildRoomCommercialItems } from "../ops/commercialCoreManifest.js";
 import { getShiftSummary, getVehicleSummary, getDriverSummary } from "../lib/reports.js";
@@ -373,39 +373,7 @@ async function loadDashboardRequests(user, { take = 200 } = {}) {
   });
 
   const ids = items.map((item) => Number(item?.id || 0)).filter((n) => Number.isFinite(n) && n > 0);
-  const audits = ids.length
-    ? await prisma.auditLog.findMany({
-      where: {
-        entity: "PickupRequest",
-        entityId: { in: ids },
-        action: {
-          in: [
-            "BOARDING_CHANGE_REQUEST_CREATE",
-            "BOARDING_CHANGE_REQUEST_AUTO_ACCEPTED",
-            "BOARDING_CHANGE_REQUEST_CLOSE_ACCEPT",
-            "BOARDING_CHANGE_REQUEST_CLOSE_CANCEL",
-            "BOARDING_CHANGE_APPLIED",
-          ],
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    })
-    : [];
-
-  const auditMap = new Map();
-  for (const row of audits) {
-    const key = Number(row?.entityId || 0);
-    if (!key) continue;
-    const current = auditMap.get(key) || { decisionAudit: null, applyAudit: null };
-    const action = String(row?.action || "");
-    if (!current.decisionAudit && action !== "BOARDING_CHANGE_APPLIED") {
-      current.decisionAudit = row;
-    }
-    if (!current.applyAudit && action === "BOARDING_CHANGE_APPLIED") {
-      current.applyAudit = row;
-    }
-    auditMap.set(key, current);
-  }
+  const auditMap = await loadBoardingChangeRequestAuditMap(prisma, ids);
 
   return {
     items: items.map((item) => buildBoardingChangeRequestView(item, auditMap.get(Number(item.id || 0)) || {})),

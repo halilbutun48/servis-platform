@@ -3,13 +3,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useRoomVehicleTelematics } from "./useRoomVehicleTelematics";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import { navigate } from "../../router";
 import { useAutoReload } from "../../live/useAutoReload";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CollapsibleSection from "../../components/CollapsibleSection";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { toDatetimeLocalTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
-import { TABS, buildVehicleCopilotSelection, fmtDriverHuman, hasGpsFix, normalizeList, pickCurrentShift, pickNextShift, pickRoomVehicleError as pickErr } from "./roomVehiclesPanelUtils";
+import { TABS, buildVehicleCopilotSelection, fmtDriverHuman, hasGpsFix, isVehicleVisibleInStatusFilter, normalizeList, pickCurrentShift, pickNextShift, pickRoomVehicleError as pickErr } from "./roomVehiclesPanelUtils";
 import {
   RoomVehicleStatusSection,
   RoomVehicleAssignmentsSection,
@@ -67,6 +68,7 @@ export default function VehiclesPanel() {
 
   // meta (CREATE)
   const [type, setType] = useState("");
+  const [hgsClass, setHgsClass] = useState("");
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
   const [modelYear, setModelYear] = useState("");
@@ -87,8 +89,6 @@ export default function VehiclesPanel() {
   // Bind tab
   const [bindSel, setBindSel] = useState({});
   const [focusVehicleId, setFocusVehicleId] = useState(0);
-
-
 
 // Atamalar/Müsaitlik
 const [assignRangeDays, setAssignRangeDays] = useState(7);
@@ -126,6 +126,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
     capacity: 16,
     speedLimitKmh: 80,
     type: "",
+    hgsClass: "",
     brand: "",
     model: "",
     modelYear: "",
@@ -260,6 +261,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
       capacity,
       speedLimitKmh,
       type,
+      hgsClass,
       brand,
       model,
       modelYear,
@@ -317,7 +319,19 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
     : (focusDriverId ? `#${focusDriverId}` : "-");
 
   const focusHasDriver = Boolean(focusDriverId);
-  const focusUi = useMemo(() => uiStatusFromVehicle(focusVehicle) || {}, [focusVehicle]);
+  const focusVisibleInCurrentFilter = useMemo(() => {
+    return isVehicleVisibleInStatusFilter(focusVehicle, { query: plateQuery, statusFilter });
+  }, [focusVehicle, plateQuery, statusFilter]);
+
+  const statusFilterIsActive = Boolean(String(plateQuery || "").trim()) || statusFilter !== "ALL";
+  const displayFocusVehicle = tab === "status" && statusFilterIsActive && !focusVisibleInCurrentFilter
+    ? null
+    : focusVehicle;
+  const displayFocusVehicleId = Number(displayFocusVehicle?.id || 0);
+  const displayFocusUi = displayFocusVehicle ? uiStatusFromVehicle(displayFocusVehicle) : {};
+  const displayFocusDriverId = Number(displayFocusVehicle?.driver?.id || displayFocusVehicle?.driverId || 0);
+  const displayFocusDriverObj = displayFocusVehicle?.driver || (displayFocusDriverId ? driversById.get(displayFocusDriverId) : null);
+  const displayFocusDriverLabel = displayFocusDriverObj ? fmtDriverHuman(displayFocusDriverObj) : (displayFocusDriverId ? `#${displayFocusDriverId}` : "-");
 
   const {
     deviceBusy,
@@ -346,19 +360,29 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
   const vehicleSummary = useMemo(() => {
     const total = Array.isArray(items) ? items.length : 0;
     const archived = Array.isArray(items) ? items.filter((v) => Boolean(v?.archivedAt)).length : 0;
-    const gpsReady = Array.isArray(items) ? items.filter((v) => hasGpsFix(v)).length : 0;
+    const gpsWithCoordinates = Array.isArray(items) ? items.filter((v) => hasGpsFix(v)).length : 0;
+    const gpsCounts = (Array.isArray(items) ? items : []).reduce((counts, vehicle) => {
+      const status = uiStatusFromVehicle(vehicle);
+      counts[status] = (counts[status] || 0) + 1;
+      return counts;
+    }, { LIVE: 0, STALE: 0, OFFLINE: 0 });
     const telematicsTotal = Object.values(telematicsCounts || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
-    return { total, archived, gpsReady, telematicsTotal };
+    return { total, archived, gpsWithCoordinates, gpsCounts, telematicsTotal };
   }, [items, telematicsCounts]);
 
   useEffect(() => {
-    if (!focusVehicle) {
-      clearCopilotSelection("/room/vehicles");
+    if (!focusVehicle || !focusVisibleInCurrentFilter) {
+      // A vehicle refresh can briefly replace the list before the selected
+      // record is rehydrated. Keep the last valid copilot selection during
+      // that transient gap; clear it when the selected record is filtered out.
+      if (!focusVehicle || !focusVehicleId || !focusVisibleInCurrentFilter) {
+        clearCopilotSelection("/room/vehicles");
+      }
       return;
     }
     const ui = uiStatusFromVehicle(focusVehicle) || {};
     setCopilotSelection(buildVehicleCopilotSelection({ focusVehicle, focusDriverLabel, focusHasDriver, ui }));
-  }, [focusVehicle, focusDriverLabel, focusHasDriver]);
+  }, [focusVehicle, focusVehicleId, focusDriverLabel, focusHasDriver, focusVisibleInCurrentFilter]);
 
   const selectedDriverId = Number(bindSel?.[focusVehicleId] || focusDriverId || 0);
   const selectedBound = selectedDriverId ? driverBoundMap.get(selectedDriverId) : null;
@@ -394,6 +418,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
       capacity: Number(editForm.capacity),
       speedLimitKmh: Number(editForm.speedLimitKmh),
       type: editForm.type || null,
+      hgsClass: String(editForm.hgsClass).trim() ? Number(editForm.hgsClass) : null,
       brand: upperTrOrNull(editForm.brand),
       model: upperTrOrNull(editForm.model),
       modelYear: String(editForm.modelYear).trim() ? Number(editForm.modelYear) : null,
@@ -415,20 +440,15 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
   }
 
   const statusRows = useMemo(() => {
-    const q = String(plateQuery || "").trim().toLowerCase();
     return items
-      .filter((v) => !v.archivedAt) // Durum sekmesi: varsayılan sadece aktif
+      .filter((v) => isVehicleVisibleInStatusFilter(v, { query: plateQuery, statusFilter }))
       .map((v) => {
         const ui = uiStatusFromVehicle(v); // LIVE|STALE|OFFLINE
         const pillKey = pillKeyFromUi(ui);
         return { v, ui, pillKey };
-      })
-      .filter(({ v, ui }) => {
-        if (statusFilter !== "ALL" && ui !== statusFilter) return false;
-        if (q && !String(v.plate || "").toLowerCase().includes(q)) return false;
-        return true;
       });
   }, [items, statusFilter, plateQuery]);
+
   const assignRows = useMemo(() => {
     const now = new Date();
     const q = String(assignQuery || "").trim().toLowerCase();
@@ -530,6 +550,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
     capacity,
     speedLimitKmh,
     type,
+    hgsClass,
     brand,
     model,
     modelYear,
@@ -543,6 +564,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
     odometerKm,
     nextMaintenanceAt,
     setType,
+    setHgsClass,
     setCapacity,
     setBrand,
     setModel,
@@ -581,18 +603,29 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>
         <div className="card">
           <div className="muted">Seçili araç</div>
-          <div style={{ fontWeight: 800, marginTop: 4 }}>{focusVehicle?.plate || "-"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>{focusDriverLabel || "Sürücü yok"}{focusHasDriver ? " • bağlı" : ""}</div>
+          <div style={{ fontWeight: 800, marginTop: 4 }}>{displayFocusVehicle?.plate || "-"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>{displayFocusDriverLabel || "Sürücü yok"}{displayFocusVehicle ? (displayFocusDriverId ? " • bağlı" : "") : ""}</div>
+          <button
+            type="button"
+            className="btn sm ghost"
+            style={{ marginTop: 8 }}
+            disabled={!displayFocusVehicleId}
+            onClick={() => navigate(`/room/financial-operations?focusVehicleId=${displayFocusVehicleId}`)}
+          >
+            Bu aracın giderlerini aç
+          </button>
         </div>
         <div className="card">
           <div className="muted">Filo özet</div>
           <div style={{ fontWeight: 800, marginTop: 4 }}>{vehicleSummary.total} araç</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>GPS hazır: {vehicleSummary.gpsReady} • Arşiv: {vehicleSummary.archived}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            GPS durumu: Canlı {vehicleSummary.gpsCounts.LIVE} • Güncel değil {vehicleSummary.gpsCounts.STALE} • Çevrim dışı {vehicleSummary.gpsCounts.OFFLINE} • Konumu bulunan {vehicleSummary.gpsWithCoordinates} • Arşiv: {vehicleSummary.archived}
+          </div>
         </div>
         <div className="card">
           <div className="muted">Konum cihazı</div>
           <div style={{ fontWeight: 800, marginTop: 4 }}>{vehicleSummary.telematicsTotal} cihaz</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>Seçili araç cihaz sayısı: {telematicsCounts[Number(focusVehicleId)] || 0}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Seçili araç cihaz sayısı: {telematicsCounts[displayFocusVehicleId] || 0}</div>
         </div>
       </div>
 
@@ -624,9 +657,9 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
           busy={busy}
-          focusVehicle={focusVehicle}
-          focusUi={focusUi}
-          focusDriverLabel={focusDriverLabel}
+          focusVehicle={displayFocusVehicle}
+          focusUi={displayFocusUi}
+          focusDriverLabel={displayFocusDriverLabel}
           statusRows={statusRows}
           items={items}
           focusVehicleId={focusVehicleId}
@@ -647,6 +680,8 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
           setCapacity={setCapacity}
           type={type}
           setType={setType}
+          hgsClass={hgsClass}
+          setHgsClass={setHgsClass}
           speedLimitKmh={speedLimitKmh}
           setSpeedLimitKmh={setSpeedLimitKmh}
           inspectionDueAt={inspectionDueAt}

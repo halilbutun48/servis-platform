@@ -1,0 +1,2627 @@
+{
+  "receiptSchemaVersion": "M18-HOLDOUT-EXECUTION-RECEIPT-V1",
+  "executionAttemptId": "m18-gov001-final12-s2-execution-20261014",
+  "acceptanceId": "m18-gov001-arbitration-final12-20261014-s2",
+  "frozenManifestSha256": "D4CF5D4F966F8570D848187A4D6AF3F24C604883847EB2F35689F00BB7528762",
+  "freezeReceiptSha256": "29ABCA930DA15F615B1BE86131D8740F65275E89D8C2F63DEB303013A0D0B375",
+  "contractPacketSha256": "013A0CDA662766710EEE4DD4D35FE6BF2AE3FA9B0C89B03719C8F3393330E8F9",
+  "executionOrderSha256": "AC907D166815F490BF76EE40A42D7034B8ADDC7EA2F04F2FFE1E6621182F27EF",
+  "protocolBindingId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-FROZEN-V2-BINDING",
+  "protocolBindingSha256": "06043A40D33F8280200608AE186D8454F2FA7399D6D572E2FCA5DFC69DA695EE",
+  "casesExposed": 56,
+  "casesExecuted": 56,
+  "casesPassed": 56,
+  "casesFailed": 0,
+  "casesUnexecuted": 0,
+  "ordinaryMismatchesCollected": 0,
+  "executionStatus": "GREEN",
+  "executionProtocolId": "M18-HOLDOUT-EXECUTION-PROTOCOL-V2-SAFE-ORDINARY-COLLECT-ALL",
+  "businessWriteExecution": 0,
+  "criticalFailure": null,
+  "securityEmergencyStop": false,
+  "integrityEmergencyStop": false,
+  "currentSourceManifest": "B6D917CF503CA6B60CDAB1B52C773D1A1BAF819E838BD78ED1CA5DA9C085C6CB",
+  "currentSourceContentIdentity": "726A156C97EC5FDB18C4E1402759985CBAC698A888E7A89CCCCD4B1648CEC350",
+  "perCaseEvidence": [
+    {
+      "index": 1,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ROOM-01",
+      "role": "ROOM",
+      "challengeClass": "EXPLAIN/CURRENT_SURFACE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "ROOM",
+      "surfacePath": "/room",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "authorizationClass": "ALLOW_GUIDANCE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 2,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ROOM-02",
+      "role": "ROOM",
+      "challengeClass": "VIEW_OR_NAVIGATE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "ROOM",
+      "surfacePath": "/room",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "NAVIGATE",
+        "semanticAction": "NAVIGATE",
+        "action": "NAVIGATE",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "NAVIGATE",
+            "semanticAction": "NAVIGATE",
+            "action": "NAVIGATE",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 3,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ROOM-03",
+      "role": "ROOM",
+      "challengeClass": "REFERENCE_CONTEXT",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "ROOM",
+      "surfacePath": "/room",
+      "selectedEntityPresent": true,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 4,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ROOM-04",
+      "role": "ROOM",
+      "challengeClass": "CONTINUATION_RECOVERY",
+      "contractSourceClass": "CONTINUATION_CONTRACT",
+      "tenantContextType": "ROOM",
+      "surfacePath": "/room",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_CONTEXTUAL",
+        "requestMode": "CONTINUE",
+        "semanticAction": "CONTINUE",
+        "action": "CONTINUE",
+        "object": "RECORD",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        },
+        {
+          "turnIndex": 2,
+          "actual": {
+            "semanticScope": "PRODUCT_CONTEXTUAL",
+            "requestMode": "CONTINUE",
+            "semanticAction": "CONTINUE",
+            "action": "CONTINUE",
+            "object": "RECORD",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "CONTINUE_CURRENT_REASONING",
+            "operation": "CONTINUE_EXPLANATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 5,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ROOM-05",
+      "role": "ROOM",
+      "challengeClass": "ROLE_AUTHORIZATION_BOUNDARY",
+      "contractSourceClass": "ROLE_BOUNDARY",
+      "tenantContextType": "ROOM",
+      "surfacePath": "/room",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "CREATE",
+        "action": "CREATE",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "OPEN_EXISTING_SHIFT_OPERATIONS",
+        "authorizationClass": "ALLOW_GUIDANCE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "CREATE",
+            "action": "CREATE",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "OPEN_EXISTING_SHIFT_OPERATIONS",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 6,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ROOM-06",
+      "role": "ROOM",
+      "challengeClass": "AMBIGUITY_UNKNOWN_FAIL_CLOSED",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "ROOM",
+      "surfacePath": "/room",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "REQUIRES_CLARIFICATION"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 7,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ROOM-07",
+      "role": "ROOM",
+      "challengeClass": "DOMAIN_TASK_OR_GENUINE_OOS",
+      "contractSourceClass": "OOS_CONTRACT",
+      "tenantContextType": "ROOM",
+      "surfacePath": null,
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "OFF_TOPIC_GENUINE",
+        "requestMode": "GENUINE_OOS",
+        "semanticAction": "NONE",
+        "action": "NONE",
+        "object": null,
+        "reference": "ABSENT",
+        "resolutionStatus": "NOT_APPLICABLE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "authorizationClass": "NOT_APPLICABLE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "OFF_TOPIC_GENUINE",
+            "requestMode": "GENUINE_OOS",
+            "semanticAction": "NONE",
+            "action": "NONE",
+            "object": null,
+            "reference": "ABSENT",
+            "resolutionStatus": "NOT_APPLICABLE",
+            "task": "OFF_TOPIC",
+            "operation": "GENERAL_INFORMATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 8,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-COMPANY-01",
+      "role": "COMPANY",
+      "challengeClass": "EXPLAIN/CURRENT_SURFACE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/company",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "authorizationClass": "ALLOW_GUIDANCE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 9,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-COMPANY-02",
+      "role": "COMPANY",
+      "challengeClass": "VIEW_OR_NAVIGATE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/company",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "NAVIGATE",
+        "semanticAction": "NAVIGATE",
+        "action": "NAVIGATE",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "NAVIGATE",
+            "semanticAction": "NAVIGATE",
+            "action": "NAVIGATE",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 10,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-COMPANY-03",
+      "role": "COMPANY",
+      "challengeClass": "REFERENCE_CONTEXT",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/company",
+      "selectedEntityPresent": true,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 11,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-COMPANY-04",
+      "role": "COMPANY",
+      "challengeClass": "CONTINUATION_RECOVERY",
+      "contractSourceClass": "CONTINUATION_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/company",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_CONTEXTUAL",
+        "requestMode": "CONTINUE",
+        "semanticAction": "CONTINUE",
+        "action": "CONTINUE",
+        "object": "RECORD",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        },
+        {
+          "turnIndex": 2,
+          "actual": {
+            "semanticScope": "PRODUCT_CONTEXTUAL",
+            "requestMode": "CONTINUE",
+            "semanticAction": "CONTINUE",
+            "action": "CONTINUE",
+            "object": "RECORD",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "CONTINUE_CURRENT_REASONING",
+            "operation": "CONTINUE_EXPLANATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 12,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-COMPANY-05",
+      "role": "COMPANY",
+      "challengeClass": "ROLE_AUTHORIZATION_BOUNDARY",
+      "contractSourceClass": "ROLE_BOUNDARY",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/company",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "CREATE",
+        "action": "CREATE",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "authorizationClass": "AUTHORIZED_PLANNING_INTENT"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "CREATE",
+            "action": "CREATE",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "CREATE_SHIFT",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 13,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-COMPANY-06",
+      "role": "COMPANY",
+      "challengeClass": "AMBIGUITY_UNKNOWN_FAIL_CLOSED",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/company",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "REQUIRES_CLARIFICATION"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 14,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-COMPANY-07",
+      "role": "COMPANY",
+      "challengeClass": "DOMAIN_TASK_OR_GENUINE_OOS",
+      "contractSourceClass": "OOS_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": null,
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "OFF_TOPIC_GENUINE",
+        "requestMode": "GENUINE_OOS",
+        "semanticAction": "NONE",
+        "action": "NONE",
+        "object": null,
+        "reference": "ABSENT",
+        "resolutionStatus": "NOT_APPLICABLE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "authorizationClass": "NOT_APPLICABLE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "OFF_TOPIC_GENUINE",
+            "requestMode": "GENUINE_OOS",
+            "semanticAction": "NONE",
+            "action": "NONE",
+            "object": null,
+            "reference": "ABSENT",
+            "resolutionStatus": "NOT_APPLICABLE",
+            "task": "OFF_TOPIC",
+            "operation": "GENERAL_INFORMATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 15,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SCHOOL-01",
+      "role": "SCHOOL",
+      "challengeClass": "EXPLAIN/CURRENT_SURFACE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/school",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "authorizationClass": "ALLOW_GUIDANCE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 16,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SCHOOL-02",
+      "role": "SCHOOL",
+      "challengeClass": "VIEW_OR_NAVIGATE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/school",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "NAVIGATE",
+        "semanticAction": "NAVIGATE",
+        "action": "NAVIGATE",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "NAVIGATE",
+            "semanticAction": "NAVIGATE",
+            "action": "NAVIGATE",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 17,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SCHOOL-03",
+      "role": "SCHOOL",
+      "challengeClass": "REFERENCE_CONTEXT",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/school",
+      "selectedEntityPresent": true,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 18,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SCHOOL-04",
+      "role": "SCHOOL",
+      "challengeClass": "CONTINUATION_RECOVERY",
+      "contractSourceClass": "CONTINUATION_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/school",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_CONTEXTUAL",
+        "requestMode": "CONTINUE",
+        "semanticAction": "CONTINUE",
+        "action": "CONTINUE",
+        "object": "RECORD",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        },
+        {
+          "turnIndex": 2,
+          "actual": {
+            "semanticScope": "PRODUCT_CONTEXTUAL",
+            "requestMode": "CONTINUE",
+            "semanticAction": "CONTINUE",
+            "action": "CONTINUE",
+            "object": "RECORD",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "CONTINUE_CURRENT_REASONING",
+            "operation": "CONTINUE_EXPLANATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 19,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SCHOOL-05",
+      "role": "SCHOOL",
+      "challengeClass": "ROLE_AUTHORIZATION_BOUNDARY",
+      "contractSourceClass": "ROLE_BOUNDARY",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/school",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "CREATE",
+        "action": "CREATE",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "authorizationClass": "AUTHORIZATION_DENIAL"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "CREATE",
+            "action": "CREATE",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "CREATE_SHIFT",
+            "authorizationClass": "DENY",
+            "authorizationNativeStatus": "DENIED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 20,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SCHOOL-06",
+      "role": "SCHOOL",
+      "challengeClass": "AMBIGUITY_UNKNOWN_FAIL_CLOSED",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/school",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "REQUIRES_CLARIFICATION"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 21,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SCHOOL-07",
+      "role": "SCHOOL",
+      "challengeClass": "DOMAIN_TASK_OR_GENUINE_OOS",
+      "contractSourceClass": "OOS_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": null,
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "OFF_TOPIC_GENUINE",
+        "requestMode": "GENUINE_OOS",
+        "semanticAction": "NONE",
+        "action": "NONE",
+        "object": null,
+        "reference": "ABSENT",
+        "resolutionStatus": "NOT_APPLICABLE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "authorizationClass": "NOT_APPLICABLE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "OFF_TOPIC_GENUINE",
+            "requestMode": "GENUINE_OOS",
+            "semanticAction": "NONE",
+            "action": "NONE",
+            "object": null,
+            "reference": "ABSENT",
+            "resolutionStatus": "NOT_APPLICABLE",
+            "task": "OFF_TOPIC",
+            "operation": "GENERAL_INFORMATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 22,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ORGANIZATION-01",
+      "role": "ORGANIZATION",
+      "challengeClass": "EXPLAIN/CURRENT_SURFACE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/organization",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "authorizationClass": "ALLOW_GUIDANCE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 23,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ORGANIZATION-02",
+      "role": "ORGANIZATION",
+      "challengeClass": "VIEW_OR_NAVIGATE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/organization",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "NAVIGATE",
+        "semanticAction": "NAVIGATE",
+        "action": "NAVIGATE",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "NAVIGATE",
+            "semanticAction": "NAVIGATE",
+            "action": "NAVIGATE",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 24,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ORGANIZATION-03",
+      "role": "ORGANIZATION",
+      "challengeClass": "REFERENCE_CONTEXT",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/organization",
+      "selectedEntityPresent": true,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 25,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ORGANIZATION-04",
+      "role": "ORGANIZATION",
+      "challengeClass": "CONTINUATION_RECOVERY",
+      "contractSourceClass": "CONTINUATION_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/organization",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_CONTEXTUAL",
+        "requestMode": "CONTINUE",
+        "semanticAction": "CONTINUE",
+        "action": "CONTINUE",
+        "object": "RECORD",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        },
+        {
+          "turnIndex": 2,
+          "actual": {
+            "semanticScope": "PRODUCT_CONTEXTUAL",
+            "requestMode": "CONTINUE",
+            "semanticAction": "CONTINUE",
+            "action": "CONTINUE",
+            "object": "RECORD",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "CONTINUE_CURRENT_REASONING",
+            "operation": "CONTINUE_EXPLANATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 26,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ORGANIZATION-05",
+      "role": "ORGANIZATION",
+      "challengeClass": "ROLE_AUTHORIZATION_BOUNDARY",
+      "contractSourceClass": "ROLE_BOUNDARY",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/organization",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "CREATE",
+        "action": "CREATE",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "authorizationClass": "AUTHORIZATION_DENIAL"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "CREATE",
+            "action": "CREATE",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "CREATE_SHIFT",
+            "authorizationClass": "DENY",
+            "authorizationNativeStatus": "DENIED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 27,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ORGANIZATION-06",
+      "role": "ORGANIZATION",
+      "challengeClass": "AMBIGUITY_UNKNOWN_FAIL_CLOSED",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/organization",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "REQUIRES_CLARIFICATION"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 28,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-ORGANIZATION-07",
+      "role": "ORGANIZATION",
+      "challengeClass": "DOMAIN_TASK_OR_GENUINE_OOS",
+      "contractSourceClass": "OOS_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": null,
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "OFF_TOPIC_GENUINE",
+        "requestMode": "GENUINE_OOS",
+        "semanticAction": "NONE",
+        "action": "NONE",
+        "object": null,
+        "reference": "ABSENT",
+        "resolutionStatus": "NOT_APPLICABLE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "authorizationClass": "NOT_APPLICABLE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "OFF_TOPIC_GENUINE",
+            "requestMode": "GENUINE_OOS",
+            "semanticAction": "NONE",
+            "action": "NONE",
+            "object": null,
+            "reference": "ABSENT",
+            "resolutionStatus": "NOT_APPLICABLE",
+            "task": "OFF_TOPIC",
+            "operation": "GENERAL_INFORMATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 29,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-DRIVER-01",
+      "role": "DRIVER",
+      "challengeClass": "EXPLAIN/CURRENT_SURFACE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/driver/today",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "authorizationClass": "ALLOW_GUIDANCE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 30,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-DRIVER-02",
+      "role": "DRIVER",
+      "challengeClass": "VIEW_OR_NAVIGATE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/driver/today",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "NAVIGATE",
+        "semanticAction": "NAVIGATE",
+        "action": "NAVIGATE",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "NAVIGATE",
+            "semanticAction": "NAVIGATE",
+            "action": "NAVIGATE",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 31,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-DRIVER-03",
+      "role": "DRIVER",
+      "challengeClass": "REFERENCE_CONTEXT",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/driver/today",
+      "selectedEntityPresent": true,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 32,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-DRIVER-04",
+      "role": "DRIVER",
+      "challengeClass": "CONTINUATION_RECOVERY",
+      "contractSourceClass": "CONTINUATION_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/driver/today",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_CONTEXTUAL",
+        "requestMode": "CONTINUE",
+        "semanticAction": "CONTINUE",
+        "action": "CONTINUE",
+        "object": "RECORD",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        },
+        {
+          "turnIndex": 2,
+          "actual": {
+            "semanticScope": "PRODUCT_CONTEXTUAL",
+            "requestMode": "CONTINUE",
+            "semanticAction": "CONTINUE",
+            "action": "CONTINUE",
+            "object": "RECORD",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "CONTINUE_CURRENT_REASONING",
+            "operation": "CONTINUE_EXPLANATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 33,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-DRIVER-05",
+      "role": "DRIVER",
+      "challengeClass": "ROLE_AUTHORIZATION_BOUNDARY",
+      "contractSourceClass": "ROLE_BOUNDARY",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/driver/today",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "CREATE",
+        "action": "CREATE",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "authorizationClass": "AUTHORIZATION_DENIAL"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "CREATE",
+            "action": "CREATE",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "CREATE_SHIFT",
+            "authorizationClass": "DENY",
+            "authorizationNativeStatus": "DENIED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 34,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-DRIVER-06",
+      "role": "DRIVER",
+      "challengeClass": "AMBIGUITY_UNKNOWN_FAIL_CLOSED",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/driver/today",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "REQUIRES_CLARIFICATION"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 35,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-DRIVER-07",
+      "role": "DRIVER",
+      "challengeClass": "DOMAIN_TASK_OR_GENUINE_OOS",
+      "contractSourceClass": "OOS_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": null,
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "OFF_TOPIC_GENUINE",
+        "requestMode": "GENUINE_OOS",
+        "semanticAction": "NONE",
+        "action": "NONE",
+        "object": null,
+        "reference": "ABSENT",
+        "resolutionStatus": "NOT_APPLICABLE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "authorizationClass": "NOT_APPLICABLE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "OFF_TOPIC_GENUINE",
+            "requestMode": "GENUINE_OOS",
+            "semanticAction": "NONE",
+            "action": "NONE",
+            "object": null,
+            "reference": "ABSENT",
+            "resolutionStatus": "NOT_APPLICABLE",
+            "task": "OFF_TOPIC",
+            "operation": "GENERAL_INFORMATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 36,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PERSONEL-01",
+      "role": "PERSONEL",
+      "challengeClass": "EXPLAIN/CURRENT_SURFACE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/personel/live",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "authorizationClass": "ALLOW_GUIDANCE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 37,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PERSONEL-02",
+      "role": "PERSONEL",
+      "challengeClass": "VIEW_OR_NAVIGATE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/personel/live",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "NAVIGATE",
+        "semanticAction": "NAVIGATE",
+        "action": "NAVIGATE",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "NAVIGATE",
+            "semanticAction": "NAVIGATE",
+            "action": "NAVIGATE",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 38,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PERSONEL-03",
+      "role": "PERSONEL",
+      "challengeClass": "REFERENCE_CONTEXT",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/personel/live",
+      "selectedEntityPresent": true,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 39,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PERSONEL-04",
+      "role": "PERSONEL",
+      "challengeClass": "CONTINUATION_RECOVERY",
+      "contractSourceClass": "CONTINUATION_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/personel/live",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_CONTEXTUAL",
+        "requestMode": "CONTINUE",
+        "semanticAction": "CONTINUE",
+        "action": "CONTINUE",
+        "object": "RECORD",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        },
+        {
+          "turnIndex": 2,
+          "actual": {
+            "semanticScope": "PRODUCT_CONTEXTUAL",
+            "requestMode": "CONTINUE",
+            "semanticAction": "CONTINUE",
+            "action": "CONTINUE",
+            "object": "RECORD",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "CONTINUE_CURRENT_REASONING",
+            "operation": "CONTINUE_EXPLANATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 40,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PERSONEL-05",
+      "role": "PERSONEL",
+      "challengeClass": "ROLE_AUTHORIZATION_BOUNDARY",
+      "contractSourceClass": "ROLE_BOUNDARY",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/personel/live",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "CREATE",
+        "action": "CREATE",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "authorizationClass": "AUTHORIZATION_DENIAL"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "CREATE",
+            "action": "CREATE",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "CREATE_SHIFT",
+            "authorizationClass": "DENY",
+            "authorizationNativeStatus": "DENIED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 41,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PERSONEL-06",
+      "role": "PERSONEL",
+      "challengeClass": "AMBIGUITY_UNKNOWN_FAIL_CLOSED",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": "/personel/live",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "REQUIRES_CLARIFICATION"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 42,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PERSONEL-07",
+      "role": "PERSONEL",
+      "challengeClass": "DOMAIN_TASK_OR_GENUINE_OOS",
+      "contractSourceClass": "OOS_CONTRACT",
+      "tenantContextType": "COMPANY",
+      "surfacePath": null,
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "OFF_TOPIC_GENUINE",
+        "requestMode": "GENUINE_OOS",
+        "semanticAction": "NONE",
+        "action": "NONE",
+        "object": null,
+        "reference": "ABSENT",
+        "resolutionStatus": "NOT_APPLICABLE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "authorizationClass": "NOT_APPLICABLE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "OFF_TOPIC_GENUINE",
+            "requestMode": "GENUINE_OOS",
+            "semanticAction": "NONE",
+            "action": "NONE",
+            "object": null,
+            "reference": "ABSENT",
+            "resolutionStatus": "NOT_APPLICABLE",
+            "task": "OFF_TOPIC",
+            "operation": "GENERAL_INFORMATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 43,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PARENT-01",
+      "role": "PARENT",
+      "challengeClass": "EXPLAIN/CURRENT_SURFACE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "PARENT",
+      "surfacePath": "/parent/live",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "authorizationClass": "ALLOW_GUIDANCE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 44,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PARENT-02",
+      "role": "PARENT",
+      "challengeClass": "VIEW_OR_NAVIGATE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "PARENT",
+      "surfacePath": "/parent/live",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "NAVIGATE",
+        "semanticAction": "NAVIGATE",
+        "action": "NAVIGATE",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "NAVIGATE",
+            "semanticAction": "NAVIGATE",
+            "action": "NAVIGATE",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 45,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PARENT-03",
+      "role": "PARENT",
+      "challengeClass": "REFERENCE_CONTEXT",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "PARENT",
+      "surfacePath": "/parent/live",
+      "selectedEntityPresent": true,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 46,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PARENT-04",
+      "role": "PARENT",
+      "challengeClass": "CONTINUATION_RECOVERY",
+      "contractSourceClass": "CONTINUATION_CONTRACT",
+      "tenantContextType": "PARENT",
+      "surfacePath": "/parent/live",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_CONTEXTUAL",
+        "requestMode": "CONTINUE",
+        "semanticAction": "CONTINUE",
+        "action": "CONTINUE",
+        "object": "RECORD",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        },
+        {
+          "turnIndex": 2,
+          "actual": {
+            "semanticScope": "PRODUCT_CONTEXTUAL",
+            "requestMode": "CONTINUE",
+            "semanticAction": "CONTINUE",
+            "action": "CONTINUE",
+            "object": "RECORD",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "CONTINUE_CURRENT_REASONING",
+            "operation": "CONTINUE_EXPLANATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 47,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PARENT-05",
+      "role": "PARENT",
+      "challengeClass": "ROLE_AUTHORIZATION_BOUNDARY",
+      "contractSourceClass": "ROLE_BOUNDARY",
+      "tenantContextType": "PARENT",
+      "surfacePath": "/parent/live",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "CREATE",
+        "action": "CREATE",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "authorizationClass": "AUTHORIZATION_DENIAL"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "CREATE",
+            "action": "CREATE",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "CREATE_SHIFT",
+            "authorizationClass": "DENY",
+            "authorizationNativeStatus": "DENIED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 48,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PARENT-06",
+      "role": "PARENT",
+      "challengeClass": "AMBIGUITY_UNKNOWN_FAIL_CLOSED",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "PARENT",
+      "surfacePath": "/parent/live",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "REQUIRES_CLARIFICATION"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 49,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-PARENT-07",
+      "role": "PARENT",
+      "challengeClass": "DOMAIN_TASK_OR_GENUINE_OOS",
+      "contractSourceClass": "OOS_CONTRACT",
+      "tenantContextType": "PARENT",
+      "surfacePath": null,
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "OFF_TOPIC_GENUINE",
+        "requestMode": "GENUINE_OOS",
+        "semanticAction": "NONE",
+        "action": "NONE",
+        "object": null,
+        "reference": "ABSENT",
+        "resolutionStatus": "NOT_APPLICABLE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "authorizationClass": "NOT_APPLICABLE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "OFF_TOPIC_GENUINE",
+            "requestMode": "GENUINE_OOS",
+            "semanticAction": "NONE",
+            "action": "NONE",
+            "object": null,
+            "reference": "ABSENT",
+            "resolutionStatus": "NOT_APPLICABLE",
+            "task": "OFF_TOPIC",
+            "operation": "GENERAL_INFORMATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 50,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SUPER_ADMIN-01",
+      "role": "SUPER_ADMIN",
+      "challengeClass": "EXPLAIN/CURRENT_SURFACE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "SUPER_ADMIN",
+      "surfacePath": "/superadmin",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "authorizationClass": "ALLOW_GUIDANCE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 51,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SUPER_ADMIN-02",
+      "role": "SUPER_ADMIN",
+      "challengeClass": "VIEW_OR_NAVIGATE",
+      "contractSourceClass": "PRODUCT_SURFACE_CONTRACT",
+      "tenantContextType": "SUPER_ADMIN",
+      "surfacePath": "/superadmin",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "NAVIGATE",
+        "semanticAction": "NAVIGATE",
+        "action": "NAVIGATE",
+        "object": "SURFACE",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "NAVIGATE",
+            "semanticAction": "NAVIGATE",
+            "action": "NAVIGATE",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 52,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SUPER_ADMIN-03",
+      "role": "SUPER_ADMIN",
+      "challengeClass": "REFERENCE_CONTEXT",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "SUPER_ADMIN",
+      "surfacePath": "/superadmin",
+      "selectedEntityPresent": true,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 53,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SUPER_ADMIN-04",
+      "role": "SUPER_ADMIN",
+      "challengeClass": "CONTINUATION_RECOVERY",
+      "contractSourceClass": "CONTINUATION_CONTRACT",
+      "tenantContextType": "SUPER_ADMIN",
+      "surfacePath": "/superadmin",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_CONTEXTUAL",
+        "requestMode": "CONTINUE",
+        "semanticAction": "CONTINUE",
+        "action": "CONTINUE",
+        "object": "RECORD",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SURFACE",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "EXPLAIN_CURRENT_SURFACE",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        },
+        {
+          "turnIndex": 2,
+          "actual": {
+            "semanticScope": "PRODUCT_CONTEXTUAL",
+            "requestMode": "CONTINUE",
+            "semanticAction": "CONTINUE",
+            "action": "CONTINUE",
+            "object": "RECORD",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "CONTINUE_CURRENT_REASONING",
+            "operation": "CONTINUE_EXPLANATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 54,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SUPER_ADMIN-05",
+      "role": "SUPER_ADMIN",
+      "challengeClass": "ROLE_AUTHORIZATION_BOUNDARY",
+      "contractSourceClass": "ROLE_BOUNDARY",
+      "tenantContextType": "SUPER_ADMIN",
+      "surfacePath": "/superadmin",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "CREATE",
+        "action": "CREATE",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "authorizationClass": "AUTHORIZED_OPERATION"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "CREATE",
+            "action": "CREATE",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "SCREEN_CONTEXT",
+            "operation": "CREATE_SHIFT",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 55,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SUPER_ADMIN-06",
+      "role": "SUPER_ADMIN",
+      "challengeClass": "AMBIGUITY_UNKNOWN_FAIL_CLOSED",
+      "contractSourceClass": "REFERENCE_CONTRACT",
+      "tenantContextType": "SUPER_ADMIN",
+      "surfacePath": "/superadmin",
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "PRODUCT_EXPLICIT",
+        "requestMode": "EXPLAIN",
+        "semanticAction": "EXPLAIN",
+        "action": "EXPLAIN",
+        "object": "SHIFT",
+        "reference": "ABSENT",
+        "resolutionStatus": "RESOLVED",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "PRODUCT_EXPLICIT",
+            "requestMode": "EXPLAIN",
+            "semanticAction": "EXPLAIN",
+            "action": "EXPLAIN",
+            "object": "SHIFT",
+            "reference": "ABSENT",
+            "resolutionStatus": "RESOLVED",
+            "task": "FIELD_LOOKUP",
+            "operation": "LOOK_UP_FIELD",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "REQUIRES_CLARIFICATION"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    },
+    {
+      "index": 56,
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S2-SUPER_ADMIN-07",
+      "role": "SUPER_ADMIN",
+      "challengeClass": "DOMAIN_TASK_OR_GENUINE_OOS",
+      "contractSourceClass": "OOS_CONTRACT",
+      "tenantContextType": "SUPER_ADMIN",
+      "surfacePath": null,
+      "selectedEntityPresent": false,
+      "status": "PASS",
+      "expected": {
+        "semanticScope": "OFF_TOPIC_GENUINE",
+        "requestMode": "GENUINE_OOS",
+        "semanticAction": "NONE",
+        "action": "NONE",
+        "object": null,
+        "reference": "ABSENT",
+        "resolutionStatus": "NOT_APPLICABLE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "authorizationClass": "NOT_APPLICABLE"
+      },
+      "turns": [
+        {
+          "turnIndex": 1,
+          "actual": {
+            "semanticScope": "OFF_TOPIC_GENUINE",
+            "requestMode": "GENUINE_OOS",
+            "semanticAction": "NONE",
+            "action": "NONE",
+            "object": null,
+            "reference": "ABSENT",
+            "resolutionStatus": "NOT_APPLICABLE",
+            "task": "OFF_TOPIC",
+            "operation": "GENERAL_INFORMATION",
+            "authorizationClass": "ALLOW",
+            "authorizationNativeStatus": "AUTHORIZED"
+          },
+          "continuationStateObserved": true
+        }
+      ],
+      "mismatchFields": [],
+      "failureReasonCode": null
+    }
+  ]
+}

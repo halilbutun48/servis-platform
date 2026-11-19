@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getTotpStatus, setupTotp, enableTotp, verifyTotp } from "../../api";
 import { useSession } from "../../state/session";
 import { getStepUpProvider, isStepUpEnabled, isTotpStepUpEnabled } from "../../utils/stepUp";
+import { financeUserFacingError, financeUserFacingText } from "./financeUserFacingLabels.js";
 
 export default function TotpStepUpCard() {
   const { token, me, setToken } = useSession();
@@ -22,7 +23,7 @@ export default function TotpStepUpCard() {
       setStatus(r);
       setErr("");
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(financeUserFacingError(e, "Güvenlik durumu şu anda okunamıyor."));
     }
   }, [shouldShow, token]);
 
@@ -34,17 +35,17 @@ export default function TotpStepUpCard() {
 
   const statusProvider = String(status?.provider || provider || "");
   const statusProviderReady = typeof status?.providerReady === "boolean" ? status.providerReady : providerReady;
-  const providerMessage = String(status?.providerMessage || "");
+  const providerMessage = financeUserFacingText(status?.providerMessage, "");
   const isSmsProvider = statusProvider === "sms";
 
   if (provider !== "none" && !statusProviderReady) {
     return (
       <div className="card" style={{ marginBottom: 12, borderColor: "#8a6d1f" }}>
-        <div className="title">Güvenlik — {isSmsProvider ? "SMS" : "TOTP"} ek doğrulaması</div>
+        <div className="title">Güvenlik — {isSmsProvider ? "Telefon doğrulaması" : "Ek güvenlik doğrulaması"}</div>
         <div className="muted" style={{ marginTop: 6 }}>
           {providerMessage || (isSmsProvider
-            ? "SMS doğrulama henüz bağlı değil. Bu ortamda step-up açık ama SMS provider hazır değil."
-            : "TOTP ek doğrulaması henüz bağlı değil.")}
+            ? "Telefonla doğrulama henüz bağlanmadı. Bu ortamda ek doğrulama açık ancak telefon doğrulaması hazır değil."
+            : "Ek güvenlik doğrulaması henüz bağlanmadı.")}
         </div>
       </div>
     );
@@ -60,7 +61,7 @@ export default function TotpStepUpCard() {
       setSetupData(r);
       await refreshStatus();
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(financeUserFacingError(e, "Kurulum başlatılamadı."));
     } finally {
       setBusy(false);
     }
@@ -75,7 +76,7 @@ export default function TotpStepUpCard() {
       setCode("");
       await refreshStatus();
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(financeUserFacingError(e, "Kurulum doğrulanamadı."));
     } finally {
       setBusy(false);
     }
@@ -90,7 +91,7 @@ export default function TotpStepUpCard() {
       setCode("");
       await refreshStatus();
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(financeUserFacingError(e, "Ek doğrulama tamamlanamadı."));
     } finally {
       setBusy(false);
     }
@@ -99,11 +100,11 @@ export default function TotpStepUpCard() {
   const enabled = !!status?.enabled;
   const steppedUp = !!status?.stepUpSatisfied;
   const needsSetup = !enabled;
-  const providerLabel = isSmsProvider ? "SMS" : "TOTP";
+  const providerLabel = isSmsProvider ? "Telefon doğrulaması" : "Ek güvenlik doğrulaması";
 
   return (
     <div className="card" style={{ marginBottom: 12, borderColor: steppedUp ? "#1f7a1f" : "#8a6d1f" }}>
-      <div className="title">Güvenlik — {providerLabel} ek doğrulaması</div>
+      <div className="title">Güvenlik — {providerLabel}</div>
       <div className="muted" style={{ marginTop: 6 }}>
         {needsSetup
           ? `Bu rol için ${providerLabel} kurulumu zorunlu. Kritik taşımacılık firması / hizmet alan firma / süper yönetici işlemleri kurulum tamamlanmadan açılmaz.`

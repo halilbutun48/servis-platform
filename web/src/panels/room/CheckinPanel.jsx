@@ -115,7 +115,12 @@ export default function RoomCheckinPanel() {
 
   return (
     <div>
-      <div className="card">
+      <div
+        className="card"
+        data-copilot-target="room:checkin"
+        data-copilot-semantic-id="product:room:checkin"
+        data-copilot-label="Biniş kayıtları"
+      >
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
           <div>
             <h3 style={{ margin: 0 }}>Taşımacılık Firması biniş kayıtları</h3>

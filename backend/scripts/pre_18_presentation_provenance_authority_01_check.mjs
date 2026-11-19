@@ -20,7 +20,7 @@ for (const path of LIFECYCLE_DEFERRED_SUPERSEDED_ORPHAN_PATHS) {
   must(!evaluatePresentationIdentity(path, { consumer: "KVKK", algorithm: NORMALIZED_TEXT_SHA256, actualSha256: "A".repeat(64) }).accepted, `superseded orphan accepted as live UI: ${path}`);
 }
 const indexPath = "web/src/index.css";
-const indexSha = "9760EAD5B458860591FAD4A3EB57FCBBE522D20560212DE5BB9EA038F438AEE1";
+const indexSha = "E82CEC86CAB7A0ED170E69647E985824FED3265FCE000693F57C7BB4856BBC52";
 must(!evaluatePresentationIdentity("web/src/panels/personel/LivePanel-copy.jsx", { consumer: "KVKK", algorithm: NORMALIZED_TEXT_SHA256, actualSha256: "A".repeat(64) }).accepted, "unknown sibling accepted");
 must(evaluatePresentationIdentity(indexPath, { consumer: "KVKK", algorithm: NORMALIZED_TEXT_SHA256, actualSha256: indexSha }).accepted, "ratified index normalized rejected");
 must(!evaluatePresentationIdentity(indexPath, { consumer: "KVKK", algorithm: NORMALIZED_TEXT_SHA256, actualSha256: "B".repeat(64) }).accepted, "same path arbitrary SHA accepted");

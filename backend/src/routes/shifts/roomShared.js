@@ -14,6 +14,39 @@ export function toInt(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * A market shift has no roomId until an authorized ROOM claims it through an
+ * active ShiftOffer. The claim must be scoped to that authenticated ROOM;
+ * already assigned shifts keep their persisted room scope.
+ */
+export function resolveRoomApprovalScope({ shiftRoomId, userRoomId }) {
+  const assignedRoomId = shiftRoomId == null ? null : toInt(shiftRoomId);
+  const actorRoomId = userRoomId == null ? null : toInt(userRoomId);
+  return {
+    scopeRoomId: assignedRoomId ?? actorRoomId,
+    claimRoomId: assignedRoomId == null ? actorRoomId : null,
+  };
+}
+
+export function resolveApprovalRetry({
+  shiftStatus,
+  assignedVehicleId,
+  assignedDriverId,
+  requestedVehicleId,
+  requestedDriverId,
+}) {
+  if (String(shiftStatus || "").toUpperCase() !== "APPROVED") return null;
+
+  const sameAssignment = Number(assignedVehicleId || 0) === Number(requestedVehicleId || 0)
+    && Number(assignedDriverId || 0) === Number(requestedDriverId || 0)
+    && Number(requestedVehicleId || 0) > 0
+    && Number(requestedDriverId || 0) > 0;
+
+  return sameAssignment
+    ? { code: "IDEMPOTENT_APPROVAL", status: 200 }
+    : { code: "SHIFT_ALREADY_APPROVED", status: 409 };
+}
+
 export function isValidIso(iso) {
   const t = new Date(String(iso)).getTime();
   return Number.isFinite(t);
@@ -197,7 +230,36 @@ async function buildPassengerUnitsForSplit(shiftId, demand) {
     }
   }
 
-  return { units, rootStops: stops || [], assignedPersonIds: [...assignedPersonIds] };
+  return {
+    units: attachFallbackUnitsToStops(units, stops || []),
+    rootStops: stops || [],
+    assignedPersonIds: [...assignedPersonIds],
+  };
+}
+
+export function attachFallbackUnitsToStops(units, rootStops) {
+  const stops = (Array.isArray(rootStops) ? rootStops : []).filter((stop) => (
+    Number.isFinite(Number(stop?.lat)) && Number.isFinite(Number(stop?.lng))
+  ));
+  if (!stops.length) return Array.isArray(units) ? units : [];
+
+  return (Array.isArray(units) ? units : []).map((unit, index) => {
+    if (unit?.kind !== "generic" || unit?.stopMeta) return unit;
+    const stop = stops[index % stops.length];
+    return {
+      ...unit,
+      originalStopKey: `stop:${Number(stop.id)}`,
+      stopMeta: {
+        id: Number(stop.id),
+        name: stop.name,
+        lat: Number(stop.lat),
+        lng: Number(stop.lng),
+        order: Number(stop.order || index + 1),
+        type: stop.type,
+        state: stop.state,
+      },
+    };
+  });
 }
 
 function haversineM(a, b) {

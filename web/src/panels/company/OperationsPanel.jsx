@@ -20,12 +20,14 @@ import {
   boardingChangeApplyButtonLabel,
   boardingChangeApplySuccessNote,
   boardingChangeApplicationStatusLabel,
+  boardingChangeCopilotSelectionIdentity,
   boardingChangeDecisionLabel,
   boardingChangeDecisionOwnerLabel,
   boardingChangeDecisionOwnerNote,
   boardingChangeKindLabel,
   boardingChangeRouteRefreshLabel,
   boardingChangeRouteRefreshNote,
+  isOpenBoardingChangeRequest,
 } from "../shared/boardingChangeUi";
 
 function companyBaseFromKind(kind) {
@@ -237,10 +239,7 @@ export default function CompanyOperationsPanel() {
   const boardedRows = useMemo(() => filterNotificationDigest(notifRows, ["servise bindi", "bindi"]), [notifRows]);
   const arrivedRows = useMemo(() => filterNotificationDigest(notifRows, ["okula ulaştı", "ulaştı"]), [notifRows]);
 
-  const openRequestRows = useMemo(() => (Array.isArray(requests) ? requests : []).filter((item) => {
-    const status = String(item?.status || "").toUpperCase();
-    return ["REQUESTED", "OPEN", "PENDING", "COUNTERED"].includes(status) || item?.lat != null || item?.lng != null;
-  }), [requests]);
+  const openRequestRows = useMemo(() => (Array.isArray(requests) ? requests : []).filter(isOpenBoardingChangeRequest), [requests]);
   const acceptedRequestRows = useMemo(() => (Array.isArray(requests) ? requests : []).filter((item) => String(item?.status || "").toUpperCase() === "ACCEPTED"), [requests]);
 
   const activeShiftRows = useMemo(() => (Array.isArray(shifts) ? shifts : []).filter((item) => ["APPROVED", "ACTIVE"].includes(String(item?.status || "").toUpperCase())), [shifts]);
@@ -386,10 +385,11 @@ export default function CompanyOperationsPanel() {
     const scopeKey = `${basePath}/operations`;
     const personLabel = resolvePersonDisplayLabel(selectedPreviewRequest, selectedPreview, "Kişi bilgisi eksik");
     const summary = selectedPreviewRequest?.boardingChangeApplicationText || selectedPreview.summaryLine || selectedPreview.previewOnlyNote || selectedPreviewRequest?.detail || selectedPreviewRequest?.decisionText || "";
+    const selectionIdentity = boardingChangeCopilotSelectionIdentity(selectedPreviewRequest?.id);
     return {
       scopeKey,
-      entityType: "screen",
-      entityId: Number(selectedPreviewRequest?.id || 0) || 0,
+      entityType: selectionIdentity.entityType,
+      entityId: selectionIdentity.entityId,
       label: `${selectedPreview.changeTypeLabel || boardingChangeKindLabel(selectedPreviewRequest?.requestKind || selectedPreviewRequest?.kind)} • ${personLabel}`,
       summary,
       selectedLabel: personLabel,
@@ -435,6 +435,48 @@ export default function CompanyOperationsPanel() {
     };
   }, [basePath, selectedPreview, selectedPreviewFacts, selectedPreviewRequest]);
 
+  const operationsScreenSelection = useMemo(() => {
+    const scopeKey = `${basePath}/operations`;
+    const screenExceptionCount = openRequestRows.length + noBoardRows.length + diffStopRows.length;
+    const screenNotificationCount = notifRows.length;
+    const summary = `${title}: bugün ${todayShiftCount} servis, ${todayActiveCount} aktif, ${todayApprovedCount} onaylı; ${screenExceptionCount} istisna, ${screenNotificationCount} bildirim.`;
+    const facts = {
+      screenType: `${companyKind}_OPERATIONS`,
+      scopeKey,
+      counters: {
+        todayShiftCount,
+        todayActiveCount,
+        todayApprovedCount,
+        exceptionCount: screenExceptionCount,
+        notificationCount: screenNotificationCount,
+      },
+      copilotSummary: summary,
+      selectedRecordSummary: summary,
+    };
+    return {
+      scopeKey,
+      entityType: "screen",
+      entityId: 2315,
+      label: title,
+      summary,
+      selectedLabel: title,
+      selectedSummary: summary,
+      selectedRecordLabel: title,
+      selectedRecordSummary: summary,
+      selectedRecordStatus: todayActiveCount > 0 ? "Aktif servis var" : "Bugün aktif servis yok",
+      selectedFields: [
+        { label: "Toplam servis", value: String(todayShiftCount), help: "Bugünün yetkili operasyon özetindeki toplam servis sayısı." },
+        { label: "Aktif servis", value: String(todayActiveCount), help: "Bugünün yetkili operasyon özetindeki aktif servis sayısı." },
+        { label: "Onaylı servis", value: String(todayApprovedCount), help: "Bugünün yetkili operasyon özetindeki onaylı servis sayısı." },
+        { label: "İstisna", value: String(screenExceptionCount), help: "Bu tenant kapsamındaki operasyon istisnası sayısı." },
+        { label: "Bildirim", value: String(screenNotificationCount), help: "Bu tenant kapsamındaki operasyon bildirimlerinin sayısı." },
+      ],
+      facts,
+      structuredFacts: facts,
+      screenPath: scopeKey,
+    };
+  }, [basePath, companyKind, diffStopRows.length, noBoardRows.length, notifRows.length, openRequestRows.length, title, todayActiveCount, todayApprovedCount, todayShiftCount]);
+
   const previewSelectionLabel = useMemo(() => {
     if (!selectedPreviewRequest) return "";
     const personLabel = resolvePersonDisplayLabel(selectedPreviewRequest, selectedPreview, "Kişi bilgisi eksik");
@@ -453,13 +495,14 @@ export default function CompanyOperationsPanel() {
   }, [requestSelectionRows.length, selectedPreviewRequest, selectedPreviewRequestId]);
 
   useEffect(() => {
-    if (!selectedPreviewSelection) {
+    const activeCopilotSelection = selectedPreviewSelection || operationsScreenSelection;
+    if (!activeCopilotSelection) {
       clearCopilotSelection(`${basePath}/operations`);
       return undefined;
     }
-    setCopilotSelection(selectedPreviewSelection);
+    setCopilotSelection(activeCopilotSelection);
     return () => clearCopilotSelection(`${basePath}/operations`);
-  }, [basePath, selectedPreviewSelection]);
+  }, [basePath, operationsScreenSelection, selectedPreviewSelection]);
 
   const notificationRows = useMemo(
     () => notifRows.slice(0, 10).map((item) => ({
@@ -525,7 +568,7 @@ export default function CompanyOperationsPanel() {
         subtitle={subtitle}
         actions={(
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button className="btn sm" onClick={load} disabled={busy}>
+            <button className="btn sm" onClick={() => load({ force: true })} disabled={busy}>
               {busy ? "..." : "Yenile"}
             </button>
             <button className="btn sm" onClick={() => navigate(basePath + "/shifts")}>Vardiyalar</button>
@@ -904,6 +947,17 @@ export default function CompanyOperationsPanel() {
                         <td>{fmtTR(row.applicationAt || row.createdAt)}</td>
                         <td>
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                            <button
+                              type="button"
+                              className="btn sm"
+                              aria-pressed={Number(selectedPreviewRequestId || 0) === Number(row.id || 0)}
+                              onClick={() => handlePreviewRequestSelect(row)}
+                              style={Number(selectedPreviewRequestId || 0) === Number(row.id || 0)
+                                ? { borderColor: "rgba(59, 130, 246, 0.55)", boxShadow: "0 0 0 1px rgba(59, 130, 246, 0.18)" }
+                                : undefined}
+                            >
+                              {previewLoading && Number(selectedPreviewRequestId || 0) === Number(row.id || 0) ? "Önizleniyor..." : "Rota etkisini önizle"}
+                            </button>
                             {canApply ? (
                               <button
                                 type="button"

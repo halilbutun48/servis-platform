@@ -24,6 +24,16 @@ const ROUTE_REFRESH_LABELS = {
   },
 };
 
+const BOARDING_CHANGE_REQUEST_AUDIT_ACTIONS = [
+  "BOARDING_CHANGE_REQUEST_CREATE",
+  "BOARDING_CHANGE_REQUEST_AUTO_ACCEPTED",
+];
+const BOARDING_CHANGE_DECISION_AUDIT_ACTIONS = [
+  "BOARDING_CHANGE_REQUEST_CLOSE_ACCEPT",
+  "BOARDING_CHANGE_REQUEST_CLOSE_CANCEL",
+];
+const BOARDING_CHANGE_APPLY_ACTION = "BOARDING_CHANGE_APPLIED";
+
 function toInt(value, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? Math.trunc(n) : fallback;
@@ -45,6 +55,14 @@ function normalizeChangeType(value) {
   const kind = String(value || "").trim().toUpperCase();
   if (["NO_SERVICE_TODAY", "ALTERNATE_STOP_TODAY", "TEMPORARY_BOARDING_NOTE"].includes(kind)) return kind;
   return "TEMPORARY_BOARDING_NOTE";
+}
+
+function normalizeRequestKindToChangeType(value) {
+  const kind = String(value || "").trim().toUpperCase();
+  if (kind === "NO_SHOW") return "NO_SERVICE_TODAY";
+  if (kind === "DIFFERENT_STOP") return "ALTERNATE_STOP_TODAY";
+  if (kind === "PICKUP_FROM_LOCATION") return "TEMPORARY_BOARDING_NOTE";
+  return normalizeChangeType(value);
 }
 
 export function getBoardingChangeEffectLabel(changeType) {
@@ -111,17 +129,25 @@ export function buildBoardingChangeRouteRefreshState({
   };
 }
 
-function buildAppliedEffect({ request, applyAudit, requestMeta = {}, changeType = "" }) {
+export function buildAppliedEffect({ request, applyAudit, requestMeta = {}, changeType = "" }) {
   if (!request || !applyAudit) return null;
   const meta = applyAudit?.meta || {};
-  const normalizedChangeType = normalizeChangeType(
-    meta?.routeImpactPreview?.changeType
-    || meta?.changeType
-    || changeType
+  const normalizedChangeType = normalizeRequestKindToChangeType(
+    requestMeta?.requestKind
     || requestMeta?.changeType
-    || requestMeta?.requestKind
+    || changeType
+    || meta?.routeImpactPreview?.changeType
+    || meta?.changeType
     || request?.requestKind
     || request?.kind
+  );
+  const legacyAppliedChangeType = normalizeChangeType(
+    meta?.routeImpactPreview?.changeType || meta?.changeType || meta?.requestKind
+  );
+  const requestKindConflictsWithApplyAudit = Boolean(
+    requestMeta?.requestKind
+    && legacyAppliedChangeType !== "TEMPORARY_BOARDING_NOTE"
+    && legacyAppliedChangeType !== normalizedChangeType
   );
   const routeRefresh = buildBoardingChangeRouteRefreshState({
     applicationState: meta.applicationState || "APPLIED",
@@ -136,9 +162,19 @@ function buildAppliedEffect({ request, applyAudit, requestMeta = {}, changeType 
     || request?.personel?.label
     || `#${request?.personelId || "-"}`
   );
-  const oldStopLabel = compactText(meta?.oldStop?.label || meta?.oldStop?.name || "");
-  const newStopLabel = compactText(meta?.newStop?.label || meta?.newStop?.name || "");
-  const stopAssignmentEffect = meta?.stopAssignmentEffect || null;
+  const oldStopLabel = normalizedChangeType === "NO_SERVICE_TODAY"
+    ? ""
+    : compactText(meta?.oldStop?.label || meta?.oldStop?.name || "");
+  const newStopLabel = normalizedChangeType === "NO_SERVICE_TODAY"
+    ? ""
+    : compactText(meta?.newStop?.label || meta?.newStop?.name || "");
+  const stopAssignmentEffect = normalizedChangeType === "NO_SERVICE_TODAY" && requestKindConflictsWithApplyAudit
+    ? null
+    : meta?.stopAssignmentEffect || null;
+  const warnings = Array.isArray(meta.warnings) ? [...meta.warnings] : [];
+  if (requestKindConflictsWithApplyAudit) {
+    warnings.push("Uygulama audit'i oluşturma türüyle uyumsuz; günlük atama onarımı gerekiyor.");
+  }
 
   return {
     requestId: toInt(request.id),
@@ -154,7 +190,7 @@ function buildAppliedEffect({ request, applyAudit, requestMeta = {}, changeType 
     driverVisible: true,
     effectiveDate: meta.effectiveDate || null,
     appliedAt: applyAudit.createdAt || null,
-    warnings: Array.isArray(meta.warnings) ? meta.warnings : [],
+    warnings,
     applicationText: meta.applicationText || "",
     applicationBoundaryNote: meta.applicationBoundaryNote || "",
     nextBestAction: meta.nextBestAction || "",
@@ -200,7 +236,13 @@ export async function loadDriverBoardingChangeRouteEffects({
         where: {
           entity: "PickupRequest",
           entityId: { in: requestIds },
-          action: "BOARDING_CHANGE_APPLIED",
+          action: {
+            in: [
+              ...BOARDING_CHANGE_REQUEST_AUDIT_ACTIONS,
+              ...BOARDING_CHANGE_DECISION_AUDIT_ACTIONS,
+              BOARDING_CHANGE_APPLY_ACTION,
+            ],
+          },
         },
         orderBy: { createdAt: "desc" },
       })
@@ -209,15 +251,24 @@ export async function loadDriverBoardingChangeRouteEffects({
   const auditMap = new Map();
   for (const audit of audits) {
     const key = toInt(audit?.entityId);
-    if (!key || auditMap.has(key)) continue;
-    auditMap.set(key, audit);
+    if (!key) continue;
+    const current = auditMap.get(key) || { requestAudit: null, decisionAudit: null, applyAudit: null };
+    const action = String(audit?.action || "");
+    if (!current.requestAudit && BOARDING_CHANGE_REQUEST_AUDIT_ACTIONS.includes(action)) current.requestAudit = audit;
+    if (!current.decisionAudit && BOARDING_CHANGE_DECISION_AUDIT_ACTIONS.includes(action)) current.decisionAudit = audit;
+    if (!current.applyAudit && action === BOARDING_CHANGE_APPLY_ACTION) current.applyAudit = audit;
+    auditMap.set(key, current);
   }
 
   const byShiftId = {};
   for (const request of requests) {
-    const applyAudit = auditMap.get(toInt(request.id)) || null;
+    const auditBucket = auditMap.get(toInt(request.id)) || {};
+    const applyAudit = auditBucket.applyAudit || null;
     if (!applyAudit) continue;
-    const requestMeta = applyAudit?.meta || {};
+    const requestMeta = {
+      ...(auditBucket.requestAudit?.meta || {}),
+      ...(auditBucket.decisionAudit?.meta || {}),
+    };
     const effect = buildAppliedEffect({
       request,
       applyAudit,

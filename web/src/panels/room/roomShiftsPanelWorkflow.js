@@ -165,24 +165,29 @@ async function remoteAvailability({ api, token }, { shift, vehicleId, driverId }
 
 export async function loadRoomShiftsPanelAll(ctx) {
   ctx.setErr("");
+  ctx.setLoadState?.("loading");
   try {
-    const [sh, veh, drv, rm, off] = await Promise.all([
-      cachedGet("/api/shifts?take=200&includeOffered=1", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+    // The shift list is the primary surface. Do not hold its first render on
+    // slower reference/inbox reads; otherwise a valid response can appear as
+    // "0 / 0" until all unrelated requests drain the shared read queue.
+    const sh = await cachedGet("/api/shifts?take=200&includeOffered=1", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 });
+    const list = Array.isArray(sh) ? sh : sh?.items ?? [];
+    list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
+    ctx.setItems(list);
+    ctx.setLoadState?.(list.length ? "ready" : "empty");
+
+    const [veh, drv, rm, off] = await Promise.all([
       cachedGet("/api/vehicles", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }),
       cachedGet("/api/drivers", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => ({ items: [] })),
       cachedGet("/api/rooms", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => ({ items: [] })),
       cachedGet("/api/offers/inbox?status=OPEN,COUNTERED,ACCEPTED&take=300", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => ({ items: [] })),
     ]);
 
-    const list = Array.isArray(sh) ? sh : sh?.items ?? [];
     const vlist = Array.isArray(veh) ? veh : veh?.items ?? [];
     const dlist = Array.isArray(drv) ? drv : drv?.items ?? [];
     const rlist = Array.isArray(rm) ? rm : rm?.items ?? [];
     const olist = Array.isArray(off) ? off : off?.items ?? [];
 
-    list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
-
-    ctx.setItems(list);
     ctx.setVehicles(vlist);
     ctx.setDrivers(dlist);
     ctx.setRooms(rlist);
@@ -195,19 +200,22 @@ export async function loadRoomShiftsPanelAll(ctx) {
       setRoomOfferSel: ctx.setRoomOfferSel,
     });
   } catch (e) {
-    const ne = normalizeErr(e);
+    const ne = normalizeErr(e, "Vardiyalar yüklenemedi. Lütfen Tekrar Dene ile yeniden deneyin.");
+    ctx.setLoadState?.("error");
     ctx.setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu sürücü için aktif gelmedi kaydı var. Bu nedenle atama yapılamaz." : ne.message);
   }
 }
 
 export async function loadRoomShiftsPanelShiftList(ctx) {
   ctx.setErr("");
+  ctx.setLoadState?.("loading");
   try {
     const sh = await cachedGet("/api/shifts?take=200&includeOffered=1", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 });
     const list = Array.isArray(sh) ? sh : sh?.items ?? [];
     list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
 
     ctx.setItems(list);
+    ctx.setLoadState?.(list.length ? "ready" : "empty");
     hydrateShiftSelections({
       list,
       vehicles: Array.isArray(ctx.vehicles) ? ctx.vehicles : [],
@@ -216,7 +224,8 @@ export async function loadRoomShiftsPanelShiftList(ctx) {
       setRoomOfferSel: ctx.setRoomOfferSel,
     });
   } catch (e) {
-    const ne = normalizeErr(e);
+    const ne = normalizeErr(e, "Vardiyalar yüklenemedi. Lütfen Tekrar Dene ile yeniden deneyin.");
+    ctx.setLoadState?.("error");
     ctx.setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu sürücü için aktif gelmedi kaydı var. Bu nedenle atama yapılamaz." : ne.message);
   }
 }

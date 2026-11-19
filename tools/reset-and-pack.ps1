@@ -1,6 +1,7 @@
 param(
   [int]$To = 0,
-  [switch]$NoBuild
+  [switch]$NoBuild,
+  [switch]$AllowLegacyServisDb
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,6 +11,10 @@ Set-Location $repoRoot
 
 $composeFile = Join-Path $repoRoot "infra\docker-compose.yml"
 $composeBase = @("compose", "-f", $composeFile, "--profile", "osrm")
+
+if (-not $AllowLegacyServisDb) {
+  throw "Legacy reset-and-pack is disabled by the single-canonical DEMO policy. It would start personel_db/servisdb and may create new legacy resources. Pass -AllowLegacyServisDb only for an explicitly historical legacy investigation."
+}
 
 function Get-MaxGateMilestone {
   param([string]$ScriptsDir)

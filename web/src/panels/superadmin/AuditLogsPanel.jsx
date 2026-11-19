@@ -120,7 +120,14 @@ export default function AuditLogsPanel() {
     <div style={{ padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
         <div className="panelTitle">İşlem Kayıtları</div>
-        <span className="pill" data-status="COUNT">
+        <span
+          className="pill"
+          data-status="COUNT"
+          data-copilot-metric="true"
+          data-copilot-metric-label="İşlem Kayıtları"
+          data-copilot-metric-value={String(items.length)}
+          data-copilot-metric-source="AUTHORIZED_VISIBLE_SCREEN"
+        >
           {items.length} kayıt
         </span>
       </div>

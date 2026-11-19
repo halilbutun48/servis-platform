@@ -6,14 +6,18 @@ import {
   boardingChangeApplyButtonLabel,
   boardingChangeApplySuccessNote,
   boardingChangeApplicationStatusLabel,
+  boardingChangeCopilotSelectionIdentity,
   boardingChangeDecisionLabel,
   boardingChangeDecisionOwnerLabel,
   boardingChangeDecisionOwnerNote,
   boardingChangeKindLabel,
   boardingChangeRouteRefreshLabel,
   boardingChangeRouteRefreshNote,
+  isOpenBoardingChangeRequest,
 } from "../shared/boardingChangeUi";
 import { statusBadgeInlineStyle } from "../../utils/statusBadge";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildBoardingRouteImpactCopilotFacts } from "../../utils/copilotFacts";
 import BoardingRouteImpactPreviewCard from "../shared/BoardingRouteImpactPreviewCard";
 
 function cardStyle() {
@@ -90,10 +94,7 @@ export default function RoomOperationsBoard({
     () => (Array.isArray(data.requests) ? data.requests : []),
     [data.requests]
   );
-  const openRequestItems = useMemo(() => requests.filter((item) => {
-    const status = String(item?.status || "").toUpperCase();
-    return ["REQUESTED", "OPEN", "PENDING", "COUNTERED"].includes(status) || item?.lat != null || item?.lng != null;
-  }), [requests]);
+  const openRequestItems = useMemo(() => requests.filter(isOpenBoardingChangeRequest), [requests]);
   const acceptedRequestItems = useMemo(() => requests.filter((item) => String(item?.status || "").toUpperCase() === "ACCEPTED"), [requests]);
   const [selectedPreviewRequestId, setSelectedPreviewRequestId] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -243,6 +244,87 @@ export default function RoomOperationsBoard({
   }, [acceptedRequestCards, openRequestItems.length, requestSelectionCards, selectedPreviewRequestId]);
 
   const selectedPreview = useMemo(() => selectedPreviewRequest?.preview || null, [selectedPreviewRequest]);
+
+  const selectedPreviewFacts = useMemo(() => {
+    if (!selectedPreviewRequest || !selectedPreview) return null;
+    return buildBoardingRouteImpactCopilotFacts({
+      preview: selectedPreview,
+      request: selectedPreviewRequest,
+      screenPath: "/room/operation-health",
+    });
+  }, [selectedPreview, selectedPreviewRequest]);
+
+  const selectedPreviewSelection = useMemo(() => {
+    if (!selectedPreviewRequest || !selectedPreview || !selectedPreviewFacts) return null;
+    const personLabel = resolvePersonDisplayLabel(selectedPreviewRequest, selectedPreview, "Kişi bilgisi eksik");
+    const summary = selectedPreviewRequest.applicationText
+      || selectedPreview.summaryLine
+      || selectedPreview.previewOnlyNote
+      || selectedPreviewRequest.detail
+      || selectedPreviewRequest.decisionText
+      || "";
+    const identity = boardingChangeCopilotSelectionIdentity(selectedPreviewRequest.id);
+    return {
+      scopeKey: "/room/operation-health",
+      entityType: identity.entityType,
+      entityId: identity.entityId,
+      selectedRecordType: identity.entityType,
+      selectedRecordId: identity.entityId,
+      label: `${selectedPreview.changeTypeLabel || boardingChangeKindLabel(selectedPreviewRequest.requestKind || selectedPreviewRequest.kind)} • ${personLabel}`,
+      summary,
+      selectedLabel: personLabel,
+      selectedSummary: summary,
+      selectedRecordLabel: personLabel,
+      selectedRecordSummary: summary,
+      selectedRecordStatus: selectedPreviewRequest.applicationStatus
+        ? boardingChangeApplicationStatusLabel(selectedPreviewRequest.applicationStatus)
+        : (selectedPreview.reliability?.label || "Önizleme"),
+      helpContextSummary: `${selectedPreviewRequest.decisionOwnerNote || selectedPreviewRequest.boundaryNote || selectedPreview.previewOnlyNote || ""} ${selectedPreview.nextBestAction || ""}`.trim(),
+      selectedRecord: {
+        id: identity.entityId,
+        type: identity.entityType,
+        label: personLabel,
+        summary,
+        status: selectedPreviewRequest.applicationStatus
+          ? boardingChangeApplicationStatusLabel(selectedPreviewRequest.applicationStatus)
+          : (selectedPreview.reliability?.label || "Önizleme"),
+        changeType: selectedPreview.changeTypeLabel,
+        oldStopLabel: selectedPreview.oldStopLabel,
+        newStopLabel: selectedPreview.newStopLabel,
+        decisionOwnerLabel: selectedPreviewRequest.decisionOwnerLabel,
+        decisionOwnerNote: selectedPreviewRequest.decisionOwnerNote,
+        applicationStatus: selectedPreviewRequest.applicationStatus || null,
+        applicationBoundaryNote: selectedPreviewRequest.boundaryNote || null,
+        previewOnlyNote: selectedPreview.previewOnlyNote,
+      },
+      selectedFields: [
+        { label: "Değişiklik Türü", value: selectedPreview.changeTypeLabel || "-" },
+        { label: "Eski Durak", value: selectedPreview.oldStopLabel || "-" },
+        { label: "Yeni / Geçici Durak", value: selectedPreview.newStopLabel || "-" },
+        { label: "Karar Sahibi", value: selectedPreviewRequest.decisionOwnerLabel || "-" },
+        { label: "Kişi Etkisi", value: `${selectedPreview.currentPeopleCount} → ${selectedPreview.previewPeopleCount}` },
+        { label: "Durak Etkisi", value: `${selectedPreview.currentStopCount} → ${selectedPreview.previewStopCount}` },
+        { label: "Km Etkisi", value: `${selectedPreview.distanceDeltaKm?.toFixed ? selectedPreview.distanceDeltaKm.toFixed(2) : selectedPreview.distanceDeltaKm} km` },
+        { label: "Süre Etkisi", value: `${selectedPreview.durationDeltaMin} dk` },
+        { label: "Kapasite", value: selectedPreview.capacityImpact?.status || "-" },
+        { label: "Güvenilirlik", value: selectedPreview.reliability?.label || "-" },
+      ],
+      selectedBadges: [
+        { label: "Uygulama", value: selectedPreviewRequest.applicationStatus ? boardingChangeApplicationStatusLabel(selectedPreviewRequest.applicationStatus) : (selectedPreview.previewOnlyNote || "Bu sadece önizlemedir.") },
+        { label: "Tahmini süre", value: selectedPreview.reliability?.label || "Tahmini süre hesaplanamıyor" },
+      ],
+      facts: selectedPreviewFacts,
+      liveFacts: selectedPreviewFacts,
+      structuredFacts: selectedPreviewFacts,
+      screenPath: "/room/operation-health",
+    };
+  }, [selectedPreview, selectedPreviewFacts, selectedPreviewRequest]);
+
+  useEffect(() => {
+    if (!selectedPreviewSelection) return undefined;
+    setCopilotSelection(selectedPreviewSelection);
+    return () => clearCopilotSelection("/room/operation-health");
+  }, [selectedPreviewSelection]);
 
   useEffect(() => {
     if (!selectedPreviewRequestId) return undefined;
@@ -436,7 +518,15 @@ export default function RoomOperationsBoard({
                   {item.routeRefreshLabel ? <div className="panelMeta" style={{ marginTop: 4 }}>{item.routeRefreshLabel}</div> : null}
                   {item.routeRefreshNote ? <div className="panelMeta" style={{ marginTop: 4 }}>{item.routeRefreshNote}</div> : null}
                   {item.boundaryNote ? <div className="panelMeta" style={{ marginTop: 4 }}>{item.boundaryNote}</div> : null}
-                  <div style={{ marginTop: 8 }}>
+                  <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className="btn sm"
+                      onClick={() => handlePreviewRequestSelect(item)}
+                      aria-pressed={Number(selectedPreviewRequestId || 0) === Number(item.id || 0)}
+                    >
+                      {previewLoading && Number(selectedPreviewRequestId || 0) === Number(item.id || 0) ? "Önizleniyor..." : "Rota etkisini önizle"}
+                    </button>
                     {canApply ? (
                       <button
                         type="button"

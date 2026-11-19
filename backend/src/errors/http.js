@@ -26,6 +26,18 @@ const PUBLIC_ERROR_ALIASES = {
     code: "BAD_REQUEST",
     message: "Bu rehber şu anda bu ekran için kullanılamıyor. İlgili ekranı açıp tekrar dene.",
   },
+  GUIDED_BATCH_IDEMPOTENCY_REQUIRED: {
+    code: "BAD_REQUEST",
+    message: "Plan işlemi yeniden gönderilemedi. Lütfen planı yeniden başlatın.",
+  },
+  GUIDED_BATCH_IDEMPOTENCY_CONFLICT: {
+    code: "BAD_REQUEST",
+    message: "Bu plan işlemi farklı bilgilerle yeniden gönderilemez.",
+  },
+  GUIDED_BATCH_IN_PROGRESS: {
+    code: "BAD_REQUEST",
+    message: "Plan işlemi hâlâ hazırlanıyor. Kısa süre sonra tekrar kontrol edin.",
+  },
 };
 
 function isPlainObject(value) {

@@ -19,6 +19,7 @@ import {
   ShiftOfferDetails,
   ShiftLifecycle,
 } from "../shared/CommercialShiftCardPresentation";
+import { listDriversForPendingShift } from "./roomPendingDriverScope";
 
 function stopCardClick(e) {
   e.stopPropagation();
@@ -27,6 +28,25 @@ function stopCardClick(e) {
 function roomShiftLeafTarget(shiftId, action) {
   const id = Number(shiftId || 0);
   return id > 0 ? `room-shifts:shift:${id}:${action}` : undefined;
+}
+
+function canOfferTestSimulatedCompletion(shift) {
+  const status = String(shift?.status || "").toUpperCase();
+  const endAt = new Date(shift?.endAt || "");
+  return Number(shift?.agreementId || 0) > 0
+    && Number(shift?.vehicleId || 0) > 0
+    && Number(shift?.driverId || 0) > 0
+    && ["APPROVED", "ACTIVE"].includes(status)
+    && Number.isFinite(endAt.getTime())
+    && endAt.getTime() <= Date.now();
+}
+
+function hasTestSimulatedCompletionCandidate(shift) {
+  const status = String(shift?.status || "").toUpperCase();
+  return Number(shift?.agreementId || 0) > 0
+    && Number(shift?.vehicleId || 0) > 0
+    && Number(shift?.driverId || 0) > 0
+    && ["APPROVED", "ACTIVE"].includes(status);
 }
 
 function Field({ label, value, wide = false }) {
@@ -58,12 +78,12 @@ function CardHeader({ shift, selected, children }) {
     <div className="shiftCardHeader">
       <div className="shiftCardHeaderMain">
         <div className="shiftCardTitleRow">
-          <div className="shiftCardTitle">Vardiya ID {shift.id}</div>
+          <div className="shiftCardTitle">Seçili vardiya</div>
           {children}
         </div>
         {Number(shift.splitRootId || 0) > 0 ? (
           <div className="shiftCardSubtle" style={{ marginTop: 4 }}>
-            Paket ID {shift.splitRootId}
+            Paket bilgisi
             {Number(shift.splitIndex || 0) > 0 && Number(shift.splitTotal || 0) > 0 ? ` • ${shift.splitIndex}/${shift.splitTotal}` : ""}
           </div>
         ) : null}
@@ -79,6 +99,8 @@ function CardShell({ selected, children, onClick, shiftId }) {
       className="card shiftCard shiftMobileCard"
       data-testid="commercial-shift-card"
       data-shift-id={shiftId}
+      data-room-shift-focus={selected ? `shift-${Number(shiftId)}` : undefined}
+      tabIndex={selected ? -1 : undefined}
       data-perspective="room"
       style={{ ...rowSelectionStyle(selected), overflow: "visible" }}
       onClick={onClick}
@@ -128,7 +150,7 @@ export function RoomPendingShiftCard({
   const dropdownVehicles = onlyAvail ? availVehicles : roomVehicles;
   const availCount = availVehicles.length;
   const autoDriverId = selectedVehicle?.driverId ? Number(selectedVehicle.driverId) : null;
-  const autoDriverName = autoDriverId && driversById.get(autoDriverId) ? driversById.get(autoDriverId).fullName : autoDriverId ? `Sürücü ID ${autoDriverId}` : "-";
+  const autoDriverName = autoDriverId && driversById.get(autoDriverId) ? driversById.get(autoDriverId).fullName : autoDriverId ? "Sürücü bilgisi bekliyor" : "-";
   const selD = driverSel[sid] ?? "";
   const manualDriverId = selD ? Number(selD) : null;
   const effDriverId = manualDriverId ?? autoDriverId ?? null;
@@ -206,7 +228,11 @@ export function RoomPendingShiftCard({
         }}
         note={approveReason || null}
       />
-      <ShiftCardDetails>
+      <ShiftCardDetails
+        dataCopilotTarget={selected ? roomShiftLeafTarget(sid, "details") : undefined}
+        dataCopilotSemanticId={selected ? `product:room:shift:${sid}:details` : undefined}
+        dataCopilotLabel={selected ? `Vardiya #${sid} ayrıntıları` : undefined}
+      >
         <ShiftCommercialSummary shift={shift} />
         <CardSection title="Teklif ayrıntıları">
           {isAgreement ? <div className="shiftCardSubtle">Sözleşmeli vardiya. Pazarlık kapalı.</div> : <ShiftOfferDetails shift={offerSummaryShift} />}
@@ -245,7 +271,7 @@ export function RoomPendingShiftCard({
                   <option key={v.id} value={String(v.id)}>
                     {v.plate} • {vehicleMetaLine(v)}
                     {hasRegionOwnership(v) ? ` • ${formatRegionOwnership(v).replace(/^Bölge:\s*/, "")}` : ""}
-                    {` (Araç ID ${v.id})`}
+                    {" (Araç seçeneği)"}
                   </option>
                 ))}
               </select>
@@ -260,11 +286,10 @@ export function RoomPendingShiftCard({
                 disabled={busy}
               >
                 <option value="">Seç (opsiyonel)</option>
-                {drivers
-                  .filter((d) => !d?.roomId || Number(d.roomId) === Number(shift.roomId))
+                {listDriversForPendingShift(drivers, shift, marketOffer)
                   .map((d) => (
                     <option key={d.id} value={String(d.id)}>
-                      {d.fullName || d.name || `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() || `Şoför ID ${d.id}`}
+                      {d.fullName || d.name || `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() || "Sürücü bilgisi bekliyor"}
                       {hasRegionOwnership(d) ? ` • ${formatRegionOwnership(d).replace(/^Bölge:\s*/, "")}` : ""}
                     </option>
                   ))}
@@ -389,6 +414,7 @@ export function RoomAllShiftCard({
   decideExtend,
   openOpsEvents,
   openReassignModal,
+  completeTestSimulatedService,
   openRoutePreview,
 }) {
   const vehicle = shift.vehicle || (shift.vehicleId ? vehiclesById.get(Number(shift.vehicleId)) || null : null);
@@ -442,7 +468,11 @@ export function RoomAllShiftCard({
         dataCopilotTarget={selected ? roomShiftLeafTarget(shift.id, canReassign ? "reassign" : "route-preview") : undefined}
         onClick={handlePrimaryAction}
       />
-      <ShiftCardDetails>
+      <ShiftCardDetails
+        dataCopilotTarget={selected ? roomShiftLeafTarget(Number(shift?.id || 0), "details") : undefined}
+        dataCopilotSemanticId={selected ? `product:room:shift:${Number(shift?.id || 0)}:details` : undefined}
+        dataCopilotLabel={selected ? `Vardiya #${Number(shift?.id || 0)} ayrıntıları` : undefined}
+      >
         <ShiftCommercialSummary shift={shift} />
         <CardSection title="Teklif ayrıntıları">
           {Number(shift?.agreementId) > 0 ? <div className="shiftCardSubtle">Sözleşmeli vardiya. Pazarlık kapalı.</div> : <ShiftOfferDetails shift={shift} />}
@@ -517,6 +547,25 @@ export function RoomAllShiftCard({
           İşlem Kaydı
         </button>
       </ActionGroup>
+
+      {hasTestSimulatedCompletionCandidate(shift) ? (
+        <section className="shiftCardPrimaryAction" data-testid="shift-card-test-simulated-action">
+          <button
+            type="button"
+            className="btn primary shiftCardPrimaryButton"
+            disabled={busy || !canOfferTestSimulatedCompletion(shift)}
+            data-testid={`room-test-simulated-completion-${Number(shift.id)}`}
+            onClick={(e) => {
+              stopCardClick(e);
+              completeTestSimulatedService?.(shift);
+            }}
+          >
+            Kontrollü DEMO hizmet kanıtı
+          </button>
+          <div className="shiftCardActionNote">Gerçek saha hizmeti değildir.</div>
+          {!canOfferTestSimulatedCompletion(shift) ? <div className="shiftCardActionNote">Planlanan bitiş zamanı bekleniyor.</div> : null}
+        </section>
+      ) : null}
     </CardShell>
   );
 }

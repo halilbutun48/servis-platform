@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import PanelChrome from "../../components/PanelChrome";
 import HubMapPicker from "../../components/geo/HubMapPicker";
 import { hubLabel } from "../../utils/labels";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 function sanitizeAddress(input) {
   let s = String(input ?? "").trim();
@@ -16,9 +17,16 @@ function sanitizeAddress(input) {
   return s;
 }
 
+function currentHubRoute() {
+  if (typeof window === "undefined") return "/company/hub";
+  const hashPath = String(window.location?.hash || "").replace(/^#/, "").split("?", 1)[0];
+  return /^\/(?:company|school|organization)\/hub$/.test(hashPath) ? hashPath : "/company/hub";
+}
+
 export default function HubPanel() {
   const { token, me } = useSession();
   const scopeLabel = hubLabel(me);
+  const scopeKey = currentHubRoute();
   const scopeHint =
     me?.companyKind === "SCHOOL"
       ? "Okul servislerinin kullandığı konum."
@@ -28,6 +36,7 @@ export default function HubPanel() {
   const [addr, setAddr] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
+  const [hubRecord, setHubRecord] = useState({ companyId: null, hubLat: null, hubLng: null });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -40,6 +49,11 @@ export default function HubPanel() {
       const r = await api("/api/company/hub", { token });
       setLat(r?.hubLat == null ? "" : String(r.hubLat));
       setLng(r?.hubLng == null ? "" : String(r.hubLng));
+      setHubRecord({
+        companyId: Number(r?.companyId || 0) || null,
+        hubLat: r?.hubLat == null ? null : Number(r.hubLat),
+        hubLng: r?.hubLng == null ? null : Number(r.hubLng),
+      });
     } catch (e) {
       setErr(e?.message || String(e));
     }
@@ -48,6 +62,38 @@ export default function HubPanel() {
   useEffect(() => {
     load({ silent: true });
   }, [load]);
+
+  useEffect(() => {
+    const hasCoordinates = Number.isFinite(Number(hubRecord.hubLat)) && Number.isFinite(Number(hubRecord.hubLng));
+    const selectedFields = [
+      { label: "Enlem", value: hasCoordinates ? String(hubRecord.hubLat) : "-", help: "Yetkili hub kaydının enlem bilgisidir." },
+      { label: "Boylam", value: hasCoordinates ? String(hubRecord.hubLng) : "-", help: "Yetkili hub kaydının boylam bilgisidir." },
+    ];
+    setCopilotSelection({
+      scopeKey,
+      entityType: "hub",
+      entityId: hubRecord.companyId,
+      selectedRecordType: "hub",
+      selectedRecordId: hubRecord.companyId,
+      label: scopeLabel,
+      selectedRecordLabel: scopeLabel,
+      selectedRecordStatus: hasCoordinates ? "Konum hazır" : "Konum kaydı yok",
+      selectedRecordSummary: hasCoordinates
+        ? `${scopeLabel}: ${hubRecord.hubLat}, ${hubRecord.hubLng}`
+        : `${scopeLabel}: yetkili konum kaydı yok`,
+      fields: selectedFields,
+      facts: {
+        screenType: "COMPANY_HUB",
+        companyId: hubRecord.companyId,
+        hubLat: hasCoordinates ? hubRecord.hubLat : null,
+        hubLng: hasCoordinates ? hubRecord.hubLng : null,
+        hasHubCoordinates: hasCoordinates,
+        source: "AUTHORIZED_COMPANY_HUB_READ",
+      },
+    });
+  }, [hubRecord, scopeKey, scopeLabel]);
+
+  useEffect(() => () => clearCopilotSelection(scopeKey), [scopeKey]);
 
   async function myLocation() {
     setErr("");
@@ -116,7 +162,12 @@ export default function HubPanel() {
     const b = lng === "" ? null : Number(lng);
     setBusy(true);
     try {
-      await api("/api/company/hub", { method: "PUT", token, body: { hubLat: a, hubLng: b } });
+      const saved = await api("/api/company/hub", { method: "PUT", token, body: { hubLat: a, hubLng: b } });
+      setHubRecord({
+        companyId: Number(saved?.companyId || hubRecord.companyId || 0) || null,
+        hubLat: saved?.hubLat == null ? a : Number(saved.hubLat),
+        hubLng: saved?.hubLng == null ? b : Number(saved.hubLng),
+      });
       setMsg("Kaydedildi.");
     } catch (e) {
       setErr(e?.message || String(e));

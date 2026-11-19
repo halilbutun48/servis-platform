@@ -1,3 +1,4 @@
+import { evaluatePlatformAgreementReferenceGate } from "../finance/platformAgreementPriceReference.js";
 import { CONFIDENCE, COMPLETENESS, FRESHNESS } from "./referenceContract.js";
 
 export const REFERENCE_LAYER = Object.freeze({
@@ -43,30 +44,8 @@ function numeric(value) {
   return Number.isSafeInteger(n) && n >= 0 ? n : null;
 }
 
-function median(values) {
-  const sorted = values.filter((value) => value !== null).sort((a, b) => a - b);
-  if (!sorted.length) return null;
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[middle] : Math.round((sorted[middle - 1] + sorted[middle]) / 2);
-}
-
-function quantile(sorted, fraction) {
-  if (!sorted.length) return null;
-  const index = Math.min(sorted.length - 1, Math.max(0, Math.round((sorted.length - 1) * fraction)));
-  return sorted[index];
-}
-
-export function buildPlatformObservedReference({ observations = [], region, minSampleCount = 5, windowDays = 90, now = new Date(), family = "REGIONAL_COST_REFERENCE", unit = "CURRENCY_PER_TRIP", currencyCode = "TRY", provenanceVersion = "SEFERPAKT-OBSERVED-REFERENCE-V1" } = {}) {
-  const threshold = Math.max(1, Math.trunc(Number(minSampleCount) || 1));
-  const eligible = observations
-    .filter((observation) => observation?.eligible !== false)
-    .map((observation) => ({
-      valueMinor: numeric(observation.valueMinor),
-      observedAt: observation.observedAt ? new Date(observation.observedAt) : null,
-      regionCode: compact(observation.regionCode),
-    }))
-    .filter((observation) => observation.valueMinor !== null && observation.observedAt && !Number.isNaN(observation.observedAt.getTime()));
-  const values = eligible.map((observation) => observation.valueMinor).sort((a, b) => a - b);
+export function buildPlatformObservedReference({ observations = [], policy = null, region, windowDays = 90, now = new Date(), family = "REGIONAL_COST_REFERENCE", unit = "CURRENCY_PER_TRIP", currencyCode = "TRY", provenanceVersion = "SEFERPAKT-OBSERVED-REFERENCE-V1" } = {}) {
+  const gate = evaluatePlatformAgreementReferenceGate({ observations, policy });
   const regionLabel = compact(region?.regionName || region?.regionCode) || "Türkiye";
   const base = {
     layer: REFERENCE_LAYER.PLATFORM,
@@ -76,29 +55,56 @@ export function buildPlatformObservedReference({ observations = [], region, minS
     scopeKey: region?.scopeKey || "GLOBAL",
     regionName: regionLabel,
     windowDays,
-    sampleCount: eligible.length,
-    minimumRequiredSampleCount: threshold,
+    status: gate.status,
+    sampleCount: gate.sampleCount,
+    distinctRoomCount: gate.distinctRoomCount,
+    minimumRequiredSampleCount: Number.isInteger(policy?.minComparableSampleCount) ? policy.minComparableSampleCount : null,
+    minimumRequiredDistinctRoomCount: Number.isInteger(policy?.minDistinctRoomCount) ? policy.minDistinctRoomCount : null,
+    missing: gate.missing,
+    excludedCounts: gate.excludedCounts,
+    valueMinor: null,
+    averageAmountMinor: null,
+    medianAmountMinor: null,
+    range: null,
+    controlledDemoOnly: false,
+    datasetMode: null,
+    unit,
+    currencyCode,
+    family,
     confidence: CONFIDENCE.UNKNOWN,
     completeness: COMPLETENESS.INCOMPLETE,
     provenance: provenanceVersion,
     privacy: { aggregatedOnly: true, rawTenantDataExposed: false, governance: "eligible-consented-observation-only" },
   };
-  if (eligible.length < threshold) {
-    return { ...base, available: false, state: "INSUFFICIENT_SAMPLE", selectionReason: `${regionLabel} için yeterli SeferPakt gözlemi yok.` };
+  if (gate.status !== "READY") {
+    return {
+      ...base,
+      available: false,
+      state: "NOT_PROVEN",
+      selectionReason: `${regionLabel} için platform geçmiş anlaşma referansı kapalı: ${gate.missing.join("; ") || "onaylı uygunluk kanıtı yok"}.`,
+    };
   }
+
+  const sampleCount = gate.value.sampleCount;
+  const minimumSampleCount = policy.minComparableSampleCount;
+  const controlledDemoOnly = gate.value.controlledDemoOnly === true;
   return {
     ...base,
     available: true,
     state: "AVAILABLE",
-    valueMinor: median(values),
-    range: { minMinor: quantile(values, 0.25), maxMinor: quantile(values, 0.75) },
-    unit,
-    currencyCode,
-    family,
-    confidence: eligible.length >= threshold * 2 ? CONFIDENCE.HIGH : CONFIDENCE.MEDIUM,
+    valueMinor: controlledDemoOnly ? gate.value.averageAmountMinor : gate.value.medianAmountMinor,
+    averageAmountMinor: gate.value.averageAmountMinor,
+    medianAmountMinor: gate.value.medianAmountMinor,
+    range: controlledDemoOnly ? gate.value.range : null,
+    controlledDemoOnly,
+    datasetMode: gate.value.datasetMode || null,
+    confidence: sampleCount >= minimumSampleCount * 2 ? CONFIDENCE.HIGH : CONFIDENCE.MEDIUM,
     completeness: COMPLETENESS.COMPLETE,
-    selectionReason: `${regionLabel} için yeterli ve anonimleştirilmiş gözlem bulundu.`
-      + ` Pencere: ${windowDays} gün; hesap: medyan ve çeyrekler aralığı.`,
+    selectionReason: controlledDemoOnly
+      ? `${regionLabel} için yalnız işaretli kontrollü DEMO kayıtlarında onaylı test protokolü, canonical kabul audit zinciri ve bağımsız ROOM çeşitliliği sağlandı.`
+        + " Yalnız anonim toplulaştırılmış ortalama ve aralık gösterilir; ham ROOM veya teklif ayrıntısı yayımlanmaz."
+      : `${regionLabel} için onaylı politika, karşılaştırılabilir gerçek ticari kanıt ve bağımsız ROOM çeşitliliği sağlandı.`
+        + " Yalnız anonim toplulaştırılmış medyan gösterilir; ham ROOM veya teklif ayrıntısı yayımlanmaz.",
     asOf: new Date(now).toISOString(),
   };
 }

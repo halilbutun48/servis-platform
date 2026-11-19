@@ -13,7 +13,22 @@ function useAccessToken(path) {
 }
 
 function errCodeOf(e) {
-  return String(e?.payload?.error || e?.message || "").trim().toUpperCase();
+  const raw =
+    e?.code ||
+    e?.payload?.error?.code ||
+    e?.payload?.code ||
+    (typeof e?.payload?.error === "string" ? e.payload.error : "");
+  return String(raw || "").trim().toUpperCase();
+}
+
+function errMessageOf(e) {
+  const raw =
+    e?.payload?.error?.message ||
+    e?.payload?.message ||
+    e?.message ||
+    "Veli erişimi doğrulanamadı.";
+  const text = typeof raw === "string" ? raw.trim() : "";
+  return text && !/^\[object object\]$/i.test(text) ? text : "Veli erişimi doğrulanamadı.";
 }
 
 function accessStateMeta(code) {
@@ -53,7 +68,7 @@ export default function AcceptParentInvitePanel({ path }) {
         if (!off) {
           const code = errCodeOf(e);
           setAccessStateCode(code);
-          setErr(code || String(e?.message || e));
+          setErr(code ? "" : errMessageOf(e));
         }
       })
       .finally(() => {
@@ -77,7 +92,7 @@ export default function AcceptParentInvitePanel({ path }) {
     } catch (e2) {
       const code = errCodeOf(e2);
       setAccessStateCode(code);
-      setErr(code || String(e2?.message || e2));
+      setErr(code ? "" : errMessageOf(e2));
     } finally {
       setBusy(false);
     }

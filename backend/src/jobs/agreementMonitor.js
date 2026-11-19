@@ -1,8 +1,10 @@
 // backend/src/jobs/agreementMonitor.js
-import { prisma } from "../prisma.js";
+import { workerPrisma } from "../prisma.js";
 import { computeFinalEndAtUTC, computeFirstStartAtUTC } from "../services/agreementConflict.js";
 
 export function startAgreementMonitor(io, opts = {}) {
+  const db = opts.prismaClient || workerPrisma;
+  if (!db) return () => {};
   const intervalMs = opts.intervalMs ?? 5000; // test/deterministic için kısa
   let running = false;
 
@@ -12,7 +14,7 @@ export function startAgreementMonitor(io, opts = {}) {
     try {
       const now = new Date();
 
-      const items = await prisma.agreement.findMany({
+      const items = await db.agreement.findMany({
         where: { status: { in: ["APPROVED", "ACTIVE"] } },
       });
 
@@ -21,13 +23,13 @@ export function startAgreementMonitor(io, opts = {}) {
         const startAt = computeFirstStartAtUTC(ag);
 
         if (ag.status === "APPROVED" && now >= startAt) {
-          const u = await prisma.agreement.update({ where: { id: ag.id }, data: { status: "ACTIVE" } });
+          const u = await db.agreement.update({ where: { id: ag.id }, data: { status: "ACTIVE" } });
           io?.to?.(`company:${u.companyId}`)?.emit?.("agreement:update", { id: u.id, kind: "active" });
           io?.to?.(`room:${u.roomId}`)?.emit?.("agreement:update", { id: u.id, kind: "active" });
         }
 
         if (now > endAt) {
-          const u = await prisma.agreement.update({ where: { id: ag.id }, data: { status: "DONE" } });
+          const u = await db.agreement.update({ where: { id: ag.id }, data: { status: "DONE" } });
           io?.to?.(`company:${u.companyId}`)?.emit?.("agreement:update", { id: u.id, kind: "done" });
           io?.to?.(`room:${u.roomId}`)?.emit?.("agreement:update", { id: u.id, kind: "done" });
         }

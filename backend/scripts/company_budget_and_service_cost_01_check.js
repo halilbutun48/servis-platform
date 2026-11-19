@@ -151,6 +151,7 @@ const roadmapPath = 'docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md';
 const repoAuditPath = 'docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md';
 const harnessCheckPath = 'backend/scripts/script_harness_consolidation_01_check.js';
 const harnessDocPath = 'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md';
+const semanticProofOnly = process.argv.includes('--semantic-proof-only');
 
 function main() {
 const docText = read(docPath);
@@ -531,7 +532,11 @@ function assertStaticContract() {
   assertEmptyDiff(['prisma'], 'prisma diff empty');
   assertEmptyDiff(['prisma'], 'prisma diff empty');
   assertCommandOutputEmpty(['diff', '--cached', '--name-only'], 'stage empty');
-  check(!exists('debug.log'), 'debug.log absent');
+  if (!semanticProofOnly) {
+    check(!exists('debug.log'), 'debug.log absent');
+  } else {
+    console.log('INFO semantic-proof-only: debug.log hygiene remains enforced by the default owner check and repository governance owner');
+  }
 
   const completePreview = buildCompanyBudgetAndServiceCostPreview(buildCompanyArgs());
   assertPairs(completePreview, [

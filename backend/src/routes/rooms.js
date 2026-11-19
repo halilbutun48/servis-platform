@@ -10,6 +10,7 @@ import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { resolveRoomOwnership } from "../region/index.js";
+import { audit } from "../audit.js";
 
 function roleOf(req) {
   return String(req.user?.role || req.me?.role || req.auth?.role || "");
@@ -264,6 +265,19 @@ export function roomsRouter() {
       });
     }
 
+    await audit(req, {
+      action: "ADMIN_ROOM_CREATE",
+      entity: "Room",
+      entityId: item.id,
+      meta: {
+        roomId: item.id,
+        roomName: item.name,
+        status: item.status,
+        regionId: item.regionId ?? null,
+        district: item.district ?? null,
+      },
+    });
+
     return res.status(201).json({
       ...item,
       regionOwnership: resolveRoomOwnership(item),
@@ -276,10 +290,30 @@ export function roomsRouter() {
     const parsed = updateRoomSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
+    const before = await prisma.room.findUnique({
+      where: { id },
+      select: { id: true, name: true, status: true, regionId: true, district: true },
+    });
+
     const item = await prisma.room.update({
       where: { id },
       data: parsed.data,
       include: { region: { select: { id: true, name: true } } },
+    });
+
+    await audit(req, {
+      action: "ADMIN_ROOM_UPDATE",
+      entity: "Room",
+      entityId: item.id,
+      meta: {
+        roomId: item.id,
+        roomName: item.name,
+        status: item.status,
+        regionId: item.regionId ?? null,
+        district: item.district ?? null,
+        previousRoomName: before?.name ?? null,
+        previousStatus: before?.status ?? null,
+      },
     });
     return res.json(item);
   });
@@ -304,13 +338,42 @@ export function roomsRouter() {
       data: { hubLat: parsed.data.hubLat, hubLng: parsed.data.hubLng },
     });
 
+    await audit(req, {
+      action: "ROOM_HUB_UPDATE",
+      entity: "Room",
+      entityId: updated.id,
+      meta: {
+        roomId: updated.id,
+        hubLat: updated.hubLat,
+        hubLng: updated.hubLng,
+        source: "ROOM_HUB_UI",
+      },
+    });
+
     return res.json({ ok: true, id: updated.id, hubLat: updated.hubLat, hubLng: updated.hubLng });
   });
 
   // SOFT DELETE (SUPER_ADMIN only)
   r.delete("/:id", requireRole("SUPER_ADMIN"), async (req, res) => {
     const id = Number(req.params.id);
+    const before = await prisma.room.findUnique({
+      where: { id },
+      select: { id: true, name: true, status: true, regionId: true, district: true },
+    });
     const item = await prisma.room.update({ where: { id }, data: { status: "DELETED" } });
+
+    await audit(req, {
+      action: "ADMIN_ROOM_DELETE",
+      entity: "Room",
+      entityId: item.id,
+      meta: {
+        roomId: item.id,
+        roomName: before?.name ?? item.name,
+        previousStatus: before?.status ?? null,
+        regionId: before?.regionId ?? null,
+        district: before?.district ?? null,
+      },
+    });
     return res.json(item);
   });
 

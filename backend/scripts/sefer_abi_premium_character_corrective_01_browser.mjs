@@ -81,6 +81,7 @@ let quickOpenClosePassCount = 0;
 let quickCloseContextResetCount = 0;
 let keyboardActivationPassCount = 0;
 let mobileKeyboardOverlapCount = 0;
+let mobileCopilotDrawerObstruction = 0;
 let characterStateMotionPassCount = 0;
 let staticPortraitOnlyCount = 0;
 
@@ -421,10 +422,32 @@ async function runMobileMatrix(browser, companyToken, roomToken) {
   else mobileSafeAreaOverlapCount += 1;
 
   const button = launcher(map);
+  // Opening the assistant from a scrolled map must preserve a usable map
+  // viewport.  The quick panel is a task aid, not a modal that may silently
+  // cover the map's interactive surface; the product owner keeps the map
+  // below the panel while the conversation remains available.
+  await map.evaluate(() => window.scrollTo(0, 700));
+  await map.waitForTimeout(300);
   await button.click();
   await map.locator("aside.copilotDrawer").waitFor({ state: "visible", timeout: 5000 });
   await capture(map, "room-mobile-quick-panel");
   await assertIdentity(map, "ROOM mobile quick panel");
+  const mapPanelState = await map.evaluate(() => {
+    const drawer = document.querySelector("aside.copilotDrawer");
+    const mapShell = document.querySelector('[data-map-surface="primary"] .mapViewShell');
+    const rect = (node) => node?.getBoundingClientRect?.() || null;
+    const d = rect(drawer);
+    const m = rect(mapShell);
+    return {
+      scrollY: window.scrollY,
+      drawer: d ? { top: d.top, bottom: d.bottom } : null,
+      map: m ? { top: m.top, bottom: m.bottom } : null,
+      overlap: Boolean(d && m && d.top < m.bottom && d.bottom > m.top),
+    };
+  });
+  const mapPanelSafe = mapPanelState.scrollY <= 1 && !mapPanelState.overlap;
+  record("mobile map remains reachable when Sefer Abi opens", mapPanelSafe, JSON.stringify(mapPanelState));
+  if (!mapPanelSafe) mobileCopilotDrawerObstruction += 1;
   const mobileInput = map.locator("aside.copilotDrawer textarea");
   await mobileInput.focus();
   const mobileKeyboardState = await map.evaluate(() => {
@@ -435,7 +458,21 @@ async function runMobileMatrix(browser, companyToken, roomToken) {
   const mobileKeyboardPass = mobileKeyboardState.drawerBottom <= mobileKeyboardState.viewportBottom + 1 && mobileKeyboardState.state === "listening";
   record("mobile keyboard/input state keeps the panel usable", mobileKeyboardPass, JSON.stringify(mobileKeyboardState));
   if (!mobileKeyboardPass) mobileKeyboardOverlapCount += 1;
+  await map.evaluate(() => window.scrollTo(0, 700));
+  await map.waitForTimeout(500);
+  const releasedForMap = await map.locator("aside.copilotDrawer:visible").count() === 0;
+  let markerClickPass = false;
+  if (releasedForMap && await map.locator('[data-map-surface="primary"] .leaflet-marker-icon').count()) {
+    try {
+      await map.locator('[data-map-surface="primary"] .leaflet-marker-icon').first().click({ timeout: 5000 });
+      markerClickPass = true;
+    } catch { markerClickPass = false; }
+  }
+  record("mobile map releases when scrolling under the assistant", releasedForMap && markerClickPass, JSON.stringify({ releasedForMap, markerClickPass }));
+  if (!(releasedForMap && markerClickPass)) mobileCopilotDrawerObstruction += 1;
   await map.close();
+
+  await runRoomMapDrawerViewport(browser, roomToken, 320);
 
   const safe = await newPageWithToken(browser, "COMPANY", companyToken, { width: 390, height: 844 }, "company-mobile-safe-area");
   await gotoAndSettle(safe, users.COMPANY.map);
@@ -444,6 +481,47 @@ async function runMobileMatrix(browser, companyToken, roomToken) {
   await assertNoOverlap(safe, "COMPANY mobile safe-area map");
   await capture(safe, "company-mobile-safe-area-map");
   await safe.close();
+}
+
+async function runRoomMapDrawerViewport(browser, roomToken, width) {
+  const page = await newPageWithToken(browser, "ROOM", roomToken, { width, height: 844 }, `room-mobile-map-${width}`);
+  await gotoAndSettle(page, users.ROOM.map);
+  await page.locator('[data-map-surface="primary"] .mapViewShell').waitFor({ state: "visible", timeout: 20000 });
+  await page.waitForTimeout(900);
+  await page.evaluate(() => window.scrollTo(0, 700));
+  await page.waitForTimeout(300);
+  await launcher(page).click();
+  const drawer = page.locator("aside.copilotDrawer");
+  await drawer.waitFor({ state: "visible", timeout: 5000 });
+  const mapPanelState = await page.evaluate(() => {
+    const drawerNode = document.querySelector("aside.copilotDrawer");
+    const mapShell = document.querySelector('[data-map-surface="primary"] .mapViewShell');
+    const rect = (node) => node?.getBoundingClientRect?.() || null;
+    const d = rect(drawerNode);
+    const m = rect(mapShell);
+    return {
+      scrollY: window.scrollY,
+      overlap: Boolean(d && m && d.top < m.bottom && d.bottom > m.top),
+      drawer: d ? { top: d.top, bottom: d.bottom } : null,
+      map: m ? { top: m.top, bottom: m.bottom } : null,
+    };
+  });
+  const openedSafely = mapPanelState.scrollY <= 1 && !mapPanelState.overlap;
+  record(`ROOM mobile ${width}px map opens without drawer obstruction`, openedSafely, JSON.stringify(mapPanelState));
+  if (!openedSafely) mobileCopilotDrawerObstruction += 1;
+  await page.evaluate(() => window.scrollTo(0, 700));
+  await page.waitForTimeout(500);
+  const releasedForMap = await page.locator("aside.copilotDrawer:visible").count() === 0;
+  let markerClickPass = false;
+  if (releasedForMap) {
+    try {
+      await page.locator('[data-map-surface="primary"] .leaflet-marker-icon').first().click({ timeout: 5000 });
+      markerClickPass = true;
+    } catch { markerClickPass = false; }
+  }
+  record(`ROOM mobile ${width}px map marker remains tappable`, releasedForMap && markerClickPass, JSON.stringify({ releasedForMap, markerClickPass }));
+  if (!(releasedForMap && markerClickPass)) mobileCopilotDrawerObstruction += 1;
+  await page.close();
 }
 
 async function runReducedMotion(browser, roomToken) {
@@ -538,6 +616,7 @@ async function run() {
       quickCloseContextResetCount,
       keyboardActivationPassCount,
       mobileKeyboardOverlapCount,
+      mobileCopilotDrawerObstruction,
       characterStateMotionPassCount,
       staticPortraitOnlyCount,
       productionFakeStateTriggerCount: 0,
@@ -588,12 +667,13 @@ async function run() {
     console.log(`SEFER_ABI_QUICK_CLOSE_CONTEXT_RESET_COUNT = ${report.quickCloseContextResetCount}`);
     console.log(`SEFER_ABI_KEYBOARD_ACTIVATION_PASS_COUNT = ${report.keyboardActivationPassCount}`);
     console.log(`SEFER_ABI_MOBILE_KEYBOARD_OVERLAP_COUNT = ${report.mobileKeyboardOverlapCount}`);
+    console.log(`SEFER_ABI_MOBILE_COPILOT_DRAWER_OBSTRUCTION = ${report.mobileCopilotDrawerObstruction}`);
     console.log(`CHARACTER_STATE_MOTION_PASS_COUNT = ${report.characterStateMotionPassCount}`);
     console.log(`STATIC_PORTRAIT_ONLY_COUNT = ${report.staticPortraitOnlyCount}`);
     console.log(`SEFER_ABI_REDUCED_MOTION_PASS_COUNT = ${reducedMotionPassCount}`);
     console.log(`SEFER_ABI_QUICK_FULL_CONTEXT_CONTINUITY_PASS_COUNT = ${quickFullContinuityPassCount}`);
     console.log(`SEFER_ABI_PREMIUM_CHARACTER_BROWSER_PASS = ${report.failCount === 0 && report.screenshotEvidenceCount >= 16 && report.characterStateMotionPassCount >= 4 && report.staticPortraitOnlyCount === 0 && consoleErrorCount === 0 && pageErrorCount === 0 && unexpected500Count === 0 ? "YES" : "NO"}`);
-    if (report.failCount || report.screenshotEvidenceCount < 18 || report.characterStateMotionPassCount < 4 || report.staticPortraitOnlyCount > 0 || realLifecycleStateBindingPassCount < 1 || hoverVisualPassCount < 1 || keyboardFocusVisualPassCount < 1 || thinkingRealRequestPassCount < 1 || respondingStatePassCount < 1 || resultReadyStatePassCount < 1 || approvalRequiredVisualPassCount < 1 || quickOpenClosePassCount < 1 || keyboardActivationPassCount < 1 || mobileKeyboardOverlapCount > 0 || consoleErrorCount || pageErrorCount || unexpected500Count) process.exitCode = 1;
+    if (report.failCount || report.screenshotEvidenceCount < 18 || report.characterStateMotionPassCount < 4 || report.staticPortraitOnlyCount > 0 || realLifecycleStateBindingPassCount < 1 || hoverVisualPassCount < 1 || keyboardFocusVisualPassCount < 1 || thinkingRealRequestPassCount < 1 || respondingStatePassCount < 1 || resultReadyStatePassCount < 1 || approvalRequiredVisualPassCount < 1 || quickOpenClosePassCount < 1 || keyboardActivationPassCount < 1 || mobileKeyboardOverlapCount > 0 || mobileCopilotDrawerObstruction > 0 || consoleErrorCount || pageErrorCount || unexpected500Count) process.exitCode = 1;
   } finally {
     await browser.close();
   }

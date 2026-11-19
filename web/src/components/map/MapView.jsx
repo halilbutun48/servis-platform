@@ -226,6 +226,43 @@ function MapSizeController() {
   return null;
 }
 
+function MapZoomSemanticTargets({ targetPrefix = "" }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const prefix = String(targetPrefix || "").trim();
+    const container = map.getContainer?.();
+    if (!prefix || !container) return undefined;
+    let disposed = false;
+    const targets = [
+      [".leaflet-control-zoom-in", `${prefix}:zoom-in`, "Yakınlaştır"],
+      [".leaflet-control-zoom-out", `${prefix}:zoom-out`, "Uzaklaştır"],
+    ];
+    const apply = () => {
+      if (disposed) return;
+      for (const [selector, targetKey, label] of targets) {
+        const control = container.querySelector(selector);
+        if (!control) continue;
+        control.setAttribute("data-copilot-target", targetKey);
+        control.setAttribute("data-copilot-label", label);
+      }
+    };
+    apply();
+    const frame = typeof window.requestAnimationFrame === "function"
+      ? window.requestAnimationFrame(apply)
+      : null;
+    const observer = typeof MutationObserver === "function" ? new MutationObserver(apply) : null;
+    observer?.observe(container, { childList: true, subtree: true });
+    return () => {
+      disposed = true;
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
+  }, [map, targetPrefix]);
+
+  return null;
+}
+
 export default function MapView({
   vehicles = [],
   stops = [],
@@ -236,6 +273,7 @@ export default function MapView({
   height = "70vh",
   routePath = [],
   routeSource = "ESTIMATED",
+  copilotTargetPrefix = "",
 }) {
   const center = useMemo(() => [41.0082, 28.9784], []);
   const [tileState, setTileState] = useState("loading");
@@ -376,6 +414,7 @@ export default function MapView({
           <FocusController />
           <MapSizeController />
           <ZoomControl position="topleft" zoomInTitle="Yakınlaştır" zoomOutTitle="Uzaklaştır" />
+          <MapZoomSemanticTargets targetPrefix={copilotTargetPrefix} />
 
             <TileLayer
               attribution="&copy; OpenStreetMap contributors"

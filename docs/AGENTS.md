@@ -12,6 +12,55 @@
 - Locked-invariant status is owned by `docs/LOCKED_INVARIANT_REGISTRY_V1.json` and its violation ledger.
 - Resume in this order: latest concrete result, active frontier, blocker, next-if-green, smallest next action. Do not broaden scope or create a second state owner.
 
+## Demo data readiness and field-launch boundary
+
+SeferPakt is pre-field-launch; current working records are DEMO/WORKING data unless a canonical project decision explicitly establishes a production/customer environment. This policy applies to every supported role (`ROOM`, `COMPANY`, `SCHOOL`, `ORGANIZATION`, `DRIVER`, `PERSONEL`, `PARENT`, `SUPER_ADMIN`) and every current or future milestone. Demo/test preparation is an authorized development activity, not a product business-write capability.
+
+Readiness is derived from the real repository domain model, API contracts, authorization boundaries, existing seed/fixture mechanisms and product surfaces. It covers the critical relationships and workflows actually present in the product, including shifts/routes/stops/personnel/vehicles/drivers, offers/suppliers/negotiation/contracts, hakediş/cost/invoice/payment/blockage, GPS/telemetry/device freshness, operational exceptions, notifications/logs/feedback/reports, imports/planning flows, and Sefer Abi's selected-record/surface/tab/target/conversation context. It must not invent coverage for unimplemented features.
+
+Before every milestone and every role FULL PRODUCT RUN:
+
+1. Verify the target database identity and classify it as verified demo/test; stop if it is unknown or production.
+2. Inventory existing records and reuse them before creating anything.
+3. If required data is genuinely missing, create only the minimum related records through the existing canonical seed/fixture/domain mechanism, with an idempotent marker, traceable evidence, and tenant/role/integrity validation.
+4. Cover positive, negative, incomplete, exception, and authorization-denied cases.
+5. Never bulk-delete, reset, drop, migration-reset, or uncontrolled-reseed data; do not change unrelated records or broaden role/tenant/KVKK permissions. The sole approved exception is `SEFERPAKT_LOCAL_DEMO_REBUILD_2026_V1`: one product-owner-authorized rebuild of the verified local Docker `personel_db` / `servisdb` demo target, only after canonical backup + isolated restore proof, only through the marker-scoped seed, with `_prisma_migrations`, repository state, roles, tenant boundaries and audit rules preserved. This exception never authorizes production/customer data, schema migration, payment/accounting write, repository reset/clean, or a later reset/reseed.
+6. Keep isolated test-runtime, public-demo-runtime, and any production/customer evidence separate; a fixture, seed, or checker result is not a product PASS.
+7. For every `NOT_PROVEN`, classify the first supported explanation as `DATA_MISSING`, `DATA_RELATION_MISSING`, `PRODUCT_DEFECT`, `UI_TARGET_NOT_PROVEN`, `HARNESS_DEFECT`, `AUTHORIZATION_BOUNDARY`, `RUNTIME_PROVENANCE`, `ENVIRONMENT_BLOCK`, or `GOVERNANCE_BLOCK`. Data preparation may address only the first two; it must not hide a product, harness, authorization, runtime, environment, or governance problem.
+8. Before a FULL PRODUCT RUN, record for every critical case the required records and relationships, tenant/role, expected product behavior, expected Sefer Abi answer and UI target, negative/security case, and whether the case is executable in the pinned runtime.
+9. No test run or field-launch claim may upgrade NOT_PROVEN without current source/runtime, real browser/device, selected record/context, user-visible semantic, and security evidence.
+
+Demo fixture writes are pre-acceptance test setup only. M18 runtime remains subject to `M18_NO_BUSINESS_WRITE`: Sefer Abi/copilot yolları ödeme, onay, dispatch, route veya accounting execution yazamaz. Doğrulanmış demo ortamında aynı sunucu tarafından doğrulanan `ROOM` rolü ve `roomId` kapsamındaki kullanıcı, canonical Finansal Operasyonlar → Gider Yönetimi UI/API'si ile bu bounded çalışma kapsamında açıkça tanımlanan Hakediş/Fatura gelir zinciri UI/API'sini kullanabilir; her iki yol da açık kullanıcı onayı, idempotency, tenant/RBAC ve audit ister. Bu dar istisna tahsilatın mevcut ayrı taslak/onay akışını ve KDV kanıtı yoksa net kârın fail-closed kalmasını korur; Sefer Abi bu yazmaları kullanıcı adına sessizce uygulayamaz.
+
+### Permanent ROOM collection requirement (CONT-239+)
+
+ROOM → Finans → Genel Durum always includes the canonical `Tahsilat Kaydet` surface. An authorized ROOM user may record a payment received from a customer without waiting for a COMPANY, SCHOOL or ORGANIZATION payment declaration, but only against an authorized existing invoice owned by the same `roomId` scope. Customer, invoice amount, prior collections and remaining receivable are read from the canonical invoice/collection engine; the user supplies amount, date, method and an optional receipt/reference.
+
+- Partial collection, remaining-balance recalculation, overpayment rejection, replay/duplicate protection, audit and cross-role synchronization are mandatory acceptance conditions.
+- A manual collection is not bank-verified payment evidence and must never be presented as such.
+- When no authorized invoice exists, the UI must not create a collection and must show a short Turkish explanation plus the correct next step.
+- When a customer has more than one authorized open invoice, ROOM first selects the customer and then explicitly selects the invoice. The selected invoice alone receives the collection; its agreement, hakedis, period and accepted-offer lineage are read-only context. Missing or ambiguous offer lineage is shown as unproven, never inferred or fabricated.
+- The existing four ROOM finance tabs remain unchanged: `Genel Durum`, `Giderlerim`, `Servis Maliyeti`, `Teklif Değerlendir`. No parallel collection engine or extra tab is permitted.
+- This requirement is linked to `E2E/FIN3_INVOICE_COLLECTION`, `E2E/FIN5_ROLE_SYNC` and the M18 finance acceptance scope. It does not itself close those gates; each remains `NOT_PROVEN` until its full canonical/public evidence exists.
+
+### Current canonical DEMO database consolidation (CONT-215+)
+
+For the current M18 acceptance frontier, `seferpakt_clean_demo` is the sole canonical DEMO database. The normal milestone, real Chromium, public same-build and eight-role E2E paths must resolve to this database through the verified `seferpakt-clean-demo` runtime. The older `personel_db`/`servisdb` wording is retained only as historical rebuild provenance; it is not a current migration source and must not be merged automatically.
+
+- Existing canonical records are reused first. A durable scenario is selected by a logical marker plus tenant, role, status, foreign-key, source and audit relationships; numeric IDs are evidence details, not portable identity.
+- The normal runtime declares `SEFERPAKT_DATABASE_MODE=canonical_demo`; startup must fail closed unless the live database is `seferpakt_clean_demo.public` with the expected migration state. There is no implicit `servisdb` fallback.
+- `seferpakt_cont04`, `seferpakt_cont211`, P9 HGS/restore targets and CI `prisma_ci` remain isolated proof environments for destructive, migration, restore, concurrency and idempotency tests. Isolation evidence is labelled separately and cannot upgrade a canonical/public acceptance claim.
+- Legacy `servisdb` volumes, containers and dumps remain preserved excluded provenance. Do not start, merge, remap, overwrite or clean them as part of normal M18 acceptance.
+- Any future gap fill must use the existing canonical seed/fixture/domain path, be minimum and idempotent, preserve cross-role and audit lineage, and have a verified backup and rollback plan. This policy does not authorize data transfer or cleanup by itself.
+
+### Canonical Compose lifecycle (CONT-234+)
+
+- Normal canonical DEMO deployment uses the explicit Compose project `seferpakt` with `infra/docker-compose.clean-demo.yml`; the legacy `infra/docker-compose.yml` remains historical `servisdb` provenance and is not the canonical deployment entrypoint.
+- API and frontend are the only services updated by `tools/deploy_clean_demo.ps1`. They use stable Compose identities (`seferpakt-api` and `seferpakt-frontend`) and the `canonical-compose-v1` lifecycle label. PostgreSQL, Redis, OSRM, Solver, networks, volumes and database data are outside this lifecycle change.
+- A deployment must verify API health with `dbOk=true`, frontend health, role-access smoke coverage and local/public same-build asset parity before the previous verified image is considered replaceable. The previous verified API/frontend images remain available for rollback.
+- Do not use `compose down`, `--remove-orphans`, `docker system prune`, volume prune, database reset or broad deletion for this lifecycle. Temporary test containers may be removed only by an exact owner/lifecycle allowlist after evidence and rollback requirements are verified.
+- Repeating a deployment must reconcile the stable API/frontend services in place; it must not create numbered container families or leave uncontrolled stopped containers.
+
 ## Permanent cross-platform milestone governance
 
 This section is a standing engineering and acceptance standard for M18, M19, M20 and every later milestone. It does not change the active frontier, milestone status, product contract, freeze history or closure ownership.
@@ -56,6 +105,12 @@ After each bounded corrective:
 
 If any precondition is missing, risky or unverifiable, return `RESTART_BLOCKED_SAFE_STOP`. Host, Codex sandbox and operating-system permissions remain higher boundaries; access restrictions must not be bypassed.
 
+### Explicit project-owner local development authorization
+
+The repository owner may explicitly authorize a bounded change in the current task for this local, pre-field-launch Docker development environment. When the current task names the scope and the target is verified DEMO/TEST, that authorization may cover the required build and controlled recreate of the named SeferPakt development API/frontend service, plus the directly required health, security and real-browser checks. It does not authorize production/customer changes, another Codex session's WIP, repository reset/clean/stash/overwrite, database reset/restore/reseed, unrelated service restarts, or an unapproved migration.
+
+For a task that explicitly authorizes a schema migration, the migration remains bounded to the named migration only and requires isolated migration acceptance, a verified canonical backup, a separate restore proof, a no-data-loss preflight and post-migration verification. The concrete task/evidence ID is the change-control reference; no synthetic business approval or hidden bypass may be created. Frontend/avatar ownership and all tenant/RBAC/KVKK, scheduler and business-write gates remain unchanged.
+
 ### Coordinated holdout, D-Level and mobile acceptance
 
 - Non-holdout real-user diagnostics may begin early, but independent holdout secrecy and freeze boundaries remain mandatory.
@@ -76,6 +131,21 @@ For every proven defect:
 
 Previously closed areas remain closed unless concrete newer regression evidence reopens them. A checker GREEN alone is never sufficient for semantic or cross-layer acceptance.
 
+### Product-first development and acceptance order
+
+The canonical order for every current and future milestone is:
+
+`USER NEED → WORKING PRODUCT BEHAVIOR → REAL BROWSER/USER ACCEPTANCE → DURABLE REGRESSION → REQUIRED SECURITY AND MILESTONE CLOSURE`
+
+- Build and assess the real user task first. The user must be able to complete the authorized task, including `ANLA → BAĞLAMI KORU → ANLAT → GÖSTER → YÖNLENDİR`, continuation, back, recovery and the actual visible DOM target where the task requires it.
+- HTTP 200, an intent label, a JSON/workflow result, a highlight, a static checker or a GREEN harness is supporting evidence only; none is a product PASS by itself.
+- If product behavior is wrong, fix the smallest canonical product owner. If the checker is stale, redundant or inconsistent with the canonical product contract, correct, consolidate or retire the checker without weakening security, authorization, tenant isolation, KVKK or fail-closed boundaries.
+- Classify missing data, product defects, harness/contract defects and environment/runtime blocks separately. Demo data may address only genuinely missing demo data or relationships; it must not hide a product, authorization, runtime or evidence failure.
+- Keep historical governance debt visible and separate. Do not repeat SHA, ownership, harness or provenance investigations without concrete new evidence, and do not let non-security governance loops unnecessarily stop bounded safe product diagnosis or acceptance.
+- Every bounded product effort reports: the real task completed, the behavior that failed, whether the defect was fixed, whether real browser acceptance was repeated, whether authorization/security boundaries held, and the concrete remaining closure blocker.
+
+This rule is an additive execution standard. It does not create a new authority, alter the active frontier, reopen closed milestone evidence, relax security or business-write boundaries, or permit demo-data mutation, restart, commit, tag or push without the existing controls.
+
 ### Permanent product quality and real-user acceptance standard
 
 #### İçeride güçlü — dışarıda basit
@@ -84,6 +154,13 @@ Previously closed areas remain closed unless concrete newer regression evidence 
 - Ekran amacı, mevcut durum ve ilk mantıklı kullanıcı eylemi yaklaşık beş saniye içinde anlaşılabilir olmalıdır.
 - Bir sonraki güvenli adım gerektiğinde görünür biçimde gösterilir; gereksiz seçenek, jargon, iç sistem etiketi ve geliştirici açıklaması kullanıcı yüzeyine sızmaz.
 - Desktop, mobile ve erişilebilirlik davranışı yalnız statik kodla değil, gerçek etkileşim ve temsilî acemi kullanıcı görevleriyle doğrulanır.
+
+#### Kalıcı kullanıcı dili sınırı
+
+- Kullanıcıya görünen hiçbir finans veya rol yüzeyinde backend alan adı, iç enum, API hata kodu, JSON, stack trace, kaynak hash'i, geliştirici açıklaması veya ham teknik kimlik gösterilmez.
+- `ACTUAL`, `BUDGET`, `FORECAST`, `ACCRUAL`, `UNKNOWN`, `NOT_PROVEN`, `READY`, `Allocation`, `Lineage` ve benzeri iç değerler anlaşılır Türkçe karşılıklarıyla sunulur; örneğin “Gerçekleşen”, “Bütçe”, “Tahmin”, “Tahakkuk / beklenen gider”, “Bilgi eksik”, “Henüz doğrulanmadı”, “Hesaplanabilir”, “Maliyet dağıtımı” ve “Giderin kaynağı ve dağıtım geçmişi”.
+- İş kaydı numarası gerekiyorsa bağlamlı ve kullanıcı dilinde “Vardiya No”, “Sözleşme No” veya “Kayıt No” olarak gösterilebilir; `ID`, ham API alanı ve teknik kaynak referansı gösterilmez. Ham kimlikler yalnız sunucu, audit ve güvenlik kanıtında korunur.
+- Bu sınır bütün roller ve gelecekteki milestone'lar için kalıcıdır. Her değişen yüzey 1440/1024/390/320 gerçek tarayıcı görsel metin kontrolünden geçer; teknik metin sızıntısı ürün kusurudur.
 
 #### Gerçek kullanıcı kabulü
 
@@ -100,7 +177,26 @@ Her ilgili milestone ve rol kapsamı, uygulanabilir olduğu ölçüde şu kanıt
 9. Kullanıcıya görünen semantic sonuç, cevap ve yönlendirme incelemesi.
 10. Kanıtlanan kusurun kalıcı RED→GREEN regresyona dönüştürülmesi.
 
+Kabul birlikte değerlendirilir: gerçek kullanıcı görevi çalışmalı, sonuç semantik/finansal olarak doğru olmalı ve desteklenen yüzeyde anlaşılır-kullanılabilir olmalıdır. Bu üç boyuttan biri eksikse teknik test sonucu tek başına ürün kabulü değildir.
+
+Ortam izin verdiğinde güncel gerçek Chromium ekran görüntüsü, DOM/trace veya video kanıtını Codex üretir; kullanıcıdan her ekranı ayrıca kaydetmesi beklenmez. Gerekli kanıt üretilemiyorsa sonuç `NOT_PROVEN` veya somut `ENVIRONMENT_BLOCK` olarak kalır.
+
+Önemli kapanışlarda, mümkün olduğunda uygulamayı yapan kişiden bağımsız ayrı bir ürün incelemesi veya ayrı izlenebilir kanıt incelemesi yapılır. Bu bağımsızlık sağlanamıyorsa sınırlılık rapora yazılır; self-review bağımsız doğrulama sayılmaz.
+
+Ek inceleme riskle orantılı ve sınırlı tutulur: değişen davranış ile doğrudan etkilenen rol, tenant, KVKK, finansal doğruluk ve veri bütünlüğü sınırları test edilir; yeni kanıt olmadan aynı testler sınırsız tekrarlanmaz ve kapanmış işler yeniden açılmaz.
+
 Backend PASS, HTTP 200, statik checker veya semantic intent etiketi tek başına kullanıcı görevi başarısı değildir. Eksik kanıt PASS sayılamaz; kanıtlanmış kapanan alanlar da yeni kanıt olmadan gereksiz yere yeniden açılmaz.
+
+#### Permanent product-truth acceptance boundary
+
+- `TECHNICAL PASS ≠ PRODUCT PASS`: unit/integration/backend sonuçları, semantic intent etiketi, JSON/workflow üretimi, görünür highlight veya buton, HTTP 200, harness GREEN ya da yüksek test sayısı tek başına milestone veya ürün kabulü değildir.
+- Sefer Abi'nin gösterdiği her önerilen soru/çip, gerçek Chromium veya ilgili cihazda görünür UI üzerinden gerçek kullanıcı etkileşimiyle çalıştırılır. Kabul için aktif rol/tenant, surface, seçili kayıt ve kayıt türü, domain anlamı, yetkili evidence, görünür cevap ve gerekiyorsa gerçek hedef/navigasyon birlikte doğrulanır; devam/geri/kurtarma bağlamı korunur.
+- Her öneri bağlamında en az bir geçerli kullanıcı sonucu bulunmalıdır: gerçek veriye dayalı anlamlı cevap, çalışan ve yetkili görev yönlendirmesi veya gerçekten eksik bilgi için konuya uygun netleştirme. İlgisiz genel rehber, yanlış domain cevabı, anlamsız tekrar, uydurma veri, yetkisiz evidence veya sessiz görev kaybı `FAIL_PRODUCT`/`NOT_PROVEN` olarak kalır; hatayı gizlemek için öneri kaldırılamaz.
+- Sefer Abi kendi arayüzünde gösterdiği önerinin anlamını ve hedefini gerçekten korumalıdır: önerinin görünmesi, tıklanması, intent etiketi, HTTP 200 veya yalnız adım sayacı anlatımı PASS değildir. Alakasız alan sorusu, genel kaçamak, yanlış kayıt, bağlam kaybı veya uydurma veri kesin `FAIL_PRODUCT` sayılır; geçerli sonuç yalnız yetkili/veriye dayalı cevap, doğru ve yetkili görev/ekran yönlendirmesi veya gerçekten eksik bilgiye konuya uygun en az gerekli netleştirmedir.
+- Öneri kabulü, öneri metninin kendisiyle sınırlı değildir; aynı niyetin görülmemiş doğal Türkçe varyasyonları da gerçek Chromium kullanıcı akışında değerlendirilir. Eşanlamlılar, ek/çekim, günlük veya devrik ifade, makul yazım hatası, kısa/eksiltili soru, önceki mesaja ya da seçili kayda gönderme ve devam/geri/açıklama/kurtarma varyasyonları intent etiketiyle değil gerçek cevap ve görev davranışıyla ölçülür. Belirsizlikte güvenli konuya uygun netleştirme geçerlidir; ilgisiz cevaba dönüş gerekçe değildir.
+- İlgili rolün ürün kabulü, gösterilen önerilerde ve bağımsız görülmemiş Türkçe ifadelerde gerçek semantik başarı kanıtlanmadan `GREEN` olamaz. Bu kapsam mevcut kabul/regresyon altyapısıyla yürütülür; test cümlesine özel hardcode, öneriyi gizleyerek GREEN üretme, paralel semantic engine veya yeni holdout/governance sistemi kurulamaz.
+- Bu sınır sekiz desteklenen rolün tamamına ve ilgili milestone kapsamlarına uygulanır; selected-record ve no-selection varyantları, rol/tenant negatifleri ve desktop/mobile davranışı kapsamın gerektirdiği ölçüde test edilir. Localhost kanıtı, sözleşme public same-build istediğinde public kanıtın yerine geçmez.
+- Kritik bir yüzeyde gerçek kullanıcı görevi ilerlemiyorsa teknik kontroller GREEN olsa bile milestone final GREEN ilan edilmez. Ürün kusuru kalıcı RED→GREEN regresyona dönüştürülür; harness/contract kusuru ürün davranışını gevşetmeden ayrı sınıflandırılır.
 
 #### Genellenebilir SeferPakt ürün sözleşmeleri
 
@@ -213,6 +309,7 @@ Agresif işler yapılmaz:
 - Runtime json / env / dist / artifacts yüzeyi konusunda gereksiz genişleme yapılmamalı
 - Yeni local çıktı dosyaları repo içine bilinçsiz eklenmemeli
 - Export ve closure politikaları zayıflatılmamalı
+- Sefer Abi premium avatarı, sprite/ifade kaynakları, avatar state/render ve drawer/baloncuğu, ilgili test/harness kaynakları ile web/mobile ses okuma ve gelecekteki ses bağlantı arayüzleri kalıcı ürün kaynağıdır. Bunlar `RETAIN — PRODUCT SOURCE` veya aktif `PROTECTED WIP` olarak korunur; untracked olmak silme kanıtı değildir. Generated/runtime kanıtları ayrı sınıflandırılır. Bu ailede silme veya kapsamlı yeniden yazım için açık kullanıcı onayı ve producer/consumer/runtime/rollback kanıtı gerekir.
 
 ## Codex’ten beklenen çıktı formatı
 Her görevde şu sırayı izle:

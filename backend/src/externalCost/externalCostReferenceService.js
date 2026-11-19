@@ -4,7 +4,9 @@ import { ENV } from "../env.js";
 import { httpError } from "../errors/http.js";
 import { acquireExternalReference } from "../externalCost/providerRegistry.js";
 import { createConfiguredExternalReferenceRegistry, providerKeyForFamily } from "./providerFactory.js";
+import { normalizePassageRequest } from "./passageTariffContract.js";
 import { buildPlatformObservedReference, buildPricingGuidance, resolveRegionScope, resolveThreeReferenceLayers } from "./referenceLayers.js";
+import { loadControlledDemoPlatformReference } from "../finance/platformAgreementReferenceData.js";
 import {
   COMPLETENESS,
   FALLBACK_STATE,
@@ -313,41 +315,39 @@ export async function refreshExternalCostReference(query = {}, actor = null) {
   return { ...result, ok: true, marketReference: stored };
 }
 
+// Passage tariff lookup is intentionally read-only. A route preview may use
+// the official calculator result for evidence, but it must not persist or
+// promote an external toll value into the reference ledger by itself.
+export async function getPassageTariffReference(input = {}) {
+  const request = normalizePassageRequest(input);
+  const registry = createConfiguredExternalReferenceRegistry({ providerKey: request.providerKey });
+  const result = await acquireExternalReference({
+    request: {
+      ...request,
+      unit: "CURRENCY_PER_TRIP",
+      scopeType: "GLOBAL",
+      scopeKey: "TURKEY",
+      now: new Date(),
+    },
+    registry,
+    primaryProviderKey: request.providerKey,
+    now: new Date(),
+    maxAttempts: ENV.EXTERNAL_REFERENCE_RETRY_MAX_ATTEMPTS,
+  });
+  return {
+    ok: true,
+    request,
+    ...result,
+    readOnly: true,
+    previewOnly: true,
+    persisted: false,
+  };
+}
+
 function parseNonNegativeMinor(value) {
   if (value === null || value === undefined || value === "") return null;
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
-}
-
-async function loadPlatformQuoteObservations({ regionCode, windowDays, scope = "ROOM" } = {}) {
-  if (String(scope).toUpperCase() !== "ROOM" || !regionCode) return [];
-  const since = new Date(Date.now() - Math.max(1, Number(windowDays) || 90) * 24 * 60 * 60 * 1000);
-  const rows = await prisma.shiftOffer.findMany({
-    where: { status: "ACCEPTED", createdAt: { gte: since } },
-    orderBy: { createdAt: "desc" },
-    take: 500,
-    select: {
-      amountRoom: true,
-      createdAt: true,
-      shift: {
-        select: {
-          company: { select: { region: { select: { name: true } } } },
-          room: { select: { region: { select: { name: true } } } },
-        },
-      },
-    },
-  });
-  return rows
-    .map((row) => ({
-      valueMinor: row.amountRoom,
-      observedAt: row.createdAt,
-      regionCode: row.shift?.company?.region?.name || row.shift?.room?.region?.name || null,
-      eligible: Boolean(row.amountRoom),
-    }))
-    .filter((row) => {
-      const name = row.regionCode ? resolveRegionScope({ provinceName: row.regionCode }).regionCode : null;
-      return name === regionCode;
-    });
 }
 
 export async function getReferenceLayers(query = {}, actor = null) {
@@ -397,11 +397,16 @@ export async function getReferenceLayers(query = {}, actor = null) {
     if (refreshed?.marketReference) external = refreshed;
   }
   const windowDays = Math.max(1, Math.min(365, Number(query.windowDays || ENV.PLATFORM_REFERENCE_WINDOW_DAYS || 90)));
-  const observations = await loadPlatformQuoteObservations({ regionCode: region.regionCode, windowDays, scope: query.scope || actor?.role });
-  const platform = buildPlatformObservedReference({
-    observations,
+  const controlledDemoContext = await loadControlledDemoPlatformReference({
+    prismaClient: prisma,
+    actor,
     region,
-    minSampleCount: ENV.PLATFORM_REFERENCE_MIN_SAMPLE_COUNT,
+    windowDays,
+  });
+  const platform = buildPlatformObservedReference({
+    observations: controlledDemoContext.observations,
+    policy: controlledDemoContext.policy,
+    region,
     windowDays,
     family: "REGIONAL_COST_REFERENCE",
     unit: "CURRENCY_PER_TRIP",

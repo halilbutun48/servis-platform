@@ -76,9 +76,10 @@ export async function api(path, { method = "GET", body, token, signal } = {}) {
   }
   return result;
 }
-// ✅ convenience helpers (SuperAdmin panelleri api.get/post/put/del kullanıyor)
+// ✅ convenience helpers (panel işlemleri için ortak HTTP istemcisi)
 api.get = (path, opts = {}) => api(path, { ...opts, method: "GET" });
 api.post = (path, body, opts = {}) => api(path, { ...opts, method: "POST", body });
+api.patch = (path, body, opts = {}) => api(path, { ...opts, method: "PATCH", body });
 api.put = (path, body, opts = {}) => api(path, { ...opts, method: "PUT", body });
 api.del = (path, opts = {}) => api(path, { ...opts, method: "DELETE" });
 
@@ -312,8 +313,100 @@ export async function getPaymentBackboneReadinessPreviewCsv(params = {}, { token
   return cachedGet(`/api/commercial-core/payment-backbone/readiness/preview.csv${buildQueryString(params)}`, { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
+export async function getInvoiceCollectionSummary(invoiceId, { token, signal } = {}) {
+  return api(`/api/commercial-core/room/financial-operations/invoices/${Number(invoiceId)}/collections`, { token, signal });
+}
+
+export async function getCompanyInvoicePaymentSummary(invoiceId, { token, signal } = {}) {
+  return api(`/api/commercial-core/company/financial-operations/invoices/${Number(invoiceId)}/collections`, { token, signal });
+}
+
+export async function createRoomIncomeChain(agreementId, payload = {}, { token } = {}) {
+  return api(`/api/commercial-core/room/financial-operations/agreements/${Number(agreementId)}/income-chain`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function createInvoiceCollectionDraft(invoiceId, payload = {}, { token } = {}) {
+  return api(`/api/commercial-core/room/financial-operations/invoices/${Number(invoiceId)}/collections/drafts`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function createCompanyPaymentDeclarationDraft(invoiceId, payload = {}, { token } = {}) {
+  return api(`/api/commercial-core/company/financial-operations/invoices/${Number(invoiceId)}/collections/drafts`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function confirmInvoiceCollectionDraft(collectionId, { token } = {}) {
+  return api(`/api/commercial-core/room/financial-operations/collections/${Number(collectionId)}/confirm`, {
+    method: "POST",
+    token,
+    body: {},
+  });
+}
+
+export async function cancelInvoiceCollectionDraft(collectionId, reason = "", { token } = {}) {
+  return api(`/api/commercial-core/room/financial-operations/collections/${Number(collectionId)}/cancel`, {
+    method: "POST",
+    token,
+    body: { reason },
+  });
+}
+
+export async function reverseInvoiceCollection(collectionId, payload = {}, { token } = {}) {
+  return api(`/api/commercial-core/room/financial-operations/collections/${Number(collectionId)}/reverse`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
 export function getRoomFinancialOperationsPreview(token, params = {}, { signal, force = false, ttlMs = DEFAULT_READ_TTL_MS, delayMs = DEFAULT_READ_DELAY_MS } = {}) {
   return cachedGet(`/api/commercial-core/room/financial-operations/preview${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
+}
+
+export function getRoomIncomePeriodCorrections(params = {}, { token, signal } = {}) {
+  return api(`/api/commercial-core/room/financial-operations/income-period-corrections${buildQueryString(params)}`, { token, signal });
+}
+
+export async function completeRoomTestSimulatedService(shiftId, payload = {}, { token } = {}) {
+  return api(`/api/commercial-core/room/financial-operations/shifts/${Number(shiftId)}/test-simulated-completion`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function createRoomIncomePeriodCorrection(payload = {}, { token } = {}) {
+  return api("/api/commercial-core/room/financial-operations/income-period-corrections", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export function upsertRoomCostAllocationLine(entryId, payload = {}, { token } = {}) {
+  return api(`/api/commercial-core/room/financial-operations/costs/${Number(entryId)}/allocation-lines`, {
+    method: "POST",
+    token,
+    body: { ...payload, confirmed: true },
+  });
+}
+
+export function autoAllocateRoomCostByCanonicalUsage(entryId, { token } = {}) {
+  return api(`/api/commercial-core/room/financial-operations/costs/${Number(entryId)}/auto-allocation`, {
+    method: "POST",
+    token,
+    body: { confirmed: true },
+  });
 }
 
 export function getCurrentRoomQuoteFloorDraft(token, params = {}, { signal, force = false, ttlMs = DEFAULT_READ_TTL_MS, delayMs = DEFAULT_READ_DELAY_MS } = {}) {
@@ -347,6 +440,22 @@ export async function applyRoomQuoteFloorDraft(draftId, payload = {}, { token } 
 export async function archiveRoomQuoteFloorDraft(draftId, payload = {}, { token } = {}) {
   return api(`/api/commercial-core/room/financial-operations/quote-floor-drafts/${Number(draftId)}/archive`, {
     method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function sendCostedRoomAgreementQuote(agreementId, payload = {}, { token } = {}) {
+  return api(`/api/agreements/${Number(agreementId)}/counter`, {
+    method: "PUT",
+    token,
+    body: payload,
+  });
+}
+
+export async function sendRoomOfferCounter(offerId, payload = {}, { token } = {}) {
+  return api(`/api/offers/${Number(offerId)}/counter`, {
+    method: "PUT",
     token,
     body: payload,
   });

@@ -367,7 +367,11 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
     if (normalizedEntityType === 'shift') return 'ASSIGNMENT_READINESS_GUIDE';
     return 'SCREEN_MENU_GUIDE';
   }
-  if (questionType === 'SCREEN_FOCUS' || questionType === 'RISK_LIST') return 'SCREEN_MENU_GUIDE';
+  if (questionType === 'SCREEN_FOCUS' || questionType === 'RISK_LIST') {
+    return String(entityType || '').toLowerCase() === 'shift'
+      ? 'ASSIGNMENT_READINESS_GUIDE'
+      : 'SCREEN_MENU_GUIDE';
+  }
   if (questionType === 'NEXT_BEST_ACTION') return String(entityType || '').toLowerCase() === 'shift' ? 'ASSIGNMENT_READINESS_GUIDE' : 'SCREEN_MENU_GUIDE';
   if (String(questionType || '') === 'BOARDING_CHANGE_APPLICATION' || hasAny(text, ['kabul edilen değişikliği uygula', 'kabul edilen degisikligi uygula', 'günlük atamaya işle', 'gunluk atamaya işle', 'günlük atamaya işlenebilir', 'sürücü rotası yenilenmez', 'surucu rotasi yenilenmez', 'kalıcı atama değişmez', 'kalici atama degismez', 'sürücü rota ekranında görünür', 'surucu rota ekraninda gorunur', 'rota güncellemesi bekliyor', 'rota guncellemesi bekliyor', 'günlük değişiklik rotada görünüyor', 'gunluk degisiklik rotada gorunuyor', 'sürücüye gönderildi mi', 'surucuye gonderildi mi', 'driver route refresh', 'mobile route update', 'rotasına yansıdı mı', 'rotasina yansidi mi', 'stopassignment'])) return 'ASSIGNMENT_READINESS_GUIDE';
   if (String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY' || hasBoardingChangeRequestEntrySignal(text)) {

@@ -39,7 +39,7 @@ export function safeNum(x) {
   return Number.isFinite(n) ? n : null;
 }
 
-function normalizeCoord(v, kind) {
+export function normalizeCoord(v, kind) {
   if (v === null || v === undefined) return null;
   let n = null;
 
@@ -102,24 +102,24 @@ export function parseCsv(text) {
     return line.split(",").map((x) => x.trim());
   };
 
-  const head = split(lines[0]).map((h) => h.toLowerCase());
+  const head = split(lines[0]).map(normalizeHeader);
   const hasHeader =
-    head.includes("name") ||
-    head.includes("phone") ||
-    head.includes("address") ||
-    head.includes("lat") ||
-    head.includes("lng");
+    head.some((h) => ["name", "ad", "ad soyad", "adsoyad", "full name", "fullname"].includes(h)) ||
+    head.some((h) => ["phone", "telefon", "tel"].includes(h)) ||
+    head.some((h) => ["address", "adres"].includes(h)) ||
+    head.some((h) => ["lat", "enlem", "latitude"].includes(h)) ||
+    head.some((h) => ["lng", "lon", "boylam", "longitude", "long"].includes(h));
 
   let startIdx = 0;
   let idx = { name: 0, phone: 1, address: 2, lat: 3, lng: 4 };
 
   if (hasHeader) {
     idx = {
-      name: Math.max(0, head.indexOf("name")),
-      phone: Math.max(0, head.indexOf("phone")),
-      address: Math.max(0, head.indexOf("address")),
-      lat: Math.max(0, head.indexOf("lat")),
-      lng: Math.max(0, head.indexOf("lng")),
+      name: Math.max(0, headerIndex(head, ["name", "ad", "ad soyad", "adsoyad", "full name", "fullname"])),
+      phone: Math.max(0, headerIndex(head, ["phone", "telefon", "tel"])),
+      address: Math.max(0, headerIndex(head, ["address", "adres"])),
+      lat: Math.max(0, headerIndex(head, ["lat", "enlem", "latitude"])),
+      lng: Math.max(0, headerIndex(head, ["lng", "lon", "boylam", "longitude", "long"])),
     };
     startIdx = 1;
   }

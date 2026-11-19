@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "M18-FRESH-UNFROZEN-CANDIDATE-V1",
+  "manifestStatus": "UNFROZEN_CANDIDATE",
+  "expectedCaseCount": 56,
+  "requiredTopLevelFields": [
+    "schemaVersion",
+    "manifestId",
+    "status",
+    "caseCount",
+    "cases"
+  ],
+  "requiredCaseFields": [
+    "CASE_ID",
+    "ROLE",
+    "TENANT_CONTEXT_TYPE",
+    "TURN_COUNT",
+    "TURN_1",
+    "TURN_2",
+    "TURN_3",
+    "SURFACE_PRECONDITION",
+    "STATE_PRECONDITION",
+    "REFERENCE_PRECONDITION",
+    "CHALLENGE_CLASS",
+    "EXPECTED_SEMANTIC_SCOPE",
+    "EXPECTED_REQUEST_MODE",
+    "EXPECTED_SEMANTIC_ACTION",
+    "EXPECTED_ACTION",
+    "EXPECTED_OBJECT",
+    "EXPECTED_REFERENCE_CLASS",
+    "EXPECTED_RESOLUTION_STATUS",
+    "EXPECTED_TASK_OR_TASK_FAMILY",
+    "EXPECTED_OPERATION_OR_OPERATION_FAMILY",
+    "EXPECTED_AUTHORIZATION_CLASS",
+    "EXPECTED_USER_BEHAVIOR",
+    "PROHIBITED_OUTCOMES",
+    "CONTRACT_RATIONALE",
+    "CONTRACT_SOURCE_CLASS"
+  ],
+  "allowedRoles": [
+    "COMPANY",
+    "ROOM",
+    "SCHOOL",
+    "ORGANIZATION",
+    "DRIVER",
+    "PERSONEL",
+    "PARENT",
+    "SUPER_ADMIN"
+  ],
+  "allowedChallengeClasses": [
+    "EXPLAIN/CURRENT_SURFACE",
+    "VIEW_OR_NAVIGATE",
+    "REFERENCE_CONTEXT",
+    "CONTINUATION_RECOVERY",
+    "ROLE_AUTHORIZATION_BOUNDARY",
+    "AMBIGUITY_UNKNOWN_FAIL_CLOSED",
+    "DOMAIN_TASK_OR_GENUINE_OOS"
+  ],
+  "allowedContractSourceClasses": [
+    "LOCKED_M18_CONTRACT",
+    "ROLE_BOUNDARY",
+    "PRODUCT_SURFACE_CONTRACT",
+    "CONTINUATION_CONTRACT",
+    "REFERENCE_CONTRACT",
+    "OOS_CONTRACT",
+    "AUTHORIZATION_CONTRACT"
+  ],
+  "allowedReferenceClasses": [
+    "ABSENT",
+    "UNRESOLVED",
+    "VALID_UNIQUE",
+    "VALID_CONTEXTUAL_REFERENCE",
+    "TEMPORAL_NON_REFERENCE"
+  ],
+  "allowedResolutionStatuses": [
+    "RESOLVED",
+    "UNRESOLVED",
+    "NOT_APPLICABLE"
+  ],
+  "allowedSemanticScopes": [
+    "PRODUCT_EXPLICIT",
+    "PRODUCT_CONTEXTUAL",
+    "PRODUCT_AMBIGUOUS",
+    "OFF_TOPIC_GENUINE"
+  ],
+  "allowedRequestModes": [
+    "CLARIFICATION",
+    "CONTINUATION",
+    "DIRECT",
+    "GENUINE_OOS"
+  ],
+  "allowedActions": [
+    "EXPLAIN",
+    "NAVIGATE",
+    "VIEW",
+    "CREATE",
+    "UPDATE",
+    "COMPARE",
+    "CONTINUE",
+    "NEXT",
+    "PREVIOUS",
+    "NONE"
+  ]
+}

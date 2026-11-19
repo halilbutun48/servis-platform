@@ -2,8 +2,7 @@
 // Auto-reached queue: keep /api/gps hot path thin, do the heavy stop-progress work off the request path.
 
 import crypto from "node:crypto";
-import { PrismaClient } from "@prisma/client";
-import { prisma } from "../prisma.js";
+import { prisma, resolveWorkerDatabaseUrl, workerPrisma } from "../prisma.js";
 import { ENV } from "../env.js";
 import { getRedis } from "../redis/index.js";
 import { createMiniRedisClient } from "../redis/miniRedis.js";
@@ -56,25 +55,17 @@ const queueRuntime = {
   lastDeadLetteredTaskId: null,
 };
 
-function buildWorkerDatabaseUrl() {
-  const base = String(process.env.DATABASE_URL || ENV.DATABASE_URL || "").trim();
+export function buildWorkerDatabaseUrl({
+  workerDatabaseUrl = process.env.WORKER_DATABASE_URL,
+  databaseUrl = process.env.DATABASE_URL || ENV.DATABASE_URL,
+} = {}) {
+  const base = resolveWorkerDatabaseUrl({ workerDatabaseUrl, databaseUrl });
   if (!base) return null;
-
-  try {
-    const u = new URL(base);
-    u.searchParams.set("connection_limit", "1");
-    u.searchParams.set("pool_timeout", "5");
-    return u.toString();
-  } catch {
-    return base;
-  }
+  const u = new URL(base);
+  u.searchParams.set("connection_limit", "1");
+  u.searchParams.set("pool_timeout", "5");
+  return u.toString();
 }
-
-const workerDatabaseUrl = buildWorkerDatabaseUrl();
-const workerPrisma =
-  workerDatabaseUrl && workerDatabaseUrl !== String(process.env.DATABASE_URL || ENV.DATABASE_URL || "").trim()
-    ? new PrismaClient({ datasources: { db: { url: workerDatabaseUrl } } })
-    : prisma;
 
 function toInt(x) {
   const n = Number(x);
@@ -100,6 +91,21 @@ function normalizeQueueTask(task = {}) {
     queuedAtIso: String(task?.queuedAtIso || nowIso),
     attemptCount: Math.max(0, Math.trunc(Number(task?.attemptCount || 0)) || 0),
   };
+}
+
+export async function canWriteQueue(writeFreezeController, operation) {
+  if (!writeFreezeController?.assertWritable) return true;
+  try {
+    await writeFreezeController.assertWritable({ operation });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function assertQueueWritable(writeFreezeController, operation) {
+  if (!writeFreezeController?.assertWritable) return;
+  await writeFreezeController.assertWritable({ operation });
 }
 
 function safeParseTask(raw) {
@@ -158,7 +164,7 @@ function isAutoReachedInvalidTaskError(error) {
   return code === "AUTO_REACHED_INVALID_TASK";
 }
 
-export async function syncAutoReachedQueueIncidentNotifications({ io = null, prismaClient = prisma, includeRecovery = true } = {}) {
+export async function syncAutoReachedQueueIncidentNotifications({ io = null, prismaClient = workerPrisma, includeRecovery = true } = {}) {
   return syncAutoReachedQueueAlarmNotifications({ io, prismaClient, includeRecovery });
 }
 
@@ -400,8 +406,12 @@ export async function getAutoReachedQueueHealthSnapshot(opts = {}) {
 }
 
 export async function enqueueAutoReachedTask(task, opts = {}) {
+  if (!(opts.prismaClient || workerPrisma)) return { ok: false, reason: "WORKER_DATABASE_URL_REQUIRED" };
   const redis = getRedis();
   if (!redis?.send) return { ok: false, reason: "REDIS_UNAVAILABLE" };
+  if (!(await canWriteQueue(opts.writeFreezeController, "AUTO_REACHED_ENQUEUE"))) {
+    return { ok: false, reason: "GLOBAL_WRITE_FROZEN" };
+  }
 
   const envelope = normalizeQueueTask(task);
   const lockTtlMs = Math.max(60_000, Number(opts.lockTtlMs ?? ENV.AUTO_REACHED_LOCK_TTL_MS ?? DEFAULT_LOCK_TTL_MS));
@@ -433,7 +443,8 @@ export async function enqueueAutoReachedTask(task, opts = {}) {
   }
 }
 
-export async function processAutoReachedTask(io, task) {
+export async function processAutoReachedTask(io, task, opts = {}) {
+  await assertQueueWritable(opts.writeFreezeController, "AUTO_REACHED_PROCESS");
   const shiftId = toInt(task?.shiftId);
   const stopId = toInt(task?.stopId);
   const vehicleId = toInt(task?.vehicleId);
@@ -447,6 +458,12 @@ export async function processAutoReachedTask(io, task) {
       queueTaskId: String(task?.queueTaskId || ""),
     };
     throw err;
+  }
+  const db = opts.prismaClient || workerPrisma;
+  if (!db) {
+    const error = new Error("WORKER_DATABASE_URL_REQUIRED");
+    error.code = "WORKER_DATABASE_URL_REQUIRED";
+    throw error;
   }
 
   const stopOrder = Number(task?.stopOrder ?? task?.stop?.order ?? 0);
@@ -464,7 +481,7 @@ export async function processAutoReachedTask(io, task) {
   const completed = task?.completed === true;
   const now2 = task?.atIso ? new Date(task.atIso) : new Date();
 
-  const currentStop = await workerPrisma.stop.findUnique({
+  const currentStop = await db.stop.findUnique({
     where: { id: stopId },
     select: { id: true, state: true, order: true, name: true, lat: true, lng: true },
   });
@@ -483,12 +500,12 @@ export async function processAutoReachedTask(io, task) {
     : null;
 
   await Promise.all([
-    workerPrisma.shift.updateMany({ where: { id: shiftId, status: "APPROVED" }, data: { status: "ACTIVE" } }),
-    workerPrisma.stop.update({
+    db.shift.updateMany({ where: { id: shiftId, status: "APPROVED" }, data: { status: "ACTIVE" } }),
+    db.stop.update({
       where: { id: stopId },
       data: { state: "REACHED", reachedAt: now2, skippedAt: null },
     }),
-    audit(prisma, {
+    audit(db, {
       actorUserId: null,
       actorRole: "SYSTEM",
       action: "AUTO_STOP_REACHED",
@@ -496,7 +513,7 @@ export async function processAutoReachedTask(io, task) {
       entityId: shiftId,
       meta: { stopId, vehicleId, source: "AUTO_GEOFENCE" },
     }),
-    workerPrisma.shiftProgress.upsert({
+    db.shiftProgress.upsert({
       where: { shiftId },
       update: { pausedAt: null, startedAt: now2, lastReachedOrder },
       create: { shiftId, lastReachedOrder, startedAt: now2, pausedAt: null },
@@ -525,7 +542,7 @@ export async function processAutoReachedTask(io, task) {
     stop: stopForNotif,
     state: "REACHED",
     source: "AUTO_GEOFENCE",
-    prismaClient: workerPrisma,
+    prismaClient: db,
     shiftSnapshot: shiftSnapshot
       ? {
           id: shiftId,
@@ -545,13 +562,13 @@ export async function processAutoReachedTask(io, task) {
     donePayload.regionRoutingKey = regionRoutingKey;
     donePayload.regionContext = regionContext;
     await Promise.all([
-      workerPrisma.shiftProgress.upsert({
+      db.shiftProgress.upsert({
         where: { shiftId },
         update: { completedAt: now2, lastReachedOrder },
         create: { shiftId, lastReachedOrder, completedAt: now2 },
       }),
-      workerPrisma.shift.update({ where: { id: shiftId }, data: { status: "DONE" } }),
-      audit(prisma, {
+      db.shift.update({ where: { id: shiftId }, data: { status: "DONE" } }),
+      audit(db, {
         actorUserId: null,
         actorRole: "SYSTEM",
         action: "AUTO_SHIFT_COMPLETE",
@@ -568,7 +585,7 @@ export async function processAutoReachedTask(io, task) {
   }
 
   // ETA is intentionally off the hot request path. It is still emitted, but after the stop-progress work.
-  const shifts = await workerPrisma.shift.findMany({
+  const shifts = await db.shift.findMany({
     where: { vehicleId, status: { in: ["APPROVED", "ACTIVE"] } },
     include: {
       progress: { select: { pausedAt: true } },
@@ -607,6 +624,7 @@ export async function processAutoReachedTask(io, task) {
 }
 
 export function startAutoReachedQueueWorker(io, opts = {}) {
+  if (!opts.prismaClient && !workerPrisma) return () => {};
   const redisUrl = String(opts.redisUrl || ENV.REDIS_URL || "").trim();
   if (!redisUrl) return () => {};
 
@@ -626,6 +644,7 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
 
   const reclaimStaleClaims = async () => {
     if (closed || reclaimBusy) return;
+    if (!(await canWriteQueue(opts.writeFreezeController, "AUTO_REACHED_RECLAIM"))) return;
     reclaimBusy = true;
     try {
       const cutoff = Date.now() - processingTtlMs;
@@ -681,6 +700,10 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
   const loop = async () => {
     scheduleReclaim();
     while (!closed) {
+      if (!(await canWriteQueue(opts.writeFreezeController, "AUTO_REACHED_DEQUEUE"))) {
+        await pause(250);
+        continue;
+      }
       let item = null;
       try {
         item = await queueRedis.send("BRPOPLPUSH", AUTO_REACHED_QUEUE_KEY, AUTO_REACHED_PROCESSING_KEY, "1");
@@ -727,6 +750,19 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
       queueRuntime.lastDequeuedTaskId = task.queueTaskId;
       syncActiveTasks(activeTasks);
 
+      if (!(await canWriteQueue(opts.writeFreezeController, "AUTO_REACHED_CLAIM"))) {
+        try {
+          await queueRedis.send("LREM", AUTO_REACHED_PROCESSING_KEY, "1", raw);
+          await queueRedis.send("LPUSH", AUTO_REACHED_QUEUE_KEY, raw);
+        } catch (e) {
+          logger.error("autoReachedQueue freeze drain requeue error:", e);
+        }
+        activeTasks.delete(task.queueTaskId);
+        syncActiveTasks(activeTasks);
+        await pause(250);
+        continue;
+      }
+
       try {
         await rememberClaimState(controlRedis, task, raw, Date.now());
       } catch (e) {
@@ -749,7 +785,10 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
       }
 
       try {
-        await processAutoReachedTask(io, task);
+        await processAutoReachedTask(io, task, {
+          writeFreezeController: opts.writeFreezeController,
+          prismaClient: opts.prismaClient || workerPrisma,
+        });
         await clearProcessingState(controlRedis, task, raw);
         queueRuntime.totalHandled += 1;
         queueRuntime.lastHandledAtIso = new Date().toISOString();
@@ -808,7 +847,7 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
     } catch {
       // ignore
     }
-    if (workerPrisma !== prisma) {
+    if (workerPrisma && workerPrisma !== prisma) {
       void workerPrisma.$disconnect().catch(() => {});
     }
   };
@@ -864,8 +903,12 @@ async function findDeadLetterEntry(redis, taskId, limit = 200) {
 }
 
 export async function requeueAutoReachedDeadLetter(taskId, opts = {}) {
+  if (!(opts.prismaClient || workerPrisma)) return { ok: false, reason: "WORKER_DATABASE_URL_REQUIRED" };
   const redis = opts.redis || getRedis();
   if (!redis?.send) return { ok: false, reason: "REDIS_UNAVAILABLE" };
+  if (!(await canWriteQueue(opts.writeFreezeController, "AUTO_REACHED_REQUEUE"))) {
+    return { ok: false, reason: "GLOBAL_WRITE_FROZEN" };
+  }
 
   const normalizedTaskId = String(taskId || "").trim();
   if (!normalizedTaskId) return { ok: false, reason: "TASK_ID_REQUIRED" };
@@ -896,6 +939,7 @@ export async function requeueAutoReachedDeadLetter(taskId, opts = {}) {
 }
 
 export async function resolveAutoReachedDeadLetter(taskId, opts = {}) {
+  if (!(opts.prismaClient || workerPrisma)) return { ok: false, reason: "WORKER_DATABASE_URL_REQUIRED" };
   const redis = opts.redis || getRedis();
   if (!redis?.send) return { ok: false, reason: "REDIS_UNAVAILABLE" };
 

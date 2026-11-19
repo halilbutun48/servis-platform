@@ -21,7 +21,7 @@ const COMPOSER_PUBLIC_TYPE_OVERRIDES = Object.freeze({
   'organization-plan-source-lineage': 'SEMANTIC_AUTHORIZATION_BOUNDARY',
 });
 
-const SAFE_ACTION_KINDS = new Set(['ASK', 'OPEN_ROUTE', 'OPEN_GUIDE', 'COPY_TEXT']);
+const SAFE_ACTION_KINDS = new Set(['ASK', 'OPEN_ROUTE', 'OPEN_GUIDE', 'COPY_TEXT', 'CLEAR_FILTER']);
 const ACTION_LED_PUBLIC_TYPES = new Set([
   'NEXT_SCREEN',
   'NEXT_BEST_ACTION',

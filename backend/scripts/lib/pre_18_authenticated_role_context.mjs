@@ -369,6 +369,163 @@ export function mutationInterceptionPolicy(stage) {
   return { install: false, abortMutationMethods: false };
 }
 
+const READ_ONLY_METHODS = Object.freeze(["GET", "HEAD", "OPTIONS"]);
+const READ_ONLY_TRANSPORT_PATHS = Object.freeze([
+  "/api/auth/login",
+  "/api/auth/refresh",
+  "/api/ai/copilot",
+]);
+
+function safeRequestPath(url) {
+  try {
+    const pathname = new URL(String(url || "")).pathname || "/";
+    return pathname.replace(/\/+$/u, "") || "/";
+  } catch {
+    return "";
+  }
+}
+
+export function classifyReadOnlyBrowserRequest({ method = "GET", url = "" } = {}) {
+  const normalizedMethod = String(method || "GET").trim().toUpperCase();
+  const pathname = safeRequestPath(url);
+  const methodIsReadOnly = READ_ONLY_METHODS.includes(normalizedMethod);
+  const transportPostAllowed = normalizedMethod === "POST" && READ_ONLY_TRANSPORT_PATHS.includes(pathname);
+  return {
+    method: normalizedMethod,
+    pathname,
+    transportPostAllowed,
+    isBusinessMutation: !methodIsReadOnly && !transportPostAllowed,
+  };
+}
+
+export function createReadOnlyBrowserRequestLedger() {
+  const entries = [];
+  return {
+    record({ method = "GET", url = "", blocked = false } = {}) {
+      const classification = classifyReadOnlyBrowserRequest({ method, url });
+      entries.push({ ...classification, blocked: blocked === true });
+      return classification;
+    },
+    snapshot() {
+      const mutationEntries = entries.filter((entry) => entry.isBusinessMutation);
+      return {
+        requestCount: entries.length,
+        businessMutationAttemptCount: mutationEntries.length,
+        businessMutationExecutionCount: mutationEntries.filter((entry) => !entry.blocked).length,
+        blockedMutationAttemptCount: mutationEntries.filter((entry) => entry.blocked).length,
+      };
+    },
+  };
+}
+
+const ACCEPTANCE_VIEWPORTS = Object.freeze({
+  desktop: Object.freeze({ width: 1440, height: 900 }),
+  mobile390: Object.freeze({ width: 390, height: 844 }),
+  mobile320: Object.freeze({ width: 320, height: 844 }),
+});
+
+export function resolveAcceptanceViewport(name = "desktop") {
+  const normalized = String(name || "").trim().toLowerCase();
+  const viewport = ACCEPTANCE_VIEWPORTS[normalized];
+  return viewport
+    ? { safe: true, name: normalized, ...viewport }
+    : { safe: false, name: normalized, reason: "UNSUPPORTED_VIEWPORT" };
+}
+
+export function evaluateRuntimeFreshnessProof({
+  receiptVerified = false,
+  receipt = null,
+  expectedRuntimeKind = "DOCKER",
+  expectedPort = 3000,
+} = {}) {
+  const reasons = [];
+  const runtime = receipt?.runtimeBinding || {};
+  const expectedKind = String(expectedRuntimeKind || "DOCKER").trim().toUpperCase();
+  const expectedPortNumber = Number(expectedPort);
+  if (receiptVerified !== true) reasons.push("RUNTIME_PROVENANCE_RECEIPT_NOT_VERIFIED");
+  if (receipt?.finalStatus !== "PASS") reasons.push("RUNTIME_PROVENANCE_NOT_PASS");
+  if (receipt?.sourceMutation !== false) reasons.push("RUNTIME_SOURCE_MUTATION_PRESENT");
+  if (!receipt?.startManifestSha256 || receipt.startManifestSha256 !== receipt.endManifestSha256) {
+    reasons.push("RUNTIME_SOURCE_MANIFEST_NOT_STABLE");
+  }
+  if (runtime.sourceManifestSha256 !== receipt?.startManifestSha256) reasons.push("RUNTIME_SOURCE_MANIFEST_BINDING_MISMATCH");
+  if (String(runtime.runtimeKind || "").toUpperCase() !== expectedKind) reasons.push("RUNTIME_KIND_MISMATCH");
+  if (Number(runtime.port) !== expectedPortNumber
+    || Number(runtime.hostPort) !== expectedPortNumber
+    || Number(runtime.containerPort) !== expectedPortNumber) reasons.push("RUNTIME_PORT_MISMATCH");
+  if (runtime.healthStatus !== "PASS") reasons.push("RUNTIME_HEALTH_NOT_PASS");
+  if (runtime.containerName !== "personel_api") reasons.push("RUNTIME_CONTAINER_NAME_MISMATCH");
+  if (!/^[a-f0-9]{64}$/iu.test(String(runtime.containerId || ""))) reasons.push("RUNTIME_CONTAINER_ID_INVALID");
+  if (!/^sha256:[a-f0-9]{64}$/iu.test(String(runtime.imageId || ""))) reasons.push("RUNTIME_IMAGE_ID_INVALID");
+  if (!runtime.containerProcessCommand || !runtime.containerProcessCwd || !runtime.containerProcessStartTime) {
+    reasons.push("RUNTIME_PROCESS_IDENTITY_INCOMPLETE");
+  }
+  if (/\bnodemon\b/iu.test(String(runtime.containerProcessCommand || ""))
+    || !/\bnode(?:\.exe)?\b/iu.test(String(runtime.containerProcessCommand || ""))
+    || !/src[\\/]server\.js\b/iu.test(String(runtime.containerProcessCommand || ""))) {
+    reasons.push("RUNTIME_PROCESS_COMMAND_INVALID");
+  }
+  if (String(runtime.containerProcessCwd || "") !== "/app/backend") reasons.push("RUNTIME_PROCESS_CWD_INVALID");
+  if (runtime.containerProcessStartTimeSource !== "PROC_STAT_STARTTIME") reasons.push("RUNTIME_PROCESS_START_TIME_SOURCE_INVALID");
+  if (!Number.isInteger(Number(runtime.containerProcessStartTimeTicks)) || Number(runtime.containerProcessStartTimeTicks) <= 0) {
+    reasons.push("RUNTIME_PROCESS_START_TIME_TICKS_INVALID");
+  }
+  if (String(runtime.containerProcessStartTime || "") !== `proc-stat-starttime:${runtime.containerProcessStartTimeTicks}`) {
+    reasons.push("RUNTIME_PROCESS_START_TIME_INVALID");
+  }
+  if (runtime.containerLaunchCommand && !/npm\s+run\s+dev/iu.test(String(runtime.containerLaunchCommand))) {
+    reasons.push("RUNTIME_LAUNCH_COMMAND_INVALID");
+  }
+  if (runtime.pidObservationSource !== "docker-exec-procfs") reasons.push("RUNTIME_PID_OBSERVATION_SOURCE_INVALID");
+  if (runtime.processPidNamespace !== "CONTAINER") reasons.push("RUNTIME_PID_NAMESPACE_INVALID");
+  if (runtime.pidStableAcrossProbe !== true) reasons.push("RUNTIME_PID_NOT_STABLE");
+  if (runtime.mountType !== "bind" || String(runtime.mountTarget || "") !== "/app") reasons.push("RUNTIME_MOUNT_BINDING_INVALID");
+  if (runtime.healthEndpoint !== "http://127.0.0.1:3000/health") reasons.push("RUNTIME_HEALTH_ENDPOINT_INVALID");
+  if (runtime.runtimeObservedAfterManifest !== true) reasons.push("RUNTIME_OBSERVATION_ORDER_INVALID");
+  if (runtime.staleListener !== false) reasons.push("RUNTIME_STALE_LISTENER_NOT_CLEARED");
+  if (!/^[A-F0-9]{64}$/u.test(String(runtime.sourceIdentity || ""))) reasons.push("RUNTIME_SOURCE_IDENTITY_INVALID");
+  if (!/^[A-F0-9]{64}$/u.test(String(runtime.sourceContractBindingSha256 || ""))) reasons.push("RUNTIME_CONTRACT_BINDING_INVALID");
+  if (runtime.containerSourceIdentity !== runtime.sourceIdentity) reasons.push("RUNTIME_CONTAINER_SOURCE_IDENTITY_MISMATCH");
+  if (runtime.containerSourceContractBindingSha256 !== runtime.sourceContractBindingSha256) reasons.push("RUNTIME_CONTAINER_CONTRACT_BINDING_MISMATCH");
+  if (!Array.isArray(runtime.hostPortOwnerPids) || !runtime.hostPortOwnerPids.length
+    || !Array.isArray(runtime.hostPortOwnerProcesses) || !runtime.hostPortOwnerProcesses.length
+    || runtime.hostPortOwnerSource !== "WINDOWS_GET_NET_TCP_CONNECTION"
+    || runtime.hostPortOwnerObservation !== "VERIFIED_HOST_SOCKET_OWNERS"
+    || runtime.hostPortForwardingMode !== "DOCKER_DESKTOP_PROXY") {
+    reasons.push("RUNTIME_HOST_FORWARDER_IDENTITY_INCOMPLETE");
+  }
+  if (!Array.isArray(runtime.hostPortBindingAddresses) || !runtime.hostPortBindingAddresses.length
+    || !Array.isArray(runtime.hostPortListenerAddresses) || !runtime.hostPortListenerAddresses.length
+    || !Array.isArray(runtime.hostPortForwarders) || !runtime.hostPortForwarders.length) {
+    reasons.push("RUNTIME_HOST_ADDRESS_BINDING_INCOMPLETE");
+  }
+  if (runtime.startedAfterManifest !== true) reasons.push("RUNTIME_START_ORDER_UNPROVEN");
+  const suiteResults = Array.isArray(receipt?.suiteResults) ? receipt.suiteResults : [];
+  if (!suiteResults.length) reasons.push("RUNTIME_SUITE_RESULT_MISSING");
+  for (const [index, result] of suiteResults.entries()) {
+    for (const counter of [
+      "businessWriteExecution",
+      "authorizationMutation",
+      "downstreamBusinessWrite",
+      "externalLlmProviderCount",
+      "externalLlmNetworkCallCount",
+      "llmApiSecretCount",
+      "runtimeFallbackCount",
+      "downstreamSemanticRedecisionCount",
+      "shadowSemanticAuthorityCount",
+    ]) {
+      if (Number(result?.[counter] || 0) !== 0) reasons.push(`RUNTIME_NONZERO_${counter.toUpperCase()}_${index}`);
+    }
+  }
+  return {
+    safe: reasons.length === 0,
+    failureReasons: [...new Set(reasons)],
+    runtimeKind: String(runtime.runtimeKind || ""),
+    port: Number(runtime.port || 0),
+    sourceManifestSha256: String(receipt?.startManifestSha256 || ""),
+  };
+}
+
 export function toSafeAuthTelemetry({
   expectedRole,
   authResponse,

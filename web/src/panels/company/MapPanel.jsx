@@ -19,6 +19,7 @@ import { userFacingRouteSourceLabel } from "../../utils/terminology";
 import PanelChrome from "../../components/PanelChrome";
 import MapOperationsDisclosure from "../../components/map/MapOperationsDisclosure";
 import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
+import { invokeMapRefresh } from "./mapRefresh";
 
 function asNum(v) {
   const n = Number(String(v ?? "").replace(",", "."));
@@ -563,7 +564,7 @@ export default function CompanyMapPanel() {
               style={{ width: 280 }}
             />
 
-            <button className="btn sm" onClick={loadAll} disabled={busy}>
+            <button className="btn sm" onClick={() => invokeMapRefresh(loadAll)} disabled={busy}>
               {busy ? "..." : "Yenile"}
             </button>
             </div>

@@ -270,10 +270,46 @@ async function main() {
   const unknownRegion = resolveRegionScope({ provinceName: "Unknown province" });
   must(bursa.regionCode === "16" && bursa.selection === "EXACT_PROVINCE", "region resolver chooses exact known province");
   must(unknownRegion.regionCode === null && unknownRegion.selection === "NO_GEOGRAPHY", "unknown region does not silently fall back to Istanbul");
-  const insufficient = buildPlatformObservedReference({ region: bursa, observations: [{ valueMinor: 1000, observedAt: fixedNow }], minSampleCount: 2 });
-  must(insufficient.available === false && insufficient.state === "INSUFFICIENT_SAMPLE", "platform reference hides below-threshold sample");
-  const sufficient = buildPlatformObservedReference({ region: bursa, observations: [1000, 1100, 1200, 1300, 1400, 9000].map((valueMinor) => ({ valueMinor, observedAt: fixedNow })), minSampleCount: 5 });
-  must(sufficient.available === true && sufficient.valueMinor === 1250 && sufficient.range.minMinor === 1100 && sufficient.range.maxMinor === 1400, "platform reference uses robust median and quantile range");
+  const platformPolicy = {
+    enabled: true,
+    excludeDemoData: true,
+    minComparableSampleCount: 5,
+    minDistinctRoomCount: 5,
+    privacySafe: true,
+    competitionApproved: true,
+    reidentificationRisk: "LOW",
+  };
+  const platformDimensions = {
+    vehicleType: "MINIBUS",
+    vehicleCapacity: 27,
+    routeKey: "bursa-route-a",
+    totalDistanceKm: 40,
+    dailyMovementCount: 2,
+    serviceDayCount: 22,
+    serviceType: "PERSONNEL",
+    agreementMonth: "2026-08",
+  };
+  const platformObservation = (valueMinor, roomHash) => ({
+    amountMinor: valueMinor,
+    observedAt: fixedNow.toISOString(),
+    roomHash,
+    isDemo: false,
+    isTest: false,
+    commercialReference: { status: "READY", amountMinor: valueMinor, currencyCode: "TRY", source: "COMPANY_ACCEPT_AUDIT" },
+    dimensions: platformDimensions,
+  });
+  const insufficient = buildPlatformObservedReference({
+    region: bursa,
+    policy: platformPolicy,
+    observations: [platformObservation(1000, "room-1")],
+  });
+  must(insufficient.available === false && insufficient.state === "NOT_PROVEN" && insufficient.sampleCount === 1, "platform reference hides below-threshold sample");
+  const sufficient = buildPlatformObservedReference({
+    region: bursa,
+    policy: platformPolicy,
+    observations: [1000, 1100, 1200, 1300, 1400, 9000].map((valueMinor, index) => platformObservation(valueMinor, `room-${index + 1}`)),
+  });
+  must(sufficient.available === true && sufficient.valueMinor === 1250 && sufficient.range === null, "platform reference uses policy-gated median without exposing a live ROOM range");
   const externalLayer = { marketReference: { valueMinor: 646, valueDecimal: "6.46", unit: "CURRENCY_PER_L", currencyCode: "TRY", freshness: "FRESH", confidence: "HIGH", regionCode: "16" } };
   const actualFirst = resolveThreeReferenceLayers({ external: externalLayer, platform: sufficient, actual: { valueMinor: 2000, unit: "CURRENCY_PER_TRIP" }, region: bursa, family: "FUEL_DIESEL" });
   must(actualFirst.selected.authority === "USER_ACTUAL" && actualFirst.layers.length === 3 && actualFirst.separation.unlabeledMergedValue === false, "user actual wins without merging the other two layers");

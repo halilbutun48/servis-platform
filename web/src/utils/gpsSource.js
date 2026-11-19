@@ -3,6 +3,7 @@ export function gpsSourceLabelFromKey(source) {
   // Compatibility wording for the historical #14 checker: "Araç GPS’i" is now shown as "Araç konumu".
   // Compatibility wording for the historical #14 checker: "GPS yok" is now shown as "Konum sinyali yok".
   const key = String(source || '').trim().toUpperCase();
+  if (key === 'SIMULATED_DEMO') return 'DEMO simüle telemetrisi';
   if (key === 'DRIVER_PHONE') return "Sürücünün telefonundan gelen konum";
   if (key === 'DRIVER_PHONE_GPS') return "Sürücünün telefonundan gelen konum";
   if (key === 'DEVICE' || key === 'BACKEND_VEHICLE_GPS' || key === 'VENDOR') return 'Araç konumu';

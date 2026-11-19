@@ -9,6 +9,7 @@ import { companyPath } from "../../utils/paths";
 import { isSchool, personLabel } from "../../utils/labels";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildGeoReviewFacts } from "../../utils/copilotFacts";
+import { hasValidCoordinatePair } from "../../utils/geoCoordinatePair";
 import { getCompanyGeoNeedsReview, getCompanyPersonels } from "../../utils/companyDataHub";
 import { clearUiDataCache } from "../../utils/uiDataCache";
 import { rowSelectionStyle } from "../../utils/listUi";
@@ -291,7 +292,7 @@ export default function GeoReviewPanel() {
       if (st === "OK") base.ok += 1;
       else if (st === "NEEDS_REVIEW") base.review += 1;
       else if (st === "FAILED") base.failed += 1;
-      if (!(Number.isFinite(Number(it.homeLat)) && Number.isFinite(Number(it.homeLng)))) base.noCoord += 1;
+      if (!hasValidCoordinatePair(it.homeLat, it.homeLng)) base.noCoord += 1;
     });
     return base;
   }, [items, filtered]);
@@ -510,7 +511,7 @@ export default function GeoReviewPanel() {
       clearCopilotSelection(copilotScopeKey);
       return;
     }
-    const hasCoord = Number.isFinite(Number(selected?.homeLat)) && Number.isFinite(Number(selected?.homeLng));
+    const hasCoord = hasValidCoordinatePair(selected?.homeLat, selected?.homeLng);
     const fields = [
       { label: "Ad Soyad", value: selected?.fullName || "-", help: "Düzenlediğin kişi kaydını gösterir." },
       { label: "Adres", value: selected?.homeAddress || "-", help: "Geçici adres bilgisidir; lat/lon üretiminden sonra temizlenebilir." },
@@ -570,7 +571,7 @@ export default function GeoReviewPanel() {
               </button>
             ) : null}
             <button type="button" className="btn primary" onClick={() => navigate(basePath)}>
-              {guidedResume ? "Rehberli adıma geri dön" : school ? "Okul Merkezi'ne dön" : "Planlama Merkezi'ne dön"}
+              {guidedResume ? "Rehberli adıma geri dön" : "Planlama Merkezi'ne dön"}
             </button>
           </div>
         </div>
@@ -658,7 +659,7 @@ export default function GeoReviewPanel() {
                 {filtered.map((p, idx) => {
                   const active = Number(p.id) === Number(selected?.id);
                   const tone = statusTone(p.geoStatus);
-                  const hasCoord = Number.isFinite(Number(p.homeLat)) && Number.isFinite(Number(p.homeLng));
+                  const hasCoord = hasValidCoordinatePair(p.homeLat, p.homeLng);
                   return (
                     <tr key={p.id} onClick={() => setSelectedId(p.id)} style={rowSelectionStyle(active)}>
                       <td>{idx + 1}</td>

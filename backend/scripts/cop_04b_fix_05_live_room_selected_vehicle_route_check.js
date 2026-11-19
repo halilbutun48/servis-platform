@@ -155,10 +155,12 @@ must(factsSource, 'selectedRecordSummary', 'facts keeps selectedRecordSummary br
 must(mapPanelSource, 'helpContextSummary', 'map panel keeps helpContextSummary bridge');
 must(mapPanelSource, 'contextSummary', 'map panel keeps contextSummary bridge');
 must(mapPanelSource, 'selectedRecordSummary', 'map panel keeps selectedRecordSummary bridge');
-must(floatingDrawerSource, 'const requestSelection = liveSelection || selection || null;', 'floating drawer resolves the current explicit selection');
+must(floatingDrawerSource, 'const stateSelection = selectionApplies(selection, currentPath) ? selection : null;', 'floating drawer keeps the current route-bound selection');
+must(floatingDrawerSource, 'const requestSelection = liveSelection || stateSelection || null;', 'floating drawer resolves the current explicit selection');
 must(floatingDrawerSource, 'const uiSurface = captureCopilotUiSurface();', 'floating drawer captures the current UI surface');
 must(floatingDrawerSource, 'selectedEntitySet: Array.isArray(requestSelection?.entitySet) ? requestSelection.entitySet : []', 'floating drawer forwards the selected entity set');
-must(copilotPanelSource, 'const requestSelection = liveSelection || chatSelection || null;', 'copilot panel resolves the current explicit selection');
+must(copilotPanelSource, 'const scopedChatSelection = chatSelection', 'copilot panel keeps the current route-bound selection');
+must(copilotPanelSource, 'const requestSelection = liveSelection || scopedChatSelection || null;', 'copilot panel resolves the current explicit selection');
 must(copilotPanelSource, 'const uiSurface = captureCopilotUiSurface();', 'copilot panel captures the current UI surface');
 must(copilotPanelSource, 'selectedEntityId: Number(requestSelection?.entityId || 0) || null', 'copilot panel forwards the selected entity id');
 must(schemasSource, 'helpContextSummary', 'schemas keeps helpContextSummary bridge');
@@ -176,10 +178,63 @@ must(intentRouterSource, '/room/map', 'intent router keeps room map route');
 must(intentRouterSource, 'LOCATION_HELP', 'intent router keeps location help intent');
 
 const { detectQuestionIntent } = await import(pathToFileURL(path.join(root, 'backend/src/ai/chat/intentRouter.js')).href);
+const { resolveSemanticIntent } = await import(pathToFileURL(path.join(root, 'backend/src/ai/chat/semanticIntentPlanner.js')).href);
 const { buildChatHelpResponse } = await import(pathToFileURL(path.join(root, 'backend/src/ai/chat/helpComposer.js')).href);
 const { listScreensForUser, getScreenDefinitionForUser } = await import(pathToFileURL(path.join(root, 'backend/src/ai/jobGuide/screenCatalog.js')).href);
 
 const roomUser = { role: 'ROOM', roomId: 1, companyId: 1, companyKind: 'DEMO' };
+
+const liveVehicleScreen = {
+  path: '/room/vehicles',
+  label: 'Araçlar',
+  role: 'ROOM',
+  selectedEntityType: 'vehicle',
+  selectedEntityId: 1,
+  selectedLabel: '34ABC123',
+};
+const staleShiftState = {
+  lastExplicitEntitySet: [{ type: 'shift', id: 214, source: 'FOLLOW_UP_CONTEXT' }],
+  entityContext: { conversationEntities: [{ type: 'shift', id: 214 }] },
+};
+const vehicleSemantic = resolveSemanticIntent({
+  message: 'Bu arabada GPS çalışıyor mu?',
+  user: roomUser,
+  selectedEntity: { entityType: 'vehicle', entityId: 1 },
+  conversationState: staleShiftState,
+  screenContext: liveVehicleScreen,
+});
+mustNot(vehicleSemantic.family, 'OFF_TOPIC_SAFE', 'unseen Turkish vehicle GPS wording stays in product scope');
+mustArrayContains(vehicleSemantic.requestedDomains, 'VEHICLES', 'unseen Turkish vehicle GPS wording keeps vehicle domain');
+must(vehicleSemantic.entities?.[0]?.type || '', 'vehicle', 'live vehicle selection owns explicit GPS turn');
+mustArrayNotContains((vehicleSemantic.entities || []).map((entity) => entity?.type), 'shift', 'live vehicle GPS turn does not carry stale shift context');
+
+const liveMapShiftScreen = {
+  path: '/room/map',
+  label: 'Taşımacılık Firması • Canlı Takip',
+  role: 'ROOM',
+  selectedEntityType: 'shift',
+  selectedEntityId: 168,
+  selectedEntity: { type: 'SHIFT', id: 168 },
+  uiHints: {},
+};
+const staleAgreementState = {
+  activeDomain: 'AGREEMENTS',
+  uniqueDiscourseReferent: { type: 'AGREEMENT', id: 184 },
+  productContext: { semanticPlan: { requestedDomains: ['AGREEMENTS'] } },
+  lastScreenPath: '/room/agreements',
+  screenContext: { path: '/room/agreements' },
+};
+const liveMapShiftSemantic = resolveSemanticIntent({
+  message: 'Son GPS ne zaman geldi?',
+  user: roomUser,
+  selectedEntity: { entityType: 'shift', entityId: 168 },
+  conversationState: staleAgreementState,
+  screenContext: liveMapShiftScreen,
+});
+mustArrayContains(liveMapShiftSemantic.requestedDomains, 'SHIFTS', 'live map selection keeps the current shift domain');
+mustArrayNotContains((liveMapShiftSemantic.entities || []).map((entity) => entity?.type), 'agreement', 'live map selection does not carry stale agreement entity');
+must(liveMapShiftSemantic.entities?.[0]?.id || '', '168', 'live map selection keeps the selected shift identity');
+
 const roomScreen = listScreensForUser(roomUser).find((row) => String(row?.path || '') === '/room/map');
 if (!roomScreen) fail('room map screen exists');
 const roomScreenDefinition = getScreenDefinitionForUser(roomUser, roomScreen, Number(roomScreen.id));
@@ -228,7 +283,7 @@ const fixtureA = {
   question: 'Bu araç neden haritada görünmüyor?',
 };
 const intentA = detectQuestionIntent(fixtureA.question, { entityType: 'screen', screenPath: fixtureA.screenPath, originalMessage: fixtureA.question });
-must(intentA.questionType, 'SEMANTIC_AUTHORIZATION_BOUNDARY', 'room live vehicle question preserves the current authorization boundary');
+must(intentA.questionType, 'ROOT_CAUSE', 'room live vehicle question stays in the current root-cause family');
 mustNot(intentA.questionType, 'LOCATION_HELP', 'room live vehicle question does not infer location authority from screen context');
 const responseA = buildResponse(baseRoomRequest({
   path: fixtureA.screenPath,

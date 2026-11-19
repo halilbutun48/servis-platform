@@ -110,7 +110,7 @@ export async function getShiftAndCheckScopeOrThrow(shiftId, user, opts = {}) {
 
     // Optional scope: allow ROOM to read market/offered shifts BEFORE assignment
     // only if there is an active offer (OPEN/COUNTERED/ACCEPTED) for this room.
-    if (allowRoomOfferScope) {
+    if (allowRoomOfferScope && shift.roomId == null) {
       const offer = await prisma.shiftOffer.findFirst({
         where: {
           shiftId: shift.id,
@@ -405,6 +405,14 @@ export async function getPersonelIdOrThrow(user) {
   const row = await prisma.personel.findFirst({ where: { userId: user.id }, select: { id: true } });
   if (!row?.id) throw Object.assign(new Error("Personel profile missing"), { status: 400 });
   return row.id;
+}
+
+export function isPersonelShiftAccessible(shift, personelId) {
+  const wantedId = Number(personelId);
+  if (!Number.isFinite(wantedId) || wantedId <= 0) return false;
+  return (Array.isArray(shift?.pickupRequests) ? shift.pickupRequests : []).some(
+    (request) => Number(request?.personelId) === wantedId && ["OPEN", "ACCEPTED"].includes(String(request?.status || "").toUpperCase()),
+  );
 }
 
 // Build payload for /api/shifts/my. Keep response stable for scripts + UI.

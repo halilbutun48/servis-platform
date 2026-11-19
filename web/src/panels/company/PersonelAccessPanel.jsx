@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api, createPersonelAccessInvite, listPersonelAccessInvites, revokePersonelAccessInvite } from "../../api";
 import { useSession } from "../../state/session";
 import PanelChrome from "../../components/PanelChrome";
+import { clearCopilotSelection } from "../../utils/copilotSelection";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -112,6 +113,13 @@ export default function PersonelAccessPanel() {
   const { token, me } = useSession();
   const companyKind = String(me?.companyKind || "COMPANY").toUpperCase();
   const isOrganization = companyKind === "ORGANIZATION";
+
+  useEffect(() => {
+    // Personel erişimi has no selected shift/vehicle entity. Do not carry a
+    // selection from a previous access-links or shifts route into this screen.
+    clearCopilotSelection("/company/personel-access", { resetConversation: true });
+    return () => clearCopilotSelection("/company/personel-access");
+  }, []);
 
   const [personels, setPersonels] = useState([]);
   const [items, setItems] = useState([]);

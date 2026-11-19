@@ -41,7 +41,7 @@ export function RoomPendingSection({ showTitle = true, pendingStatus, setPending
           <table className="tbl">
             <thead>
               <tr>
-                <th>ID</th>
+                <th>Kayıt No</th>
                 <th>Hizmet Alan Firma</th>
                 <th>Başlangıç</th>
                 <th>Bitiş</th>
@@ -280,6 +280,9 @@ export function RoomFinalListSection({
   listFiltered,
   items,
   emptyText = "Kayıt yok.",
+  emptyFocusTarget = null,
+  emptyAction = null,
+  emptyActionLabel = "",
           searchPlaceholder = "Ara (id / hizmet alan firma / plaka / sürücü / not)",
   ...props
 }) {
@@ -314,7 +317,7 @@ export function RoomFinalListSection({
         </div>
       ) : null}
       <ListSelectionBanner
-        selectedLabel={copilotShift ? `Vardiya ID ${copilotShift.id}` : ""}
+        selectedLabel={copilotShift ? "Seçili vardiya" : ""}
         selectedSummary={copilotShift ? [displayStatusLabel(copilotShift?.status) || "-", fmtTR(copilotShift?.startAt), fmtTR(copilotShift?.endAt)].filter(Boolean).join(" • ") : ""}
         visibleCount={listFiltered.length}
         totalCount={items.length}
@@ -328,7 +331,7 @@ export function RoomFinalListSection({
           <table className="tbl">
             <thead>
               <tr>
-                <th>ID</th>
+                <th>Kayıt No</th>
                 <th>Durum</th>
                 <th>Hizmet Alan Firma</th>
                 <th>Teklifler</th>
@@ -348,7 +351,19 @@ export function RoomFinalListSection({
           </div>
         </>
       ) : (
-        <div className="muted">{emptyText}</div>
+        <div
+          className="muted"
+          data-room-shift-focus={emptyFocusTarget || undefined}
+          tabIndex={emptyFocusTarget ? -1 : undefined}
+          style={emptyFocusTarget ? { scrollMarginTop: 16 } : undefined}
+        >
+          <div>{emptyText}</div>
+          {typeof emptyAction === "function" && emptyActionLabel ? (
+            <button type="button" className="btn sm" onClick={emptyAction} style={{ marginTop: 10 }}>
+              {emptyActionLabel}
+            </button>
+          ) : null}
+        </div>
       )}
     </div>
   );

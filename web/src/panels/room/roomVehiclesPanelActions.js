@@ -77,6 +77,7 @@ export async function createVehicleAction(ctx, e) {
 
     if (!ctx.body) {
       if (ctx.type) body.type = ctx.type;
+      if (String(ctx.hgsClass).trim()) body.hgsClass = Number(ctx.hgsClass);
       if (ctx.brand.trim()) body.brand = upperTr(ctx.brand);
       if (ctx.model.trim()) body.model = upperTr(ctx.model);
       if (String(ctx.modelYear).trim()) body.modelYear = Number(ctx.modelYear);
@@ -237,6 +238,7 @@ export function openVehicleEditAction(ctx, v) {
     capacity: Number(v.capacity ?? 16),
     speedLimitKmh: Number(v.speedLimitKmh ?? 80),
     type: v.type ?? "",
+    hgsClass: v.hgsClass != null ? String(v.hgsClass) : "",
     brand: v.brand ?? "",
     model: v.model ?? "",
     modelYear: v.modelYear != null ? String(v.modelYear) : "",
@@ -265,6 +267,7 @@ export async function saveVehicleEditAction(ctx) {
       capacity: Number(ctx.editForm.capacity),
       speedLimitKmh: Number(ctx.editForm.speedLimitKmh),
       type: ctx.editForm.type || null,
+      hgsClass: String(ctx.editForm.hgsClass).trim() ? Number(ctx.editForm.hgsClass) : null,
       brand: upperTrOrNull(ctx.editForm.brand),
       model: upperTrOrNull(ctx.editForm.model),
       modelYear: String(ctx.editForm.modelYear).trim() ? Number(ctx.editForm.modelYear) : null,

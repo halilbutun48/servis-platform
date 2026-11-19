@@ -1,14 +1,14 @@
 // backend/src/jobs/maintenanceMonitor.js
 // Maintenance upcoming monitor (default: 7 days window, 24h dedupe)
 
-import { prisma } from "../prisma.js";
+import { workerPrisma } from "../prisma.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { buildNotifPayloadV1 } from "../notifications/payloadV1.js";
 import logger from "../lib/logger.js";
 
-async function isDbReadyOnce() {
+async function isDbReadyOnce(db) {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await db.$queryRaw`SELECT 1`;
     globalThis.__dbWarned = false;
     return true;
   } catch {
@@ -21,6 +21,8 @@ async function isDbReadyOnce() {
 }
 
 export function startMaintenanceMonitor(io, opts = {}) {
+  const db = opts.prismaClient || workerPrisma;
+  if (!db) return () => {};
   const intervalMs = opts.intervalMs ?? 30 * 60 * 1000; // 30dk
   const windowDays = opts.windowDays ?? 7;
   const dedupeHours = opts.dedupeHours ?? 24;
@@ -32,14 +34,14 @@ export function startMaintenanceMonitor(io, opts = {}) {
     running = true;
 
     try {
-      if (!(await isDbReadyOnce())) return;
+      if (!(await isDbReadyOnce(db))) return;
 
       const now = new Date();
       const nowMs = now.getTime();
       const windowMs = windowDays * 24 * 60 * 60 * 1000;
       const dedupeMs = dedupeHours * 60 * 60 * 1000;
 
-      const upcoming = await prisma.vehicle.findMany({
+      const upcoming = await db.vehicle.findMany({
         where: { nextMaintenanceAt: { not: null } },
         // roomId is on vehicle; room relation not needed here
       });
@@ -52,7 +54,7 @@ export function startMaintenanceMonitor(io, opts = {}) {
         if (diff <= 0 || diff >= windowMs) continue;
 
         // spam gate: same type+vehicle within last dedupe window
-        const existing = await prisma.notification.findFirst({
+          const existing = await db.notification.findFirst({
           where: {
             type: "MAINT_7D",
             vehicleId: v.id,
@@ -77,7 +79,7 @@ export function startMaintenanceMonitor(io, opts = {}) {
         // Company targets: only companies that currently have APPROVED/ACTIVE shifts for this vehicle
         const companyIds = new Set();
         try {
-          const rel = await prisma.shift.findMany({
+            const rel = await db.shift.findMany({
             where: { vehicleId: v.id, status: { in: ["APPROVED", "ACTIVE"] } },
             select: { companyId: true },
           });
@@ -88,6 +90,7 @@ export function startMaintenanceMonitor(io, opts = {}) {
 
         await createAndEmitNotification({
           io,
+          prismaClient: db,
           type: "MAINT_7D",
           scope: "ROOM",
           payload,
@@ -98,6 +101,7 @@ export function startMaintenanceMonitor(io, opts = {}) {
         for (const cid of companyIds) {
           await createAndEmitNotification({
             io,
+            prismaClient: db,
             type: "MAINT_7D",
             scope: "COMPANY",
             payload,
@@ -108,7 +112,7 @@ export function startMaintenanceMonitor(io, opts = {}) {
         }
 
         // if any active shift -> driver
-        const sh = await prisma.shift.findFirst({
+        const sh = await db.shift.findFirst({
           where: {
             vehicleId: v.id,
             status: { in: ["APPROVED", "ACTIVE"] },
@@ -118,13 +122,14 @@ export function startMaintenanceMonitor(io, opts = {}) {
         });
 
         if (sh?.driverId) {
-          const dUser = await prisma.driver.findUnique({
+          const dUser = await db.driver.findUnique({
             where: { id: sh.driverId },
             select: { userId: true },
           });
 
           await createAndEmitNotification({
             io,
+            prismaClient: db,
             type: "MAINT_7D",
             scope: "DRIVER",
             payload,

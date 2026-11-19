@@ -7,7 +7,9 @@ import { invalidate } from "../../live/bus";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
 import { getApiErrorMessage } from "../../utils/apiContract";
+import { userFacingStatusLabel } from "../../utils/terminology";
 import { resolveShiftRegionLabel } from "../../utils/regionOwnership";
+import { navigate } from "../../router";
 import {
   buildCapacityMeta,
   formatShiftDateTimeTR as fmtTR,
@@ -37,6 +39,8 @@ import {
 import { autoSplitApproveAction, approveShiftAction, rejectShiftAction, submitReassignAction } from "./roomShiftsPanelActions";
 import { RoomShiftsModalSection, RoomShiftsOverviewSection } from "./roomShiftsOverviewSection";
 import { RoomShiftsMainSections } from "./roomShiftsMainSections";
+import RouteEvidenceEditor from "./RouteEvidenceEditor";
+import { normalizeRouteEvidenceReturnPath } from "./routeEvidenceReturn.js";
 import {
   checkRoomShiftAvailability,
   loadRoomShiftsPanelAll,
@@ -56,6 +60,7 @@ export default function RoomShiftsPanel() {
   const [offers, setOffers] = useState([]); // market offers inbox (SHIFT_OFFER)
 
   const [err, setErr] = useState("");
+  const [loadState, setLoadState] = useState("loading");
   const [busy, setBusy] = useState(false);
   const [reassignModal, setReassignModal] = useState({ open: false, shift: null });
   const [opsEventsModal, setOpsEventsModal] = useState({ open: false, shiftId: null });
@@ -69,7 +74,23 @@ export default function RoomShiftsPanel() {
   const userSelectedShiftsTabRef = useRef(false);
 
   const [focusedTrackShiftId, setFocusedTrackShiftId] = useState(null);
+  const [routeFocusShiftId, setRouteFocusShiftId] = useState(null);
+  const [routeEvidenceShiftId, setRouteEvidenceShiftId] = useState(null);
+  const [routeEvidenceRequested, setRouteEvidenceRequested] = useState(false);
+  const [routeEvidenceReturnPath, setRouteEvidenceReturnPath] = useState("");
+  const [focusedAgreementId, setFocusedAgreementId] = useState(null);
+  const [shiftNavigationFeedback, setShiftNavigationFeedback] = useState("");
   const [pendingPreviewShiftId, setPendingPreviewShiftId] = useState(null);
+  const persistFocusedTrackShiftId = useCallback((value) => {
+    const sid = Number(value || 0);
+    setFocusedTrackShiftId(sid > 0 ? sid : null);
+    try {
+      if (sid > 0) localStorage.setItem("room:focusShiftId", String(sid));
+      else localStorage.removeItem("room:focusShiftId");
+    } catch {
+      // Selection persistence is a convenience; the in-memory selection remains authoritative.
+    }
+  }, []);
   const selectShiftsTab = useCallback((tab) => { userSelectedShiftsTabRef.current = true; setShiftsTab(tab); }, []);
 
   // M28/M63-R3A: offers inbox -> ilgili satira hizli gecis
@@ -81,26 +102,71 @@ export default function RoomShiftsPanel() {
         const sid = String(pendingRaw || "").trim();
         if (sid) {
           userSelectedShiftsTabRef.current = true;
-          setShiftsTab("pending");
-          setPendingStatus("REQUESTED");
-          setPendingQ(sid);
+          setRouteFocusShiftId(Number(sid));
           return;
         }
       }
 
       const previewRaw = localStorage.getItem("room:previewShiftId");
-      const raw = localStorage.getItem("room:focusShiftId");
+      const hashQuery = String(window.location.hash || "").split("?")[1] || "";
+      const queryFocusShiftId = new URLSearchParams(hashQuery).get("focusShiftId");
+      const queryFocusAgreementId = new URLSearchParams(hashQuery).get("focusAgreementId");
+      const queryFocusTask = new URLSearchParams(hashQuery).get("focusTask");
+      const queryReturnTo = new URLSearchParams(hashQuery).get("returnTo");
+      const focusAgreementRaw = localStorage.getItem("room:focusAgreementId") || queryFocusAgreementId;
+      const raw = localStorage.getItem("room:focusShiftId") || queryFocusShiftId;
       if (previewRaw) localStorage.removeItem("room:previewShiftId");
       if (raw) localStorage.removeItem("room:focusShiftId");
+      if (focusAgreementRaw) localStorage.removeItem("room:focusAgreementId");
+      const aid = Number(focusAgreementRaw || 0);
+      if (queryFocusTask === "usage") setRouteEvidenceRequested(true);
+      setRouteEvidenceReturnPath(normalizeRouteEvidenceReturnPath(queryReturnTo));
+      if (aid > 0) {
+        userSelectedShiftsTabRef.current = true;
+        setFocusedAgreementId(aid);
+        setFocusedTrackShiftId(null);
+        setShiftsTab("contract");
+        setContractQ("");
+        setOtherQ("");
+      }
       const sid = String(previewRaw || raw || "").trim();
       if (!sid) return;
       userSelectedShiftsTabRef.current = true;
-      setShiftsTab("contract");
-      setContractQ(sid);
-      setOtherQ(sid);
+      setRouteFocusShiftId(Number(sid));
       if (previewRaw) setPendingPreviewShiftId(Number(sid || 0));
     }, 0);
     return () => clearTimeout(timer);
+  }, []);
+
+  // A guided target may point back to the already-mounted Vardiyalar route.
+  // In that case the hash changes without remounting this panel, so the
+  // mount-only focus effect above would otherwise leave the user on the old
+  // tab/filter. Re-apply only the supported focus query on same-route hash
+  // changes; the user can still override it by selecting another tab.
+  useEffect(() => {
+    const applySameRouteFocus = () => {
+      const hashQuery = String(window.location.hash || '').split('?')[1] || '';
+      const params = new URLSearchParams(hashQuery);
+      const aid = Number(params.get('focusAgreementId') || 0);
+      const sid = String(params.get('focusShiftId') || '').trim();
+      setRouteEvidenceRequested(params.get('focusTask') === 'usage');
+      setRouteEvidenceReturnPath(normalizeRouteEvidenceReturnPath(params.get('returnTo')));
+      userSelectedShiftsTabRef.current = true;
+      if (aid > 0) {
+        setFocusedAgreementId(aid);
+        setFocusedTrackShiftId(null);
+        setRouteFocusShiftId(null);
+        setShiftsTab('contract');
+        setContractQ('');
+        setOtherQ('');
+        return;
+      }
+      if (!sid) return;
+      setFocusedAgreementId(null);
+      setRouteFocusShiftId(Number(sid));
+    };
+    window.addEventListener('hashchange', applySameRouteFocus);
+    return () => window.removeEventListener('hashchange', applySameRouteFocus);
   }, []);
 
   // Bekleyen satır: seçili araç + seçili driver (approve için)
@@ -177,7 +243,7 @@ async function decideExtend(shiftId, decision) {
       const lng = Number(room?.hubLng);
       return Number.isFinite(lat) && Number.isFinite(lng) && !(Math.abs(lat) < 1e-9 && Math.abs(lng) < 1e-9);
     }) || null;
-    const fallbackRoom = currentRoom || roomWithHub || rooms[0] || { id: meRoomId || 0, name: meRoomId ? `Taşımacılık Firması ID ${meRoomId}` : "Taşımacılık Firması" };
+    const fallbackRoom = currentRoom || roomWithHub || rooms[0] || { id: meRoomId || 0, name: "Taşımacılık Firması" };
 
     const hubLatRaw = Number(fallbackRoom?.hubLat);
     const hubLngRaw = Number(fallbackRoom?.hubLng);
@@ -191,7 +257,7 @@ async function decideExtend(shiftId, decision) {
 
     return {
       room: fallbackRoom,
-      title: `${fallbackRoom?.name || `Taşımacılık Firması ID ${fallbackRoom?.id || meRoomId || "?"}`} — Rota Önizleme`,
+      title: `${fallbackRoom?.name || "Taşımacılık Firması"} — Rota Önizleme`,
       hint: hasRoomHub
         ? "Bekleyen kayıt yok; taşımacılık firmasının buluşma noktası üzerinden yalnızca okuma önizlemesi açılır."
         : "Bekleyen kayıt yok; örnek konum üzerinden yalnızca okuma önizlemesi açılır.",
@@ -319,6 +385,7 @@ async function decideExtend(shiftId, decision) {
       api,
       token,
       force,
+      setLoadState,
       setErr,
       setItems,
       setVehicles,
@@ -336,6 +403,7 @@ async function decideExtend(shiftId, decision) {
       api,
       token,
       force,
+      setLoadState,
       vehicles,
       setErr,
       setItems,
@@ -406,7 +474,9 @@ async function decideExtend(shiftId, decision) {
 
   const otherBase = useMemo(() => nonPendingBase.filter((s) => Number(s?.agreementId) <= 0), [nonPendingBase]);
 
-  const contractFiltered = useMemo(() => contractBase.filter((s) => matchShift(s, contractQ)), [contractBase, contractQ]);
+  const contractFiltered = useMemo(() => contractBase
+    .filter((s) => !focusedAgreementId || Number(s?.agreementId || 0) === Number(focusedAgreementId))
+    .filter((s) => matchShift(s, contractQ)), [contractBase, contractQ, focusedAgreementId]);
 
   const otherFiltered = useMemo(() => otherBase.filter((s) => matchShift(s, otherQ)), [otherBase, otherQ]);
 
@@ -430,48 +500,74 @@ async function decideExtend(shiftId, decision) {
     return () => clearTimeout(timer);
   }, [defaultShiftsTab]);
 
-  const activeTabFiltered = useMemo(() => {
-    if (shiftsTab === "pending") return pendingFiltered;
-    if (shiftsTab === "contract") return contractFiltered;
-    return otherFiltered;
-  }, [shiftsTab, pendingFiltered, contractFiltered, otherFiltered]);
-
-  const splitEligibleShift = useMemo(() => {
-    const pools = [activeTabFiltered, contractFiltered, otherFiltered, items];
-    for (const pool of pools) {
-      const found = Array.isArray(pool)
-        ? pool.find((shift) => Number(shift?.splitRootId || 0) > 0)
-        : null;
-      if (found) return found;
+  useEffect(() => {
+    const sid = Number(routeFocusShiftId || 0);
+    if (!sid || !items.length) return;
+    const target = items.find((shift) => Number(shift?.id || 0) === sid) || null;
+    if (!target) {
+      setFocusedTrackShiftId(null);
+      setShiftNavigationFeedback(`Vardiya #${sid} bulunamadı.`);
+      return;
     }
-    return null;
-  }, [activeTabFiltered, contractFiltered, otherFiltered, items]);
-
-  const preferredCopilotShift = useMemo(() => {
-    const orderedPools = [
-      activeTabFiltered,
-      ...(shiftsTab === "pending"
-        ? [contractFiltered, otherFiltered]
-        : shiftsTab === "contract"
-          ? [pendingFiltered, otherFiltered]
-          : [pendingFiltered, contractFiltered]),
-    ];
-    const seen = new Set();
-    for (const pool of orderedPools) {
-      for (const shift of pool) {
-        const sid = Number(shift?.id || 0);
-        if (!sid || seen.has(sid)) continue;
-        seen.add(sid);
-        const capacityMeta = buildCapacityMeta({ shift, vehicle: null, roomVehicles: vehiclesForRoom(shift?.roomId) });
-        if (capacityMeta.dispatchRequired) return shift;
-      }
+    userSelectedShiftsTabRef.current = true;
+    setFocusedTrackShiftId(sid);
+    const status = String(target.status || "").toUpperCase();
+    if (["DRAFT", "REQUESTED"].includes(status)) {
+      setShiftsTab("pending");
+      setPendingStatus(status);
+      setPendingQ(String(sid));
+    } else if (Number(target.agreementId || 0) > 0) {
+      setShiftsTab("contract");
+      setContractQ(String(sid));
+      setOtherQ("");
+    } else {
+      setShiftsTab("other");
+      setOtherQ(String(sid));
+      setContractQ("");
     }
-    return splitEligibleShift || activeTabFiltered[0] || pendingFiltered[0] || contractFiltered[0] || otherFiltered[0] || null;
-  }, [activeTabFiltered, shiftsTab, pendingFiltered, contractFiltered, otherFiltered, vehiclesForRoom, splitEligibleShift]);
+    setFocusedAgreementId(null);
+    setShiftNavigationFeedback(
+      Number(target.agreementId || 0) > 0
+        ? "Vardiya ve sözleşme bağlantısı açıldı."
+        : "Vardiya açıldı.",
+    );
+    if (routeEvidenceRequested) setRouteEvidenceShiftId(sid);
+  }, [items, routeFocusShiftId, routeEvidenceRequested]);
+
+  useEffect(() => {
+    const aid = Number(focusedAgreementId || 0);
+    if (!aid) return;
+    const count = contractFiltered.length;
+    setShiftNavigationFeedback(count > 0
+      ? `Sözleşme #${aid} için ${count} bağlı vardiya gösteriliyor.`
+      : `Sözleşme #${aid} için bağlı vardiya bulunamadı. Sözleşme kabul edilmeden gerçek operasyon kaydı oluşmaz.`);
+  }, [contractFiltered.length, focusedAgreementId]);
+
+  useEffect(() => {
+    const aid = Number(focusedAgreementId || 0);
+    const sid = Number(focusedTrackShiftId || 0);
+    const selector = aid > 0
+      ? `[data-room-shift-focus="agreement-${aid}"]`
+      : sid > 0
+        ? `[data-room-shift-focus="shift-${sid}"]`
+        : "";
+    if (!selector) return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      const candidates = Array.from(document.querySelectorAll(selector));
+      const target = candidates.find((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      }) || candidates[0];
+      if (!target) return;
+      target.scrollIntoView({ behavior: "auto", block: "start", inline: "nearest" });
+      target.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusedAgreementId, focusedTrackShiftId, shiftsTab, contractFiltered.length, otherFiltered.length]);
 
   const copilotShiftId = useMemo(
-    () => Number(focusedTrackShiftId || 0) || Number(preferredCopilotShift?.id || 0) || null,
-    [focusedTrackShiftId, preferredCopilotShift]
+    () => Number(focusedTrackShiftId || 0) || null,
+    [focusedTrackShiftId]
   );
   const copilotShift = useMemo(
     () => items.find((x) => Number(x?.id || 0) === Number(copilotShiftId || 0))
@@ -510,17 +606,17 @@ async function decideExtend(shiftId, decision) {
       scopeKey: '/room/shifts',
       entityType: 'shift',
       entityId: Number(copilotShift?.id || 1103) || 1103,
-      label: `Vardiya ID ${copilotShift.id}`,
-      summary: [String(copilotShift?.status || '').toUpperCase() || '-', fmtTR(copilotShift?.startAt), fmtTR(copilotShift?.endAt)].filter(Boolean).join(' ? '),
+      label: "Seçili vardiya",
+      summary: [userFacingStatusLabel(copilotShift?.status || ""), fmtTR(copilotShift?.startAt), fmtTR(copilotShift?.endAt)].filter(Boolean).join(' · '),
       fields: [
-        { label: 'Durum', value: String(copilotShift?.status || '-').toUpperCase(), help: 'Vardiyanın operasyon durumunu gösterir.' },
+        { label: 'Durum', value: userFacingStatusLabel(copilotShift?.status || ""), help: 'Vardiyanın operasyon durumunu gösterir.' },
         { label: 'Saat', value: `${fmtTR(copilotShift?.startAt)} - ${fmtTR(copilotShift?.endAt)}`, help: 'Planlanan başlangıç ve bitiş saatini gösterir.' },
-        { label: 'Araç', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `Araç ID ${copilotShift.vehicleId}` : '-'), help: 'Bağlı araç bilgisini gösterir.' },
-        { label: 'Sürücü', value: copilotShift?.driver?.fullName || (copilotShift?.driverId ? `Sürücü ID ${copilotShift.driverId}` : '-'), help: 'Bağlı sürücü bilgisini gösterir.' },
+        { label: 'Araç', value: copilotShift?.vehicle?.plate || 'Araç belirtilmedi', help: 'Bağlı araç bilgisini gösterir.' },
+        { label: 'Sürücü', value: copilotShift?.driver?.fullName || 'Sürücü belirtilmedi', help: 'Bağlı sürücü bilgisini gösterir.' },
         { label: 'Yolcu', value: String(shiftRequiredPax(copilotShift) || 0), help: 'Tahmini gerekli yolcu kapasitesini gösterir.' },
       ],
       badges: [
-        ...(Number(copilotShift?.agreementId || 0) > 0 ? [{ label: 'Sözleşme', value: `Sözleşme ID ${copilotShift.agreementId}`, help: 'Bu vardiyanın sözleşme kaynaklı üretildiğini gösterir.' }] : []),
+        ...(Number(copilotShift?.agreementId || 0) > 0 ? [{ label: 'Sözleşme', value: 'Sözleşme bağlantısı mevcut', help: 'Bu vardiyanın sözleşme kaynaklı üretildiğini gösterir.' }] : []),
       ],
       facts });
   }, [copilotShift, pendingFiltered.length, contractFiltered.length, otherFiltered.length]);
@@ -713,6 +809,36 @@ async function decideExtend(shiftId, decision) {
     return rejectShiftAction({ setBusy, setErr, api, token, invalidate, loadAll, getApiErrorMessage }, shift);
   }
 
+  async function completeTestSimulatedService(shift) {
+    const sid = Number(shift?.id || 0);
+    if (!sid) return;
+    const sourceRef = `SEFERPAKT_DEMO_CONT251_SHIFT${sid}`;
+    const confirmed = typeof window === "undefined" || typeof window.confirm !== "function"
+      ? true
+      : window.confirm("Bu işlem gerçek saha hizmeti değildir; yalnız canonical DEMO kabulü için TEST_SIMULATED kaydı oluşturur. Devam edilsin mi?");
+    if (!confirmed) return;
+    setBusy(true);
+    setErr("");
+    try {
+      await api(`/api/commercial-core/room/financial-operations/shifts/${sid}/test-simulated-completion`, {
+        method: "POST",
+        token,
+        body: {
+          userApproval: true,
+          dataClass: "TEST_SIMULATED",
+          sourceRef,
+        },
+      });
+      setShiftNavigationFeedback(`Vardiya #${sid} için kontrollü DEMO hizmet kanıtı kaydedildi. Gerçek saha hizmeti değildir.`);
+      invalidate("shifts");
+      await loadAll({ force: true });
+    } catch (e) {
+      setErr(getApiErrorMessage(e, "Kontrollü DEMO hizmet kanıtı kaydedilemedi."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submitReassign(payload) {
     return submitReassignAction({ reassignModal, setBusy, setErr, api, invalidate, loadAll, getApiErrorMessage, setReassignModal, setOpsEventsModal }, payload);
   }
@@ -725,10 +851,17 @@ async function decideExtend(shiftId, decision) {
     setOpsEventsModal({ open: true, shiftId: Number(shiftId) || null });
   }
 
+  function openRouteEvidence(shift) {
+    const sid = Number(shift?.id || 0);
+    if (sid > 0) setRouteEvidenceShiftId(sid);
+  }
+
   return (
     <div className="roomCriticalFixScope roomShiftsDensityScope">
       <RoomShiftsOverviewSection
         err={err}
+        loadState={loadState}
+        onRetry={() => loadAll({ force: true })}
         pendingCount={tabCounts.pending}
         contractCount={tabCounts.contract}
         otherCount={tabCounts.other}
@@ -736,9 +869,22 @@ async function decideExtend(shiftId, decision) {
         autoSplitApprove={autoSplitApprove}
         fallbackPreview={copilotShift ? null : roomPreviewFallback}
         onOpenFallbackPreview={(preview) => openRoutePreview(null, preview)}
+        onOpenRouteEvidence={() => openRouteEvidence(copilotShift)}
       />
 
-      <RoomShiftsMainSections
+      {loadState === "ready" || loadState === "empty" ? <>
+        {shiftNavigationFeedback ? (
+          <div
+            data-testid="room-shift-navigation-feedback"
+            className="roomInlineNotice roomInlineNotice--info"
+            aria-live="polite"
+            tabIndex={-1}
+            style={{ marginTop: 10 }}
+          >
+            {shiftNavigationFeedback}
+          </div>
+        ) : null}
+        <RoomShiftsMainSections
         activeTab={shiftsTab}
         onChangeTab={(tab) => selectShiftsTab(tab)}
         tabCounts={tabCounts}
@@ -750,6 +896,10 @@ async function decideExtend(shiftId, decision) {
         contractQ={contractQ}
         setContractQ={setContractQ}
         contractFiltered={contractFiltered}
+        contractEmptyText={focusedAgreementId ? "Seçili sözleşme için bağlı vardiya bulunamadı." : "Sözleşmeden üretilen vardiya yok."}
+        contractEmptyFocusTarget={focusedAgreementId ? `agreement-${focusedAgreementId}` : null}
+        contractEmptyAction={focusedAgreementId ? () => navigate(`/room/agreements?focusAgreementId=${focusedAgreementId}`) : null}
+        contractEmptyActionLabel={focusedAgreementId ? "Sözleşme kabul akışına dön" : ""}
         otherQ={otherQ}
         setOtherQ={setOtherQ}
         otherFiltered={otherFiltered}
@@ -775,7 +925,7 @@ async function decideExtend(shiftId, decision) {
         roomsById={roomsById}
         approveShift={approveShift}
         rejectShift={rejectShift}
-        setFocusedTrackShiftId={setFocusedTrackShiftId}
+        setFocusedTrackShiftId={persistFocusedTrackShiftId}
         copilotShiftId={copilotShiftId}
         poolSummary={poolSummary}
         dispatchPreview={dispatchPreview}
@@ -797,7 +947,23 @@ async function decideExtend(shiftId, decision) {
         decideExtend={decideExtend}
         openOpsEvents={openOpsEvents}
         openReassignModal={openReassignModal}
-      />
+        completeTestSimulatedService={completeTestSimulatedService}
+        />
+      </> : null}
+
+      {routeEvidenceShiftId ? (
+        <RouteEvidenceEditor
+          token={token}
+          shift={items.find((item) => Number(item?.id || 0) === Number(routeEvidenceShiftId)) || copilotShift}
+          onClose={() => {
+            setRouteEvidenceShiftId(null);
+            setRouteEvidenceRequested(false);
+            setRouteEvidenceReturnPath("");
+          }}
+          onChanged={() => loadShiftListOnly({ force: true })}
+          returnPath={routeEvidenceReturnPath}
+        />
+      ) : null}
 
       <RoomShiftsModalSection
         previewOpen={previewOpen}

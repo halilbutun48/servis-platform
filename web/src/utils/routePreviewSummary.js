@@ -1,3 +1,51 @@
+function positive(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function isKnownSeedPlaceholder(summary = {}) {
+  const distanceM = Number(summary?.routeSnapshotDistanceM);
+  const durationSec = Number(summary?.routeSnapshotDurationSec);
+  const inputHash = String(summary?.routeSnapshotInputHash || summary?.metricInputHash || "");
+  return distanceM === 1
+    && durationSec === 1
+    && (!inputHash || /ROUTE_SNAPSHOT_DEMO_PLANNING:PARTNER_(SCHOOL|ORGANIZATION)$/.test(inputHash));
+}
+
+function unknownRouteMetrics(label = "henüz hesaplanmadı") {
+  return { status: "UNKNOWN", distanceKm: null, durationMin: null, label };
+}
+
+export function getEffectiveRouteMetrics(summary = {}, source = "") {
+  const normalizedSource = String(source || "").toUpperCase();
+  const previewPolicy = String(summary?.previewPolicy || "").toUpperCase();
+  const isSnapshot = normalizedSource === "SNAPSHOT" || previewPolicy === "DB_SNAPSHOT";
+  const isLearned = normalizedSource === "LEARNED" || previewPolicy === "DB_LEARNED";
+
+  if (isKnownSeedPlaceholder(summary)) return unknownRouteMetrics();
+
+  const snapshotDistanceKm = positive(summary?.distanceKmSnapshot)
+    ?? (positive(summary?.routeSnapshotDistanceM) ? Number(summary.routeSnapshotDistanceM) / 1000 : null);
+  const snapshotDurationMin = positive(summary?.durationMinSnapshot)
+    ?? (positive(summary?.routeSnapshotDurationSec) ? Number(summary.routeSnapshotDurationSec) / 60 : null);
+  if (isSnapshot && snapshotDistanceKm != null && snapshotDurationMin != null) {
+    return { status: "MEASURED", distanceKm: snapshotDistanceKm, durationMin: snapshotDurationMin, label: "kaydedilmiş" };
+  }
+
+  const learnedDistanceKm = positive(summary?.distanceKmLearned);
+  const learnedDurationMin = positive(summary?.durationMinLearned);
+  if (isLearned && learnedDistanceKm != null && learnedDurationMin != null) {
+    return { status: "MEASURED", distanceKm: learnedDistanceKm, durationMin: learnedDurationMin, label: "öğrenilmiş" };
+  }
+
+  const estimatedDistanceKm = positive(summary?.distanceKmEstimated);
+  const estimatedDurationMin = positive(summary?.durationMinEstimated);
+  if (estimatedDistanceKm != null && estimatedDurationMin != null) {
+    return { status: "ESTIMATED", distanceKm: estimatedDistanceKm, durationMin: estimatedDurationMin, label: "tahmini" };
+  }
+  return unknownRouteMetrics();
+}
+
 export function summarizeRoutePreview(payload) {
   const summary = payload?.summary || {};
   const stops = Array.isArray(payload?.stops) ? payload.stops : [];
@@ -29,24 +77,32 @@ export function summarizeRoutePreview(payload) {
     return 0;
   };
 
+  const knownPlaceholder = isKnownSeedPlaceholder({
+    routeSnapshotDistanceM: summary?.routeSnapshotDistanceM ?? payload?.routeSnapshotDistanceM,
+    routeSnapshotDurationSec: summary?.routeSnapshotDurationSec ?? payload?.routeSnapshotDurationSec,
+    routeSnapshotInputHash: summary?.routeSnapshotInputHash ?? payload?.routeSnapshotInputHash,
+  });
+
   return {
     peopleCount: Math.max(0, Number(summary?.peopleCount ?? people.length ?? 0) || 0),
     stopCount: Math.max(0, Number(summary?.stopCount ?? stops.length ?? 0) || 0),
-    distanceM: Math.max(0, firstFinite(distanceCandidates)),
-    durationSec: Math.max(0, firstFinite(durationCandidates)),
+    distanceM: knownPlaceholder ? null : (firstFinite(distanceCandidates) || null),
+    durationSec: knownPlaceholder ? null : (firstFinite(durationCandidates) || null),
   };
 }
 
 export function formatKm(value) {
-  const n = Number(value || 0);
+  const n = Number(value);
   if (!Number.isFinite(n) || n <= 0) return "-";
   const km = n / 1000;
+  if (n < 1000) return `${Math.round(n)} m`;
   return km >= 10 ? `${Math.round(km)} km` : `${km.toFixed(1)} km`;
 }
 
 export function formatDuration(value) {
-  const n = Number(value || 0);
+  const n = Number(value);
   if (!Number.isFinite(n) || n <= 0) return "-";
+  if (n < 60) return `${Math.round(n)} sn`;
   return `${Math.round(n / 60)} dk`;
 }
 

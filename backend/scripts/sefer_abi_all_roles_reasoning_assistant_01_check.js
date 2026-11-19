@@ -13,6 +13,7 @@ import {
   getSeferAbiReasoningRolePlaybook,
   listSeferAbiReasoningRoles,
 } from '../src/ai/chat/seferAbiReasoningAssistant.js';
+import { getScreenDefinitionForUser } from '../src/ai/jobGuide/screenCatalog.js';
 import {
   gitCachedNames as sharedGitCachedNames,
   gitDiffNames as sharedGitDiffNames,
@@ -518,20 +519,29 @@ async function main() {
   must(roleExplanation.reply, 'Önce', 'role explanation gives a first step');
   mustNot(roleExplanation.reply, 'bulamadım', 'role explanation drops repetitive fallback');
 
+  const canonicalOperationsUser = makeUser('SUPER_ADMIN');
+  const canonicalOperations = getScreenDefinitionForUser(canonicalOperationsUser, { path: '/superadmin/operations' });
+  assert(canonicalOperations?.path === '/superadmin/operations', 'screen explanation uses the authorized catalog surface');
   const screenExplanation = buildReply({
     message: 'Bu ekran ne işe yarar?',
     role: 'SUPER_ADMIN',
-    screenFixture: buildScreenFixture({
-      path: '/superadmin/operations',
-      label: 'Super Admin Operations',
-      firstStep: 'Önce operasyon özetini aç.',
-      nextStep: 'Sonra kritik kayıtları incele.',
-    }),
+    screenFixture: {
+      screenDefinition: canonicalOperations,
+      screenContext: {
+        path: canonicalOperations.path,
+        label: canonicalOperations.label,
+        structuredFacts: {
+          reasoningLead: canonicalOperations.menuPurpose,
+          nextBestAction: canonicalOperations.firstStep,
+        },
+      },
+    },
     roleMode: 'OPERATIONS',
   });
-  assert(screenExplanation.questionType === 'SCREEN_EXPLANATION_HELP', 'screen explanation routes correctly');
-  must(screenExplanation.reply, 'operasyon özetini aç', 'screen explanation keeps the purpose');
-  must(screenExplanation.reply, 'Şu an Super Admin Operations ekranındaysan', 'screen explanation keeps the screen context');
+  assert(screenExplanation.questionType === 'SCREEN_PURPOSE', 'screen explanation routes to the current canonical purpose contract');
+  must(screenExplanation.reply, 'sistem ve operasyon bandını izlemek', 'screen explanation keeps the current purpose');
+  must(screenExplanation.reply, 'Canlı durum bandını aç', 'screen explanation keeps the current first action');
+  mustNot(screenExplanation.reply, 'Super Admin Operations ekranındaysan', 'screen explanation does not use the retired synthetic label');
   mustNot(screenExplanation.reply, 'bulamadım', 'screen explanation drops repetitive fallback');
 
   const howToHelp = buildReply({
@@ -577,10 +587,10 @@ async function main() {
     }),
     roleMode: 'OPERATIONS',
   });
-  assert(buttonHelp.questionType === 'FIELD_BUTTON_HELP', 'button question routes correctly');
-  must(buttonHelp.reply, 'Takip', 'button help names the button');
-  must(buttonHelp.reply, 'Vardiya listelerini takip görünümünde açar', 'button help explains the button purpose');
-  must(buttonHelp.reply, 'bulamadım', 'button help keeps the safe follow-up line');
+  assert(buttonHelp.questionType === 'SCREEN_PURPOSE', 'unbound button question stays at the current screen purpose');
+  must(buttonHelp.reply, 'vardiyaları', 'unbound button question remains grounded in the current screen');
+  mustNot(buttonHelp.reply, 'Vardiya listelerini takip görünümünde açar', 'unbound button question does not fabricate a synthetic button identity');
+  mustNot(buttonHelp.reply, 'Super Admin Operations', 'unbound button question does not borrow another screen identity');
 
   const girdim = buildReply({
     message: 'girdim',

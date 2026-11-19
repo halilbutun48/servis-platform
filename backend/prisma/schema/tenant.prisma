@@ -27,19 +27,20 @@ model Company {
   hubLng    Float? // company worksite hub (optional)
   createdAt DateTime @default(now())
 
-  users             User[]
-  shifts            Shift[]
-  personels         Personel[]
-  notifications     Notification[]
-  agreements        Agreement[]
-  parentInvites     ParentInvite[]
-  invites           Invite[]
-  organizationPlans OrganizationPlan[]
-  budgetPlans       CompanyBudgetPlan[]
-  paymentAccounts   PaymentAccount[]
-  commercialSources CommercialSource[]
-  hakedisRecords    HakedisRecord[]
-  invoiceRecords    InvoiceRecord[]
+  users              User[]
+  shifts             Shift[]
+  personels          Personel[]
+  notifications      Notification[]
+  agreements         Agreement[]
+  parentInvites      ParentInvite[]
+  invites            Invite[]
+  organizationPlans  OrganizationPlan[]
+  budgetPlans        CompanyBudgetPlan[]
+  paymentAccounts    PaymentAccount[]
+  commercialSources  CommercialSource[]
+  hakedisRecords     HakedisRecord[]
+  invoiceRecords     InvoiceRecord[]
+  invoiceCollections InvoiceCollection[]
 
   @@index([regionId, kind])
   @@index([kind])
@@ -133,13 +134,20 @@ model Room {
   invites        Invite[]
 
   // ✅ M24: offers inbox (Room ↔ ShiftOffer)
-  shiftOffers       ShiftOffer[]          @relation("RoomShiftOffers")
-  quoteFloorDrafts  RoomQuoteFloorDraft[]
-  commissionRules   CommissionRule[]
-  paymentAccounts   PaymentAccount[]
-  commercialSources CommercialSource[]
-  hakedisRecords    HakedisRecord[]
-  invoiceRecords    InvoiceRecord[]
+  shiftOffers             ShiftOffer[]             @relation("RoomShiftOffers")
+  quoteFloorDrafts        RoomQuoteFloorDraft[]
+  commissionRules         CommissionRule[]
+  paymentAccounts         PaymentAccount[]
+  commercialSources       CommercialSource[]
+  hakedisRecords          HakedisRecord[]
+  invoiceRecords          InvoiceRecord[]
+  invoiceCollections      InvoiceCollection[]
+  roomCostCategories      RoomCostCategory[]       @relation("RoomCostCategories")
+  roomCostEntries         RoomCostEntry[]          @relation("RoomCostEntryRoom")
+  roomCostAllocationLines RoomCostAllocationLine[] @relation("RoomCostAllocationLines")
+  roomCostSettlements     RoomCostSettlement[]     @relation("RoomCostSettlementRoom")
+  accountingPeriods       RoomAccountingPeriod[]
+  capabilityGrants        UserCapabilityGrant[]    @relation("RoomCapabilityGrants")
 
   @@index([regionId])
   @@index([district])
@@ -166,12 +174,29 @@ model CompanyBudgetPlan {
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
 
-  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdBy   User?   @relation("CompanyBudgetPlanCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  updatedBy   User?   @relation("CompanyBudgetPlanUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
-  activatedBy User?   @relation("CompanyBudgetPlanActivatedBy", fields: [activatedByUserId], references: [id], onDelete: SetNull)
+  company         Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy       User?                        @relation("CompanyBudgetPlanCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedBy       User?                        @relation("CompanyBudgetPlanUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  activatedBy     User?                        @relation("CompanyBudgetPlanActivatedBy", fields: [activatedByUserId], references: [id], onDelete: SetNull)
+  agreementScopes CompanyBudgetPlanAgreement[]
 
   @@index([companyId, status])
   @@index([companyId, updatedAt])
   @@index([companyId, activatedAt])
+}
+
+model CompanyBudgetPlanAgreement {
+  id              Int      @id @default(autoincrement())
+  budgetPlanId    Int
+  agreementId     Int
+  createdByUserId Int?
+  createdAt       DateTime @default(now())
+
+  budgetPlan CompanyBudgetPlan @relation(fields: [budgetPlanId], references: [id], onDelete: Cascade)
+  agreement  Agreement         @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  createdBy  User?             @relation("CompanyBudgetPlanAgreementCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([budgetPlanId, agreementId])
+  @@index([agreementId])
+  @@index([budgetPlanId, createdAt])
 }

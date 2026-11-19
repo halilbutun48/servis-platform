@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
+import { getReconciliationPreview } from "../../api";
 import { cachedGet } from "../../utils/uiDataCache";
 import { loadRoomCommercialFlowBundle } from "../../utils/dashboardBulk";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
@@ -14,7 +15,12 @@ import CollapsibleSection from "../../components/CollapsibleSection";
 import HakedisReconciliationEntryCard from "../../components/HakedisReconciliationEntryCard";
 
 const ROOM_FLOW_TABS = [
-  { key: "settlement", label: "Hakediş önizleme" },
+  {
+    key: "settlement",
+    label: "Hakediş önizleme",
+    copilotTarget: "room:commercial-flow:tab:settlement",
+    copilotSemanticId: "product:room:commercial-flow:tab:settlement",
+  },
   { key: "contractShift", label: "Sözleşme & Vardiya" },
   { key: "offers", label: "Teklifler" },
   { key: "quality", label: "Kalite / Kanıt" },
@@ -48,6 +54,33 @@ function commercialFlowVisibleLabel(value) {
   const raw = String(value || "").trim();
   if (!raw || raw === "-") return raw || "-";
   const normalized = normalizeText(raw);
+
+  const exactLabels = {
+    pazarlik: "Pazarlık",
+    requested: "Bekliyor",
+    open: "Açık",
+    accepted: "Kabul edildi",
+    approved: "Onaylandı",
+    active: "Aktif",
+    done: "Tamamlandı",
+    rejected: "Reddedildi",
+    cancelled: "İptal edildi",
+    countered: "Karşı teklif",
+    "sozlesme (ayri akis)": "Sözleşme",
+    "sozlesmeleri ac (ayri)": "Sözleşmeleri aç",
+    "sozlesme kaydini incele": "Sözleşme kaydını incele",
+    "vardiyalari ac": "Vardiyaları aç",
+    "vardiya kaydini incele": "Vardiya kaydını incele",
+    "teklifleri ac": "Teklifleri aç",
+    "teklifi incele ve cevap ver": "Teklifi incele ve cevap ver",
+    "firma cevabini bekle": "Firma yanıtını bekle",
+    "bekleyen taleplerde arac ve surucu sec": "Bekleyen taleplerde araç ve sürücü seç",
+    "kayit kapandi": "Kayıt kapandı",
+    "sartlari kontrol et ve onay kararini netlestir": "Şartları kontrol et ve onay kararını netleştir",
+    "operasyon ve vardiya tarafini takip et": "Operasyon ve vardiya tarafını takip et",
+    "bolunmus vardiya kayitlarini ac": "Bölünmüş vardiya kayıtlarını aç",
+  };
+  if (exactLabels[normalized]) return exactLabels[normalized];
 
   if (normalized.includes("market")) return "Market";
   if (normalized.includes("karsi teklif") || normalized.includes("counter")) return "Karşı teklif";
@@ -188,7 +221,7 @@ function CommercialFlowTable({ items, selectedId, onSelect, onAction, emptyText,
                       onAction?.(item);
                     }}
                   >
-                    {item.actionLabel || actionLabel}
+                    {commercialFlowVisibleLabel(item.actionLabel || actionLabel)}
                   </button>
                 ) : "-"}
               </td>
@@ -214,6 +247,24 @@ export default function CommercialFlowPanel() {
   const [nextStepQ, setNextStepQ] = useState("");
   const [preferredId, setPreferredId] = useState("");
   const [agreementRows, setAgreementRows] = useState([]);
+  const [reconciliationRows, setReconciliationRows] = useState([]);
+  const [reconciliationSummaryState, setReconciliationSummaryState] = useState({ loading: false, error: "" });
+
+  useEffect(() => {
+    const applyHashSelection = () => {
+      const hash = String(window.location.hash || "");
+      const queryStart = hash.indexOf("?");
+      if (queryStart < 0) return;
+      const params = new URLSearchParams(hash.slice(queryStart + 1));
+      const agreementId = Number(params.get("agreementId") || 0);
+      const tab = String(params.get("tab") || params.get("flowTab") || "").trim();
+      if (agreementId > 0) setPreferredId(`agreement-${agreementId}`);
+      if (ROOM_FLOW_TABS.some((item) => item.key === tab)) setViewMode(tab);
+    };
+    applyHashSelection();
+    window.addEventListener("hashchange", applyHashSelection);
+    return () => window.removeEventListener("hashchange", applyHashSelection);
+  }, []);
 
   const loadRoomAgreementRows = useCallback(async ({ signal, force = false } = {}) => {
     const resp = await cachedGet("/api/agreements?take=200", { token, signal, force, ttlMs: 10 * 60 * 1000, delayMs: 90 });
@@ -281,6 +332,57 @@ export default function CommercialFlowPanel() {
       .catch(() => {});
   }, [loadCommercialFlow, loadRoomAgreementRows, token]);
 
+  useEffect(() => {
+    if (viewMode !== "settlement" || preferredId || !token || !agreementRows.length) {
+      return undefined;
+    }
+    const controller = new AbortController();
+    const uniqueAgreements = Array.from(new Map(
+      agreementRows
+        .map((agreement) => [Number(agreement?.id || 0), agreement])
+        .filter(([id]) => id > 0),
+    ).values());
+    const activeAgreements = uniqueAgreements.filter((agreement) => (
+      String(agreement?.status || "").trim().toUpperCase() === "ACTIVE"
+    ));
+    Promise.resolve()
+      .then(() => {
+        if (controller.signal.aborted) return null;
+        setReconciliationSummaryState({ loading: true, error: "" });
+        return Promise.all(activeAgreements.map(async (agreement) => {
+          try {
+            const payload = await getReconciliationPreview(Number(agreement.id), {}, { token, signal: controller.signal });
+            return { agreementId: Number(agreement.id), data: payload?.data || payload || null };
+          } catch (error) {
+            if (error?.name === "AbortError") throw error;
+            return { agreementId: Number(agreement.id), data: null, error: error?.message || "Mutabakat önizlemesi yüklenemedi." };
+          }
+        }));
+      })
+      .then((rows) => {
+        if (!rows) return;
+        setReconciliationRows(rows.filter((row) => row.data));
+        setReconciliationSummaryState({ loading: false, error: rows.some((row) => row.error) ? "Bazı mutabakat kayıtları yüklenemedi." : "" });
+      })
+      .catch((error) => {
+        if (error?.name === "AbortError") return;
+        setReconciliationRows([]);
+        setReconciliationSummaryState({ loading: false, error: error?.message || "Mutabakat özeti yüklenemedi." });
+      });
+    return () => controller.abort();
+  }, [agreementRows, preferredId, token, viewMode]);
+
+  const reconciliationContextReady = viewMode === "settlement"
+    && !preferredId
+    && Boolean(token)
+    && agreementRows.length > 0;
+  const visibleReconciliationSummaryState = reconciliationContextReady
+    ? reconciliationSummaryState
+    : { loading: false, error: "" };
+  const visibleReconciliationRows = reconciliationContextReady && !reconciliationSummaryState.loading
+    ? reconciliationRows
+    : [];
+
   function openAction(item) {
     if (item?.actionPath === "/room/shifts" && Number(item?.shiftId) > 0) {
       localStorage.setItem("room:focusPendingShiftId", String(item.shiftId));
@@ -313,7 +415,7 @@ export default function CommercialFlowPanel() {
 
   const selectedItem = useMemo(() => {
     if (!items.length) return null;
-    return items.find((item) => String(item?.id || "") === String(preferredId || "")) || items[0] || null;
+    return items.find((item) => String(item?.id || "") === String(preferredId || "")) || null;
   }, [items, preferredId]);
 
   useEffect(() => {
@@ -326,6 +428,7 @@ export default function CommercialFlowPanel() {
       marketCount: summary?.cards?.openOffers || 0,
       acceptedCount: summary?.cards?.acceptedOffers || 0,
       listCount: items.length,
+      activeTab: viewMode,
     });
     const selectedEntityType = selectedItem?.offerId
       ? "offer"
@@ -360,7 +463,7 @@ export default function CommercialFlowPanel() {
         { label: "Bölüm", value: commercialFlowVisibleLabel(selectedItem?.flowLabel || selectedItem?.statusLabel || "-"), help: "Kayıdın hangi alt görünümde açılacağını gösterir." },
       ],
     });
-  }, [selectedItem, summary, items.length]);
+  }, [selectedItem, summary, items.length, viewMode]);
 
   const cards = useMemo(() => {
     const c = summary?.cards || {};
@@ -390,10 +493,11 @@ export default function CommercialFlowPanel() {
   const selectedSummaryText = selectedItem
     ? [commercialFlowVisibleLabel(selectedItem.flowLabel), commercialFlowVisibleLabel(selectedItem.statusLabel || selectedItem.status), commercialFlowVisibleLabel(selectedItem.nextStep)].filter(Boolean).join(" • ")
     : "";
-  const reconciliationAgreement = useMemo(
-    () => agreementRows.find((agreement) => ["APPROVED", "ACTIVE"].includes(String(agreement?.status || "").toUpperCase())) || agreementRows[0] || null,
-    [agreementRows]
-  );
+  const reconciliationAgreement = useMemo(() => {
+    const selectedAgreementId = Number(selectedItem?.agreementId || 0);
+    if (!selectedAgreementId) return null;
+    return agreementRows.find((agreement) => Number(agreement?.id || 0) === selectedAgreementId) || null;
+  }, [agreementRows, selectedItem]);
 
   const tabs = useMemo(() => ROOM_FLOW_TABS.map((tab) => {
     let badge = null;
@@ -432,11 +536,37 @@ export default function CommercialFlowPanel() {
             {renderActionButtons()}
           </div>
 
-          <HakedisReconciliationEntryCard
-            agreement={reconciliationAgreement}
-            token={token}
-            onOpenAgreement={() => navigate("/room/agreements")}
-          />
+          {reconciliationAgreement ? (
+            <HakedisReconciliationEntryCard
+              agreement={reconciliationAgreement}
+              token={token}
+              collectionEnabled
+              onOpenAgreement={() => navigate("/room/agreements")}
+            />
+          ) : (
+            <section className="card" data-testid="hakedis-reconciliation-summary" style={{ display: "grid", gap: 10 }}>
+              <div className="panelSectionTitle">Hakediş sorun özeti</div>
+              <div className="panelMeta">Kayıt seçilmedi. Bu toplu salt-okunur özet, ana sayfadaki risk sorgusuyla aynı aktif sözleşme kapsamını kullanır; bekleyen veya tamamlanmış eski sözleşmeler yalnız doğrudan seçildiğinde açılır. Sağlıklı kayıt sorun olarak işaretlenmez.</div>
+              {visibleReconciliationSummaryState.loading ? <div className="panelMeta">Mutabakat özeti hazırlanıyor...</div> : null}
+              {visibleReconciliationSummaryState.error ? <div className="panelMeta">{visibleReconciliationSummaryState.error}</div> : null}
+              {!visibleReconciliationSummaryState.loading && !visibleReconciliationRows.length && !visibleReconciliationSummaryState.error ? <div className="panelMeta">Yetkili mutabakat kaydı bulunamadı.</div> : null}
+              {visibleReconciliationRows.map((row) => {
+                const data = row.data || {};
+                const status = String(data.status || "REVIEW_REQUIRED").toUpperCase();
+                const statusText = status === "MATCHED"
+                  ? "sağlıklı/eşleşen"
+                  : data.reasons?.[0]?.label || data.statusLabel || "İncelenmeli";
+                const agreementId = Number(data.agreement?.id || row.agreementId || 0);
+                return (
+                  <article key={agreementId} data-testid={`hakedis-summary-row-${agreementId}`} style={{ display: "grid", gap: 5, padding: 10, border: "1px solid var(--border, #d9dee8)", borderRadius: 8 }}>
+                    <div><b>{data.agreement?.reference || `Sözleşme #${agreementId}`}</b> • {statusText}</div>
+                    <div className="panelMeta">{status === "MATCHED" ? "Sorun görünmüyor." : "İncelenmesi gereken finansal/operasyon sinyali."}</div>
+                    {agreementId > 0 ? <button type="button" className="btn sm" onClick={() => navigate(`/room/commercial-flow?agreementId=${agreementId}&tab=settlement`)}>Önizlemeyi aç</button> : null}
+                  </article>
+                );
+              })}
+            </section>
+          )}
 
           <CollapsibleSection
             title="Hakediş notları"
@@ -753,7 +883,7 @@ export default function CommercialFlowPanel() {
                   <div className="panelMeta">Sonraki Adım: {commercialFlowVisibleLabel(selectedItem.nextStep || "-")}</div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {selectedItem.actionPath ? (
-                      <button type="button" onClick={() => openAction(selectedItem)}>{selectedItem.actionLabel || "Aç"}</button>
+                      <button type="button" onClick={() => openAction(selectedItem)}>{commercialFlowVisibleLabel(selectedItem.actionLabel || "Aç")}</button>
                     ) : null}
                     {selectedItem.section === "list" ? (
                       <button type="button" className="btn sm" onClick={() => navigate("/room/shifts")}>Vardiyaları aç</button>

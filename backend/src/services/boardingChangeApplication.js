@@ -4,6 +4,39 @@ import { haversineM } from "../routes/shifts/helpers.js";
 import { previewBoardingChangeRouteImpact } from "./boardingRouteImpactPreview.js";
 import { buildBoardingChangeRouteRefreshState } from "./boardingChangeRouteRefresh.js";
 
+export const BOARDING_CHANGE_PERSONEL_SELECT = {
+  id: true,
+  fullName: true,
+  userId: true,
+};
+
+export const BOARDING_CHANGE_DRIVER_SELECT = {
+  id: true,
+  fullName: true,
+};
+
+export const BOARDING_CHANGE_STOP_SELECT = {
+  id: true,
+  name: true,
+  lat: true,
+  lng: true,
+  order: true,
+  type: true,
+  state: true,
+  reachedAt: true,
+  skippedAt: true,
+};
+
+export const BOARDING_CHANGE_REQUEST_AUDIT_ACTIONS = [
+  "BOARDING_CHANGE_REQUEST_CREATE",
+  "BOARDING_CHANGE_REQUEST_AUTO_ACCEPTED",
+];
+
+export const BOARDING_CHANGE_DECISION_AUDIT_ACTIONS = [
+  "BOARDING_CHANGE_REQUEST_CLOSE_ACCEPT",
+  "BOARDING_CHANGE_REQUEST_CLOSE_CANCEL",
+];
+
 const BOARDING_SHIFT_INCLUDE = {
   include: {
     vehicle: {
@@ -14,29 +47,10 @@ const BOARDING_SHIFT_INCLUDE = {
       },
     },
     driver: {
-      select: {
-        id: true,
-        fullName: true,
-        name: true,
-      },
+      select: BOARDING_CHANGE_DRIVER_SELECT,
     },
     stops: {
-      select: {
-        id: true,
-        name: true,
-        label: true,
-        stopName: true,
-        title: true,
-        code: true,
-        stationName: true,
-        address: true,
-        lat: true,
-        lng: true,
-        order: true,
-        sortOrder: true,
-        sequence: true,
-        index: true,
-      },
+      select: BOARDING_CHANGE_STOP_SELECT,
     },
     people: {
       select: {
@@ -52,34 +66,12 @@ const BOARDING_SHIFT_INCLUDE = {
         stopId: true,
         walkM: true,
         stop: {
-          select: {
-            id: true,
-            name: true,
-            label: true,
-            stopName: true,
-            title: true,
-            code: true,
-            stationName: true,
-            address: true,
-            lat: true,
-            lng: true,
-            order: true,
-            sortOrder: true,
-            sequence: true,
-            index: true,
-          },
+          select: BOARDING_CHANGE_STOP_SELECT,
         },
       },
     },
   },
 };
-
-const REQUEST_AUDIT_ACTIONS = [
-  "BOARDING_CHANGE_REQUEST_CREATE",
-  "BOARDING_CHANGE_REQUEST_AUTO_ACCEPTED",
-  "BOARDING_CHANGE_REQUEST_CLOSE_ACCEPT",
-  "BOARDING_CHANGE_REQUEST_CLOSE_CANCEL",
-];
 
 const APPLY_ACTION = "BOARDING_CHANGE_APPLIED";
 
@@ -97,6 +89,23 @@ function toInt(value) {
 
 function compactText(value) {
   return String(value || "").normalize("NFKC").replace(/\s+/g, " ").trim();
+}
+
+function normalizeDateOnly(value) {
+  const text = String(value || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+  const parsed = new Date(`${text}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== text) return null;
+  return text;
+}
+
+export function resolveBoardingChangeEffectiveDate({ requestMeta = {}, now = new Date() } = {}) {
+  const requestedDate = normalizeDateOnly(requestMeta?.requestDate);
+  if (requestedDate) return requestedDate;
+
+  const requestNow = now instanceof Date ? now : new Date(now || Date.now());
+  const safeNow = Number.isNaN(requestNow.getTime()) ? new Date() : requestNow;
+  return safeNow.toISOString().slice(0, 10);
 }
 
 function stopInfo(stop = null) {
@@ -156,14 +165,15 @@ async function resolveRequestAudit(tx, requestId) {
     where: {
       entity: "PickupRequest",
       entityId: requestId,
-      action: { in: [...REQUEST_AUDIT_ACTIONS, APPLY_ACTION] },
+      action: { in: [...BOARDING_CHANGE_REQUEST_AUDIT_ACTIONS, ...BOARDING_CHANGE_DECISION_AUDIT_ACTIONS, APPLY_ACTION] },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  const decisionAudit = audits.find((row) => REQUEST_AUDIT_ACTIONS.includes(String(row?.action || ""))) || null;
+  const requestAudit = audits.find((row) => BOARDING_CHANGE_REQUEST_AUDIT_ACTIONS.includes(String(row?.action || ""))) || null;
+  const decisionAudit = audits.find((row) => BOARDING_CHANGE_DECISION_AUDIT_ACTIONS.includes(String(row?.action || ""))) || null;
   const applyAudit = audits.find((row) => String(row?.action || "") === APPLY_ACTION) || null;
-  return { decisionAudit, applyAudit };
+  return { requestAudit, decisionAudit, applyAudit };
 }
 
 function resolveTargetStop({ request, shift, requestMeta, requestNearestStop }) {
@@ -208,20 +218,13 @@ export async function applyAcceptedBoardingChange({
 
   const actorRole = String(role || actor?.role || "").toUpperCase();
   const requestNow = now instanceof Date ? now : new Date(now || Date.now());
-  const effectiveDate = requestNow.toISOString().slice(0, 10);
 
   return prisma.$transaction(async (tx) => {
     const request = await tx.pickupRequest.findUnique({
       where: { id },
       include: {
         personel: {
-          select: {
-            id: true,
-            fullName: true,
-            name: true,
-            label: true,
-            userId: true,
-          },
+          select: BOARDING_CHANGE_PERSONEL_SELECT,
         },
         shift: BOARDING_SHIFT_INCLUDE,
       },
@@ -257,8 +260,12 @@ export async function applyAcceptedBoardingChange({
       throw createHttpError(403, "FORBIDDEN", "Forbidden");
     }
 
-    const { decisionAudit, applyAudit } = await resolveRequestAudit(tx, id);
-    const requestMeta = decisionAudit?.meta || applyAudit?.meta || {};
+    const { requestAudit, decisionAudit, applyAudit } = await resolveRequestAudit(tx, id);
+    const requestMeta = {
+      ...(requestAudit?.meta || {}),
+      ...(decisionAudit?.meta || {}),
+    };
+    const effectiveDate = resolveBoardingChangeEffectiveDate({ requestMeta, now: requestNow });
     const requestKind = String(requestMeta?.requestKind || requestMeta?.kind || requestMeta?.changeType || "DIFFERENT_STOP").trim() || "DIFFERENT_STOP";
     const requestReason = compactText(requestMeta?.requestReason || requestMeta?.reason || "");
     const decisionState = String(requestMeta?.decisionState || (requestStatus === "ACCEPTED" ? "ROOM_ACCEPTED" : "MANUAL_REVIEW")).toUpperCase();
@@ -306,22 +313,7 @@ export async function applyAcceptedBoardingChange({
       },
       include: {
         stop: {
-          select: {
-            id: true,
-            name: true,
-            label: true,
-            stopName: true,
-            title: true,
-            code: true,
-            stationName: true,
-            address: true,
-            lat: true,
-            lng: true,
-            order: true,
-            sortOrder: true,
-            sequence: true,
-            index: true,
-          },
+          select: BOARDING_CHANGE_STOP_SELECT,
         },
       },
     });

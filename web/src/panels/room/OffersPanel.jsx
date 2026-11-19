@@ -10,7 +10,9 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import ListSelectionBanner from "../../components/ListSelectionBanner";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
 import OfferQualityRankingCard from "../shared/OfferQualityRankingCard";
+import { formatOfferAmountMinor, parseOfferAmountInput } from "../shared/offerAmountPresentation";
 import { useSession } from "../../state/session";
+import { buildRoomCounterPayload } from "./roomCounterValidation";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -25,10 +27,7 @@ function fmtTR(iso) {
 }
 
 function formatTRY(amount) {
-  if (amount == null) return "-";
-  const n = Number(amount);
-  if (!Number.isFinite(n)) return "-";
-  return new Intl.NumberFormat("tr-TR").format(n);
+  return formatOfferAmountMinor(amount);
 }
 
 function offerIdFromRoute() {
@@ -56,11 +55,7 @@ function toPositiveIntOrZero(v) {
 }
 
 function parsePositiveAmountInput(value) {
-  const raw = String(value ?? "").trim();
-  if (!raw) return null;
-  const normalized = raw.replace(/\s+/g, "").replace(",", ".");
-  const n = Number(normalized);
-  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
+  return parseOfferAmountInput(value);
 }
 
 function shiftRequiredPax(shift) {
@@ -269,9 +264,11 @@ export default function RoomOffersPanel() {
     const matched = explicitId > 0
       ? filtered.find((o) => Number(o?.id || 0) === explicitId) || null
       : null;
-    // An explicit deep-link must fail closed when the authorized list does
-    // not contain that record; never silently ground Copilot on another card.
-    return explicitId > 0 ? matched : filtered[0] || null;
+    // A visible first card is not a user selection. An explicit deep-link or
+    // card click must be the only way to ground Copilot on an offer; otherwise
+    // the list can say "no selected offer" while the assistant reads another
+    // record from the same collection.
+    return explicitId > 0 ? matched : null;
   }, [filtered, focusedOfferId]);
 
   const focusedPackageIds = useMemo(() => {
@@ -453,13 +450,16 @@ export default function RoomOffersPanel() {
 
   async function onCounter(offerId) {
     const st = counterSel[offerId] || {};
-    const amountRoom = st.amountRoom == null || st.amountRoom === "" ? undefined : Number(st.amountRoom);
-    const noteRoom = String(st.noteRoom || "").trim() || undefined;
+    const payload = buildRoomCounterPayload(st);
+    if (payload.error) {
+      setErr(payload.error);
+      return;
+    }
 
     setBusy(true);
     setErr("");
     try {
-      await api.put(`/api/offers/${offerId}/counter`, { amountRoom, noteRoom });
+      await api.put(`/api/offers/${offerId}/counter`, payload);
       await load();
     } catch (e) {
       setErr(String(e?.message || e));

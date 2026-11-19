@@ -207,6 +207,14 @@ export function RoomVehicleEditModal({ editOpen, busy, setEditOpen, editTemplate
           </div>
           <div className="col"><label className="muted">Kapasite</label><input type="number" value={editForm.capacity} onChange={(e) => setEditForm((p) => ({ ...p, capacity: e.target.value }))} /></div>
           <div className="col"><label className="muted">Araç tipi</label><select value={editForm.type} onChange={(e) => setEditForm((p) => ({ ...p, type: e.target.value }))}>{VEHICLE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
+          <div className="col">
+            <label className="muted">HGS sınıfı</label>
+            <select value={editForm.hgsClass} onChange={(e) => setEditForm((p) => ({ ...p, hgsClass: e.target.value }))}>
+              <option value="">Ruhsattan doğrula (henüz girilmedi)</option>
+              {[1, 2, 3, 4, 5, 6].map((value) => <option key={value} value={value}>{value}. sınıf</option>)}
+            </select>
+            <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>Araç tipinden otomatik çıkarılmaz.</div>
+          </div>
           <div className="col"><label className="muted">Marka</label><input value={editForm.brand} onChange={(e) => setEditForm((p) => ({ ...p, brand: e.target.value }))} /></div>
           <div className="col"><label className="muted">Model</label><input value={editForm.model} onChange={(e) => setEditForm((p) => ({ ...p, model: e.target.value }))} /></div>
           <div className="col"><label className="muted">Model yılı</label><input type="number" value={editForm.modelYear} onChange={(e) => setEditForm((p) => ({ ...p, modelYear: e.target.value }))} /></div>

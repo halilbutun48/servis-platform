@@ -64,7 +64,7 @@ export function isActiveRouteRefreshStatus(status) {
 }
 
 export function moneyTry(value) {
-  const n = Number(value || 0);
+  const n = Number(value || 0) / 100;
   return `${new Intl.NumberFormat("tr-TR").format(Number.isFinite(n) ? n : 0)} ₺`;
 }
 

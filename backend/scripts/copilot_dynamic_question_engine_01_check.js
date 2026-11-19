@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import { buildSeferAbiReasoningAssistant } from '../src/ai/chat/seferAbiReasoningAssistant.js';
+import { resolveSemanticIntent } from '../src/ai/chat/semanticIntentPlanner.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -243,6 +244,83 @@ function checkSource(label, text, needle) {
   console.log(`PASS ${label}`);
 }
 
+function runSemanticContinuityRegressions() {
+  const explicitAgreementQuestion = resolveSemanticIntent({
+    message: 'sozlesmeler nedir su an acik sozlesme var mi',
+    user: { role: 'COMPANY', companyId: 1 },
+    screenContext: { path: '/company/agreements', label: 'Sözleşmeler', role: 'COMPANY' },
+    conversationState: {},
+  });
+  if (!explicitAgreementQuestion.requestedDomains?.includes('AGREEMENTS')) {
+    throw new Error('FAIL explicit contract query keeps the authorized agreements domain');
+  }
+  if (explicitAgreementQuestion.family === 'SCREEN_CONTEXT' && !explicitAgreementQuestion.requestedDomains?.length) {
+    throw new Error('FAIL explicit contract query must not collapse to generic screen context');
+  }
+
+  const settledScreenState = {
+    activeGuidedTask: {
+      taskType: 'CREATE_SHIFT',
+      semanticPlan: { family: 'CREATE_SHIFT', workflowState: 'STEP_3' },
+    },
+    lastSettledResult: {
+      semanticPlan: {
+        family: 'SCREEN_CONTEXT',
+        intentFamily: 'SCREEN_CONTEXT',
+        requestedDomains: ['OPERATIONS'],
+        explanationUnit: 'current-screen-purpose',
+      },
+      reply: 'Planlama Merkezi ekranını anlattım; sıradaki güvenli alanı açıklayabilirim.',
+    },
+  };
+  const continuation = resolveSemanticIntent({
+    message: 'Devamını anlat',
+    user: { role: 'COMPANY' },
+    conversationState: settledScreenState,
+    screenContext: { path: '/company/planning-center', role: 'COMPANY' },
+  });
+  must(continuation.family, 'CONTINUE_CURRENT_REASONING', 'continuation keeps latest settled explanation as the base');
+  if (continuation.clarificationNeed) throw new Error('FAIL continuation must not ask for a new target');
+
+  const agreementState = {
+    uniqueDiscourseReferent: { type: 'agreement', id: 184, source: 'AUTHORIZED_RESULT' },
+    lastSettledResult: {
+      semanticPlan: { family: 'COMMERCIAL_SUMMARY', intentFamily: 'COMMERCIAL_SUMMARY', requestedDomains: ['AGREEMENTS'] },
+      reply: 'Yetkili sonuç için sözleşme: 184',
+    },
+  };
+  for (const [message, expectedFamily] of [
+    ['bunun detayını anlat', 'RECORD_DETAILS'],
+    ['bunun saati ne', 'ENTITY_LOOKUP'],
+    ['184 açıkla', 'RECORD_DETAILS'],
+  ]) {
+    const plan = resolveSemanticIntent({
+      message,
+      user: { role: 'COMPANY' },
+      conversationState: agreementState,
+      screenContext: { path: '/company', role: 'COMPANY' },
+    });
+    must(plan.family, expectedFamily, `authorized agreement referent survives ${message}`);
+    must(String(plan.entities?.[0]?.id || ''), '184', `agreement identity survives ${message}`);
+    if (plan.clarificationNeed) throw new Error(`FAIL ${message} unexpectedly asks for clarification`);
+  }
+  const ambiguous = resolveSemanticIntent({
+    message: 'bunun detayını anlat',
+    user: { role: 'COMPANY' },
+    conversationState: {
+      entityContext: { conversationEntities: [
+        { type: 'agreement', id: 184 },
+        { type: 'agreement', id: 185 },
+      ] },
+    },
+    screenContext: { path: '/company', role: 'COMPANY' },
+  });
+  if (!ambiguous.clarificationNeed && ambiguous.family !== 'UNCLEAR_OR_AMBIGUOUS') {
+    throw new Error('FAIL ambiguous agreement referent must remain clarification-safe');
+  }
+  console.log('PASS semantic continuation and authorized referent regressions');
+}
+
 function runCase(testCase) {
   const response = buildHelpResponse(testCase);
   const reply = String(response?.reply || '');
@@ -322,6 +400,7 @@ function main() {
   checkSource('help composer wires dynamic question chips helper', helpComposerSource, 'buildDynamicQuestionChipsImpl');
   checkSource('sefer reasoning assistant wires dynamic chips', assistantSource, 'buildDynamicQuestionChips');
   checkSource('guided task engine wires dynamic chips', guidedSource, 'buildDynamicQuestionChips');
+  runSemanticContinuityRegressions();
 
   const companyPlanningFixture = makeSurfaceFixture({
     path: '/company/planning-center',
@@ -357,6 +436,18 @@ function main() {
     menuPurpose: 'Vardiya akışını izlemek için kullanılır.',
     firstStep: 'Bugünkü vardiyayı aç.',
     nextStep: 'Sonraki adımı kontrol et.',
+  });
+  const companySelectedShiftFixture = makeSurfaceFixture({
+    path: '/company/shifts',
+    label: 'Vardiyalar',
+    menuPurpose: 'Vardiya akışını izlemek için kullanılır.',
+    firstStep: 'Seçili vardiyanın ayrıntılarını aç.',
+    nextStep: 'Durum, araç/sürücü ve durak bilgilerini kontrol et.',
+    selectedLabel: 'Vardiya #261',
+    selectedSummary: 'Durum: DONE • Araç: 34ABC123 • Sürücü: Driver One • Durak: 2',
+    selectedRecordStatus: 'Durum: DONE',
+    selectedEntityType: 'shift',
+    selectedEntityId: 261,
   });
   const roomShiftsFixture = makeSurfaceFixture({
     path: '/room/shifts',
@@ -429,6 +520,18 @@ function main() {
     selectedRecordStatus: 'Açık / In review',
     selectedEntityType: 'feedback',
     selectedEntityId: 7,
+  });
+  const emptyFeedbackFixture = makeSurfaceFixture({
+    path: '/shared/feedback',
+    label: 'Geri Bildirim',
+    menuPurpose: 'Geri bildirim kayıt listesini ve yeni geri bildirim formunu gösterir.',
+    firstStep: 'Önce görünen geri bildirim kayıtlarını kontrol et.',
+    nextStep: 'Kayıt yoksa satır seçmeden mevcut formu veya yenileme adımını değerlendir.',
+    selectedLabel: '',
+    selectedSummary: '',
+    selectedRecordStatus: '',
+    selectedEntityType: '',
+    selectedEntityId: 0,
   });
 
   const followUpState = makeFollowUpState({
@@ -556,6 +659,15 @@ function main() {
       replyExcludes: ['Netleştirelim'],
     },
     {
+      id: 'company-selected-shift-blocked-1',
+      role: 'COMPANY',
+      fixture: companySelectedShiftFixture,
+      message: 'Bu vardiya neden başlayamıyor?',
+      expectedQuestionTypes: ['WHY_BLOCKED', 'SHIFT_BLOCKED', 'CLARIFYING_QUESTION'],
+      replyIncludes: ['Vardiya #261', 'tamamlandı', 'başlatılmayı bekleyen aktif vardiya değil'],
+      replyExcludes: ['Hangi kayıt veya konuyu kastettiğini biraz netleştirir misin?'],
+    },
+    {
       id: 'company-planning-followup-2',
       role: 'COMPANY',
       fixture: companyPlanningFixture,
@@ -571,6 +683,15 @@ function main() {
       message: 'Hangisini seçeyim?',
       expectedQuestionTypes: ['CLARIFYING_QUESTION'],
       replyIncludes: ['Teklifi hangi açıdan kıyaslayayım', 'fiyat', 'süre', 'risk', 'sözleşme uygunluğu'],
+    },
+    {
+      id: 'company-feedback-empty-next-action',
+      role: 'COMPANY',
+      fixture: emptyFeedbackFixture,
+      message: 'Sıradaki doğru işlem ne?',
+      expectedQuestionTypes: ['NEXT_BEST_ACTION', 'NEXT_STEP'],
+      replyIncludes: ['kayıt listesi boş'],
+      replyExcludes: ['ilgili satırı seç', 'seçili kaydı aç'],
     },
     {
       id: 'room-shifts-clarify-1',

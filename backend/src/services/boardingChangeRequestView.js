@@ -11,6 +11,11 @@ export const BOARDING_CHANGE_DECISION_ACTIONS = [
 
 export const BOARDING_CHANGE_APPLY_ACTION = "BOARDING_CHANGE_APPLIED";
 
+export const BOARDING_CHANGE_REQUEST_AUDIT_ACTIONS = [
+  "BOARDING_CHANGE_REQUEST_CREATE",
+  "BOARDING_CHANGE_REQUEST_AUTO_ACCEPTED",
+];
+
 function normalizeDecisionOwnerRole(value) {
   const role = String(value || "").trim().toUpperCase();
   if (role === "DRIVER" || role === "COMPANY" || role === "ROOM") return role;
@@ -98,7 +103,7 @@ export async function loadBoardingChangeRequestAuditMap(prisma, ids = []) {
     where: {
       entity: "PickupRequest",
       entityId: { in: requestIds },
-      action: { in: [...BOARDING_CHANGE_DECISION_ACTIONS, BOARDING_CHANGE_APPLY_ACTION] },
+      action: { in: [...BOARDING_CHANGE_REQUEST_AUDIT_ACTIONS, ...BOARDING_CHANGE_DECISION_ACTIONS, BOARDING_CHANGE_APPLY_ACTION] },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -109,7 +114,10 @@ export async function loadBoardingChangeRequestAuditMap(prisma, ids = []) {
     if (!key) continue;
     const current = auditMap.get(key) || { decisionAudit: null, applyAudit: null };
     const action = String(row?.action || "");
-    if (!current.decisionAudit && BOARDING_CHANGE_DECISION_ACTIONS.includes(action)) {
+    if (!current.requestAudit && BOARDING_CHANGE_REQUEST_AUDIT_ACTIONS.includes(action)) {
+      current.requestAudit = row;
+    }
+    if (!current.decisionAudit && BOARDING_CHANGE_DECISION_ACTIONS.includes(action) && !BOARDING_CHANGE_REQUEST_AUDIT_ACTIONS.includes(action)) {
       current.decisionAudit = row;
     }
     if (!current.applyAudit && action === BOARDING_CHANGE_APPLY_ACTION) {
@@ -123,7 +131,10 @@ export async function loadBoardingChangeRequestAuditMap(prisma, ids = []) {
 
 export function buildBoardingChangeRequestView(item, bucket = {}) {
   const requestStatus = String(item?.status || "").toUpperCase();
-  const meta = bucket.decisionAudit?.meta || bucket.applyAudit?.meta || {};
+  const meta = {
+    ...(bucket.requestAudit?.meta || {}),
+    ...(bucket.decisionAudit?.meta || {}),
+  };
   const applyMeta = bucket.applyAudit?.meta || {};
   const requestKind = meta.requestKind || item?.requestKind || item?.kind || "DIFFERENT_STOP";
   const requestReason = firstText(meta.requestReason, item?.requestReason, buildBoardingChangeRequestReason(requestKind, meta.actorRole || item?.requesterRole || "PERSONEL"));

@@ -12,11 +12,12 @@ import { openNextStopNavigation, openFullRouteNavigation, routeStats, isReachedS
 import { nowIsoTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts } from "../../utils/copilotFacts";
-import { boardingChangeRouteRefreshLabel, boardingChangeRouteRefreshNote } from "../shared/boardingChangeUi";
+import { boardingChangeCopilotSelectionIdentity, boardingChangeRouteRefreshLabel, boardingChangeRouteRefreshNote } from "../shared/boardingChangeUi";
 import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { gpsSourcePresentationLabel } from "../../utils/gpsSource";
+import { shouldIgnoreGlobalEnterShortcut } from "../../utils/keyboardShortcutGuard";
 
 function getQueryParam(name) {
   try {
@@ -28,6 +29,8 @@ function getQueryParam(name) {
     return null;
   }
 }
+
+const DRIVER_BOARDING_SELECTION_STORAGE_KEY = "psv1:driver-route:boarding-selection:v1";
 
 function etaDisplayText(vehicle, etaMinutes, nextStop) {
   return getEtaDisplay({
@@ -67,6 +70,7 @@ export default function RoutePanel() {
   const progress = data?.progress || null;
   const paused = !!progress?.pausedAt;
   const [selectedStopId, setSelectedStopId] = useState(null);
+  const [selectedBoardingEffect, setSelectedBoardingEffect] = useState(null);
 
   const pct = useMemo(() => {
     if (!shift || !progress || !orderedStops.length) return 0;
@@ -99,6 +103,20 @@ export default function RoutePanel() {
     || shift?.boardingChangeRouteRefreshNote
     || boardingChangeRouteRefreshNote(routeRefresh || data || shift || {});
   const hasBoardingChangeVisibility = boardingChangeEffects.length > 0 || (routeRefreshState && routeRefreshState !== "NONE");
+
+  useEffect(() => {
+    if (selectedBoardingEffect || !shift?.id || !boardingChangeEffects.length) return;
+    let stored = null;
+    try {
+      stored = JSON.parse(sessionStorage.getItem(DRIVER_BOARDING_SELECTION_STORAGE_KEY) || "null");
+    } catch {
+      stored = null;
+    }
+    if (Number(stored?.shiftId || 0) !== Number(shift.id)) return;
+    const restored = boardingChangeEffects.find((effect) => Number(effect?.requestId || 0) === Number(stored?.requestId || 0));
+    if (restored) setSelectedBoardingEffect(restored);
+  }, [boardingChangeEffects, selectedBoardingEffect, shift?.id]);
+
   const gpsAge = useMemo(() => gpsAgeText(data?.last || selectedVehicle?.gpsLast), [data?.last, selectedVehicle?.gpsLast]);
   const gpsStatusText = getGpsReliabilityLabel(selectedVehicle?.gpsState?.lastUiStatus || data?.last?.status || data?.liveLocation?.routeProgressState || data?.liveLocation?.officialSource || (selectedVehicle ? "LIVE" : "-"));
   const rawGpsSource = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel;
@@ -237,14 +255,89 @@ export default function RoutePanel() {
     };
   }, [shift, selectedVehicle, nextStop, selectedStop?.name, routeEta, routeEtaText, routeSummary, gpsAge, gpsStatusText, gpsSourceLabel, routeProofText, copilotFacts, data?.vehicle?.plate]);
 
+  const boardingChangeCopilotSelection = useMemo(() => {
+    const requestId = Number(selectedBoardingEffect?.requestId || 0);
+    if (!requestId) return null;
+    const identity = boardingChangeCopilotSelectionIdentity(requestId);
+    const personLabel = selectedBoardingEffect?.personLabel || "Seçili kişi";
+    const effectLabel = selectedBoardingEffect?.effectLabel || selectedBoardingEffect?.changeTypeLabel || "Günlük değişiklik";
+    const applicationStatus = selectedBoardingEffect?.applicationStatus || "Uygulandı";
+    const routeNote = selectedBoardingEffect?.routeRefreshNote || routeRefreshNote || "Sürücü rota ekranında görünür; SMS/push yok; kalıcı rota değişmez.";
+    const summary = `${effectLabel} • ${personLabel} • ${applicationStatus}`;
+    return {
+      scopeKey: "/driver/route",
+      entityType: identity.entityType,
+      entityId: identity.entityId,
+      selectedRecordType: identity.entityType,
+      selectedRecordId: identity.entityId,
+      label: `${effectLabel} • ${personLabel}`,
+      summary,
+      selectedLabel: personLabel,
+      selectedSummary: summary,
+      selectedRecordLabel: personLabel,
+      selectedRecordSummary: summary,
+      selectedRecordStatus: applicationStatus,
+      selectedRecord: {
+        id: identity.entityId,
+        type: identity.entityType,
+        label: personLabel,
+        summary,
+        status: applicationStatus,
+        changeType: selectedBoardingEffect?.changeType || selectedBoardingEffect?.changeTypeLabel || null,
+        shiftId: shift?.id || null,
+        routeRefreshNote: routeNote,
+        permanentRouteNote: "Kalıcı rota ve durak ataması değişmez.",
+      },
+      selectedFields: [
+        { label: "Değişiklik", value: effectLabel },
+        { label: "Kişi", value: personLabel },
+        { label: "Uygulama", value: applicationStatus },
+        { label: "Günlük rota görünürlüğü", value: selectedBoardingEffect?.routeRefreshLabel || routeRefreshLabel || "Görünür" },
+        { label: "Kalıcı rota/durak", value: "Değişmez" },
+      ],
+      selectedBadges: [
+        { label: "Günlük etki", value: effectLabel },
+        { label: "Kalıcı rota", value: "Değişmez" },
+      ],
+      facts: selectedBoardingEffect,
+      liveFacts: selectedBoardingEffect,
+      structuredFacts: selectedBoardingEffect,
+      screenPath: "/driver/route",
+      relatedEntityType: "shift",
+      relatedEntityId: Number(shift?.id || 0) || 0,
+    };
+  }, [routeRefreshLabel, routeRefreshNote, selectedBoardingEffect, shift?.id]);
+
+  const handleBoardingChangeSelect = (effect) => {
+    if (!Number(effect?.requestId || 0)) return;
+    try {
+      sessionStorage.setItem(DRIVER_BOARDING_SELECTION_STORAGE_KEY, JSON.stringify({
+        shiftId: Number(shift?.id || 0),
+        requestId: Number(effect.requestId),
+      }));
+    } catch {
+      // Selection remains available in component state when storage is unavailable.
+    }
+    setSelectedBoardingEffect(effect);
+  };
+
+  const activeCopilotSelection = boardingChangeCopilotSelection || copilotSelection;
+
   useEffect(() => {
     if (!shift && !selectedVehicle) {
       clearCopilotSelection("/driver/route");
       return undefined;
     }
-    setCopilotSelection(copilotSelection);
-    return () => clearCopilotSelection("/driver/route");
-  }, [copilotSelection, shift, selectedVehicle]);
+    setCopilotSelection(activeCopilotSelection);
+  }, [activeCopilotSelection, shift, selectedVehicle]);
+
+  useEffect(() => () => {
+    // The dedicated copilot route is an explicit same-tab handoff. Keep the
+    // rich route facts alive through the source panel unmount; leaving for a
+    // different DRIVER surface still clears the selection normally.
+    const nextPath = String(window?.location?.hash || "").replace(/^#/, "").split("?", 1)[0];
+    if (!/\/driver\/copilot$/u.test(nextPath)) clearCopilotSelection("/driver/route");
+  }, []);
 
   const lastReachedStop = useMemo(() => {
     const ord = Number(progress?.lastReachedOrder || 0);
@@ -423,7 +516,7 @@ useEffect(() => {
   // ? M31-A: keyboard shortcut (Enter) = reached
   useEffect(() => {
     function onKey(e) {
-      if (e.key !== "Enter") return;
+      if (shouldIgnoreGlobalEnterShortcut(e)) return;
       if (busyRef.current) return;
       if (!shiftIdRef.current || !nextStopIdRef.current) return;
       reachedRef.current?.();
@@ -682,6 +775,15 @@ async function undoLast() {
                     </div>
                     {effectRouteRefreshLabel ? <div className="panelMeta" style={{ marginTop: 4 }}>{effectRouteRefreshLabel}</div> : null}
                     {effectRouteRefreshNote ? <div className="panelMeta" style={{ marginTop: 4 }}>{effectRouteRefreshNote}</div> : null}
+                    <button
+                      type="button"
+                      className="btn sm"
+                      aria-pressed={Number(selectedBoardingEffect?.requestId || 0) === Number(effect?.requestId || 0)}
+                      onClick={() => handleBoardingChangeSelect(effect)}
+                      style={{ marginTop: 8 }}
+                    >
+                      Sefer Abi ile incele
+                    </button>
                   </div>
                 );
               })}

@@ -100,6 +100,8 @@ const suggestionsRegionPattern = /<section\b[^>]*\bclassName="copilotContextSugg
 
 function hasAccessibleSuggestionsContract(source) {
   const region = String(source || '').match(suggestionsRegionPattern)?.[0] || '';
+  const functionalToggle = /const\s+next\s*=\s*!previous/.test(region)
+    || /setSuggestionsOpen\(\(previous\) => !previous\)/.test(region);
   const toggleHandler = /onClick=\{\(\) => \{[\s\S]*?setSuggestionsOpen\(\(previous\) => \{[\s\S]*?(?:const\s+next\s*=\s*!previous|return\s+!previous)[\s\S]*?(?:return\s+next|setSuggestionsOpen\(\(previous\) => !previous\))[\s\S]*?\}\);[\s\S]*?\}\}/.test(region)
     || /onClick=\{\(\) => setSuggestionsOpen\(\(previous\) => !previous\)\}/.test(region);
   return Boolean(region)
@@ -108,6 +110,7 @@ function hasAccessibleSuggestionsContract(source) {
     && /aria-expanded=\{suggestionsOpen\}/.test(region)
     && /aria-controls=\{suggestionPanelId\}/.test(region)
     && toggleHandler
+    && functionalToggle
     && /className="copilotSuggestionWrap" hidden=\{!suggestionsOpen\}/.test(region)
     && /suggestions\.map\(\(chip, index\) =>[\s\S]*?onClick=\{\(\) => ask\(chip\)\}/.test(region);
 }
@@ -165,17 +168,28 @@ const starterHelperDisconnected = drawerSource.replace('return buildCopilotStart
 if (!hasStarterHelperWiring(starterHelperDisconnected, helperSource)) ok('negative control rejects a disconnected starter helper');
 else fail('negative control rejects a disconnected starter helper');
 const suggestionsCannotOpen = drawerSource.replace(
-  'const next = !previous;',
-  'const next = previous;',
+  /(className="copilotContextSuggestions"[\s\S]*?const\s+next\s*=\s*)!previous/,
+  '$1previous',
 );
 if (!hasAccessibleSuggestionsContract(suggestionsCannotOpen)) ok('negative control rejects permanently inaccessible suggestions');
 else fail('negative control rejects permanently inaccessible suggestions');
 
 const { buildCopilotStarterChips } = await import(pathToFileURL(path.join(root, 'web/src/utils/copilotFacts.js')).href);
+const { buildAgreementCopilotFacts } = await import(pathToFileURL(path.join(root, 'web/src/utils/agreementCopilotFacts.js')).href);
 
 const generic = buildCopilotStarterChips({ screenPath: '/unknown', selection: null });
 assertExactChips(generic, ['Bu ekranda neye bakmalıyım?', 'Riskleri sırala', 'Sıradaki doğru işlem ne?'], 'generic fallback starter chips');
 assertNoForbiddenVisibleTerms(generic, 'generic fallback starter chips');
+
+const sharedKvkk = buildCopilotStarterChips({ screenPath: '/shared/kvkk', role: 'ROOM', selection: null });
+assertExactChips(sharedKvkk, [
+  'KVKK sınırını açıkla',
+  'Bu rolde ne görünür?',
+  'Erişim neden kapalı?',
+  'Yetkili ekrana yönlendir',
+], 'shared KVKK starter chips stay within privacy/access capability');
+assertNone(sharedKvkk, ['Riskleri sırala'], 'shared KVKK does not expose an operational risk chip');
+assertNoForbiddenVisibleTerms(sharedKvkk, 'shared KVKK starter chips');
 
 const roomMapSignal = buildCopilotStarterChips({
   screenPath: '/room/map',
@@ -211,6 +225,117 @@ assertExactChips(roomOperationHealth, [
 ], 'room operation health starter chips');
 assertNoForbiddenVisibleTerms(roomOperationHealth, 'room operation health starter chips');
 
+const roomOperationProofTab = buildCopilotStarterChips({
+  screenPath: '/room/operation-health',
+  role: 'ROOM',
+  selection: { facts: { screenType: 'OPERATION_HEALTH', activeTab: 'proof' } },
+});
+assertExactChips(roomOperationProofTab, [
+  'Operasyon kanıtını açıkla',
+  'Kanıt eksiklerini göster',
+  'Sıradaki güvenli işlem ne?',
+], 'room operation proof tab starter chips');
+assertNoForbiddenVisibleTerms(roomOperationProofTab, 'room operation proof tab starter chips');
+
+const roomShiftsSelected = buildCopilotStarterChips({
+  screenPath: '/room/shifts',
+  role: 'ROOM',
+  selection: {
+    scopeKey: '/room/shifts',
+    entityType: 'shift',
+    entityId: 168,
+    selectedRecordStatus: 'Durum: APPROVED • Araç: 34 ABC 124 • Sürücü: Driver One • Durak: 18',
+    facts: { screenType: 'SHIFTS', stage: 'APPROVED', hasShift: true, hasVehicle: true, hasDriver: true, counters: { stops: 18 } },
+  },
+});
+assertExactChips(roomShiftsSelected, [
+  'Rotasını göster',
+  'İşlem kaydını göster',
+  'Atama değişikliğini göster',
+  'Bu vardiyanın güvenli sonraki adımı ne?',
+], 'room selected shift starter chips');
+assertNoForbiddenVisibleTerms(roomShiftsSelected, 'room selected shift starter chips');
+
+const roomShiftsUnavailableTarget = buildCopilotStarterChips({
+  screenPath: '/room/shifts',
+  role: 'ROOM',
+  selection: {
+    scopeKey: '/room/shifts',
+    entityType: 'shift',
+    entityId: 211,
+    facts: { screenType: 'SHIFTS', stage: 'REQUESTED', counters: { stops: 0 }, hasShift: true },
+  },
+});
+assertExactChips(roomShiftsUnavailableTarget, [
+  'Teklif durumunu açıkla',
+  'Eksik vardiya bilgilerini göster',
+  'Sıradaki güvenli işlem ne?',
+], 'negative control rejects unavailable shift target chips');
+
+const roomShiftsNoSelection = buildCopilotStarterChips({
+  screenPath: '/room/shifts',
+  role: 'ROOM',
+  selection: null,
+});
+assertExactChips(roomShiftsNoSelection, [
+  'Bekleyen vardiyaları açıkla',
+  'Sözleşmeden üretilen vardiyaları göster',
+  'Sıradaki güvenli işlem ne?',
+], 'room shifts no-selection starter chips');
+assertNoForbiddenVisibleTerms(roomShiftsNoSelection, 'room shifts no-selection starter chips');
+
+const roomDriversSelected = buildCopilotStarterChips({
+  screenPath: '/room/drivers',
+  role: 'ROOM',
+  selection: {
+    scopeKey: '/room/drivers',
+    entityType: 'driver',
+    entityId: 4,
+    facts: { screenType: 'DRIVERS', assignmentState: 'ASSIGNED' },
+  },
+});
+assertExactChips(roomDriversSelected, [
+  'Bu sürücünün atama durumunu göster',
+  'GPS durumunu açıkla',
+  'Bağlı aracı göster',
+  'Sıradaki güvenli işlem ne?',
+], 'room selected driver starter chips');
+assertNoForbiddenVisibleTerms(roomDriversSelected, 'room selected driver starter chips');
+
+const roomVehiclesSelected = buildCopilotStarterChips({
+  screenPath: '/room/vehicles',
+  role: 'ROOM',
+  selection: {
+    scopeKey: '/room/vehicles',
+    entityType: 'vehicle',
+    entityId: 1,
+    facts: { screenType: 'VEHICLES', stage: 'CRITICAL' },
+  },
+});
+assertExactChips(roomVehiclesSelected, [
+  'Bu aracın GPS durumunu açıkla',
+  'Bağlı sürücüyü göster',
+  'Vardiya bağını göster',
+  'Sıradaki güvenli işlem ne?',
+], 'room selected vehicle starter chips');
+assertNoForbiddenVisibleTerms(roomVehiclesSelected, 'room selected vehicle starter chips');
+
+const roomChipsWrongRole = buildCopilotStarterChips({
+  screenPath: '/room/shifts',
+  role: 'COMPANY',
+  selection: {
+    scopeKey: '/room/shifts',
+    entityType: 'shift',
+    entityId: 168,
+    facts: { screenType: 'SHIFTS', hasShift: true },
+  },
+});
+assertExactChips(roomChipsWrongRole, [
+  'Bu ekranda neye bakmalıyım?',
+  'Riskleri sırala',
+  'Sıradaki doğru işlem ne?',
+], 'negative control rejects ROOM chips for wrong role');
+
 const superAdminOps = buildCopilotStarterChips({
   screenPath: '/superadmin/observability',
   selection: { summary: 'Canlı İzleme • Riskler • Açık sorunlar' },
@@ -238,6 +363,135 @@ assertExactChips(companyAgreements, [
   'Ödeme hesabı hazır mı?',
 ], 'company agreements starter chips');
 assertNoForbiddenVisibleTerms(companyAgreements, 'company agreements starter chips');
+
+const roomAgreementUnavailableSavings = buildCopilotStarterChips({
+  screenPath: '/room/agreements',
+  role: 'ROOM',
+  selection: {
+    entityType: 'agreement',
+    entityId: 184,
+    selectedRecordLabel: 'Sözleşme #184',
+    selectedRecordStatus: 'REQUESTED',
+    facts: buildAgreementCopilotFacts(
+      { id: 184, status: 'REQUESTED', roomId: 1 },
+      { dynamicSavingsPreview: { ok: false, summaryText: 'Tasarruf hesabı için yeterli veri yok' } },
+    ),
+  },
+});
+assertNone(roomAgreementUnavailableSavings, [
+  'Tasarruf hesabını göster',
+  'Km / süre farkını açıkla',
+  'Kapasite etkisini göster',
+], 'negative control rejects unavailable savings chips on ROOM agreement');
+
+const roomAgreementPending = buildCopilotStarterChips({
+  screenPath: '/room/agreements',
+  role: 'ROOM',
+  selection: {
+    entityType: 'agreement',
+    entityId: 184,
+    selectedRecordStatus: 'REQUESTED',
+    facts: { screenType: 'AGREEMENTS', selectedRecordStatus: 'REQUESTED' },
+  },
+});
+assertExactChips(roomAgreementPending, [
+  'Bu sözleşmenin durumu ne?',
+  'Bu sözleşmenin detaylarını anlat.',
+  'İnceleme bekleyen sözleşmem var mı?',
+  'Bunun operasyon köprüsünü göster.',
+], 'ROOM pending agreement contextual starter chips');
+
+const roomAgreementActive = buildCopilotStarterChips({
+  screenPath: '/room/agreements',
+  role: 'ROOM',
+  selection: {
+    entityType: 'agreement',
+    entityId: 187,
+    selectedRecordStatus: 'ACTIVE',
+    facts: { screenType: 'AGREEMENTS', selectedRecordStatus: 'ACTIVE' },
+  },
+});
+assertExactChips(roomAgreementActive, [
+  'Bu sözleşmenin durumu ne?',
+  'Bu sözleşmenin detaylarını anlat.',
+  'Bunun operasyon köprüsünü göster.',
+  'Sözleşmeleri nereden inceleyebilirim?',
+], 'ROOM active agreement contextual starter chips');
+assertNone(roomAgreementActive, ['İnceleme bekleyen sözleşmem var mı?'], 'active agreement chips avoid pending-only wording');
+
+const roomAgreementBridgeDisclosure = buildCopilotStarterChips({
+  screenPath: '/room/agreements',
+  role: 'ROOM',
+  selection: {
+    entityType: 'agreement',
+    entityId: 187,
+    selectedRecordStatus: 'ACTIVE',
+    facts: {
+      screenType: 'AGREEMENTS',
+      selectedRecordStatus: 'ACTIVE',
+      activeTab: 'operation-bridge',
+      expandedDisclosure: 'operation bridge',
+    },
+  },
+});
+assertExactChips(roomAgreementBridgeDisclosure, [
+  'Bu operasyon köprüsünü açıkla',
+  'Bu sözleşmenin durumu ne?',
+  'Bu sözleşmenin detaylarını anlat.',
+  'Sözleşmeleri nereden inceleyebilirim?',
+], 'ROOM agreement operation-bridge disclosure starter chips');
+
+const roomAgreementWrongRole = buildCopilotStarterChips({
+  screenPath: '/room/agreements',
+  role: 'COMPANY',
+  selection: {
+    entityType: 'agreement',
+    entityId: 184,
+    selectedRecordStatus: 'REQUESTED',
+    facts: { screenType: 'AGREEMENTS', selectedRecordStatus: 'REQUESTED' },
+  },
+});
+assertExactChips(roomAgreementWrongRole, [
+  'Bu ekranda neye bakmalıyım?',
+  'Riskleri sırala',
+  'Sıradaki doğru işlem ne?',
+], 'negative control rejects ROOM agreement chips for wrong role');
+
+const roomAgreementList = buildCopilotStarterChips({
+  screenPath: '/room/agreements',
+  role: 'ROOM',
+  selection: null,
+});
+assertExactChips(roomAgreementList, [
+  'Mevcut sözleşmelerim neler?',
+  'İnceleme bekleyen sözleşmem var mı?',
+  'Sözleşmeleri nereden inceleyebilirim?',
+  'Sözleşme durumları ne anlama geliyor?',
+], 'ROOM agreement list contextual starter chips');
+
+const roomAgreementNoRefreshPlaceholder = buildCopilotStarterChips({
+  screenPath: '/room/agreements',
+  role: 'ROOM',
+  selection: {
+    entityType: 'agreement',
+    entityId: 184,
+    facts: buildAgreementCopilotFacts(
+      { id: 184, status: 'REQUESTED', roomId: 1 },
+      {
+        routeRefreshCurrentText: '0 personel · 0 durak · - · -',
+        routeRefreshProposedText: '0 personel · 0 durak · - · -',
+        routeRefreshDiffText: 'Personel / durak değişikliği yok',
+        routeRefreshPriceImpactText: '₺0 → ₺0 (₺0)',
+      },
+    ),
+  },
+});
+assertNone(roomAgreementNoRefreshPlaceholder, [
+  'Bu sözleşmede rota değişikliği var mı?',
+  'Taşımacılık Firması tarafına rota güncelleme talebi gitti mi?',
+  'Eski rota ile yeni rota farkı ne?',
+  'Teklif mi, kabul mü?',
+], 'negative control rejects route chips without an authorized refresh context');
 
 const companyCommercial = buildCopilotStarterChips({
   screenPath: '/superadmin/commercial-core',
@@ -331,6 +585,8 @@ assertNoForbiddenVisibleTerms(parentLiveSelected, 'parent live selected service 
 const driverToday = buildCopilotStarterChips({
   screenPath: '/driver/today',
   selection: {
+    entityId: 3,
+    selectedRecordId: 3,
     selectedRecordType: 'shift',
     selectedRecordLabel: 'Vardiya #3',
     helpContextSummary: 'Vardiya #3 • Araç 34ABC123 • Durum Kabul Edildi • Son GPS 22dk • Durak A',
@@ -347,9 +603,23 @@ assertExactChips(driverToday, [
 assertNoForbiddenVisibleTerms(driverToday, 'driver today starter chips');
 assertNone(driverToday, ['Bugün ekranını aç', 'Rota', 'Copilot', 'Ekran rehberini aç'], 'driver today chips avoid nav chips');
 
+const driverTodayNoSelection = buildCopilotStarterChips({
+  screenPath: '/driver/today',
+  role: 'DRIVER',
+  selection: null,
+});
+assertExactChips(driverTodayNoSelection, [
+  'Bu ekranı detaylı anlat',
+  'Ne yapayım?',
+  'Konum sinyali bekleniyor',
+], 'driver today no-selection chips stay capability-grounded');
+assertNone(driverTodayNoSelection, ['Görev neden başlamıyor?', 'Başlatma zamanı uygun mu?', 'Araç ve rota hazır mı?'], 'driver today no-selection chips avoid active-task questions');
+
 const driverRoute = buildCopilotStarterChips({
   screenPath: '/driver/route',
   selection: {
+    entityId: 3,
+    selectedRecordId: 3,
     selectedRecordType: 'shift',
     selectedRecordLabel: 'Vardiya #3',
     helpContextSummary: 'Sıradaki durak Pickup 6 • GPS LIVE • Başlatma kanıtı eksik',
@@ -365,9 +635,23 @@ assertExactChips(driverRoute, [
 assertNoForbiddenVisibleTerms(driverRoute, 'driver route/map starter chips');
 assertNone(driverRoute, ['Bugün ekranını aç', 'Copilot', 'Ekran rehberini aç'], 'driver route/map chips avoid nav chips');
 
+const driverRouteNoSelection = buildCopilotStarterChips({
+  screenPath: '/driver/route',
+  role: 'DRIVER',
+  selection: { entityType: 'shift', entityId: 0, selectedRecordId: 0 },
+});
+assertExactChips(driverRouteNoSelection, [
+  'Bu ekranı detaylı anlat',
+  'Sonraki adımı göster',
+  'Bu ne demek?',
+], 'driver route no-selection chips stay capability-grounded');
+assertNone(driverRouteNoSelection, ['Sıradaki durak ne?', 'Rota neden görünmüyor?', 'GPS durumu ne?'], 'driver route no-selection chips avoid record questions');
+
 const driverMap = buildCopilotStarterChips({
   screenPath: '/driver/map',
   selection: {
+    entityId: 3,
+    selectedRecordId: 3,
     selectedRecordType: 'shift',
     selectedRecordLabel: 'Vardiya #3',
     helpContextSummary: 'Sıradaki durak Pickup 6 • GPS LIVE • Başlatma kanıtı eksik',

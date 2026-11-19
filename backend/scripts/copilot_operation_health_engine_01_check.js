@@ -20,6 +20,8 @@ import {
   OPERATION_HEALTH_TERMINOLOGY,
   OPERATION_HEALTH_TRIGGER_PHRASES,
 } from '../src/ai/chat/conversationOperationHealthEngine.js';
+import { resolveSemanticIntent } from '../src/ai/chat/semanticIntentPlanner.js';
+import { resolveCanonicalConversationRequest } from '../src/ai/chat/canonicalSemanticRequest.js';
 import { normalizeVisibleReplyFragment } from '../src/ai/chat/conversationTaskStateShared.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
@@ -263,6 +265,48 @@ function buildRuntimeScreenDefinition(profile, user, screenPath) {
 
 function formatCountSummary(counts) {
   return `Aktif sürücü ${counts.activeDrivers} • Riskli cihaz ${counts.riskyDevices} • Konum sinyali güncel değil / çevrim dışı ${counts.staleOrOffline} • Açık sorun ${counts.openIssues}`;
+}
+
+function runAuthoritativeCounterConsistencyRegression() {
+  const base = {
+    message: 'GPS güncel değil / çevrim dışı satırını aç',
+    rawMessage: 'GPS güncel değil / çevrim dışı satırını aç',
+    questionType: 'STATUS_HELP',
+    interactionIntentFamily: 'ISSUE_DIAGNOSTIC',
+    userRole: 'ROOM',
+    user: { role: 'ROOM', roomId: 1, companyId: 2 },
+    screenPath: '/room/operation-health',
+    screenContext: {
+      path: '/room/operation-health',
+      label: 'Operasyon Sağlığı',
+      role: 'ROOM',
+      structuredFacts: {
+        counters: { activeDrivers: 1, riskyDevices: 1, staleOrOffline: 0, openIssues: 2 },
+      },
+    },
+  };
+  const offlineIssueRecords = [
+    { severity: 'HIGH', title: 'Canlılık akışı zayıf', detail: '1 sürücüde stale/offline davranışı görünüyor.' },
+  ];
+  const oneOffline = buildOperationHealthState({
+    ...base,
+    issueRecords: offlineIssueRecords,
+    authoritativeCounters: { activeDrivers: 1, riskyDevices: 1, staleOrOffline: 1, openIssues: 1 },
+  });
+  check(oneOffline.counters.staleOrOffline === 1, 'authoritative offline count wins over stale screen counter');
+  check(containsNormalized(oneOffline.reply, 'Konum sinyali güncel değil / çevrim dışı 1'), 'one offline driver count is visible');
+  check(containsNormalized(oneOffline.reply, '1 sürücüde güncel değil/çevrim dışı'), 'one offline driver explanation matches count');
+
+  const zeroIssues = buildOperationHealthState({
+    ...base,
+    issueRecords: [],
+    authoritativeCounters: { activeDrivers: 1, riskyDevices: 0, staleOrOffline: 0, openIssues: 0 },
+  });
+  check(zeroIssues.counters.staleOrOffline === 0, 'authoritative zero offline count is preserved');
+  check(containsNormalized(zeroIssues.reply, 'Konum sinyali güncel değil / çevrim dışı 0'), 'zero offline count is visible');
+  check(!containsNormalized(zeroIssues.reply, 'sürücüde stale/offline'), 'zero offline state has no stale/offline explanation');
+
+  casePass('authoritative Operation Health count/explanation consistency');
 }
 
 function buildSharedContext(screenLabel, selectedSummary) {
@@ -636,6 +680,11 @@ function runSourceGuardAssertions(bundle) {
   must(bundle.helpComposer, 'buildOperationHealthChips', 'helpComposer imports operation-health chips');
   must(bundle.helpComposer, 'operationHealthState?.shouldRespond', 'helpComposer gates operation-health wiring');
 
+  must(bundle.operationHealthPanel, "const selectedCopilotIssue = activeTab === 'problems' ? copilotIssue : null;", 'operation-health summary selection does not inherit a problem record');
+  must(bundle.operationHealthPanel, "const selectedCopilotDriver = activeTab === 'problems' ? copilotDriver : null;", 'operation-health summary selection does not inherit a driver record');
+  must(bundle.operationHealthPanel, 'label: selectedCopilotIssue?.title || selectedCopilotDriver?.driverName || \'Operasyon sağlığı özeti\'', 'operation-health selection label follows active tab context');
+  must(bundle.operationHealthPanel, 'selectedCopilotIssue, selectedCopilotDriver, facts, activeTab', 'operation-health selection effect tracks hydrated tab context');
+
   must(bundle.intentRouter, 'buildOperationHealthChips', 'intent router imports operation-health chips');
   mustNot(bundle.intentRouter, 'buildOperationHealthState', 'intent router keeps operation-health state out');
   mustNot(bundle.intentRouter, 'buildOperationHealthReply', 'intent router keeps operation-health reply out');
@@ -695,6 +744,87 @@ function runNoWriteActionAssertions(replyCorpus) {
   }
 }
 
+function runGroundedQuestionSemanticAssertions() {
+  const screenContext = {
+    path: '/room/operation-health',
+    label: 'Operasyon Sağlığı',
+    visibleControlCount: 3,
+    visibleTargetLabels: ['Operasyon Merkezi', 'Operasyon Sağlığı', 'Sürücü & Sorunlar'],
+    visibleTargets: [
+      { label: 'Operasyon Merkezi', targetKey: 'room:home', semanticType: 'button', identitySource: 'CANONICAL', disabled: false },
+      { label: 'Operasyon Sağlığı', targetKey: 'room:operation-health', semanticType: 'button', identitySource: 'CANONICAL', disabled: false },
+      { label: 'Sürücü & Sorunlar', targetKey: 'room:operation-health:problems', semanticType: 'tab', identitySource: 'CANONICAL', disabled: false },
+    ],
+  };
+  const issueQuestions = [
+    'Açık operasyon sorunları neler?',
+    'Şu anda çözülmemiş sorun var mı?',
+    'Operasyonda hangi aksaklıklar görünüyor?',
+    'Açık sorunları sırala',
+    'Şu an açık olan operasyon problemlerini başlıklarıyla anlatır mısın?',
+  ];
+  for (const message of issueQuestions) {
+    const plan = resolveSemanticIntent({ message, user: { role: 'ROOM' }, screenContext });
+    check(plan.family === 'ISSUE_DIAGNOSTIC', `operation-health issue question stays ISSUE_DIAGNOSTIC: ${message}`);
+    check(plan.requestedDomains.includes('OPERATIONS'), `operation-health issue question requests OPERATIONS: ${message}`);
+    check(!plan.semanticEntityType || plan.semanticEntityType !== 'SURFACE', `operation-health issue question has no surface target: ${message}`);
+    const canonical = resolveCanonicalConversationRequest({
+      message,
+      user: { role: 'ROOM', tenantId: 'room-demo' },
+      screenContext: { ...screenContext, activeTab: 'summary', role: 'ROOM', tenantId: 'room-demo' },
+    });
+    check(canonical.validation.status === 'VALID', `operation-health question evidence is canonically valid: ${message}`);
+    check(canonical.request.operation === 'DIAGNOSE_CURRENT_ISSUE', `operation-health question maps to issue operation: ${message}`);
+    check(canonical.canonicalShape.taskType === 'ISSUE', `operation-health question preserves ISSUE task: ${message}`);
+  }
+  const metricContractQuestions = [
+    'Özette üç sorun var, detayda neden sıfır görünüyor?',
+    'Bu iki sayı aynı şeyi mi gösteriyor?',
+    'Bu sorunların hangileri araç veya GPS ile ilgili?',
+    'Açık sorunların hangileri GPS ile ilgili?',
+    'Konumu eski olan sürücülerle araçların sayısı aynı mı?',
+    'İnceleme bekleyen sözleşme bir operasyon arızası mı?',
+    'Bu sayaç neyi gösteriyor?',
+    'Günlük araç sayısı sıfırken neden operasyon uyarısı var?',
+  ];
+  for (const message of metricContractQuestions) {
+    const plan = resolveSemanticIntent({
+      message,
+      user: { role: 'ROOM', tenantId: 'room-demo' },
+      screenContext: { ...screenContext, activeTab: 'summary', role: 'ROOM', tenantId: 'room-demo' },
+    });
+    check(plan.family === 'ISSUE_DIAGNOSTIC', `operation-health metric contract question stays ISSUE_DIAGNOSTIC: ${message}`);
+    check(plan.requestedDomains.includes('OPERATIONS'), `operation-health metric contract requests OPERATIONS: ${message}`);
+    const canonical = resolveCanonicalConversationRequest({
+      message,
+      user: { role: 'ROOM', tenantId: 'room-demo' },
+      screenContext: { ...screenContext, activeTab: 'summary', role: 'ROOM', tenantId: 'room-demo' },
+    });
+    check(canonical.validation.status === 'VALID', `operation-health metric contract is canonically valid: ${message}`);
+    check(canonical.request.operation === 'DIAGNOSE_CURRENT_ISSUE', `operation-health metric contract maps to issue operation: ${message}`);
+    check(canonical.canonicalShape.taskType === 'ISSUE', `operation-health metric contract preserves ISSUE task: ${message}`);
+  }
+  const chipRequest = resolveCanonicalConversationRequest({
+    message: 'Açık sorunları sırala',
+    user: { role: 'ROOM', tenantId: 'room-demo' },
+    screenContext: {
+      ...screenContext,
+      activeTab: 'summary',
+      role: 'ROOM',
+      tenantId: 'room-demo',
+    },
+  });
+  check(chipRequest.validation.status === 'VALID', 'operation-health diagnostic chip evidence is canonically valid');
+  check(chipRequest.request.operation === 'DIAGNOSE_CURRENT_ISSUE', 'operation-health diagnostic chip maps to issue operation');
+  check(chipRequest.canonicalShape.taskType === 'ISSUE', 'operation-health diagnostic chip preserves ISSUE task');
+  const navigation = resolveSemanticIntent({
+    message: 'Operasyon Merkezi ekranına git',
+    user: { role: 'ROOM' },
+    screenContext,
+  });
+  check(navigation.family !== 'ISSUE_DIAGNOSTIC', 'explicit navigation remains outside issue diagnostic family');
+}
+
 let assertionCount = 0;
 let caseCount = 0;
 let runtimeCaseCount = 0;
@@ -722,9 +852,13 @@ async function main() {
     helper: read('backend/src/ai/chat/conversationOperationHealthEngine.js'),
     planReviewHelper: read('backend/src/ai/chat/conversationPlanReviewEngine.js'),
     operationHealthHelper: read('backend/src/ai/chat/conversationOperationHealthEngine.js'),
+    operationHealthPanel: read('web/src/panels/room/OperationHealthPanel.jsx'),
+    canonicalSemanticRequest: read('backend/src/ai/chat/canonicalSemanticRequest.js'),
+    semanticIntentPlanner: read('backend/src/ai/chat/semanticIntentPlanner.js'),
     doc: read('docs/COPILOT_OPERATION_HEALTH_ENGINE_01.md'),
   };
 
+  runGroundedQuestionSemanticAssertions();
   runSourceGuardAssertions(sourceBundle);
 
   const helperLines = lineCount(sourceBundle.operationHealthHelper);
@@ -748,6 +882,9 @@ async function main() {
     runRegressionCase(regression);
     regressionCaseCount += 1;
   }
+
+  runAuthoritativeCounterConsistencyRegression();
+  regressionCaseCount += 1;
 
   const testedCases = runtimeCaseCount + regressionCaseCount;
   const passCount = caseCount;

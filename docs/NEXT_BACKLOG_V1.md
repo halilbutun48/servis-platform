@@ -1,5 +1,93 @@
 # NEXT BACKLOG V1
 
+## Deferred post-#18 closure phase — Sağlam Merdiven Repository Exit ve Test Altyapısı Kalibrasyonu
+
+Bu bölüm gelecekteki kapanış aşamasını tanımlar; mevcut aktif frontier'i,
+B/C-3'ü veya #18 FULL D-LEVEL çalışmalarını değiştirmez. Faz yalnızca
+`#18 FULL_D_LEVEL_CLOSED` kanıtlandıktan sonra, ayrı bir bounded görev ve
+ayrı checkpoint ile başlatılabilir. #18 kapanmadan bu genel repository
+temizliği, test altyapısı kalibrasyonu veya Git kapanışı başlatılamaz.
+
+**Kapsam:** NEW-01 sonrasındaki gerçek tracked, untracked ve ilgili ignored
+repository ağacının sahiplik ve kullanım denetimi; eski/boş/mükerrer/sahipsiz
+artıkların kanıtla sınıflandırılması; geçersiz route/endpoint/model/service/
+feature flag/dependency yollarının güvenli incelemesi; checker/runner/harness/
+fixture beklentilerinin gerçek son ürün davranışına kalibrasyonu; dirty worktree
+uzlaştırması; tek release adayı üzerinde birleşik regresyon, gerçek Chromium,
+aynı-build public, sekiz rol, Finans 11 sekme ve Sefer Abi kabulinin yeniden
+bağlanması.
+
+**Korumalar:** NEW-01 kanıtı yeniden üretilmez; reset/clean/checkout,
+kontrolsüz silme, canonical DB/runtime değişikliği, güvenlik kapısı gevşetme
+ve dirty worktree kaybı yoktur. Manuel ödeme beyanı, ROOM tahsilat onayı,
+audit, idempotency ve finansal mutabakat korunur. Ödeme aracılığı, payout veya
+settlement kodu yalnız gerçek ürün politikası, kullanım grafiği ve güncel
+regresyon kanıtıyla sınıflandırılır; kanıtsız silinmez.
+
+**Kapanış kapısı:** Kaynağı belli olmayan veya repository-owned artık
+bırakılmadan önce her dosya/route/model/servis/test/harness için sahip,
+tüketici, provenance, kullanım ve geri dönüş kararı bulunur. Ürün kusuru,
+test/harness kusuru, stale runtime ve fixture farkı ayrı raporlanır. Son
+birleşik adayda kritik sekiz rol akışları, Finans 11 sekme matematiği, Sefer
+Abi ve gerçek Chromium/public same-build kanıtı geçmeden commit/tag/push
+yetkisi kullanılmaz. Bu fazın sonraki giriş adı:
+`SEFERPAKT — #18 SONRASI REPOSITORY EXIT VE TEST ALTYAPISI KALİBRASYONU`.
+
+## Latest canonical handoff checkpoint (2026-10-30 — bounded ROOM Finance platform reference UX acceptance)
+
+This additive checkpoint closes only the approved ROOM Finance platform-reference and Sefer Abi UX slice. The five ROOM Finance tabs and existing calculations remain intact. The worktree remains dirty; no business-write, seed, reset, migration, commit, tag or push was performed.
+
+- **API gate — PASS / live activation NOT_PROVEN:** the old raw accepted-offer path that could publish `110.000 TL` from seven Istanbul offers belonging to one ROOM was removed from the external reference path. The path now delegates to the canonical fail-closed gate. Live local/public snapshots return `NOT_PROVEN`, `available=false`, `valueMinor=null`, `range=null`, `rawTenantDataExposed=false`; no arbitrary threshold or policy was activated.
+- **Evidence policy — PASS:** the gate tests reject missing policy, non-READY canonical commercial evidence, DEMO/test observations, incomplete or mismatched comparison dimensions and insufficient independent ROOM diversity. The controlled positive fixture opens only with an explicitly supplied approved policy and three independent ROOM observations, returning an aggregated median without room/agreement identifiers. No real DB fixture or business write was used.
+- **Sefer Abi/API/frontend parity — PASS:** the exact platform-history question reaches the existing `platform-agreement-reference-fail-closed` response with `NOT_PROVEN`, `liveAverageEnabled=false`, `rawTenantDataExposed=false`, `readOnly=true` and `writeAction=false`. The UI separates `Yakıt fiyatı referansı` (EPDK, `/L`) from the closed `Platform geçmiş anlaşma referansı`; same-ROOM history remains distinct.
+- **Visual acceptance — PASS:** local/public same runtime assets matched by SHA-256. Chromium checked all five tabs at `1440x900`, `1024x900`, `390x844` and `320x800`; 22 view results per environment, no horizontal overflow, console/page errors `0`, and no unexpected business writes. Evidence: `docs/evidence/room-finance-platform-reference-ux-acceptance-20261030.json` and `backend/artifacts/room-finance-platform-reference-ux-acceptance-20261030`.
+- **Targeted verification — PASS with one unrelated suite finding:** platform reference layers `4/4`, canonical gate `15/15`, Sefer Abi advisory `24/24`, routing regression `1/1`, UI source regression `2/2`, web build PASS. The wider finance routing file remains `24/25` because an existing dynamic E2E assertion expected Vardiya `#311` while the live fixture returned `#316`; it is not attributed to this slice and is not relabeled PASS.
+- **Broad security/RBAC — NOT_PROVEN:** existing broad harness failures remain bounded by dirty-worktree/provenance/diff scope. They are not evidence of a product defect, but they are also not claimed as a security PASS. Live platform average/range and competitor information remain closed until approved policy and sufficient real independent ROOM evidence prove every gate together.
+
+## Latest canonical handoff checkpoint (2026-10-30 — COMPANY budget / end-user acceptance)
+
+This additive checkpoint closes only the bounded COMPANY budget presentation correction. No new milestone, finance engine or screen architecture was opened. The worktree remains dirty; no business-write, seed, reset, migration, commit, tag or push was performed. ROOM #207 canonical pricing, ROOM/COMPANY finance acceptance and M18 are preserved.
+
+- **Budget verification — PASS:** the real COMPANY record is plan `4`, `companyId=1`, `budgetAmountMinor=20000000`, which is `200.000 ₺`. API/storage were correct. The defect was the edit field exposing minor units (`20000000`) while labelled TL. The form now displays `200000`, converts back to minor units on submit, and does not alter the financial record. Committed amount is `150.000 ₺`; usable amount is `50.000 ₺`.
+- **First view — PASS:** the first view now prioritizes Planlanan bütçe, Sözleşmelerle taahhüt edilen, Kullanılabilir bütçe, Doğrulanmış gerçekleşen harcama and the next action. The current verified realized expense is `null`, so the UI says “Doğrulanmadı”; hakediş `140.000 ₺`, fatura `140.000 ₺` and ödenen `80.000 ₺` remain separate evidence and are not summed.
+- **Progressive disclosure / language — PASS:** reconciliation, scenarios, comparisons, calculation details and export remain available behind disclosures. COMPANY copy uses “Yakıt fiyatı referansı” and user language; DEMO stres, dry-run, canonical, Delta and raw internal wording are not visible on the accepted surface. Missing driver/maintenance inputs are not presented as a complete service cost.
+- **Real browser evidence — PASS_BOUNDED:** local/public same-build Chromium at 1440/1024/390/320 recorded before `61/61 PASS` and after `117/117 PASS`, with zero console/page errors, zero 5xx/429 responses, zero unexpected business writes and no horizontal overflow. Evidence: `docs/evidence/company-budget-ux-acceptance-20261030.json` and `backend/artifacts/browser-smoke/company-budget-ux-after-20261030`.
+- **Role/tenant — PASS:** COMPANY preview and plan are authorized and company-scoped; ROOM cannot read the COMPANY preview; ROOM-private internal cost, margin and quote-floor fields remain hidden.
+- **Targeted verification — PASS:** budget/UX unit tests `29/29`, reconciliation check `49/49`, accounting contract check `20/20`, web build PASS, global locked invariant suite PASS with due-now violations/unproven/coverage-gap `0`.
+- **Explicit NOT_PROVEN:** global lint and the broad financial/RBAC guard remain blocked by existing dirty-worktree diff/provenance and panel-size guard findings; they are not product or RBAC PASS. Verified realized expense remains closed as `DATA_MISSING` until an actual confirmed expense record exists. No new milestone or refactor was opened.
+
+## Latest canonical handoff checkpoint (2026-10-30 — platform historical reference security acceptance)
+
+This additive checkpoint closes only the remaining bounded SeferPakt-wide historical agreement price reference acceptance. The worktree remains dirty; no reset, clean, restore, commit, tag or push was performed. Existing ROOM #207 canonical pricing, ROOM/COMPANY finance acceptance and M18 are preserved.
+
+- **Source/runtime:** branch `m90d1_web_lint_inventory`, HEAD `3af6c1ac007cacf884ccdbb0bb50858f8eed486f`; local/public same frontend build `assets/index-D1AQyX_v.js`. `personel_api` was restarted once and reloaded once more after the final semantic patch; PostgreSQL, Redis, solver, worker and OSRM were not restarted.
+- **Policy gate:** `PASS` for the bounded fail-closed acceptance. The live platform average remains `NOT_PROVEN_CLOSED`: no arbitrary policy activation, no demo/test inclusion, no incomplete comparison dimensions, no insufficient sample/diversity, no privacy/competition/re-ID bypass, and no raw tenant/agreement output.
+- **Sefer Abi:** exact platform-wide question now reaches `platform-agreement-reference-fail-closed` on both local and public runtime, with canonical `ASSESS_CURRENT_RISK / BUDGET`, `platformHistoricalReferenceIntent=true`, `NOT_PROVEN`, `liveAverageEnabled=false`, `rawTenantDataExposed=false`, `readOnly=true`, `writeAction=false`; it no longer falls through to the unrelated `4 vardiya kaydı` answer.
+- **Verification:** focused backend `64/64 PASS`; global locked invariant suite `PASS` with due-now fail/unproven/coverage-gap `0`; local/public same-build Chromium `101/101 PASS` across 1440/1024/390/320, console/page errors `0`, 5xx/429 `0`, business mutation requests `0`. Evidence: `docs/evidence/smart-price-reference-platform-gate-acceptance-20261030.json`.
+- **Broad security harness:** `NOT_PROVEN — HARNESS_GOVERNANCE_OR_RUNTIME_PROVENANCE_SCOPE`, `258 PASS / 3 FAIL`. The three reproducible failures are route diff, service-scope status and backend Prisma-diff guards against the existing broad dirty worktree/provenance boundary; they are not relabeled as product/RBAC PASS and the prior capacity interruption is not treated as a product defect.
+- **Remaining condition:** keep live platform averages and competitor information closed until an approved policy plus sufficient real anonymous independent ROOM evidence proves comparability, privacy, re-identification and competition gates together. No new milestone or refactor was opened.
+
+## Latest canonical handoff checkpoint (2026-10-30 — COMPANY selected-record recovery)
+
+This additive checkpoint supersedes the previous same-day handoff for the active M18 COMPANY frontier. The worktree remains dirty; no reset, clean, restore, commit, tag or push was performed.
+
+- **Source identity:** HEAD `3af6c1ac007cacf884ccdbb0bb50858f8eed486f`, branch `m90d1_web_lint_inventory`; local/public frontend asset `assets/index-B_dvKBfO.js`, SHA-256 `675F30C01608BBD211DA971AF66AF737FA73357EB7E44DE7A254F0F4646675D3`.
+- **Completed bounded slice:** COMPANY selected-record recovery is `PRODUCT_PASS_BOUNDED`. The live selection now outranks stale discourse for polite follow-ups such as “Peki bunun…”, cleared selection does not resurrect the previous agreement, and explicit cross-tenant agreement requests are denied before selected-record fallback. Evidence: `docs/evidence/m18-company-selected-record-recovery-20261030.json`.
+- **Real browser proof:** Local and public COMPANY Chromium both completed #207 status → #195 selection → #195 follow-up. Both denied a foreign-tenant request without exposing data or navigation. Current console error count was `0` in both sessions; no business-write occurred.
+- **Next non-finance slice:** COMPANY Operations Panel / Vardiyalar guidance is the next bounded D-Level surface. Local/public natural Turkish status and follow-up questions completed; menu, six operations tabs, contextual “Vardiyalar” guidance, role/tenant boundary and 1440/1024/390/320 overflow checks were verified. Targeted operations checks pass.
+- **Verification:** selected-record recovery `6/6 PASS`; canonical conversation + price advisory `24/24 PASS`; company checkpoint 07 and 08 `PASS`; web build `PASS`; global locked invariant suite `PASS` with due-now violations `0`. The mobile action-clarity guard remains a separate `FAIL_HARNESS` because its dirty-worktree status scan hit `git ENOBUFS`; it is not a product result.
+- **Preserved open findings:** `cop04bfix02`, `cop04bfix04`, the DRIVER role-overview finding, Smart Price Reference V2.3 `NOT_PROVEN (LIVE_DATA_BLOCKER)`, and platform-wide price average `OPEN_NOT_CLOSED` remain open. M18 remains `OPEN_NOT_CLOSED`.
+
+## Latest canonical handoff checkpoint (2026-10-30)
+
+This additive checkpoint supersedes the older historical handoff below for current execution. The worktree remains dirty; no reset, clean, restore, commit, tag or push was performed.
+
+- **Source identity:** HEAD `3af6c1ac007cacf884ccdbb0bb50858f8eed486f`, branch `m90d1_web_lint_inventory`.
+- **V2.3 blocker:** Smart Price Reference V2 remains `PRODUCT_PASS_BOUNDED`; V2.2 isolated calculations remain accepted; V2.3 real positive Chromium remains `NOT_PROVEN (LIVE_DATA_BLOCKER)`. Do not repeat data discovery, create backdated/DONE data, use SQL to force lifecycle state, or weaken business rules. Re-run only after two comparable real service periods are created by the canonical lifecycle. Platform-wide price average remains `OPEN_NOT_CLOSED`.
+- **M18 status:** ROOM functional 10/10 remains closed. The current role frontier was COMPANY. The first bounded COMPANY slice is complete: finance guidance now stays within budget/service-cost vocabulary and does not expose ROOM profitability or quote-floor language. Evidence: `docs/evidence/m18-company-finance-guidance-20261030.json`.
+- **Real acceptance of the slice:** Local and public COMPANY Chromium used the selected budget/contract read-only context, the same Sefer Abi suggestion, and 1440/1024/390/320 checks. No console error, horizontal overflow, ROOM-private cost/margin field or business write was observed. Focused Sefer Abi regression is `19/19 PASS`; global locked invariant suite and web build pass.
+- **Next single frontier:** Continue with COMPANY selected-record recovery and the remaining non-finance D-Level guidance/natural-language/chip/security/mobile acceptance. Do not reopen ROOM, ROOM+COMPANY finance acceptance, or V2.3 data discovery. Existing broad guard failures remain separate technical debt: `cop04bfix02`, `cop04bfix04`, and the all-roles DRIVER overview check.
+
 ## Current canonical handoff checkpoint (2026-10-14)
 
 This additive checkpoint is the current variable-progress handoff. The repository remains dirty and no reset, clean, restore, commit, tag or push was performed.
@@ -7,6 +95,7 @@ This additive checkpoint is the current variable-progress handoff. The repositor
 - **Source identity:** HEAD `d85ea52218adcfcbacbdac279526ca0e767c4d0d`, branch `m90d1_web_lint_inventory`.
 - **Runtime at sync:** `personel_api` container `7c9d787a4641` is running with the repository bind-mounted at `/app`; `/health` reports `ok=true`, `dbOk=true`, version `0.1.0`, and `http://localhost:5173/` returns HTTP 200 from the canonical Vite process rooted at `D:\servis-platform\web`. Host/container backend source hashes match for the WP-09 anchor/catalog owners. No service restart was performed.
 - **M18 ROOM status:** WP-01–10 `PASS_BOUNDED` under their source-owned contracts; WP-11 `OPEN` after local integrated ROOM Chromium acceptance, with public same-build `ENVIRONMENT_BLOCK/NOT_PROVEN` and repository `verify:repo`/`verify:final` blocked by the existing ownership delta; M18-GOV-001 `PROVEN`; global locked-invariant suite `PASS`; ROOM D-Level and M18 `NOT_CLOSED`.
+- **Permanent demo-data readiness policy:** Before each milestone/role FULL PRODUCT RUN across all eight roles, verify demo/test database identity, inventory and reuse canonical records/relationships, classify every `NOT_PROVEN`, and create only minimum idempotent fixture data when the root is genuinely `DATA_MISSING` or `DATA_RELATION_MISSING`. Keep isolated/public evidence separate; do not use data to hide product, UI-target, harness, authorization, runtime, environment or governance defects. This does not change `M18_NO_BUSINESS_WRITE` or any security/governance gate. Current M18 finance readiness evidence: `docs/evidence/m18-room-demo-financial-data-readiness-20261017.json`; selected-finance-record product acceptance remains `NOT_PROVEN` and M18 remains `NOT_CLOSED`.
 - **WP-08 evidence boundary:** `web/src/utils/copilotFacts.js` is the canonical contextual chip owner and `backend/scripts/ux_copilot_smart_chips_01_check.js` is the permanent regression owner. Real Chromium proved the authorized DRIVER no-assigned-shift/no-selection branches at 1440×900, 390×844 and 320×844. The current runtime has no authorized selected DRIVER record, so live selected-record browser evidence remains `NOT_PROVEN` debt rather than a fabricated pass. Wrong-tenant execution remains `NOT_EXECUTED`; the later aggregate all-chip browser attempt remains `FAIL_HARNESS` and is not product evidence.
 - **Preserved WP-08 corrective:** record-specific driver chips require a real positive selected record; no-selection surfaces receive capability-grounded page questions. Existing selected-record static regressions remain in force.
 - **WP-09 evidence boundary:** Real Chromium verified representative ROOM menu navigation, Agreements selected-record/list and disclosure continuity, Operation Health tab activation/problem content, Financial Operations disclosures, and guided Agreement-list GÖSTER at 1440×900, 390×844 and 320×844. At 320px the settled target geometry was target `y=34.9..444.9`, drawer `y=460.6..756`, unique canonical highlight, no overlap, and no horizontal overflow; an earlier pre-settlement screenshot was not treated as a product failure. The focused isolated tenant-A/tenant-B acceptance also passed at 1440×900: tenant-B saw its own synthetic agreement; tenant-A received a safe no-authorized-record answer for tenant-B's ID with no foreign target/data leak. Evidence: `docs/evidence/m18-wp09-tenant-isolation-real-browser-20261014.json`.
@@ -520,3 +609,29 @@ Güncel baz: `servis-platform` branch `m90d1_web_lint_inventory`, master pack `M
 - M90C.9 safe closure/final hygiene after M90C.6
 
 M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 kapandi
+
+## ROOM_FINANCE_DEMO_FINANCIAL_DATA_COMPLETION_BOUNDED — 2026-10-30
+- Durum: Bounded ROOM Finans + Sefer Abi kabulü; yeni milestone, finans motoru, sekme veya mimari refactor açılmadı.
+- Kanonik DEMO bağlamı: ROOM #21, araç #8, sürücü #5, sözleşme #209, tamamlanmış canonical vardiya #367; rota 8,276 m; kayıtlar `SEFERPAKT_ROOM_FINANCE_DEMO_DATA_V1` işaretiyle izlenebilir.
+- Gerçek gider kanıtı: 28 `ACTUAL + CONFIRMED` TRY kaydı, tüm ilgili araç/sürücü/rota kalemleri dahil; brüt toplam `1.049.000 minor = 10.490,00 TL`; canonical dağıtım `READY`; son idempotent tamamlama çalışmasında yeni yazım `0`.
+- Ticari kanıt: kabul edilmiş sözleşme fiyatı `10.000.000 minor = 100.000,00 TL`; pazarlık kanıtı `PARTIAL`; gelir/hakediş/fatura/tahsilat ve KDV ayrıştırılmış net sonuç `NOT_PROVEN`, sahte kayıt oluşturulmadı.
+- Platform referansı pozitif DEMO: 6 bağımsız ROOM, karşılaştırılabilir ve canonical kabul audit zincirli kayıt; ortalama `11.250.000 minor = 112.500,00 TL`, aralık `10.000.000–12.500.000 minor = 100.000–125.000 TL`; yalnız kontrollü DEMO etiketiyle yayımlandı.
+- Platform referansı negatif canlı kapsam: onaylı politika/uygun bağımsız örneklem yoksa `NOT_PROVEN`, tutar/aralık yok; 110.000 TL yayımlanmadı; EPDK yakıt referansı ayrı kaldı; çapraz ROOM/COMPANY ham kayıt erişimi reddedildi.
+- Sefer Abi düzeltmesi: aynı seçili vardiyanın server-owned dağıtılmış gerçekleşen maliyeti finans API’si ve yanıt içinde `10.490,00 TL`; eski `3.020,00 TL` planlama tabanı sızıntısı giderildi; sözleşme fiyatı, platform DEMO ortalaması ve maliyet ayrı gösteriliyor.
+- Görsel/işlevsel kanıt: local/public aynı build Chromium; 1440, 1024, 390, 320 px; beş sekme, uzun mobil kaydırma, açılır ayrıntılar, Sefer Abi drawer, overflow ve console/page hatası kabulü PASS. JS SHA `5098225f69b985ecc18441e40f99141f89f54b36ac8edd41d438310f7696b5d2`; CSS SHA `799232502eea4c582b74319ade4d7ace79145cf114f259d962d1a78c6ec601d4`.
+- Hedefli regresyonlar: ROOM finans sekmeleri, operasyonel maliyet modeli guard cases `489/489 PASS`, Türkçe terminoloji, Sefer Abi maliyet/finans unit testleri ve pozitif/negatif gerçek Chromium kabulü PASS. Operasyonel maliyet ve ROOM quote-floor checker'ları guard/provenance sınırı nedeniyle suite olarak `NOT_PROVEN`; Sefer Abi legacy checker'ı eski “10 intent” sayım beklentisinde `NOT_PROVEN`. Geniş RBAC/security harness başarısızlıkları da mevcut dirty worktree/provenance kapsam sınırı olarak tutuldu; bu bounded akışta yeni güvenlik ihlali bulunmadı.
+- Kanıt dosyaları: `backend/artifacts/room-finance-demo-data-completion-20261030.json`, `backend/artifacts/room-finance-platform-reference-product-acceptance-20261030/result.json`, `backend/artifacts/room-finance-platform-reference-ux-acceptance-20261030/result.json`, `backend/artifacts/room-finance-platform-reference-api-acceptance-20261030.json`.
+- Güvenlik/işletim sınırı: doğrudan SQL business-write, reset, migration, seed/reseed, fabricated audit veya production policy etkinleştirme yapılmadı; commit/tag/push yapılmadı. Gerçek üretim verisi/politikası geldiğinde aynı fail-closed kapı ve ayrı operasyonel onaylar yeniden aranmalıdır.
+
+## ROOM_FINANCE_INCOME_CHAIN_BOUNDED — 2026-10-30
+- Kapsam: mevcut ROOM Finans + Sefer Abi zincirinin kalan gelir/mutabakat kanıtı; önceki 28 gider / 10.490,00 TL kabulü, 6 ROOM platform ortalaması (112.500,00 TL; 100.000–125.000 TL), beş finans sekmesi ve M18 korunmuştur. Kök `AGENTS.md` içine tüm roller/backend/frontend/mobil/Sefer Abi için kalıcı canonical kod yaşam döngüsü hijyeni eklendi.
+- PASS — Mevcut canonical pozitif gelir zinciri: agreement `#195`, ROOM `#1`, COMPANY `#1`, DONE vardiya `#257`; FINALIZED hakediş `#191` = `14.000.000` minor TRY (`140.000,00 TL`); ISSUED fatura `#176` = `14.000.000` minor TRY (`140.000,00 TL`); CONFIRMED tahsilat `#5` = `8.000.000` minor TRY (`80.000,00 TL`); açık alacak `6.000.000` minor TRY (`60.000,00 TL`); canonical reconciliation `MATCHED`, fark `0`.
+- PASS — Hakediş + fatura tek ekonomik geliri iki kez toplamıyor; tahsilat ayrı tahsilat defteri olarak `collected` ve `receivable` döndü. Dönem dışı #195 sorgusu `PERIOD_MISMATCH` ve beklenen tutar yok.
+- PASS — Negatif güvenlik davranışı: ROOM `#1` kullanıcısının ROOM `#21` sözleşmesi `#209` için reconciliation isteği `403`; ROOM `#21` kendi #209 kaydında `NO_HAKEDIS`, beklenen tutar `null`; Sefer Abi “karşılaştırılabilir hakediş kaydı yok / hesaplanamıyor” diyor ve tutar uydurmuyor.
+- PASS — API → frontend → Sefer Abi: local/public aynı runtime davranışı; #195 için her iki uçta `140.000,00 TL` hakediş ve fatura, #209 için tutarsızlık/eksik kanıt açıklaması; UI yanıtında `agreement.id=`, `target.path=`, `INTERNAL_ACTUAL`, `NOT_PROVEN` gibi teknik sızıntılar yok.
+- PASS — Gerçek Chromium kanıtı: local/public; `1440x900`, `1024x900`, `390x844`, `320x800`; pozitif ve negatif toplam 16 UI koşusu. Her koşuda yatay taşma yok, console/page error yok, 5xx/429 yok, business-write isteği yok. Kanıt: `backend/artifacts/room-finance-income-chain-acceptance-20261030/result.json` ve aynı klasördeki ekran görüntüleri.
+- PASS — Hedefli regresyonlar: backend income reconciliation/collection/accounting/lifecycle `16/16`; web finans sunumları `9/9`; Sefer Abi finans/price/HGS `40/40`; seçili sözleşme v. ekran-geneli finans yönlendirme guard `2/2`.
+- NOT_PROVEN — #209 için COMPANY talebi → ROOM teklifi → yeni hakediş → yeni fatura → tahsilat zincirini mevcut kayıtlardan ileriye taşımak: M18 sözleşmesi ROOM Finans içinde hakediş/fatura oluşturma/kesinleştirme için canonical UI/API yazma sahibi tanımlamıyor; bu işte ikinci motor, fixture seed'i veya M18 genişletmesi yapılmadı. Mevcut #195 zinciri yazma sahipliğinin başka canonical yüzeyde zaten bulunduğunu kanıtlıyor; #209 için eksik olan şey veri değil, yetkili ürün akışının kapsamıdır.
+- NOT_PROVEN — beş finans sekmesinin önceki kabulü bu bounded zincir için yeniden açılmadı; önceki checkpoint’teki local/public aynı-build PASS aynen korunmuştur. Bu tur yalnız zincir bağlamındaki sözleşme/mutabakat ekranını gerçek Chromium’da doğruladı.
+- Korunan sınırlar: doğrudan SQL, reset, migration, seed/reseed, fabricated audit, üretim politikasını etkinleştirme, tenant gevşetme, commit/tag/push yapılmadı. Geniş RBAC/security harness kapsam/provenance açıkları önceki checkpoint’teki sınıflandırmayla değişmeden kalır; bu bounded akışta yeni güvenlik ihlali bulunmadı.
+- Kapanış: `ROOM_FINANCE_INCOME_CHAIN_BOUNDED`; canlı üretim politikası/verisi ve ROOM için yetkili hakediş/fatura işlem sahibi tanımlanması, ayrı kullanıcı kararı gereken operasyonel koşullardır. COMPANY/M18 üzerinde kendiliğinden ilerlenmeyecektir.

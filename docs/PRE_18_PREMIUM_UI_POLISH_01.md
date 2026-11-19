@@ -104,6 +104,59 @@ Required outcomes:
 - console errors, page errors and HTTP 500 responses are zero
 - Sefer Abi continuity and map behavior remain covered by the existing baseline regressions
 
+## M18 final frontend / brand / premium UX closure matrix
+
+This matrix is an additive M18 closure gate, not a new milestone and not a
+request to reopen the accepted PRE-#18 or current B-04/role-functional work.
+The existing `PREMIUM_UI = 72_OF_72_PROVEN` record remains historical/current
+evidence for its own scope. It does not make an unexecuted row below PASS.
+
+| Gate | Required user-visible proof | Required boundary | Final gate status |
+|---|---|---|---|
+| FUX-01 Brand provenance | Approved SeferPakt logo, emblem, favicon and app icon exist, have a Git source, and load from the current build | No redesign; #18 internal descriptions are not brand assets | NOT_PROVEN |
+| FUX-02 Login and entry | Login/landing hierarchy, logo, CTA, helper/error states and keyboard path are understandable in real Chromium | Existing auth/session contract unchanged | NOT_PROVEN |
+| FUX-03 Shell and navigation | AppShell, NavDock, mobile menu, safe-area bounds, focus/close/back behavior and brand visibility | No fake navigation; role/tenant route scope preserved | NOT_PROVEN |
+| FUX-04 Eight-role task surfaces | ROOM, COMPANY, SCHOOL, ORGANIZATION, DRIVER, PERSONEL, PARENT and SUPER_ADMIN first-view density, next action and recovery | Existing B-04 and later role test order remains authoritative | NOT_PROVEN |
+| FUX-05 ROOM finance and operations | Meaningful data visualization, readable forms/tables, five canonical finance tabs and operational decisions; `D-FIN-01` request/offer selection and cross-tab context synchronization | Canonical ledger/calculation/tenant ownership unchanged; no duplicate economic value; technical test PASS alone cannot close user acceptance | NOT_PROVEN |
+| FUX-06 COMPANY/SCHOOL/ORGANIZATION | Budget, offer, contract and service tracking is understandable without repeated technical entry | Company-kind and tenant/RBAC boundaries preserved | NOT_PROVEN |
+| FUX-07 DRIVER/PERSONEL/PARENT mobile | Fast mobile task completion at 390/320 with no unsafe overflow or hidden primary action | Supported-role access and safe-area behavior preserved | NOT_PROVEN |
+| FUX-08 Shared surfaces | Forms, tables, charts, maps, modals, drawers and notifications remain visually consistent and usable | No decorative chart/animation added without task value | NOT_PROVEN |
+| FUX-09 Sefer Abi | Accepted character identity, placement, readability, state behavior, suggestions and screen interaction remain clear | Guidance/navigation boundary; no silent business write | NOT_PROVEN |
+| FUX-10 Measured usability | Real task success, click/step count, manual-entry count, elapsed time, errors/recovery and five-second comprehension recorded | Claims require real user/browser evidence, not source-only inference | NOT_PROVEN |
+| FUX-11 Build and security | Same source/build/runtime epoch at 1440/1024/390/320, keyboard/device checks, public/local parity where required | Tenant/RBAC/KVKK, no unexpected business writes, no stale bundle | NOT_PROVEN |
+| FUX-12 Closure decision | Evidence paths, screenshots/traces, regression results and unresolved items reconciled | `FULL_D_LEVEL_CLOSED` and `SAFE_TO_PROMOTE` stay FALSE until all mandatory rows close | NOT_PROVEN |
+
+The matrix is deliberately conservative: prior closed B/C, Finans 11 and M18
+functional evidence is retained and linked when applicable, while any new visual,
+brand or role-surface proof not yet executed remains `NOT_PROVEN`. No row is a
+permission to pause B-04 or to begin #19.
+
+### D-FIN-01 — ROOM Finans authorized request/offer selection and tab synchronization
+
+This is a functional criterion inside the existing M18 ROOM Finans acceptance,
+not a new milestone, finance engine, or independent tab implementation. The
+existing Finans 11 calculation engine, canonical ledger ownership, tenant
+boundaries, and the current five-tab navigation remain authoritative.
+
+The real-user acceptance must prove, in both `Araç Karşılaştır` and `Teklif ve
+Kârlılık`, that the user can select an authorized ROOM/tenant request or offer
+from real records and can see the active record unambiguously. The visible
+context must include the customer, request/offer/counter-offer/accepted-offer
+and related-contract relationship, status, period, route, and vehicle where
+available. The same selection must survive tab changes; the selected vehicle
+must feed the profitability view; and changing the offer must fully replace,
+not retain, the previous offer's price, cost, period, or vehicle.
+
+The evidence must keep offer price, planning estimate, realized expense, and
+proven profit distinct. Missing data must expose a one-click action to the
+actual record for completion/correction. Sefer Abi must receive the selected
+offer and vehicle context and tailor guidance to it. At least two different
+offers, a tab switch, vehicle change, missing-data completion path, tenant/RBAC
+negative, responsive layout, audit behavior, and durable regression must be
+executed in real Chromium. Backend IDs and displayed values must match the
+selected records. A source-level or technical test PASS without this
+end-to-end user evidence remains `NOT_PROVEN`.
+
 ## Canonical typography scale — current applied corrective
 
 The final semantic layer is applied after legacy surface declarations so that

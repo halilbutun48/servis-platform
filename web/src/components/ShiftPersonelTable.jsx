@@ -33,7 +33,7 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeoco
   const list = Array.isArray(people) ? people : [];
 
   return (
-    <table className="tbl" style={{ whiteSpace: "nowrap" }}>
+    <table className="tbl shiftPeopleTable">
       <thead>
         <tr>
           <th>Ad Soyad</th>
@@ -51,21 +51,21 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeoco
             const canOpenGeoPicker = typeof onOpenGeoPicker === "function" && Number.isFinite(backendPersonId) && backendPersonId > 0;
             return (
             <tr key={p.id}>
-              <td>
+              <td data-label="Ad Soyad">
                 <input
                   value={p.name || ""}
                   onChange={(e) => onUpdate?.(p.id, { name: e.target.value })}
                   placeholder="Ad Soyad"
                 />
               </td>
-              <td style={{ minWidth: 320 }}>
+              <td data-label="Adres" style={{ minWidth: 320 }}>
                 <input
                   value={p.address || ""}
                   onChange={(e) => onUpdate?.(p.id, { address: e.target.value })}
                   placeholder="Adres"
                 />
               </td>
-              <td style={{ width: 120 }}>
+              <td data-label="Enlem" style={{ width: 120 }}>
                 <input
                   value={p.lat ?? ""}
                   onChange={(e) => {
@@ -76,7 +76,7 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeoco
                   placeholder="Enlem"
                 />
               </td>
-              <td style={{ width: 120 }}>
+              <td data-label="Boylam" style={{ width: 120 }}>
                 <input
                   value={p.lng ?? ""}
                   onChange={(e) => {
@@ -87,13 +87,13 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeoco
                   placeholder="Boylam"
                 />
               </td>
-              <td className="muted" style={{ minWidth: 170 }}>
+              <td data-label="Konum durumu" className="muted" style={{ minWidth: 170 }}>
                 <div>{displayStatusLabel(p.geoStatus)}</div>
                 {p.geoReasonText || p.geoReason ? (
                   <div style={{ fontSize: 12 }}>{p.geoReasonText || p.geoReason}</div>
                 ) : null}
               </td>
-              <td>
+              <td data-label="Aksiyon">
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   {String(p.address || "").trim() && !(typeof p.lat === "number" && typeof p.lng === "number") ? (
                     <button

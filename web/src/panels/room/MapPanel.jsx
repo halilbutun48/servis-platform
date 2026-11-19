@@ -83,7 +83,10 @@ function etaMinGuess(vehicle, stop) {
 function etaDisplayText(vehicle, etaMinutes, nextStop) {
   return getEtaDisplay({
     etaMinutes,
-    gpsStatus: vehicle?.gpsState?.lastUiStatus || vehicle?.gpsState?.lastStatus || vehicle?.gpsLast?.status || vehicle?.gpsLast?.state || (hasGpsFix(vehicle) ? "LIVE" : "UNKNOWN"),
+    // Use the same timestamp-aware UI status as the map and selected-record
+    // summary. A cached provider status must not keep an old ETA visible after
+    // the last accepted GPS sample becomes stale or offline.
+    gpsStatus: uiStatusFromVehicle(vehicle),
     gpsAge: vehicle?.gpsLast,
     nextStopName: nextStop?.name,
   });
@@ -196,10 +199,23 @@ export default function RoomMapPanel() {
     setErr("");
     setBusy(true);
     try {
-      const r = await cachedGet("/api/vehicles", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 });
+      // Live GPS must not be served from the long-lived general vehicle cache:
+      // a fixture/driver ingest can update gpsLast while this screen is open.
+      // Force the authorized read on mount, refresh and socket fallbacks so the
+      // map never presents an older OFFLINE/STALE state over a newer backend one.
+      const r = await cachedGet("/api/vehicles", { token, force: true, ttlMs: 10 * 60 * 1000, delayMs: 120 });
       const items = Array.isArray(r) ? r : [];
       setVehicles(items);
 
+      const hashQuery = typeof window !== "undefined" ? String(window.location.hash || "").split("?")[1] || "" : "";
+      const requestedFocusVehicleId = Number(new URLSearchParams(hashQuery).get("focusVehicleId") || 0);
+      const requestedFocusVehicle = requestedFocusVehicleId > 0
+        ? items.find((vehicle) => Number(vehicle?.id || 0) === requestedFocusVehicleId)
+        : null;
+      if (requestedFocusVehicle) {
+        setSelectedVehicleId(requestedFocusVehicle.id);
+        return;
+      }
       if (selectedVehicleId && !items.some((v) => String(v.id) === String(selectedVehicleId))) {
         setSelectedVehicleId(null);
       }
@@ -313,6 +329,22 @@ export default function RoomMapPanel() {
 
     return out;
   }, [vehicles, q, onlyActive, showNoGps]);
+
+  useEffect(() => {
+    const visibleSelected = cards.some((card) => String(card?.vehicle?.id) === String(selectedVehicleId));
+    if (selectedVehicleId && !visibleSelected) {
+      setSelectedVehicleId(null);
+      return;
+    }
+    if (!selectedVehicleId && cards[0]?.vehicle?.id) {
+      setSelectedVehicleId(cards[0].vehicle.id);
+    }
+  }, [cards, selectedVehicleId]);
+
+  const visibleVehicles = useMemo(
+    () => cards.map((card) => card.vehicle).filter(Boolean),
+    [cards]
+  );
 
   const selected = useMemo(
     () => vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null,
@@ -436,6 +468,8 @@ export default function RoomMapPanel() {
       scopeKey: "/room/map",
       entityType: selectedShift?.id ? "shift" : "vehicle",
       entityId: Number(selectedShift?.id || selected?.id || 0) || null,
+      relatedEntityType: selected?.id ? "vehicle" : "",
+      relatedEntityId: Number(selected?.id || 0) || null,
       label: selectedShift?.id
         ? `Vardiya #${selectedShift.id}`
           : selected?.plate
@@ -461,7 +495,7 @@ export default function RoomMapPanel() {
       ],
     });
 
-  }, [selected, selected?.id, selectedShift, selectedShift?.id, selectedNext, selectedEta, selectedStats, vehicles.length, copilotSummary]);
+  }, [selected, selected?.id, selectedShift, selectedShift?.id, selectedNext, selectedEta, selectedStats, vehicles.length, copilotSummary, selectedSummaryText]);
 
   useEffect(() => {
     let alive = true;
@@ -700,7 +734,12 @@ export default function RoomMapPanel() {
           badge={`${cards.length}`}
         >
           <div className="grid mapGrid mapGrid--primary-canvas" style={mapGridStyle}>
-            <MapOperationsDisclosure summary="Canlı araçlar ve vardiyalar" count={cards.length} className="mapListDisclosure">
+            <MapOperationsDisclosure
+              summary="Canlı araçlar ve vardiyalar"
+              count={cards.length}
+              className="mapListDisclosure"
+              copilotTarget="room-map:vehicle-list"
+            >
               {renderVehicleListCard({
                 title: "Canlı Liste",
                 subtitle: "Satıra tıkla → sağda timeline + harita.",
@@ -897,14 +936,15 @@ export default function RoomMapPanel() {
               </div>
 
               <MapView
-                vehicles={vehicles}
+                vehicles={visibleVehicles}
                 stops={showStops ? selectedStops : []}
                 routePath={routePreview.points}
                 routeSource={routePreview.source}
                 selectedVehicleId={selectedVehicleId}
                 onSelectVehicle={setSelectedVehicleId}
                 mode={mapMode}
-                fitKey={`room:${vehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}:${showStops ? "stops" : "nostops"}:${mapMode}`}
+                copilotTargetPrefix="room:map"
+                fitKey={`room:${visibleVehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}:${showStops ? "stops" : "nostops"}:${mapMode}`}
                 height="var(--mapH)"
               />
 

@@ -20,6 +20,7 @@ import { buildAgreementConversionByShift, focusCompanyMarketById } from "./compa
 import { acceptCompanyOfferAction, acceptCompanyOfferPackageAction, cancelCompanyRequestAction, companyCounterOfferAction, companyCounterPackageAction, openCompanyExtendModal, openCompanyOfferModalForShift, openCompanyOffersModalForShift, submitCompanyExtendRequest, submitCompanyOfferModal, toggleCompanyOfferRoom } from "./companyShiftsPanelActions";
 import { renderCompanyOfferSummary, renderRoomOfferSummary } from "./companyShiftsPanelSummaryCells";
 import { buildAgreementPrefillFromShift, stashAgreementPrefill } from "../../utils/agreementPrefill";
+import ShiftPeopleTab from "./ShiftPeopleTab";
 // M66 compatibility marker: Operasyon Kaydı UI + ShiftOperationEventsModal implementation lives in CompanyShiftsPanelTrackView.
 
 export default function CompanyShiftsPanel() {
@@ -164,6 +165,7 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
 
   const [pendingOnlyRoomOffer, setPendingOnlyRoomOffer] = useState(false);
   const [focusedTrackShiftId, setFocusedTrackShiftId] = useState(null);
+  const [usageFocusShiftId, setUsageFocusShiftId] = useState(null);
 
   const fmtTR = (iso) => {
     if (!iso) return "-";
@@ -191,8 +193,23 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
 // Not: LocalStorage company bazlıdır. Eski (v1) şablonlar otomatik migrate edilir.
 
 const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
+const selectedShiftStorageKey = `company:selectedShiftId:${companyKey}:${String(me?.id ?? "session")}`;
 const templatesStorageKey = `psv1:company:${companyKey}:shiftTemplates:v2`;
 const templatesStorageKeyLegacy = `psv1:company:${companyKey}:shiftTemplates:v1`;
+
+const setFocusedCompanyShiftId = useCallback((nextId) => {
+  const shiftId = Number(nextId || 0) || null;
+  setFocusedTrackShiftId(shiftId);
+  try {
+    if (shiftId) {
+      localStorage.setItem(selectedShiftStorageKey, String(shiftId));
+    } else {
+      localStorage.removeItem(selectedShiftStorageKey);
+    }
+  } catch {
+    // Selection continuity is best-effort; the live React state remains authoritative.
+  }
+}, [selectedShiftStorageKey]);
 
 const [customTemplates, setCustomTemplates] = useState([]); // [{id,name,packKey,weekMask,durationKey,items[],people,kind:"CUSTOM"}]
 const companyShiftsSectionsCompat = Boolean(CompanyFinalListSection);
@@ -354,13 +371,29 @@ loadRef.current = load;
   useEffect(() => {
     const previewRaw = localStorage.getItem("company:previewShiftId");
     const focusRaw = localStorage.getItem("company:focusShiftId");
-    if (!previewRaw && !focusRaw) return;
+    const selectedRaw = localStorage.getItem(selectedShiftStorageKey);
+    const query = String(window.location.hash || "").split("?")[1] || "";
+    const queryFocusRaw = new URLSearchParams(query).get("focusShiftId");
+    const persistedFocusRaw = focusRaw || queryFocusRaw;
+    if (!previewRaw && !persistedFocusRaw && !selectedRaw) return;
     if (previewRaw) localStorage.removeItem("company:previewShiftId");
     if (focusRaw) localStorage.removeItem("company:focusShiftId");
-    const sid = Number(previewRaw || focusRaw || 0);
+    const sid = Number(previewRaw || persistedFocusRaw || selectedRaw || 0);
     if (!sid) return;
-    setFocusedTrackShiftId(sid);
+    setFocusedCompanyShiftId(sid);
     if (previewRaw) setPreviewModal({ open: true, shiftId: sid });
+  }, [selectedShiftStorageKey, setFocusedCompanyShiftId]);
+
+  useEffect(() => {
+    const applyUsageFocus = () => {
+      const query = String(window.location.hash || "").split("?")[1] || "";
+      const params = new URLSearchParams(query);
+      const sid = Number(params.get("focusShiftId") || 0);
+      setUsageFocusShiftId(params.get("focusTask") === "usage" && sid > 0 ? sid : null);
+    };
+    applyUsageFocus();
+    window.addEventListener("hashchange", applyUsageFocus);
+    return () => window.removeEventListener("hashchange", applyUsageFocus);
   }, []);
 
   useEffect(() => {
@@ -424,6 +457,11 @@ loadRef.current = load;
     }
     return m;
   }, [rooms, items]);
+
+  const usageFocusShift = useMemo(
+    () => items.find((item) => Number(item?.id || 0) === Number(usageFocusShiftId || 0)) || null,
+    [items, usageFocusShiftId]
+  );
 
   const vehiclesById = useMemo(() => {
     const m = new Map();
@@ -783,10 +821,15 @@ loadRef.current = load;
       scopeKey: copilotScopeKey,
       entityType: "shift",
       entityId: Number(copilotShift.id || 0) || null,
+      relatedEntityType: Number(copilotShift?.agreementId || 0) > 0 ? "agreement" : "",
+      relatedEntityId: Number(copilotShift?.agreementId || 0) || null,
       label: `Vardiya #${copilotShift.id}`,
       summary: copilotShiftSummary,
       fields: [
         { label: 'Vardiya', value: `#${copilotShift.id}`, help: 'Seçili vardiyanın sistem içindeki kimliğini gösterir.' },
+        ...(Number(copilotShift?.agreementId || 0) > 0
+          ? [{ label: 'Sözleşme', value: `#${copilotShift.agreementId}`, help: 'Seçili vardiyanın bağlı olduğu sözleşmeyi gösterir.' }]
+          : []),
         { label: 'Taşımacılık Firması', value: copilotShift?.room?.name || '-', help: 'İşin bağlı olduğu taşımacılık firması bilgisini gösterir.' },
         { label: 'Araç', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `#${copilotShift.vehicleId}` : '-'), help: 'Vardiyaya bağlı araç bilgisini gösterir.' },
         { label: 'Sürücü', value: copilotShift?.driver?.fullName || '-', help: 'Vardiyaya atanmış sürücü bilgisini gösterir.' },
@@ -880,6 +923,25 @@ loadRef.current = load;
         companyKind={me?.companyKind}
       />
 
+      {usageFocusShiftId ? (
+        <section className="card" data-testid="company-shift-usage-completion" style={{ marginTop: 12 }}>
+          <h2 style={{ marginTop: 0 }}>Eksik rota ve yolcu bilgisi</h2>
+          <div className="muted" style={{ marginBottom: 10 }}>
+            Vardiya #{usageFocusShiftId} için kişi/personel bağlantısı, konum doğrulaması ve canonical durak üretimi bu şirket ekranından yapılır.
+          </div>
+          {usageFocusShift ? (
+            <ShiftPeopleTab
+              token={token}
+              me={me}
+              shifts={[usageFocusShift]}
+              roomsById={roomsById}
+              mirrorShiftIds={[]}
+              preferredShiftId={usageFocusShiftId}
+            />
+          ) : <div className="muted">Vardiya yükleniyor…</div>}
+        </section>
+      ) : null}
+
       <CompanyShiftsPanelTrackView
         dayYmd={dayYmd}
         setDayYmd={setDayYmd}
@@ -901,7 +963,7 @@ loadRef.current = load;
         marketSearchRef={marketSearchRef}
         fmtTR={fmtTR}
         copilotShiftId={copilotShiftId}
-        setFocusedTrackShiftId={setFocusedTrackShiftId}
+        setFocusedTrackShiftId={setFocusedCompanyShiftId}
         openOfferModalForShift={openOfferModalForShift}
         openOffersModalForShift={openOffersModalForShift}
         computePackageShiftIds={computePackageShiftIds}

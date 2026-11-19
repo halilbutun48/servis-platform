@@ -1,0 +1,4 @@
+import { chromium } from "@playwright/test"; const b=await chromium.launch({headless:true}); const c=await b.newContext({viewport:{width:1440,height:900},locale:'tr-TR'}); const p=await c.newPage();
+await p.goto('http://localhost:5273/',{waitUntil:'domcontentloaded'}); if(await p.locator('input[autocomplete="username"]').count()){await p.locator('input[autocomplete="username"]').fill('room@demo.com'); await p.locator('input[autocomplete="current-password"]').fill('demo123'); await p.locator('button[type="submit"]').click(); await p.waitForTimeout(1300);}
+for(const route of ['#/room/offers','#/room/shifts','#/room/commercial-flow']){await p.goto('http://localhost:5273/'+route,{waitUntil:'domcontentloaded'}); await p.waitForTimeout(1000); console.log('\nROUTE',route,'\n',JSON.stringify({text:(await p.locator('body').innerText()).slice(-7000),buttons:await p.locator('button:visible').allInnerTexts()},null,2));}
+await b.close();

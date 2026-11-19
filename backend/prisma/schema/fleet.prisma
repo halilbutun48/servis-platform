@@ -41,6 +41,8 @@ model Vehicle {
 
   // V1 meta (araç tanımı)
   type      VehicleType?
+  // HGS/toll class is explicit technical data; it is never inferred from type.
+  hgsClass  Int?
   brand     String?
   model     String?
   modelYear Int?
@@ -73,17 +75,20 @@ model Vehicle {
 
   createdAt DateTime @default(now())
 
-  room              Room               @relation(fields: [roomId], references: [id])
-  driver            Driver?            @relation(fields: [driverId], references: [id], onDelete: SetNull)
-  gpsLast           GpsLast?
-  gpsState          VehicleGpsState? // ✅ UI status gate state
-  gpsDevices        GpsDevice[]
-  gpsPoints         GpsPoint[]
+  room                    Room                     @relation(fields: [roomId], references: [id])
+  driver                  Driver?                  @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  gpsLast                 GpsLast?
+  gpsState                VehicleGpsState? // ✅ UI status gate state
+  gpsDevices              GpsDevice[]
+  gpsPoints               GpsPoint[]
   // ✅ M19: learned route samples
-  routeLearnSamples RouteLearnSample[]
-  shifts            Shift[]
-  notifications     Notification[]
+  routeLearnSamples       RouteLearnSample[]
+  shifts                  Shift[]
+  notifications           Notification[]
+  roomCostEntries         RoomCostEntry[]          @relation("VehicleRoomCostEntries")
+  roomCostAllocationLines RoomCostAllocationLine[] @relation("VehicleRoomCostAllocationLines")
 
+  @@unique([roomId, id])
   @@index([roomId])
   @@index([roomId, archivedAt])
 }
@@ -113,11 +118,14 @@ model Driver {
   backupDriver Driver?  @relation("BackupDriver", fields: [backupDriverId], references: [id])
   backupsFor   Driver[] @relation("BackupDriver")
 
-  shifts        Shift[]
-  notifications Notification[]
-  invites       Invite[]
-  penalties     DriverPenalty[]
+  shifts                  Shift[]
+  notifications           Notification[]
+  invites                 Invite[]
+  penalties               DriverPenalty[]
+  roomCostEntries         RoomCostEntry[]          @relation("DriverRoomCostEntries")
+  roomCostAllocationLines RoomCostAllocationLine[] @relation("DriverRoomCostAllocationLines")
 
+  @@unique([roomId, id])
   @@index([roomId])
 }
 

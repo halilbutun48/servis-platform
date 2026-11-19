@@ -1,6 +1,10 @@
 import crypto from "node:crypto";
 import { prisma } from "../prisma.js";
 import { httpError } from "../errors/http.js";
+import {
+  resolveEffectiveIncomePeriod,
+  shouldExcludeInvoiceForCorrectedHakedis,
+} from "./incomePeriodCorrection.js";
 
 export const ACCOUNTING_EXPORT_CONTRACT_VERSION = "ACCOUNTING_EXPORT_CONTRACT_V1";
 export const ACCOUNTING_EXPORT_SOURCE_SYSTEM = "SeferPakt";
@@ -9,6 +13,55 @@ export const ACCOUNTING_EXPORT_FORMATS = Object.freeze(["CSV", "XLSX", "JSON"]);
 const ACTUAL_HAKEDIS_STATUSES = new Set(["READY", "FINALIZED"]);
 const ACTUAL_INVOICE_STATUSES = new Set(["ISSUED", "PAID"]);
 const ACTUAL_SOURCE = "INTERNAL_ACTUAL";
+const TEST_SIMULATED_SOURCE = "TEST_SIMULATED";
+
+export function deriveOfferLineage(agreement = {}) {
+  const acceptedOffers = [];
+  for (const shift of Array.isArray(agreement?.shifts) ? agreement.shifts : []) {
+    for (const offer of Array.isArray(shift?.offers) ? shift.offers : []) {
+      if (upperText(offer?.status) !== "ACCEPTED") continue;
+      const offerId = Number(offer?.id || 0);
+      if (!Number.isSafeInteger(offerId) || offerId <= 0) continue;
+      acceptedOffers.push({
+        id: offerId,
+        shiftId: Number(shift?.id || 0) || null,
+        status: upperText(offer.status) || null,
+        amountCompany: Number.isSafeInteger(Number(offer?.amountCompany)) ? Number(offer.amountCompany) : null,
+        amountRoom: Number.isSafeInteger(Number(offer?.amountRoom)) ? Number(offer.amountRoom) : null,
+      });
+    }
+  }
+  const uniqueOffers = [...new Map(acceptedOffers.map((offer) => [offer.id, offer])).values()];
+  if (!uniqueOffers.length) {
+    return {
+      status: "NOT_PROVEN",
+      offerId: null,
+      offerShiftId: null,
+      offerStatus: null,
+      offerAmountCompanyMinor: null,
+      offerAmountRoomMinor: null,
+    };
+  }
+  if (uniqueOffers.length !== 1) {
+    return {
+      status: "AMBIGUOUS",
+      offerId: null,
+      offerShiftId: null,
+      offerStatus: null,
+      offerAmountCompanyMinor: null,
+      offerAmountRoomMinor: null,
+    };
+  }
+  const [offer] = uniqueOffers;
+  return {
+    status: "READY",
+    offerId: offer.id,
+    offerShiftId: offer.shiftId,
+    offerStatus: offer.status,
+    offerAmountCompanyMinor: offer.amountCompany,
+    offerAmountRoomMinor: offer.amountRoom,
+  };
+}
 
 export const ACCOUNTING_EXPORT_COLUMNS = Object.freeze([
   "exportId",
@@ -95,12 +148,16 @@ function hasUnsafeText(value) {
   return /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(String(value ?? ""));
 }
 
-function actualHakedis(row) {
-  return ACTUAL_HAKEDIS_STATUSES.has(upperText(row?.status)) && upperText(row?.source) === ACTUAL_SOURCE;
+function actualHakedis(row, { allowTestSimulated = false } = {}) {
+  const source = upperText(row?.source);
+  return ACTUAL_HAKEDIS_STATUSES.has(upperText(row?.status))
+    && (source === ACTUAL_SOURCE || (allowTestSimulated && source === TEST_SIMULATED_SOURCE));
 }
 
-function actualInvoice(row) {
-  return ACTUAL_INVOICE_STATUSES.has(upperText(row?.status)) && upperText(row?.source) === ACTUAL_SOURCE;
+function actualInvoice(row, { allowTestSimulated = false } = {}) {
+  const source = upperText(row?.source);
+  return ACTUAL_INVOICE_STATUSES.has(upperText(row?.status))
+    && (source === ACTUAL_SOURCE || (allowTestSimulated && source === TEST_SIMULATED_SOURCE));
 }
 
 function selectCompany() {
@@ -214,6 +271,434 @@ async function loadScopeData({ scope, companyId, roomId, periodStart, periodEnd 
   ]);
 
   return { company, room, agreements, hakedisRecords, invoiceRecords, budgetPlan };
+}
+
+function dateKey(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
+}
+
+function containedIncomePeriod(record, periodStart, periodEnd) {
+  const recordStart = dateKey(record?.periodStart);
+  const recordEnd = dateKey(record?.periodEnd);
+  return Boolean(recordStart && recordEnd && recordStart >= periodStart && recordEnd <= periodEnd);
+}
+
+function incomeLineKey(record) {
+  return `${Number(record?.agreementId || 0) || "none"}:${dateKey(record?.periodStart) || "none"}:${dateKey(record?.periodEnd) || "none"}`;
+}
+
+async function buildCollectionEvidence({ providedPrisma, roomId, actualInvoiceRows }) {
+  const unavailable = (reason) => ({
+    collectionEvidence: {
+      kind: "COLLECTION",
+      status: "UNAVAILABLE",
+      amountMinor: null,
+      currencyCode: null,
+      recordCount: 0,
+      records: [],
+      reason,
+    },
+    receivableEvidence: {
+      kind: "RECEIVABLE",
+      status: "UNAVAILABLE",
+      amountMinor: null,
+      currencyCode: null,
+      recordCount: 0,
+      records: [],
+      reason: "Kalan alacak için doğrulanmış tahsilat kaydı bulunamadı.",
+    },
+  });
+
+  if (!providedPrisma?.invoiceCollection?.findMany || !actualInvoiceRows.length) {
+    return unavailable("Bu ROOM ve dönem için canonical tahsilat kaydı bulunamadı.");
+  }
+
+  let rows;
+  try {
+    rows = await providedPrisma.invoiceCollection.findMany({
+      where: {
+        roomId,
+        invoiceId: { in: actualInvoiceRows.map((row) => Number(row.id)).filter((id) => Number.isSafeInteger(id) && id > 0) },
+      },
+      orderBy: [{ collectedAt: "asc" }, { id: "asc" }],
+    });
+  } catch (error) {
+    if (String(error?.code || "") === "P2021" || /invoicecollection/i.test(String(error?.message || ""))) {
+      return unavailable("Tahsilat altyapısı bu çalışma ortamında henüz kurulmadı.");
+    }
+    throw error;
+  }
+
+  const confirmed = (Array.isArray(rows) ? rows : []).filter((row) => String(row?.status || "").toUpperCase() === "CONFIRMED");
+  if (!confirmed.length) return unavailable("Bu ROOM ve dönem için doğrulanmış tahsilat kaydı bulunamadı.");
+
+  const invoiceById = new Map(actualInvoiceRows.map((row) => [Number(row.id), row]));
+  const currencies = new Set();
+  const records = [];
+  let collectedAmountMinor = 0;
+  for (const row of confirmed) {
+    const invoice = invoiceById.get(Number(row?.invoiceId));
+    const amountMinor = Number(row?.amountMinor);
+    const currencyCode = upperText(row?.currencyCode);
+    if (!invoice || !Number.isSafeInteger(amountMinor) || amountMinor <= 0 || !/^[A-Z]{3}$/.test(currencyCode)) {
+      return unavailable("Tahsilat kaydı fatura kapsamı veya tutarıyla doğrulanamıyor.");
+    }
+    currencies.add(currencyCode);
+    collectedAmountMinor += String(row?.direction || "COLLECTION").toUpperCase() === "REVERSAL" ? -amountMinor : amountMinor;
+    records.push({
+      id: Number(row.id),
+      invoiceId: Number(row.invoiceId),
+      amountMinor,
+      currencyCode,
+      direction: upperText(row.direction || "COLLECTION"),
+      status: upperText(row.status),
+      // Tahsilat V1'de banka sağlayıcısı bağlı değil. BANK_TRANSFER ödeme
+      // yöntemidir; kaydı banka tarafından doğrulanmış gibi göstermeyiz.
+      verificationMode: "MANUAL",
+      verificationStatus: "NOT_BANK_VERIFIED",
+      collectedAt: dateKey(row.collectedAt),
+      paymentMethod: upperText(row.paymentMethod),
+      sourceRef: safeText(row.sourceRef) || null,
+      reversalOfId: Number(row.reversalOfId || 0) || null,
+    });
+  }
+
+  const invoiceAmountMinor = actualInvoiceRows.reduce((sum, row) => sum + Number(row.amountMinor || 0), 0);
+  const invoiceCurrency = upperText(actualInvoiceRows[0]?.currencyCode);
+  if (currencies.size !== 1 || [...currencies][0] !== invoiceCurrency || collectedAmountMinor < 0 || collectedAmountMinor > invoiceAmountMinor) {
+    return unavailable("Tahsilat ve fatura tutarları mutabık değil.");
+  }
+
+  return {
+    collectionEvidence: {
+      kind: "COLLECTION",
+      status: "AVAILABLE",
+      amountMinor: collectedAmountMinor,
+      currencyCode: invoiceCurrency,
+      recordCount: confirmed.length,
+      records,
+      reason: null,
+    },
+    receivableEvidence: {
+      kind: "RECEIVABLE",
+      status: "AVAILABLE",
+      amountMinor: invoiceAmountMinor - collectedAmountMinor,
+      currencyCode: invoiceCurrency,
+      recordCount: confirmed.length,
+      records,
+      reason: null,
+    },
+  };
+}
+
+/**
+ * Read-only realized-income evidence for the existing accounting source.
+ * Hakedis and matching invoice rows represent one economic income line, never two.
+ */
+export async function buildRealizedIncomeEvidence({ roomId, periodStart, periodEnd, periodScope = "", asOfDate = new Date(), allowTestSimulated = false, prisma: providedPrisma = prisma } = {}) {
+  const normalizedRoomId = Number(roomId);
+  const start = safeText(periodStart);
+  const end = safeText(periodEnd);
+  const normalizedPeriodScope = upperText(periodScope) === "ALL" ? "ALL" : "RANGE";
+  const allPeriods = normalizedPeriodScope === "ALL";
+  const asOf = dateKey(asOfDate) || dateKey(new Date());
+  const unavailableEvidence = (kind) => ({
+    kind,
+    status: "UNAVAILABLE",
+    amountMinor: null,
+    currencyCode: null,
+    recordCount: 0,
+    records: [],
+  });
+  const empty = {
+    status: "UNAVAILABLE",
+    authoritative: false,
+    amountMinor: null,
+    currencyCode: null,
+    periodStart: validYmd(start) ? start : null,
+    periodEnd: validYmd(end) ? end : null,
+    periodScope: normalizedPeriodScope,
+    scopeKey: Number.isSafeInteger(normalizedRoomId) && normalizedRoomId > 0 ? `ROOM:${normalizedRoomId}` : null,
+    includedCount: 0,
+    excludedReasons: [],
+    sourceType: allowTestSimulated ? `${ACTUAL_SOURCE}_OR_${TEST_SIMULATED_SOURCE}` : ACTUAL_SOURCE,
+    hakedisEvidence: unavailableEvidence("HAKEDIS"),
+    invoiceEvidence: unavailableEvidence("INVOICE"),
+    collectionEvidence: {
+      kind: "COLLECTION",
+      status: "UNAVAILABLE",
+      amountMinor: null,
+      currencyCode: null,
+      recordCount: 0,
+      records: [],
+      reason: "Bu ROOM ve dönem için canonical tahsilat kaydı bulunamadı.",
+    },
+    receivableEvidence: {
+      kind: "RECEIVABLE",
+      status: "UNAVAILABLE",
+      amountMinor: null,
+      currencyCode: null,
+      recordCount: 0,
+      records: [],
+      reason: "Bu ROOM ve dönem için canonical alacak kaydı bulunamadı.",
+    },
+    lines: [],
+  };
+  if (!Number.isSafeInteger(normalizedRoomId) || normalizedRoomId <= 0) {
+    return { ...empty, excludedReasons: ["Gerçekleşen gelir için geçerli ROOM kapsamı yok."] };
+  }
+  if (!allPeriods && (!validYmd(start) || !validYmd(end))) {
+    return { ...empty, status: "PERIOD_REQUIRED", excludedReasons: ["Geliri incelemek için geçerli bir dönem seçin."] };
+  }
+  if (!allPeriods && start > end) {
+    return { ...empty, status: "INVALID_PERIOD", excludedReasons: ["Gelir dönemi başlangıcı bitiş tarihinden sonra olamaz."] };
+  }
+  if (allPeriods && (start || end)) {
+    return { ...empty, status: "INVALID_SCOPE", excludedReasons: ["Tüm dönemler kapsamı tarih aralığıyla birlikte kullanılamaz."] };
+  }
+
+  const [hakedisRecords, invoiceRecords, correctionRecords] = await Promise.all([
+    providedPrisma.hakedisRecord.findMany({
+      where: { roomId: normalizedRoomId },
+      orderBy: { id: "asc" },
+      include: { agreement: { select: { company: { select: { id: true, name: true } }, shifts: { select: { id: true, offers: { where: { status: "ACCEPTED" }, select: { id: true, status: true, amountCompany: true, amountRoom: true } } } } } } },
+    }),
+    providedPrisma.invoiceRecord.findMany({
+      where: { roomId: normalizedRoomId },
+      orderBy: { id: "asc" },
+      include: { agreement: { select: { company: { select: { id: true, name: true } }, shifts: { select: { id: true, offers: { where: { status: "ACCEPTED" }, select: { id: true, status: true, amountCompany: true, amountRoom: true } } } } } } },
+    }),
+    providedPrisma.hakedisIncomePeriodCorrection?.findMany
+      ? providedPrisma.hakedisIncomePeriodCorrection.findMany({
+        where: { roomId: normalizedRoomId, status: "ACTIVE" },
+        orderBy: [{ hakedisId: "asc" }, { version: "desc" }, { id: "desc" }],
+      })
+      : Promise.resolve([]),
+  ]);
+  const activeCorrections = Array.isArray(correctionRecords) ? correctionRecords : [];
+  const correctionByHakedisId = new Map();
+  for (const correction of activeCorrections) {
+    const hakedisId = Number(correction?.hakedisId || 0);
+    if (hakedisId > 0 && !correctionByHakedisId.has(hakedisId)) correctionByHakedisId.set(hakedisId, correction);
+  }
+  const allHakedis = (Array.isArray(hakedisRecords) ? hakedisRecords : [])
+    .filter((record) => Number(record?.roomId) === normalizedRoomId);
+  const allInvoices = (Array.isArray(invoiceRecords) ? invoiceRecords : [])
+    .filter((record) => Number(record?.roomId) === normalizedRoomId);
+  const effectiveHakedis = allHakedis.map((record) => {
+    const correction = correctionByHakedisId.get(Number(record?.id || 0)) || null;
+    const effective = resolveEffectiveIncomePeriod(record, correction);
+    return {
+      ...record,
+      sourceRecord: record,
+      correction,
+      periodStart: effective.recognizedPeriodStart ? startDate(effective.recognizedPeriodStart) : record.periodStart,
+      periodEnd: effective.recognizedPeriodEnd ? startDate(effective.recognizedPeriodEnd) : record.periodEnd,
+      sourcePeriodStart: effective.sourcePeriodStart,
+      sourcePeriodEnd: effective.sourcePeriodEnd,
+      recognizedPeriodStart: effective.recognizedPeriodStart,
+      recognizedPeriodEnd: effective.recognizedPeriodEnd,
+      correctionId: Number(correction?.id || 0) || null,
+      correctionEvidenceRef: safeText(correction?.evidenceRef) || null,
+      correctionReason: safeText(correction?.reason) || null,
+    };
+  });
+  const scopedHakedis = effectiveHakedis.filter((record) => allPeriods || containedIncomePeriod(record, start, end));
+  const scopedInvoiceCandidates = allInvoices.filter((record) => allPeriods || containedIncomePeriod(record, start, end));
+  const actualHakedisRows = scopedHakedis.filter((record) => actualHakedis(record, { allowTestSimulated }));
+  const actualAllInvoices = allInvoices.filter((record) => actualInvoice(record, { allowTestSimulated }));
+  const excludedCorrectedInvoiceIds = new Set();
+  for (const hakedis of effectiveHakedis) {
+    if (!hakedis.correction) continue;
+    for (const invoice of actualAllInvoices) {
+      if (shouldExcludeInvoiceForCorrectedHakedis(invoice, hakedis.sourceRecord, hakedis.correction)) {
+        excludedCorrectedInvoiceIds.add(Number(invoice.id));
+      }
+    }
+  }
+  const linkedInvoiceByHakedisId = new Map();
+  for (const hakedis of actualHakedisRows) {
+    if (!hakedis.correction) continue;
+    const linkedInvoice = actualAllInvoices.find((invoice) => shouldExcludeInvoiceForCorrectedHakedis(
+      invoice,
+      hakedis.sourceRecord,
+      hakedis.correction,
+    ));
+    if (linkedInvoice) linkedInvoiceByHakedisId.set(Number(hakedis.id), linkedInvoice);
+  }
+  const actualInvoiceRows = Array.from(new Map([
+    ...scopedInvoiceCandidates.filter((invoice) => actualInvoice(invoice, { allowTestSimulated }))
+      .filter((invoice) => !excludedCorrectedInvoiceIds.has(Number(invoice.id)))
+      .map((invoice) => [Number(invoice.id), invoice]),
+    ...Array.from(linkedInvoiceByHakedisId.values()).map((invoice) => [Number(invoice.id), invoice]),
+  ]).values());
+  const excludedReasons = [];
+  if (scopedHakedis.some((record) => !actualHakedisRows.includes(record))) excludedReasons.push("Yetkili gerçekleşmiş hakediş kaynağı dışındaki kayıtlar dahil edilmedi.");
+  if (scopedInvoiceCandidates.some((record) => !actualInvoiceRows.includes(record))) excludedReasons.push("Teklif, bütçe veya tahmin faturası gerçekleşmiş gelir sayılmadı.");
+  if (excludedCorrectedInvoiceIds.size) excludedReasons.push("Dönemi düzeltilen hakedişin eski fatura dönemi eski kapsamda ikinci kez sayılmadı.");
+
+  const summarizeEvidence = (kind, rows) => {
+    const records = rows.map((record) => ({
+      id: Number(record?.id || 0) || null,
+      reference: safeText(record?.reference) || null,
+      agreementId: Number(record?.agreementId || 0) || null,
+      status: upperText(record?.status) || null,
+      source: upperText(record?.source) || null,
+      amountMinor: Number.isSafeInteger(Number(record?.amountMinor)) && Number(record.amountMinor) >= 0 ? Number(record.amountMinor) : null,
+      currencyCode: upperText(record?.currencyCode) || null,
+      periodStart: dateKey(record?.periodStart),
+      periodEnd: dateKey(record?.periodEnd),
+      sourcePeriodStart: dateKey(record?.sourcePeriodStart) || null,
+      sourcePeriodEnd: dateKey(record?.sourcePeriodEnd) || null,
+      recognizedPeriodStart: dateKey(record?.recognizedPeriodStart) || dateKey(record?.periodStart),
+      recognizedPeriodEnd: dateKey(record?.recognizedPeriodEnd) || dateKey(record?.periodEnd),
+      correctionId: Number(record?.correctionId || 0) || null,
+      correctionEvidenceRef: safeText(record?.correctionEvidenceRef) || null,
+    }));
+    const validAmounts = records.every((record) => record.amountMinor != null);
+    const currencies = new Set(records.map((record) => record.currencyCode).filter(Boolean));
+    const statuses = [...new Set(records.map((record) => record.status).filter(Boolean))];
+    return {
+      kind,
+      status: records.some((record) => upperText(record.source) === TEST_SIMULATED_SOURCE)
+        ? TEST_SIMULATED_SOURCE
+        : records.length ? statuses.length === 1 ? statuses[0] : "MULTIPLE" : "UNAVAILABLE",
+      amountMinor: records.length && validAmounts ? records.reduce((sum, record) => sum + record.amountMinor, 0) : null,
+      currencyCode: currencies.size === 1 ? [...currencies][0] : null,
+      recordCount: records.length,
+      records,
+    };
+  };
+  const hakedisEvidence = summarizeEvidence("HAKEDIS", actualHakedisRows);
+  const invoiceEvidence = summarizeEvidence("INVOICE", actualInvoiceRows);
+
+  const hakedisKeys = new Set(actualHakedisRows.map(incomeLineKey));
+  const invoiceKeys = new Set(actualInvoiceRows.map(incomeLineKey));
+  if (hakedisKeys.size !== actualHakedisRows.length || invoiceKeys.size !== actualInvoiceRows.length) {
+    return { ...empty, status: "RECONCILIATION_MISMATCH", hakedisEvidence, invoiceEvidence, excludedReasons: [...excludedReasons, "Aynı dönem ve sözleşme için birden fazla gelir kaydı bulundu."] };
+  }
+
+  const usedInvoices = new Set();
+  const lines = [];
+  for (const hakedis of actualHakedisRows) {
+    const linkedInvoice = linkedInvoiceByHakedisId.get(Number(hakedis.id)) || null;
+    const matchingInvoices = linkedInvoice
+      ? [linkedInvoice]
+      : actualInvoiceRows.filter((invoice) => !usedInvoices.has(invoice.id)
+        && incomeLineKey(invoice) === incomeLineKey(hakedis));
+    const invoice = matchingInvoices.find((candidate) => !usedInvoices.has(candidate.id)) || null;
+    if (invoice) {
+      usedInvoices.add(invoice.id);
+      if (Number(invoice.amountMinor) !== Number(hakedis.amountMinor) || upperText(invoice.currencyCode) !== upperText(hakedis.currencyCode)) {
+        return {
+          ...empty,
+          status: "RECONCILIATION_MISMATCH",
+          hakedisEvidence,
+          invoiceEvidence,
+          lines: [{
+            agreementId: Number(hakedis.agreementId || invoice.agreementId || 0) || null,
+            hakedisId: Number(hakedis.id || 0) || null,
+            invoiceId: Number(invoice.id || 0) || null,
+            periodStart: dateKey(hakedis.periodStart),
+            periodEnd: dateKey(hakedis.periodEnd),
+            sourcePeriodStart: dateKey(hakedis.sourcePeriodStart) || null,
+            sourcePeriodEnd: dateKey(hakedis.sourcePeriodEnd) || null,
+            recognizedPeriodStart: dateKey(hakedis.recognizedPeriodStart) || dateKey(hakedis.periodStart),
+            recognizedPeriodEnd: dateKey(hakedis.recognizedPeriodEnd) || dateKey(hakedis.periodEnd),
+            correctionId: Number(hakedis.correctionId || 0) || null,
+            reconciliationStatus: "MISMATCH",
+          }],
+          excludedReasons: [...excludedReasons, "Hakediş ve fatura tutarı aynı gerçekleşmiş geliri doğrulamıyor."],
+        };
+      }
+    }
+    const amountMinor = Number(hakedis.amountMinor);
+    if (!Number.isSafeInteger(amountMinor) || amountMinor < 0) {
+      return { ...empty, status: "INCOME_INVALID", hakedisEvidence, invoiceEvidence, excludedReasons: [...excludedReasons, "Gerçekleşen gelir tutarı güvenli bir minor-unit sayı değil."] };
+    }
+    const offerLineage = deriveOfferLineage(hakedis?.agreement || invoice?.agreement || {});
+    lines.push({
+      amountMinor,
+      currencyCode: upperText(hakedis.currencyCode) || "TRY",
+      companyName: safeText(hakedis?.agreement?.company?.name || invoice?.agreement?.company?.name) || null,
+      companyId: Number(hakedis?.agreement?.company?.id || invoice?.agreement?.company?.id || 0) || null,
+      agreementId: Number(hakedis.agreementId || 0) || null,
+      hakedisId: Number(hakedis.id || 0) || null,
+      invoiceId: Number(invoice?.id || 0) || null,
+      periodStart: dateKey(hakedis.periodStart),
+      periodEnd: dateKey(hakedis.periodEnd),
+      sourcePeriodStart: dateKey(hakedis.sourcePeriodStart) || null,
+      sourcePeriodEnd: dateKey(hakedis.sourcePeriodEnd) || null,
+      recognizedPeriodStart: dateKey(hakedis.recognizedPeriodStart) || dateKey(hakedis.periodStart),
+      recognizedPeriodEnd: dateKey(hakedis.recognizedPeriodEnd) || dateKey(hakedis.periodEnd),
+      correctionId: Number(hakedis.correctionId || 0) || null,
+      correctionEvidenceRef: safeText(hakedis.correctionEvidenceRef) || null,
+      correctionReason: safeText(hakedis.correctionReason) || null,
+      source: upperText(hakedis.source) || null,
+      offerLineageStatus: offerLineage.status,
+      ...offerLineage,
+      reconciliationStatus: invoice ? "MATCHED" : "HAKEDIS_ONLY",
+    });
+  }
+  for (const invoice of actualInvoiceRows) {
+    if (usedInvoices.has(invoice.id)) continue;
+    const amountMinor = Number(invoice.amountMinor);
+    if (!Number.isSafeInteger(amountMinor) || amountMinor < 0) {
+      return { ...empty, status: "INCOME_INVALID", hakedisEvidence, invoiceEvidence, excludedReasons: [...excludedReasons, "Gerçekleşen fatura tutarı güvenli bir minor-unit sayı değil."] };
+    }
+    const offerLineage = deriveOfferLineage(invoice?.agreement || {});
+    lines.push({
+      amountMinor,
+      currencyCode: upperText(invoice.currencyCode) || "TRY",
+      companyName: safeText(invoice?.agreement?.company?.name) || null,
+      companyId: Number(invoice?.agreement?.company?.id || 0) || null,
+      agreementId: Number(invoice.agreementId || 0) || null,
+      hakedisId: null,
+      invoiceId: Number(invoice.id || 0) || null,
+      periodStart: dateKey(invoice.periodStart),
+      periodEnd: dateKey(invoice.periodEnd),
+      source: upperText(invoice.source) || null,
+      offerLineageStatus: offerLineage.status,
+      ...offerLineage,
+      reconciliationStatus: "INVOICE_ONLY",
+    });
+  }
+  const currencies = new Set(lines.map((line) => line.currencyCode));
+  if (currencies.size > 1) return { ...empty, status: "SCOPE_MISMATCH", hakedisEvidence, invoiceEvidence, lines, excludedReasons: [...excludedReasons, "Gerçekleşen gelir kayıtları farklı para birimleri içeriyor."] };
+  if (!lines.length) return { ...empty, hakedisEvidence, invoiceEvidence, excludedReasons: [...excludedReasons, "Aynı ROOM ve dönemde doğrulanmış gerçekleşmiş gelir kaydı bulunamadı."] };
+  if (start > asOf) {
+    return {
+      ...empty,
+      status: "FUTURE_NOT_REALIZED",
+      hakedisEvidence,
+      invoiceEvidence,
+      lines,
+      excludedReasons: [...excludedReasons, `Seçilen dönem ${asOf} tarihinden sonra; bugünün gerçekleşmiş geliri olarak kullanılamaz.`],
+    };
+  }
+
+  const collectionEvidence = await buildCollectionEvidence({
+    providedPrisma,
+    roomId: normalizedRoomId,
+    actualInvoiceRows,
+  });
+
+  const hasTestSimulatedSource = lines.some((line) => upperText(line.source) === TEST_SIMULATED_SOURCE);
+  return {
+    ...empty,
+    status: hasTestSimulatedSource ? TEST_SIMULATED_SOURCE : "AVAILABLE",
+    authoritative: !hasTestSimulatedSource,
+    amountMinor: lines.reduce((sum, line) => sum + line.amountMinor, 0),
+    currencyCode: lines[0].currencyCode,
+    includedCount: lines.length,
+    hakedisEvidence,
+    invoiceEvidence,
+    ...collectionEvidence,
+    sourceType: hasTestSimulatedSource ? TEST_SIMULATED_SOURCE : ACTUAL_SOURCE,
+    lines,
+    excludedReasons,
+  };
 }
 
 function createLine({ scope, company, room, agreement, hakedis = null, invoice = null, periodStart, periodEnd, role }) {

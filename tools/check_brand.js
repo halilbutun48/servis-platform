@@ -35,6 +35,9 @@ const navDock = read('web/src/layout/NavDock.jsx');
 const brandMark = read('web/src/components/BrandMark.jsx');
 const webBrandFile = read(webBrand);
 const mobileBrandFile = read(mobileBrand);
+const webIndex = read('web/index.html');
+const manifestPath = 'web/public/manifest.webmanifest';
+const manifest = exists(manifestPath) ? read(manifestPath) : '';
 
 must(pkg.scripts?.['check:brand'] === 'node tools/check_brand.js', 'root package exposes check:brand script');
 must(exists(webBrand), 'web central brand config exists');
@@ -50,5 +53,11 @@ must(/BRAND_NAME/.test(brandMark), 'BrandMark renders shared brand name');
 mustNot(appShell, 'const BRAND_NAME = "Vardis"', 'AppShell removes local Vardis brand hardcode');
 mustNot(navDock, 'const BRAND_NAME = "Vardis"', 'NavDock removes local Vardis brand hardcode');
 mustNot(brandMark, 'Vardis', 'BrandMark removes visible Vardis hardcode');
+must(exists('web/public/seferpakt-favicon.png'), 'approved SeferPakt favicon asset exists');
+must(exists('web/public/seferpakt-app-icon.png'), 'approved SeferPakt app icon asset exists');
+must(/<link\s+rel="icon"\s+type="image\/png"\s+href="\/seferpakt-favicon\.png"\s*\/>/.test(webIndex), 'index uses the direct approved SeferPakt favicon');
+must(/<link\s+rel="manifest"\s+href="\/manifest\.webmanifest"\s*\/>/.test(webIndex), 'index links the SeferPakt web manifest');
+must(/"name"\s*:\s*"SeferPakt"/.test(manifest), 'web manifest keeps SeferPakt name');
+must(/"src"\s*:\s*"\/seferpakt-app-icon\.png"/.test(manifest), 'web manifest uses the approved SeferPakt app icon');
 
 console.log('Brand check passed');

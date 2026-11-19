@@ -6,6 +6,8 @@ import QrCanvas from "../../components/checkin/QrCanvas";
 import { formatDateTimeTR } from "../../utils/time";
 import { nowIsoTR } from "../../utils/time";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection.js";
+import { buildCompanyCheckinCopilotSelection } from "./checkinCopilotSelection.js";
 
 function fmt(dt) {
   try {
@@ -111,6 +113,21 @@ export default function CompanyCheckinPanel() {
       .catch((e) => setErr(String(e?.message || e)))
       .finally(() => setLoading(false));
   }, [selectedShiftId, featureOn, loadShiftDetail]);
+
+  useEffect(() => {
+    const copilotScopeKey = me?.companyKind === "SCHOOL"
+      ? "/school/checkin"
+      : me?.companyKind === "ORGANIZATION"
+        ? "/organization/checkin"
+        : "/company/checkin";
+    const selection = buildCompanyCheckinCopilotSelection({ shift: selectedShift, counts, scopeKey: copilotScopeKey });
+    if (!selection) {
+      clearCopilotSelection(copilotScopeKey);
+      return;
+    }
+    setCopilotSelection(selection);
+    return () => clearCopilotSelection(copilotScopeKey);
+  }, [counts, me?.companyId, me?.companyKind, selectedShift, token]);
 
   useAutoReload("shifts", async () => {
     await loadShifts();

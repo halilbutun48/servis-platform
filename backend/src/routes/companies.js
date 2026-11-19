@@ -4,6 +4,7 @@
 import express from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
+import { audit } from "../audit.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { resolveCompanyOwnership } from "../region/index.js";
 
@@ -133,6 +134,20 @@ export function companiesRouter() {
       }
     }
 
+    await audit(req, {
+      action: "ADMIN_COMPANY_CREATE",
+      entity: "Company",
+      entityId: item.id,
+      meta: {
+        name: item.name,
+        kind: item.kind,
+        status: item.status,
+        regionId: item.regionId,
+        district: item.district,
+        source: "SUPER_ADMIN_COMPANIES_UI",
+      },
+    });
+
     res.status(201).json({
       ...item,
       regionOwnership: resolveCompanyOwnership(item),
@@ -164,6 +179,20 @@ export function companiesRouter() {
       data: parsed.data,
       include: { region: { select: { id: true, name: true } } },
     });
+    await audit(req, {
+      action: "ADMIN_COMPANY_UPDATE",
+      entity: "Company",
+      entityId: item.id,
+      meta: {
+        name: item.name,
+        kind: item.kind,
+        status: item.status,
+        regionId: item.regionId,
+        district: item.district,
+        profileUpdated: ["legalName", "taxNo", "taxOffice", "addressLine", "contactName", "contactPhone", "contactEmail", "notes"].some((key) => Object.prototype.hasOwnProperty.call(parsed.data, key)),
+        source: "SUPER_ADMIN_COMPANIES_UI",
+      },
+    });
     res.json(item);
   });
 
@@ -171,6 +200,17 @@ export function companiesRouter() {
   r.delete("/:id", async (req, res) => {
     const id = Number(req.params.id);
     const item = await prisma.company.update({ where: { id }, data: { status: "DELETED" } });
+    await audit(req, {
+      action: "ADMIN_COMPANY_DELETE",
+      entity: "Company",
+      entityId: item.id,
+      meta: {
+        name: item.name,
+        priorStatus: "ACTIVE",
+        status: item.status,
+        source: "SUPER_ADMIN_COMPANIES_UI",
+      },
+    });
     res.json(item);
   });
 

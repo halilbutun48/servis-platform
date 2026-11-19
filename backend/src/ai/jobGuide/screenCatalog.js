@@ -39,6 +39,13 @@ const SCHOOL = COMPANY.map((x) => {
     firstStep: 'Önce açık veya bekleyen servis işini seç.',
     nextStep: 'Gerekirse Vardiyalar veya Öğrenci Konum İncele ekranına geç.',
   };
+  if (x.path === '/company/financial-operations') return {
+    ...base,
+    menuPurpose: 'Okul bütçe, servis maliyeti ve kârlılık önizlemelerini read-only görmek için kullanılır.',
+    forWhom: 'Okul finansal operasyonlarını takip eden kullanıcı içindir.',
+    firstStep: 'Önce okul bütçesi, servis maliyeti veya kârlılık önizlemesini seç.',
+    nextStep: 'Gerekirse aynı okulun ilgili vardiya, sözleşme veya operasyon ekranına geç.',
+  };
   if (x.path === '/company/agreements') return {
     ...base,
     menuPurpose: 'Okulun sözleşmeli servis işlerini ve bağlı vardiyaları görmek için kullanılır.',
@@ -135,6 +142,16 @@ const ORGANIZATION = COMPANY.map((x) => {
       ...mapped,
       menuPurpose: 'Organizasyon ve gezi işlerine bağlı sözleşmeleri görmek ve takip etmek için kullanılır.',
       forWhom: 'Organizasyonun sözleşmeli iş akışını yöneten kullanıcı içindir.',
+    };
+  }
+
+  if (x.path === '/company/financial-operations') {
+    return {
+      ...mapped,
+      menuPurpose: 'Organizasyon bütçe, servis maliyeti ve kârlılık önizlemelerini read-only görmek için kullanılır.',
+      forWhom: 'Organizasyon finansal operasyonlarını takip eden kullanıcı içindir.',
+      firstStep: 'Önce organizasyon bütçesi, servis maliyeti veya kârlılık önizlemesini seç.',
+      nextStep: 'Gerekirse aynı organizasyonun ilgili vardiya, sözleşme veya operasyon ekranına geç.',
     };
   }
 
@@ -404,7 +421,9 @@ const DRIVER = [
     stepByStep: ['Mevcut PIN veya ilk şifreyi doğrula.', 'Yeni PIN belirle.', 'Gerekirse tekrar giriş yap.'],
     commonMistakes: ['Eski PIN ile yeni PIN’i karıştırmak.', 'Başkasının hesabında işlem yapmak.'],
     doneChecklist: ['PIN değişikliği tamamlandı.', 'Yeni giriş doğrulandı.'],
+    buttonGuides: [button("PIN'i Kaydet", 'Yeni PIN değişikliğini yetkili sürücü hesabına kaydeder.', 'Eski PIN doğrulandıktan ve yeni PIN iki kez eşleştiğinde kullan.', 'Başarı veya anlaşılır doğrulama hatası görünür; yeni PIN ekranda gösterilmez.')],
     screenMenus: [{ label: 'Bugün', path: '/driver/today', purpose: 'Göreve dönmek için açılır.' }],
+    chatQuestions: ['PIN değişikliğini nasıl tamamlarım?', 'Eski PIN yanlışsa ne olur?', 'Yeni PIN ile tekrar nasıl giriş yaparım?', 'PIN veya cihaz bilgimi paylaşmalı mıyım?'],
     simpleTerms: pickTerms(['pin', 'ilkSifre']),
   }),
   screen(3105, '/driver/copilot', 'Copilot', {
@@ -613,6 +632,20 @@ const SUPER_ADMIN = [
     nextStep: 'Gerekirse kabul merkezi veya operasyon doğrulama ekranına geç.',
     doNotDo: 'Açık işaretler tamamlanmadan canlı yayına geçme.',
     simpleTerms: pickTerms(['launchGate']),
+    stepByStep: ['Karar ve risk sekmelerini oku.', 'Açık engel veya eksik kanıtı ayır.', 'Gerekirse notu/risk kaydını yetkili DEMO akışında güncelle.', 'Sonucu Yenile ile tekrar kontrol et.'],
+    commonMistakes: ['Pilot kapısını onaylanmış yayın sanmak.', 'Risk kaydını fiziksel saha onayı sanmak.', 'Açık engel varken canlıya geçmeyi önermek.'],
+    doneChecklist: ['Karar durumu okundu.', 'Risk ve kanıt sınırı açık.', 'Sonraki güvenli ekran belirlendi.'],
+    buttonGuides: [
+      button('Yenile', 'Karar, risk ve geri bildirim durumunu yeniden okur.', 'Ekrandaki sinyal eski kaldığında kullan.', 'Güncel kapı durumu görünür.'),
+      button('Hazırlık Kontrolü sekmesine git', 'Kapıyı engelleyen hazırlık maddelerini açar.', 'Blokaj nedeni görünüyorsa kullan.', 'Hazırlık kontrolü sekmesi açılır.'),
+      button('Kararı kaydet', 'Yetkili yayın kararını ve notunu kaydeder.', 'Yalnız karar sahibi rol ve geçerli kanıt varsa kullan.', 'Karar sonucu ve audit geri bildirimi görünür.'),
+      button('Riski kaydet', 'Pilot kapısındaki risk kaydını ekler veya günceller.', 'Test/DEMO riskini açıkça tanımlayarak kullan.', 'Risk listesi güncellenir; yayın otomatik açılmaz.'),
+    ],
+    screenMenus: [
+      { label: 'Kabul Merkezi', path: '/superadmin/acceptance', purpose: 'Kabul checklistini karşılaştırmak için açılır.' },
+      { label: 'Operasyon Doğrulama', path: '/superadmin/operation-verification', purpose: 'Operasyon kanıtını ve güvenlik sınırını kontrol etmek için açılır.' },
+    ],
+    chatQuestions: ['Pilot kapısı neden açık değil?', 'Bu risk yayın kararını etkiliyor mu?', 'Hangi kanıt eksik?', 'Güvenli sonraki adım ne?'],
   }),
   screen(6111, '/superadmin/ssot-alignment', 'Sistem Standartları', {
     menuPurpose: 'Tek doğru kaynak, kural uyumu ve ekran standartlarını görmek için kullanılır.',
@@ -620,6 +653,14 @@ const SUPER_ADMIN = [
     firstStep: 'Önce hangi standartın bozulduğunu oku.',
     nextStep: 'Gerekirse ilgili ürün ekranına dön.',
     doNotDo: 'Standart metnini sahadaki canlı karardan ayırmadan yorum yapma.',
+    stepByStep: ['Uyumsuz kuralı seç.', 'Tek doğru kaynak ve güncel uygulama durumunu karşılaştır.', 'Gerekirse ilgili ekran veya kabul kaydına dön.'],
+    commonMistakes: ['Tarihsel metni güncel runtime sanmak.', 'Standart ihlalini doğrudan canlı operasyon kararı saymak.'],
+    doneChecklist: ['Uyumsuz alan belirlendi.', 'Kaynak ve runtime ayrıldı.', 'İlgili düzeltme ekranı netleşti.'],
+    screenMenus: [
+      { label: 'Kabul Merkezi', path: '/superadmin/acceptance', purpose: 'Kural uyumunun kabul etkisini kontrol etmek için açılır.' },
+      { label: 'Denetim Paneli', path: '/superadmin/operations', purpose: 'Uyumsuzluğun operasyon kanıtına yansımasını okumak için açılır.' },
+    ],
+    chatQuestions: ['Bu standart neden bozulmuş?', 'Güncel doğru kaynak hangisi?', 'Bu uyumsuzluk canlı işlemi etkiliyor mu?', 'İlgili ekranı aç'],
   }),
   screen(6112, '/superadmin/commercial-core', 'Ticari Akış', {
     menuPurpose: 'Hakediş hazırlığı, önizleme ve CSV taslağını görmek için kullanılır.',
@@ -644,6 +685,20 @@ const SUPER_ADMIN = [
     firstStep: 'Önce doğru bölgeyi seç.',
     nextStep: 'Gerekirse bağlı şirket veya oda tarafına geç.',
     doNotDo: 'Bölgeyi şirket veya oda ile aynı sanma.',
+    stepByStep: ['Bölge listesini yenile.', 'İl ve bağlı kayıt sayılarını kontrol et.', 'Gerekirse adı düzenle veya bağlı kayıt yoksa silme koşulunu doğrula.'],
+    commonMistakes: ['Bağlı firma/oda varken silme beklemek.', 'Failover tatbikatını canlı yayın kararı sanmak.'],
+    doneChecklist: ['Doğru bölge seçildi.', 'Bağlı kayıt sınırı kontrol edildi.', 'Değişiklik sonrası liste yenilendi.'],
+    buttonGuides: [
+      button('Ekle', 'Yeni bölge adı girerek yönetim kaydı oluşturur.', 'Yetkili DEMO yönetim kaydı gerektiğinde kullan.', 'Bölge listesine yeni kayıt eklenir.'),
+      button('Yenile', 'Bölge ve bağlı kayıt sayılarını yeniden okur.', 'Liste eski kaldığında kullan.', 'Güncel bölge listesi görünür.'),
+      button('Düzenle', 'Seçili bölgenin adını günceller.', 'Doğru bölge seçiliyken kullan.', 'Yeni ad kaydedilir.'),
+      button('Sil', 'Bağlı firma veya oda kaydı olmayan bölgeyi kaldırır.', 'Yalnız bağlı kayıt sayısı sıfırken kullan.', 'Silme sonucu veya güvenli engel mesajı görünür.'),
+    ],
+    screenMenus: [
+      { label: 'Firmalar', path: '/superadmin/companies', purpose: 'Bölgeye bağlı firma kapsamını kontrol etmek için açılır.' },
+      { label: 'Taşımacılık Firmaları', path: '/superadmin/rooms', purpose: 'Bölgeye bağlı oda kapsamını kontrol etmek için açılır.' },
+    ],
+    chatQuestions: ['Bu bölge hangi firmalara bağlı?', 'Bu bölge neden silinemiyor?', 'Bölgeyi nereden düzenlerim?', 'Bağlı kayıtları kontrol et'],
   }),
   screen(6113, '/superadmin/trust-quality', 'Güven ve Kalite', {
     menuPurpose: 'Hizmet değerlendirmesi ve sağlayıcı kalite sinyalini birlikte görmek için kullanılır.',
@@ -693,6 +748,18 @@ const SUPER_ADMIN = [
     firstStep: 'Önce hangi zaman aralığını dışa aktaracağını belirle.',
     nextStep: 'Gerekirse kayıtları filtrele ve dışa aktar.',
     doNotDo: 'Dışa aktarımı canlı işlemle karıştırma.',
+    stepByStep: ['Zaman aralığı ve kapsamı seç.', 'Önizlemeyi göster ile kayıt kümesini kontrol et.', 'Yetkili kapsam doğruysa dışa aktar.'],
+    commonMistakes: ['Önizlemeyi indirme sanmak.', 'Yetki kapsamını kontrol etmeden dışa aktarmak.', 'Dışa aktarılan logu canlı işlem sonucu sanmak.'],
+    doneChecklist: ['Kapsam seçildi.', 'Önizleme kontrol edildi.', 'Dışa aktarım sonucu kullanıcıya açıklandı.'],
+    buttonGuides: [
+      button('Önizlemeyi göster', 'Seçili kapsamın dışa aktarılacak kayıt özetini gösterir.', 'İndirmeden önce kayıt kümesini kontrol etmek için kullan.', 'Önizleme veya güvenli hata mesajı görünür.'),
+      button('Dışa aktar', 'Yetkili işlem kayıtlarını dosya olarak hazırlar.', 'Kapsam ve ek doğrulama koşulları tamamlandıysa kullan.', 'Dosya indirme sonucu görünür; bu işlem finans veya operasyon mutasyonu değildir.'),
+    ],
+    screenMenus: [
+      { label: 'İşlem Kayıtları', path: '/superadmin/audit', purpose: 'Dışa aktarılacak kayıtları önce ekranda doğrulamak için açılır.' },
+      { label: 'Denetim Paneli', path: '/superadmin/operations', purpose: 'Operasyon kanıtını log kapsamıyla karşılaştırmak için açılır.' },
+    ],
+    chatQuestions: ['Hangi logları dışa aktarabilirim?', 'Önizleme ile dosya arasındaki fark ne?', 'Dışa aktarmadan önce neyi kontrol etmeliyim?', 'Bu işlem veri değiştirir mi?'],
   }),
   screen(6116, '/superadmin/natural-copilot', 'Doğal Copilot', {
     menuPurpose: 'Program içi doğal soru-cevap rehberini açmak için kullanılır.',
@@ -700,6 +767,15 @@ const SUPER_ADMIN = [
     firstStep: 'Önce hangi ekran veya kayıt hakkında konuşacağını seç.',
     nextStep: 'Gerekirse ilgili yönetim ekranına geç.',
     doNotDo: 'Sabit soru bankası sanıp uzun liste bekleme.',
+    stepByStep: ['Ekran veya kayıt bağlamını seç.', 'Doğal sorunu yaz.', 'Yanıtı ve varsa yönlendirmeyi ekranda doğrula.'],
+    commonMistakes: ['Bağlam seçmeden hassas kayıt istemek.', 'Öneriyi yapılmış işlem sanmak.', 'Yetkisiz veriyi istemek.'],
+    doneChecklist: ['Doğru bağlam seçildi.', 'Yanıt görünür.', 'Gerekirse yetkili ekrana geçildi.'],
+    buttonGuides: [button('Rehberi aç', 'Seçili ekran veya kayıt için doğal soru-cevap yardımını çalıştırır.', 'Ne yapacağını anlamak için kullan.', 'Türkçe açıklama ve güvenli yönlendirme görünür.')],
+    screenMenus: [
+      { label: 'Denetim Paneli', path: '/superadmin/operations', purpose: 'Operasyon bağlamıyla soru sormak için açılır.' },
+      { label: 'İşlem Kayıtları', path: '/superadmin/audit', purpose: 'İşlem kaydını bağlam içinde açıklatmak için açılır.' },
+    ],
+    chatQuestions: ['Bu ekranda neye bakmalıyım?', 'Bu kayıt ne anlama geliyor?', 'Sıradaki doğru işlem ne?', 'Bu işlemi gerçekten yaptın mı?'],
   }),
   screen(6117, '/superadmin/operations', 'Denetim Paneli', {
     menuPurpose: 'Servis kanıtı, açık veya riskli kayıtlar, konum sinyali görünürlüğü ve operasyon blokajlarını birlikte okumak için kullanılır.',
@@ -729,6 +805,22 @@ const SUPER_ADMIN = [
     firstStep: 'Önce başvuru durumunu, tipini ve maskeli iletişim bilgisini oku.',
     nextStep: 'Gerekirse inceleme notu, ek bilgi veya reddetme kararını güncelle.',
     doNotDo: 'Bu ekranı invite, kullanıcı, ödeme veya sözleşme açan akış gibi yorumlama.',
+    stepByStep: ['Başvuru listesini yenile.', 'İlk kaydı veya seçili başvuruyu aç.', 'İnceleme durumunu ve maskeli bilgileri kontrol et.', 'Gerekirse not, ek bilgi veya ret kararını yetkili DEMO akışıyla kaydet.'],
+    commonMistakes: ['Başvuruyu otomatik kullanıcı daveti sanmak.', 'Maskeli iletişim bilgisini tam kişisel veri gibi istemek.', 'İnceleme kararını ödeme veya sözleşme onayı sanmak.'],
+    doneChecklist: ['Doğru başvuru seçildi.', 'Durum ve not kaydedildi.', 'Kullanıcı/ödeme/sözleşme oluşturulmadığı açık.'],
+    buttonGuides: [
+      button('Yenile', 'Başvuru kuyruğunu ve durumlarını yeniden okur.', 'Kuyruk eski kaldığında kullan.', 'Güncel başvuru listesi görünür.'),
+      button('İlk kaydı aç', 'Kuyruktaki ilk başvurunun inceleme ayrıntısını açar.', 'İncelenecek kayıt seçilmediğinde kullan.', 'Seçili başvuru ayrıntısı görünür.'),
+      button('İncelemeye al', 'Seçili başvurunun inceleme durumunu günceller.', 'Başvuruyu gerçekten incelemeye başladığında kullan.', 'Durum ve audit geri bildirimi görünür.'),
+      button('Ek bilgi gerekli', 'Başvuruyu eksik bilgi durumuna alır.', 'Eksik alanı kullanıcıya açıklamak gerektiğinde kullan.', 'Durum ve açıklama görünür; davet gönderilmez.'),
+      button('Reddet', 'Seçili başvuruyu gerekçeli olarak reddeder.', 'Yetkili karar ve gerekçe hazır olduğunda kullan.', 'Ret durumu ve audit görünür.'),
+      button('Notları kaydet', 'İnceleme notunu seçili başvuruya kaydeder.', 'Notun kişisel veri sızdırmadığını kontrol ettikten sonra kullan.', 'Not kalıcı görünür.'),
+    ],
+    screenMenus: [
+      { label: 'Firmalar', path: '/superadmin/companies', purpose: 'Başvuru sonrası mevcut firma kapsamını kontrol etmek için açılır.' },
+      { label: 'Kullanıcılar', path: '/superadmin/users', purpose: 'Yalnız ayrı ve yetkili kullanıcı yönetimi gerektiğinde açılır.' },
+    ],
+    chatQuestions: ['Bu başvurunun durumu ne?', 'Bu başvuruda hangi bilgi eksik?', 'İnceleme notunu nereden kaydederim?', 'Bu karar kullanıcı veya sözleşme oluşturur mu?'],
   }),
   screen(6119, '/superadmin/public-leads', 'Başvuru İncelemesi', {
     menuPurpose: 'Public lead inceleme kuyruğunun alternatif yoludur.',
@@ -736,6 +828,23 @@ const SUPER_ADMIN = [
     firstStep: 'Önce başvuru durumunu, tipini ve maskeli iletişim bilgisini oku.',
     nextStep: 'Gerekirse inceleme notu, ek bilgi veya reddetme kararını güncelle.',
     doNotDo: 'Bu ekranı invite, kullanıcı, ödeme veya sözleşme açan akış gibi yorumlama.',
+    stepByStep: ['Başvuru listesini yenile.', 'İlk kaydı veya seçili başvuruyu aç.', 'İnceleme durumunu ve maskeli bilgileri kontrol et.', 'Gerekirse not, ek bilgi veya ret kararını yetkili DEMO akışıyla kaydet.'],
+    commonMistakes: ['Başvuruyu otomatik kullanıcı daveti sanmak.', 'Maskeli iletişim bilgisini tam kişisel veri gibi istemek.', 'İnceleme kararını ödeme veya sözleşme onayı sanmak.'],
+    doneChecklist: ['Doğru başvuru seçildi.', 'Durum ve not kaydedildi.', 'Kullanıcı/ödeme/sözleşme oluşturulmadığı açık.'],
+    buttonGuides: [
+      button('Yenile', 'Başvuru kuyruğunu ve durumlarını yeniden okur.', 'Kuyruk eski kaldığında kullan.', 'Güncel başvuru listesi görünür.'),
+      button('İlk kaydı aç', 'Kuyruktaki ilk başvurunun inceleme ayrıntısını açar.', 'İncelenecek kayıt seçilmediğinde kullan.', 'Seçili başvuru ayrıntısı görünür.'),
+      button('İncelemeye al', 'Seçili başvurunun inceleme durumunu günceller.', 'Başvuruyu gerçekten incelemeye başladığında kullan.', 'Durum ve audit geri bildirimi görünür.'),
+      button('Ek bilgi gerekli', 'Başvuruyu eksik bilgi durumuna alır.', 'Eksik alanı kullanıcıya açıklamak gerektiğinde kullan.', 'Durum ve açıklama görünür; davet gönderilmez.'),
+      button('Invite için uygun', 'Başvuruyu yalnız sonraki yetkili davet incelemesine uygun olarak işaretler.', 'Davet göndermeden önce koşulları kontrol etmek için kullan.', 'Uygunluk durumu görünür; davet otomatik gönderilmez.'),
+      button('Reddet', 'Seçili başvuruyu gerekçeli olarak reddeder.', 'Yetkili karar ve gerekçe hazır olduğunda kullan.', 'Ret durumu ve audit görünür.'),
+      button('Notları kaydet', 'İnceleme notunu seçili başvuruya kaydeder.', 'Notun kişisel veri sızdırmadığını kontrol ettikten sonra kullan.', 'Not kalıcı görünür.'),
+    ],
+    screenMenus: [
+      { label: 'Firmalar', path: '/superadmin/companies', purpose: 'Başvuru sonrası mevcut firma kapsamını kontrol etmek için açılır.' },
+      { label: 'Kullanıcılar', path: '/superadmin/users', purpose: 'Yalnız ayrı ve yetkili kullanıcı yönetimi gerektiğinde açılır.' },
+    ],
+    chatQuestions: ['Bu public başvurunun durumu ne?', 'Ek bilgi istemeli miyim?', 'Invite için uygunluk ne anlama geliyor?', 'Bu karar hangi kaydı değiştirir?'],
   }),
   screen(6104, '/superadmin/copilot', 'Sefer Abi Terminali', {
     menuPurpose: 'Sistem genelinde rehber ve açıklama almak için kullanılır.',

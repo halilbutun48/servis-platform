@@ -400,9 +400,9 @@ authRouter.get("/parent-invite/info", async (req, res) => {
     },
   });
 
-  if (!invite) return sendErrorResponse(res, httpError(404, "INVITE_NOT_FOUND"));
-  if (invite.revokedAt) return sendErrorResponse(res, httpError(410, "INVITE_REVOKED"));
-  if (invite.expiresAt && new Date(invite.expiresAt).getTime() <= Date.now()) return sendErrorResponse(res, httpError(410, "INVITE_EXPIRED"));
+  if (!invite) return sendErrorResponse(res, httpError(404, "INVITE_NOT_FOUND", "Bu erişim bağlantısı bulunamadı."));
+  if (invite.revokedAt) return sendErrorResponse(res, httpError(410, "INVITE_REVOKED", "Bu erişim okul tarafından iptal edilmiş."));
+  if (invite.expiresAt && new Date(invite.expiresAt).getTime() <= Date.now()) return sendErrorResponse(res, httpError(410, "INVITE_EXPIRED", "Bu erişimin süresi dolmuş."));
 
   const access = {
     id: invite.id,
@@ -430,9 +430,9 @@ authRouter.post("/parent-invite/accept", async (req, res) => {
     },
   });
 
-  if (!accessRow) return sendErrorResponse(res, httpError(404, "INVITE_NOT_FOUND"));
-  if (accessRow.revokedAt) return sendErrorResponse(res, httpError(410, "INVITE_REVOKED"));
-  if (accessRow.expiresAt && new Date(accessRow.expiresAt).getTime() <= Date.now()) return sendErrorResponse(res, httpError(410, "INVITE_EXPIRED"));
+  if (!accessRow) return sendErrorResponse(res, httpError(404, "INVITE_NOT_FOUND", "Bu erişim bağlantısı bulunamadı."));
+  if (accessRow.revokedAt) return sendErrorResponse(res, httpError(410, "INVITE_REVOKED", "Bu erişim okul tarafından iptal edilmiş."));
+  if (accessRow.expiresAt && new Date(accessRow.expiresAt).getTime() <= Date.now()) return sendErrorResponse(res, httpError(410, "INVITE_EXPIRED", "Bu erişimin süresi dolmuş."));
   if (!accessRow.company || accessRow.company.kind !== "SCHOOL") return sendErrorResponse(res, httpError(409, "INVITE_SCOPE_INVALID"));
   if (!accessRow.child || accessRow.child.companyId !== accessRow.company.id) return sendErrorResponse(res, httpError(409, "INVITE_CHILD_INVALID"));
 

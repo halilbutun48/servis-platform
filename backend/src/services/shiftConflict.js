@@ -3,7 +3,7 @@ import { prisma } from "../prisma.js";
 
 // Time overlap: [aStart, aEnd) intersects [bStart, bEnd)
 // => aStart < bEnd && aEnd > bStart
-export async function checkShiftConflicts({ driverId, vehicleId, startAt, endAt, excludeShiftId }) {
+export async function checkShiftConflicts({ driverId, vehicleId, startAt, endAt, excludeShiftId, prismaClient = prisma }) {
   const baseWhere = {
     status: { in: ["APPROVED", "ACTIVE"] },
     startAt: { lt: new Date(endAt) },
@@ -14,7 +14,7 @@ export async function checkShiftConflicts({ driverId, vehicleId, startAt, endAt,
   const out = {};
 
   if (driverId) {
-    const c = await prisma.shift.findFirst({
+    const c = await prismaClient.shift.findFirst({
       where: { ...baseWhere, driverId: Number(driverId) },
       select: {
         id: true,
@@ -32,7 +32,7 @@ export async function checkShiftConflicts({ driverId, vehicleId, startAt, endAt,
   }
 
   if (vehicleId) {
-    const c = await prisma.shift.findFirst({
+    const c = await prismaClient.shift.findFirst({
       where: { ...baseWhere, vehicleId: Number(vehicleId) },
       select: {
         id: true,

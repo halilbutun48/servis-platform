@@ -403,6 +403,7 @@ async function main() {
   const stopDoc = read('docs/COPILOT_STOP_ROUTE_DRAFT_01.md');
   const doc = read('docs/OSRM_ROUTE_DRAFT_FROM_EXCEL_01.md');
   const helper = read('backend/src/ai/chat/osrmRouteDraftFromExcelPolicy.js');
+  const routeUi = read('web/src/panels/company/guidedPlanModalCards.jsx');
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
   const roadmapLockCheck = read('backend/scripts/roadmap_lock_ai_marketplace_01_check.js');
@@ -492,6 +493,13 @@ async function main() {
   must(helper, 'OSRM_ROUTE_DRAFT_FROM_EXCEL_NEVER_AUTOMATE', 'helper exposes never automate list');
   must(helper, 'OSRM_ROUTE_DRAFT_FROM_EXCEL_HANOFFS', 'helper exposes handoffs');
   must(helper, 'OSRM_ROUTE_DRAFT_FROM_EXCEL_POLICY', 'helper exposes policy object');
+  must(helper, 'OSRM_ROUTE_ORDER_ACTION', 'helper exposes existing route-order semantic action');
+  must(helper, 'ROUTE_ORDER_MISSING_OR_UNVERIFIED', 'helper exposes route-order precondition');
+  must(helper, 'USER_INITIATED_BUSINESS_WRITE', 'helper records route-order write boundary');
+  must(helper, 'assistantExecution: \'FORBIDDEN\'', 'helper forbids assistant route-order execution');
+  must(routeUi, 'Rota sırasını oluştur', 'real UI exposes the existing route-order action');
+  must(routeUi, 'onClick={() => osrmReorder(shift.id)}', 'real route-order action remains user initiated');
+  mustNot(routeUi, 'fetch(', 'route-order card does not own a network call');
   must(helper, 'buildOsrmRouteDraftFromExcelRole', 'helper exposes role builder');
   must(helper, 'listOsrmRouteDraftFromExcelRoles', 'helper exposes role lister');
   must(helper, 'getOsrmRouteDraftFromExcelPolicy', 'helper exposes policy getter');

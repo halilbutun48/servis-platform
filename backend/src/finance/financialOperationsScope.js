@@ -15,6 +15,7 @@ const surfaceKey = (value) => normalizeText(value);
 
 const WRITE_ENABLED_SURFACE_IDS = Object.freeze(new Set([
   'company_budget',
+  'hakedis_invoice_reconciliation_preview',
 ]));
 
 const freezeSurface = (surface) => Object.freeze({
@@ -44,13 +45,13 @@ export const FINANCIAL_OPERATIONS_SCOPE_BOUNDARY = Object.freeze([
   'preview surfaces plus company budget lifecycle',
   'RBAC enforced',
   'tenant isolation preserved',
-  'no write-action',
-  'no payment/hakediş execute',
-  'no invoice create/update/delete',
+  'no assistant/copilot write-action; explicit ROOM income-chain action is bounded separately',
+  'no payment execution or assistant/copilot hakediş execution',
+  'no invoice update/delete; explicit ROOM income-chain creation is bounded separately',
   'no accounting posting',
   'no ERP live integration',
   'no DB write',
-  'no backend write route',
+  'no assistant/copilot backend write route; bounded ROOM income route only',
 ]);
 
 export const FINANCIAL_OPERATIONS_EXCLUDED_SCOPE = Object.freeze([
@@ -65,11 +66,11 @@ export const FINANCIAL_OPERATIONS_EXCLUDED_SCOPE = Object.freeze([
   'e-Fatura',
   'e-Defter',
   'vergi programı',
-  'payment/hakediş execute',
-  'invoice create/update/delete',
+  'payment execution or assistant/copilot hakediş execution',
+  'invoice update/delete',
   'accounting posting',
   'DB migration',
-  'backend write route',
+  'assistant/copilot backend write route',
   'provider credential read/write/use',
   'dispatch apply',
   'route apply',
@@ -82,7 +83,7 @@ export const FINANCIAL_OPERATIONS_SURFACES = Object.freeze([
     id: 'financial_overview',
     title: 'Finansal operasyon özeti',
     summary: 'Finansal operasyon bloğu için read-only giriş kartı.',
-    visibleToRoles: ['SUPER_ADMIN', 'ROOM', 'COMPANY'],
+    visibleToRoles: ['SUPER_ADMIN', 'ROOM', 'COMPANY', 'SCHOOL', 'ORGANIZATION'],
     phase: 'current',
     nextMilestone: 'OPERATIONAL-COST-MODEL-01',
     reuseCapabilities: ['Dynamic Savings', 'Hakediş önizlemesi', 'Payment/quality bridge'],
@@ -148,7 +149,7 @@ export const FINANCIAL_OPERATIONS_SURFACES = Object.freeze([
     id: 'company_budget',
     title: 'Company budget preview',
     summary: 'Şirket bütçesi yaşam döngüsü ve explainable preview yüzeyi.',
-    visibleToRoles: ['SUPER_ADMIN', 'COMPANY'],
+    visibleToRoles: ['SUPER_ADMIN', 'COMPANY', 'SCHOOL', 'ORGANIZATION'],
     phase: 'current',
     nextMilestone: 'COMPANY-BUDGET-AND-SERVICE-COST-01',
     reuseCapabilities: ['Dashboard maliyet kartları', 'Sefer Abi maliyet cevapları'],
@@ -159,7 +160,7 @@ export const FINANCIAL_OPERATIONS_SURFACES = Object.freeze([
     id: 'company_service_cost',
     title: 'Company service cost preview',
     summary: 'Servis maliyeti ve birim maliyet önizlemesi.',
-    visibleToRoles: ['SUPER_ADMIN', 'COMPANY'],
+    visibleToRoles: ['SUPER_ADMIN', 'COMPANY', 'SCHOOL', 'ORGANIZATION'],
     phase: 'current',
     nextMilestone: 'COMPANY-BUDGET-AND-SERVICE-COST-01',
     reuseCapabilities: ['Araç/sürücü maliyet alanları', 'Dashboard maliyet kartları', 'Dynamic Savings'],
@@ -170,7 +171,7 @@ export const FINANCIAL_OPERATIONS_SURFACES = Object.freeze([
     id: 'cost_per_person',
     title: 'Cost per person preview',
     summary: 'Kişi başı maliyet için read-only önizleme.',
-    visibleToRoles: ['SUPER_ADMIN', 'COMPANY'],
+    visibleToRoles: ['SUPER_ADMIN', 'COMPANY', 'SCHOOL', 'ORGANIZATION'],
     phase: 'current',
     nextMilestone: 'COMPANY-BUDGET-AND-SERVICE-COST-01',
     reuseCapabilities: ['Dashboard maliyet kartları', 'Sefer Abi maliyet cevapları'],
@@ -181,7 +182,7 @@ export const FINANCIAL_OPERATIONS_SURFACES = Object.freeze([
     id: 'supplier_price_quality_compare',
     title: 'Supplier price / quality compare',
     summary: 'Tedarikçi fiyat/kalite karşılaştırma önizlemesi.',
-    visibleToRoles: ['SUPER_ADMIN', 'ROOM', 'COMPANY'],
+    visibleToRoles: ['SUPER_ADMIN', 'ROOM', 'COMPANY', 'SCHOOL', 'ORGANIZATION'],
     phase: 'current',
     nextMilestone: 'COPILOT-OFFER-ANALYSIS-01',
     reuseCapabilities: ['Teklif analizi', 'Teklif önerisi', 'Pazarlık hazırlığı', 'Offer ranking quality'],
@@ -191,19 +192,19 @@ export const FINANCIAL_OPERATIONS_SURFACES = Object.freeze([
   freezeSurface({
     id: 'hakedis_invoice_reconciliation_preview',
     title: 'Hakediş / invoice reconciliation preview',
-    summary: 'Hakediş-fatura uyuşmazlığı için yalnızca önizleme.',
-    visibleToRoles: ['SUPER_ADMIN', 'ROOM', 'COMPANY'],
+    summary: 'Hakediş-fatura uyuşmazlığı için read-only inceleme ve açık ROOM onaylı gelir oluşturma adımı.',
+    visibleToRoles: ['SUPER_ADMIN', 'ROOM', 'COMPANY', 'SCHOOL', 'ORGANIZATION'],
     phase: 'future-shell',
     nextMilestone: 'HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01',
     reuseCapabilities: ['Hakediş önizlemesi', 'Kalite kesintisi', 'Payment/quality bridge'],
-    excludedScope: ['invoice create/update/delete', 'payment execute', 'accounting posting'],
+    excludedScope: ['invoice update/delete', 'payment execute', 'assistant/copilot business-write', 'accounting posting'],
     readOnlyActions: ['reconciliation', 'preview', 'summary', 'missing'],
   }),
   freezeSurface({
     id: 'scenario_forecast_savings',
     title: 'Scenario forecast / savings preview',
     summary: 'Tasarruf senaryosu ve forecast için önizleme.',
-    visibleToRoles: ['SUPER_ADMIN', 'ROOM', 'COMPANY'],
+    visibleToRoles: ['SUPER_ADMIN', 'ROOM', 'COMPANY', 'SCHOOL', 'ORGANIZATION'],
     phase: 'future-shell',
     nextMilestone: 'COST-SCENARIO-FORECAST-AND-SAVINGS-01',
     reuseCapabilities: ['Dynamic Savings', 'Km / rota maliyet yardımcıları', 'Sefer Abi maliyet cevapları'],
@@ -225,6 +226,16 @@ export const FINANCIAL_OPERATIONS_SURFACES = Object.freeze([
 
 const SURFACE_INDEX = new Map(FINANCIAL_OPERATIONS_SURFACES.map((surface) => [surface.id, surface]));
 
+const BUYER_SURFACE_IDS = Object.freeze([
+  'financial_overview',
+  'company_budget',
+  'company_service_cost',
+  'cost_per_person',
+  'supplier_price_quality_compare',
+  'hakedis_invoice_reconciliation_preview',
+  'scenario_forecast_savings',
+]);
+
 const ROLE_SURFACE_IDS = Object.freeze({
   SUPER_ADMIN: Object.freeze(FINANCIAL_OPERATIONS_SURFACES.map((surface) => surface.id)),
   ROOM: Object.freeze([
@@ -238,20 +249,12 @@ const ROLE_SURFACE_IDS = Object.freeze({
     'hakedis_invoice_reconciliation_preview',
     'scenario_forecast_savings',
   ]),
-  COMPANY: Object.freeze([
-    'financial_overview',
-    'company_budget',
-    'company_service_cost',
-    'cost_per_person',
-    'supplier_price_quality_compare',
-    'hakedis_invoice_reconciliation_preview',
-    'scenario_forecast_savings',
-  ]),
+  COMPANY: BUYER_SURFACE_IDS,
   DRIVER: Object.freeze([]),
   PERSONEL: Object.freeze([]),
   PARENT: Object.freeze([]),
-  SCHOOL: Object.freeze([]),
-  ORGANIZATION: Object.freeze([]),
+  SCHOOL: BUYER_SURFACE_IDS,
+  ORGANIZATION: BUYER_SURFACE_IDS,
   DEFAULT: Object.freeze([]),
 });
 
@@ -315,17 +318,17 @@ export const FINANCIAL_OPERATIONS_ROLE_ACCESS = Object.freeze({
   ),
   SCHOOL: buildRoleAccess(
     'SCHOOL',
-    'Bu rol için finansal operasyon yüzeyi görünmez.',
-    'School rolü finansal operasyon alanına erişemez.',
-    'Yetkili rol ile tekrar aç.',
-    ['no finance surface'],
+    'Okul tarafında bütçe yaşam döngüsü, servis maliyeti ve teklif rehberi görünür.',
+    'Okul finansı yalnız kendi okul tenant kapsamından görünür.',
+    'Bütçe yaşam döngüsü kartlarını kontrol et.',
+    ['room internal margin hidden', 'student and parent data remains scoped'],
   ),
   ORGANIZATION: buildRoleAccess(
     'ORGANIZATION',
-    'Bu rol için finansal operasyon yüzeyi görünmez.',
-    'Organization rolü finansal operasyon alanına erişemez.',
-    'Yetkili rol ile tekrar aç.',
-    ['no finance surface'],
+    'Organizasyon tarafında bütçe yaşam döngüsü, servis maliyeti ve teklif rehberi görünür.',
+    'Organizasyon finansı yalnız kendi organizasyon tenant kapsamından görünür.',
+    'Bütçe yaşam döngüsü kartlarını kontrol et.',
+    ['room internal margin hidden', 'participant data remains scoped'],
   ),
   DEFAULT: buildRoleAccess(
     'DEFAULT',

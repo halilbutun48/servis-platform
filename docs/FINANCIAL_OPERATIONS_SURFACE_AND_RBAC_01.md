@@ -2,7 +2,7 @@
 
 ## Purpose
 - Finansal Operasyon ve Maliyet Yönetimi bloğu için resmi scope registry.
-- FINANCIAL OPERATIONS AND COST MANAGEMENT: ROOM için read-only/preview, COMPANY için lifecycle + preview yüzeyi; muhasebe programı değildir.
+- FINANCIAL OPERATIONS AND COST MANAGEMENT: ROOM için kendi `roomId` tenant'ında canonical gider defteri lifecycle'ı (taslak, güncelleme, açık onay ve maliyet önizlemesi), COMPANY için kendi lifecycle + preview yüzeyi; muhasebe programı değildir.
 - Bu milestone maliyet motoru yazmaz, kârlılık hesaplaması yazmaz ve muhasebe programı açmaz.
 - Amaç, ROOM ve COMPANY yüzeylerini preview/lifecycle/RBAC sınırında bağlamak ve #4 maliyet senaryosu önizlemesini güvenli biçimde görünür kılmaktır.
 
@@ -11,13 +11,13 @@
 - Bu blok, ürünün operasyon takip katmanını finansal karar desteğine genişletir.
 - "Muhasebe programı değil; finansal operasyon ve maliyet yönetimi" ayrımı korunur.
 - "Bu milestone’da hesaplama motoru değil, güvenli yüzey ve yetki sınırı hazırlanmıştır."
-- "ROOM verileri read-only/preview olarak gösterilir; COMPANY budget lifecycle server-enforced çalışır; fatura, ödeme veya muhasebe kaydı oluşturulmaz."
+- "ROOM giderleri ve bu bounded çalışmanın açık onaylı gelir zinciri yalnız aynı `roomId` tenant'ında server-enforced olarak oluşturulur/güncellenir/doğrulanır; COMPANY budget lifecycle kendi tenant sınırında çalışır; Sefer Abi/copilot fatura, ödeme veya muhasebe icrası yapmaz."
 
 ## Role Access Matrix
 | Role | Visible surfaces | Hidden surfaces | Notes |
 | --- | --- | --- | --- |
 | SUPER_ADMIN | finansal operasyon özeti, room profitability, route/vehicle/agreement preview, company budget preview, supplier price/quality compare, reconciliation preview, scenario forecast/savings, accounting export contract | tenant-sensitive ham payloadlar | policy, readiness ve reuse map görünür |
-| ROOM | financial overview, room profitability, quote floor preview, route cost preview, vehicle cost preview, agreement margin preview, supplier compare, reconciliation preview, savings preview | company budget ham detayları, accounting export contract | room-centric read-only önizleme |
+| ROOM | financial overview, `Tahsilat Kaydet` against an authorized linked invoice, gider defteri taslak/güncelleme/açık onay, room profitability, quote floor preview, route cost preview, vehicle cost preview, agreement margin preview, supplier compare, reconciliation preview, savings preview | company budget ham detayları, accounting export contract, başka room tenant'ının maaş/gider ayrıntıları | kendi `roomId` tenant'ında rutin finans lifecycle; müşteri ödeme beyanı beklenmez; ayrı maaş grant'i veya TOTP aranmaz |
 | COMPANY | financial overview, company budget lifecycle, company service cost, cost per person, supplier compare, reconciliation preview, savings preview | room iç marj ve quote floor ham detayları, accounting export contract | company-centric lifecycle + preview önizleme |
 | DRIVER | yok | tüm finansal operasyon yüzeyleri | güvenli denial mesajı |
 | PERSONEL | yok | tüm finansal operasyon yüzeyleri | güvenli denial mesajı |
@@ -28,7 +28,7 @@
 ## Surface Registry
 | Surface | Visible roles | Phase | Purpose |
 | --- | --- | --- | --- |
-| `financial_overview` | SUPER_ADMIN, ROOM, COMPANY | current | Blok giriş yüzeyi |
+| `financial_overview` | SUPER_ADMIN, ROOM, COMPANY | current | Blok giriş yüzeyi; ROOM için bağlı fatura üzerinden `Tahsilat Kaydet` |
 | `room_profitability` | SUPER_ADMIN, ROOM | current | Oda kârlılık önizlemesi |
 | `quote_floor_preview` | SUPER_ADMIN, ROOM | future-shell | Teklif tabanı için güvenli shell |
 | `route_cost_preview` | SUPER_ADMIN, ROOM | current | Km / süre / rota maliyeti önizlemesi |
@@ -38,7 +38,7 @@
 | `company_service_cost` | SUPER_ADMIN, COMPANY | current | Servis maliyeti önizlemesi |
 | `cost_per_person` | SUPER_ADMIN, COMPANY | current | Kişi başı maliyet önizlemesi |
 | `supplier_price_quality_compare` | SUPER_ADMIN, ROOM, COMPANY | current | Fiyat / kalite karşılaştırma önizlemesi |
-| `hakedis_invoice_reconciliation_preview` | SUPER_ADMIN, ROOM, COMPANY | future-shell | Hakediş / invoice reconciliation preview |
+| `hakedis_invoice_reconciliation_preview` | SUPER_ADMIN, ROOM, COMPANY | future-shell | Hakediş / invoice reconciliation preview + açık ROOM gelir oluşturma adımı |
 | `scenario_forecast_savings` | SUPER_ADMIN, ROOM, COMPANY, SCHOOL, ORGANIZATION | current | Maliyet senaryosu / forecast; SCHOOL ve ORGANIZATION için yalnız planlama bağlamı |
 | `accounting_export_contract` | SUPER_ADMIN | future-only | Muhasebe / ERP export kontratı shell |
 
@@ -123,11 +123,11 @@
 - `e-Fatura`
 - `e-Defter`
 - `vergi programı`
-- `payment/hakediş execute`
-- `invoice create/update/delete`
+- payment execution veya Sefer Abi/copilot hakediş icrası
+- invoice update/delete; gelir zinciri oluşturma yalnız bounded ROOM action ile
 - `accounting posting`
 - `DB migration`
-- `backend write route`
+- Sefer Abi/copilot backend write route (bounded ROOM income route dışında)
 - `provider credential read/write/use`
 - `dispatch apply`
 - `route apply`
@@ -142,16 +142,22 @@
 - Muhasebe export formatı yok.
 - ERP entegrasyonu yok.
 - e-Fatura / e-Defter / vergi programı yok.
-- Payment / hakediş execute yok.
-- Invoice create/update/delete yok.
+- Payment execution veya Sefer Abi/copilot hakediş icrası yok.
+- Invoice update/delete yok; bounded ROOM gelir zinciri oluşturma action'ı explicit user approval ile sınırlıdır.
 - Accounting posting yok.
 - DB migration yok.
-- Backend write route yok.
+- Sefer Abi/copilot backend write route yok; bounded ROOM income route explicit onaylıdır.
 
 ## No Write-Action Boundary
-- Write-action yok.
-- payment/hakediş execute yok.
-- invoice create/update/delete yok.
+- Genel finans yüzeyinde genel write-action yoktur; aşağıdaki dar ROOM gider defteri ve bounded gelir zinciri istisnaları kendi canonical action'larıyla sınırlıdır ve sınırı genişletmez.
+- Doğrulanmış demo ortamında yetkili `ROOM` kullanıcı, aynı `roomId` kapsamında canonical Gider Yönetimi UI/API'sinden `RoomCostEntry` taslağı oluşturabilir, düzenleyebilir, açık onaylayabilir, audit'li düzeltebilir ve gerçekleşmiş gider için dağıtım kanıtı ekleyebilir. Sefer Abi/copilot bu yazma akışını çalıştıramaz.
+- Bu istisna ödeme icrası, bordro icrası, dispatch, route veya cross-tenant yazma yetkisi vermez; tahsilat mevcut ayrı taslak/onay yolunda kalır, ACTUAL/BUDGET/FORECAST/ACCRUAL kovaları ayrı kalır ve KDV UNKNOWN net sonucu doğrulanmış sayılmaz.
+- Sefer Abi/copilot hakediş veya fatura business-write yapmaz.
+- Invoice update/delete yok; ROOM gelir zinciri ve `Tahsilat Kaydet` yalnız açık onaylı, mevcut canonical fatura/collection kaydına bağlı action'lardır.
+- ROOM, COMPANY/SCHOOL/ORGANIZATION ödeme beyanı oluşturmadan, aynı `roomId` kapsamındaki yetkili mevcut fatura için tahsilat kaydedebilir. Müşteri, fatura tutarı, önceki tahsilatlar ve kalan alacak canonical engine'den okunur; ROOM yalnız tutar, tarih, yöntem ve isteğe bağlı dekont/referans girer.
+- ROOM'un aynı müşteri altında birden fazla yetkili açık faturası varsa önce müşteri, sonra açık fatura seçilir. Tahsilat yalnız seçilen `invoiceId` kapsamına yazılır; sözleşme, hakediş, dönem ve varsa kabul edilmiş teklif bağı faturadan salt-okunur gösterilir. Teklif bağı yoksa veya belirsizse kullanıcıya bu durum açıkça bildirilir ve teklif numarası üretilmez.
+- Kısmi tahsilat, kalan bakiye, fazla ödeme reddi, aynı isteğin replay/çift tıklama koruması, audit ve COMPANY/SCHOOL/ORGANIZATION görünürlüğü bu action'ın zorunlu kabul koşullarıdır. Manuel tahsilat banka tarafından doğrulanmış ödeme değildir.
+- Yetkili bağlı fatura yoksa collection oluşturulmaz; dört sekmeli finans yüzeyi korunur ve kullanıcıya sade Türkçe açıklama ile fatura oluşturulması/bağlanması gereken sonraki adım gösterilir. Yeni sekme veya ikinci tahsilat motoru oluşturulmaz.
 - accounting posting yok.
 - ERP live integration yok.
 - dispatch apply yok.
@@ -182,6 +188,7 @@
 
 ## Validation Contract
 - `check:financialoperationssurfaceandrbac01`
+- `E2E/FIN3_INVOICE_COLLECTION` and `E2E/FIN5_ROLE_SYNC` remain independently open until this ROOM collection contract is proven on canonical/public Chromium.
 - `backend/src/finance/financialOperationsScope.js`
 - `docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md`
 - `package.json`
@@ -194,14 +201,14 @@
 - `docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md`
 - `docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md`
 - No DB/network/model/API call
-- No write-action
+- No assistant/copilot write-action; bounded ROOM income action dışında
 - No stage/commit/tag/push
 - debug.log absent
 
 ## Validation Results
 - Read-only scope registry only.
 - No cost engine.
-- No write route.
+- Sefer Abi/copilot write route yok; bounded ROOM gelir route'u vardır.
 - No migration.
 - No accounting execution.
 - No payment execution.

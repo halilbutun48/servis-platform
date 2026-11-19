@@ -560,8 +560,12 @@ async function buildSuperAdminEvents() {
 }
 
 export async function buildActionableEventsForUser(user) {
-  const role = roleKey(user);
-  const context = role === "COMPANY" || role === "SCHOOL" || role === "ORGANIZATION" ? await loadCompanyContext(user) : null;
+  const sessionRole = roleKey(user);
+  const context = sessionRole === "COMPANY" || sessionRole === "SCHOOL" || sessionRole === "ORGANIZATION" ? await loadCompanyContext(user) : null;
+  const companyKind = String(context?.kind || "").toUpperCase();
+  const role = sessionRole === "COMPANY" && ["SCHOOL", "ORGANIZATION"].includes(companyKind)
+    ? companyKind
+    : sessionRole;
   let rows = [];
   if (role === "COMPANY") rows = await buildCompanyEvents(context, role);
   else if (role === "SCHOOL") rows = await buildSchoolEvents(context);

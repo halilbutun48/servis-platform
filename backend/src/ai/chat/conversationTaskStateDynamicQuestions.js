@@ -371,9 +371,21 @@ function buildDriverRouteReply(snapshot) {
 }
 
 function buildFeedbackReply(snapshot) {
-  if (!snapshot.isFeedbackSurface || !snapshot.hasSelection) return null;
+  if (!snapshot.isFeedbackSurface) return null;
   const text = normalizeMatchText(snapshot.rawText);
   if (!text) return null;
+  if (!snapshot.hasSelection) {
+    const isEmptyFeedbackNextAction = looksLikeNextBestActionQuestion(text)
+      || /sıradaki\s+doğru\s+işlem(?:\s+ne)?/.test(text)
+      || /bir\s+sonraki\s+(?:doğru\s+)?(?:işlem|adım)(?:\s+ne)?/.test(text);
+    if (isEmptyFeedbackNextAction) {
+      return 'Şimdi: Geri Bildirim ekranında kayıt listesi boş; seçilecek satır bulunmuyor. Bu nedenle kayıt ayrıntısı açılamaz. Yeni bir geri bildirim gerekiyorsa formu doldurup kullanıcı onayıyla kaydet; kayıt göründüğünde satırı seçip ayrıntıya geç.'.trim();
+    }
+    if (looksLikeShortFollowUp(text) || looksLikeDetailContinuationRequest(text) || /^(yaptım|yaptim|tamam|bulamadım|bulamadim)/.test(text)) {
+      return 'Devam edelim: Geri Bildirim ekranında şu anda seçilecek kayıt yok. Önce formu veya mevcut liste durumunu kontrol et; kayıt göründüğünde satırı seçip ayrıntıya geç.'.trim();
+    }
+    return null;
+  }
   const isFeedbackGeneric = /(?:bu\s+ne|bu\s+ekranda\s+neye\s+bakmal[ıi]y[ıi]m|bu\s+ekranda\s+neyi\s+kontrol\s+etmeliyim|bu\s+ekranda\s+neye\s+bakay[ıi]m|hangi\s+kayıt|hangi\s+kayit|hangisini\s+seçeyim|hangisini\s+sec(e|)yim|hangisini\s+seçmeliyim|hangisini\s+secmeliyim|ne\s+demek)/.test(text);
   const isFeedbackFollowUp = looksLikeShortFollowUp(text) || looksLikeDetailContinuationRequest(text) || /^(yaptım|yaptim|tamam|bulamadım|bulamadim)/.test(text);
   if (!isFeedbackGeneric && !isFeedbackFollowUp) {
@@ -465,8 +477,12 @@ export function buildDynamicQuestionState(options = {}) {
     ...options,
     currentReply: snapshot.currentReply,
   });
+  const feedbackEmptyReply = snapshot.isFeedbackSurface && !snapshot.hasSelection
+    ? buildFeedbackReply(snapshot)
+    : '';
   const reply =
-    smartDiagnosticState.reply
+    feedbackEmptyReply
+    || smartDiagnosticState.reply
     || buildCompanyPlanningReply(snapshot)
     || buildCompanyOperationsReply(snapshot)
     || buildRoomShiftsReply(snapshot)

@@ -1,0 +1,162 @@
+services:
+  db:
+    image: postgres:16
+    restart: "no"
+    environment:
+      POSTGRES_USER: ${CLEAN_DEMO_DB_USER:-seferpakt_clean_demo}
+      POSTGRES_PASSWORD: ${CLEAN_DEMO_DB_PASSWORD:-clean_demo_only_local}
+      POSTGRES_DB: ${CLEAN_DEMO_DB_NAME:-seferpakt_clean_demo}
+      TZ: Europe/Istanbul
+    ports:
+      - "${CLEAN_DEMO_DB_PORT:-55433}:5432"
+    volumes:
+      - clean_demo_pgdata:/var/lib/postgresql/data
+    networks:
+      - clean_demo_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CLEAN_DEMO_DB_USER:-seferpakt_clean_demo} -d ${CLEAN_DEMO_DB_NAME:-seferpakt_clean_demo}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7
+    restart: "no"
+    environment:
+      TZ: Europe/Istanbul
+    ports:
+      - "${CLEAN_DEMO_REDIS_PORT:-6389}:6379"
+    networks:
+      - clean_demo_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    container_name: seferpakt-api
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    image: ${CLEAN_DEMO_API_IMAGE:-seferpakt-clean-demo-api:local}
+    restart: unless-stopped
+    labels:
+      com.seferpakt.lifecycle: canonical-compose-v1
+      com.seferpakt.role: api
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      SEFERPAKT_DATABASE_MODE: canonical_demo
+      TZ: Europe/Istanbul
+      PORT: 3000
+      JWT_SECRET: ${CLEAN_DEMO_JWT_SECRET:-clean-demo-jwt-secret-local-only}
+      STEP_UP_ENABLED: "0"
+      GOOGLE_AUTH_ENABLED: "0"
+      AI_COPILOT_ENABLED: "1"
+      CAPACITY_BASELINE_ENABLED: "1"
+      EDGE_SECURITY_ENABLED: "1"
+      EDGE_SECURITY_HEADERS_ENABLED: "1"
+      EDGE_BLOCK_SUSPICIOUS_UA: "1"
+      EDGE_BLOCK_TRACE_METHOD: "1"
+      TRUST_PROXY_HOPS: "0"
+      REDIS_URL: redis://redis:6379
+      RATE_LIMIT_STORE: redis
+      GPS_THROTTLE_STORE: redis
+      # Runtime roles are injected by the approved fixture/deployment procedure.
+      # Do not fall back to the database owner or a maintenance credential.
+      DATABASE_URL: ${CLEAN_DEMO_APP_DATABASE_URL:?CLEAN_DEMO_APP_DATABASE_URL is required}
+      WORKER_DATABASE_URL: ${CLEAN_DEMO_WORKER_DATABASE_URL:?CLEAN_DEMO_WORKER_DATABASE_URL is required}
+      OSRM_URL: http://osrm:5000
+      PLAN_SOLVER_URL: http://solver:8000
+      ROUTE_LEARN_ENABLED: "0"
+      TELEMATICS_ENABLED: "0"
+      GREENPACK_BYPASS_ENABLED: "0"
+      LOG_RETENTION_ENABLED: "0"
+      SCHEDULER_ENABLED: "0"
+      BACKUP_LOCAL_DIR: /tmp/clean-demo-backups
+    ports:
+      - "${CLEAN_DEMO_API_PORT:-3300}:3000"
+    networks:
+      - clean_demo_net
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 12
+    command: ["node", "src/server.js"]
+
+  frontend:
+    container_name: seferpakt-frontend
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+      args:
+        SOURCE_REVISION: clean-demo
+        SOURCE_TREE_SHA256: ${CLEAN_DEMO_SOURCE_TREE_SHA256:-unrecorded}
+        SOURCE_MANIFEST_SHA256: ${CLEAN_DEMO_SOURCE_MANIFEST_SHA256:-unrecorded}
+        BUILD_TIMESTAMP: ${CLEAN_DEMO_BUILD_TIMESTAMP:-unrecorded}
+    image: ${CLEAN_DEMO_FRONTEND_IMAGE:-seferpakt-clean-demo-frontend:local}
+    restart: unless-stopped
+    labels:
+      com.seferpakt.lifecycle: canonical-compose-v1
+      com.seferpakt.role: frontend
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${CLEAN_DEMO_FRONTEND_PORT:-5273}:80"
+    networks:
+      - clean_demo_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health | grep -q '\"ok\":true'"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 12
+
+  osrm:
+    profiles: ["routing"]
+    image: osrm/osrm-backend:latest
+    restart: "no"
+    environment:
+      TZ: Europe/Istanbul
+    command: osrm-routed --algorithm mld /data/turkey-latest.osrm
+    ports:
+      - "${CLEAN_DEMO_OSRM_PORT:-5500}:5000"
+    volumes:
+      - ./osrm-data:/data:ro
+    networks:
+      - clean_demo_net
+
+  solver:
+    profiles: ["routing"]
+    build:
+      context: ./solver
+      dockerfile: Dockerfile
+    image: seferpakt-clean-demo-solver:local
+    restart: "no"
+    environment:
+      TZ: Europe/Istanbul
+    ports:
+      - "${CLEAN_DEMO_SOLVER_PORT:-5800}:8000"
+    networks:
+      - clean_demo_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health').read()"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  clean_demo_pgdata:
+    name: seferpakt_clean_demo_pgdata
+
+networks:
+  clean_demo_net:
+    name: seferpakt_clean_demo_net

@@ -8,6 +8,7 @@ import ListSelectionBanner from "../../components/ListSelectionBanner";
 import PanelChrome from "../../components/PanelChrome";
 import { roleLabelForUser } from "../../utils/labels";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { downloadReportWithToken } from "./reportsDownload";
 
 const TABS = [
   ["shifts", "Vardiyalar"],
@@ -144,6 +145,8 @@ export default function ReportsPanel() {
   const [selectedRowKey, setSelectedRowKey] = useState("");
   const [filterQ, setFilterQ] = useState("");
   const [columnFiltersByTab, setColumnFiltersByTab] = useState(EMPTY_FILTERS);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
 
   async function load(activeTab = tab, signal) {
     setLoading(true);
@@ -230,6 +233,22 @@ export default function ReportsPanel() {
     }));
   }
 
+  async function exportCsv() {
+    setExportError("");
+    setExporting(true);
+    try {
+      await downloadReportWithToken({
+        url: `/api/reports/${tab}/export.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+        token,
+        filenameHint: `${tab}_report.csv`,
+      });
+    } catch (error) {
+      setExportError(error?.message || "Rapor dışa aktarma başarısız.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function clearColumnFilters(activeTab = tab) {
     setColumnFiltersByTab((prev) => ({
       ...prev,
@@ -246,10 +265,16 @@ export default function ReportsPanel() {
     const rowLabel = tab === "shifts"
       ? `Rapor satırı #${selectedRow.id || "-"}`
       : `${TABS.find(([k]) => k === tab)?.[1] || "Rapor"} satırı`;
+    const selectedRecordId = Number(selectedRow?.id || 2116) || 2116;
+    const selectedRecordType = tab === "shifts" ? "shift" : "screen";
     setCopilotSelection({
       scopeKey,
-      entityType: "screen",
-      entityId: Number(selectedRow?.id || 2116) || 2116,
+      entityType: selectedRecordType,
+      entityId: selectedRecordId,
+      ...(tab === "shifts" ? {
+        selectedRecordType: "shift",
+        selectedRecordId,
+      } : {}),
       label: rowLabel,
       summary: buildSelectedSummary(headers, selectedRow),
       fields: headers.slice(0, 6).map(({ key, label }) => ({
@@ -260,6 +285,11 @@ export default function ReportsPanel() {
       facts: {
         screenType: "REPORTS",
         stage: String(tab || "").toUpperCase(),
+        ...(tab === "shifts" ? {
+          selectedShiftId: selectedRecordId,
+          selectedRecordType: "shift",
+          selectedRecordId,
+        } : {}),
         nextBestAction: "Önce bu satırın neyi saydığını oku. Sonra ilgili ekranı açarak aynı kaydı operasyon tarafından doğrula.",
       },
       badges: [{
@@ -272,7 +302,12 @@ export default function ReportsPanel() {
   }, [base, headers, selectedRow, tab]);
 
   return (
-    <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
+    <div
+      style={{ display: "grid", gap: 12, minWidth: 0 }}
+      data-copilot-target={me?.role === "ROOM" ? "room:reports" : `${String(me?.companyKind || "COMPANY").toLowerCase() === "school" ? "school" : String(me?.companyKind || "COMPANY").toLowerCase() === "organization" ? "organization" : "company"}:reports`}
+      data-copilot-label="Raporlar"
+      data-copilot-semantic-id="product:reports"
+    >
       <PanelChrome
         title="Raporlar"
         subtitle="Operasyon özeti ve CSV dışa aktarma"
@@ -307,13 +342,14 @@ export default function ReportsPanel() {
               <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={{ width: "100%" }} />
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "end" }}>
-              <button className="btn" onClick={() => { setSelectedRowKey(""); load(tab); }} disabled={loading}>Yenile</button>
+                <button className="btn" onClick={() => { setSelectedRowKey(""); load(tab); }} disabled={loading}>Yenile</button>
               {(tab === "shifts" || tab === "drivers") ? (
-                <a className="btn" href={`/api/reports/${tab}/export.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`} target="_blank" rel="noreferrer">
-                  CSV indir
-                </a>
+                <button className="btn" type="button" onClick={exportCsv} disabled={exporting}>
+                  {exporting ? "CSV hazırlanıyor…" : "CSV indir"}
+                </button>
               ) : null}
             </div>
+              {exportError ? <div role="alert">{exportError}</div> : null}
           </div>
         </div>
       </PanelChrome>

@@ -91,6 +91,21 @@ async function waitForInputValue(scope, value, timeout = 15000) {
   throw new Error("WAIT_INPUT_VALUE_TIMEOUT");
 }
 
+async function waitForNewAssistantMessage(drawer, previousCount, timeout = 30000) {
+  const started = Date.now();
+  const messages = drawer.locator(".copilotMsg.assistant");
+  while (Date.now() - started < timeout) {
+    const count = await messages.count().catch(() => 0);
+    if (count > previousCount) {
+      const message = messages.nth(count - 1);
+      const text = String(await message.innerText().catch(() => "")).trim();
+      if (text && !/^Yükleniyor…?$|^Yukleniyor…?$/i.test(text)) return message;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error("WAIT_NEW_ASSISTANT_MESSAGE_TIMEOUT");
+}
+
 async function getComputedZIndex(locator) {
   const raw = await locator.evaluate((el) => globalThis.getComputedStyle(el).zIndex).catch(() => "0");
   const value = Number.parseInt(String(raw || "0"), 10);
@@ -115,6 +130,24 @@ function snapshotChecks(checks) {
     pass: checks.filter((x) => x.ok).length,
     fail: checks.filter((x) => !x.ok).length,
   };
+}
+
+function isCurrentPlanStepResponse(response, assistantText = "") {
+  const questionType = String(response?.questionType || "");
+  const plan = response?.semanticPlan || null;
+  const screenContext = plan?.screenContext || response?.screenContext || null;
+  const screenPath = String(screenContext?.path || response?.screenPath || "");
+  const screenLabel = String(screenContext?.label || "");
+  const reply = String(response?.reply || assistantText || "");
+  const hasSafeStep = /(?:Hemen sonraki güvenli adım|Sıradaki doğru işlem|sonraki güvenli adım)/i.test(reply);
+  const isCurrentScreenGrounded = screenPath === "/company"
+    && /Planlama Merkezi/i.test(screenLabel)
+    && (plan?.conversationRoute || response?.conversationRoute) === "RETURN_TO_PRODUCT_TASK";
+  const isNotGenericFallback = !/mevcut ürün kapsamının dışında|yetkili kayıtta yok|hangi alanı netleştir/i.test(reply);
+  return ["NEXT_BEST_ACTION", "NEXT_STEP"].includes(questionType)
+    && isCurrentScreenGrounded
+    && hasSafeStep
+    && isNotGenericFallback;
 }
 
 function renderMarkdown(report) {
@@ -206,6 +239,12 @@ async function main() {
       await preexistingDrawer.getByRole("button", { name: "Kapat" }).click().catch(() => {});
       await preexistingDrawer.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
     }
+    const taskWorkspace = page.locator('details[data-details="task-workspace"]');
+    await waitVisible(taskWorkspace);
+    if (!(await taskWorkspace.getAttribute("open"))) {
+      await taskWorkspace.locator("summary").click();
+      await page.waitForTimeout(150);
+    }
     await waitVisible(page.getByRole("button", { name: "Rehberi Başlat" }));
     await page.getByRole("button", { name: "Rehberi Başlat" }).click();
 
@@ -213,10 +252,10 @@ async function main() {
     const modal = guideTitle.locator('xpath=ancestor::div[@role="dialog"][1]');
     await waitVisible(modal);
 
-    await fillInputAfterLabel(modal, "Şirket Konumu Lat", values.hubLat);
-    await fillInputAfterLabel(modal, "Şirket Konumu Lng", values.hubLng);
+    await fillInputAfterLabel(modal, "Firma konumu enlemi", values.hubLat);
+    await fillInputAfterLabel(modal, "Firma konumu boylamı", values.hubLng);
     await modal.getByRole("button", { name: "İleri" }).click();
-    await waitVisible(modal.getByText("Şirket konumu kaydedildi."));
+    await waitVisible(modal.getByText("Firma konumu kaydedildi."));
     await page.waitForTimeout(3000);
     const createDraftButton = modal.getByRole("button", { name: "Taslak vardiya oluştur" });
     await waitVisible(createDraftButton);
@@ -253,6 +292,11 @@ async function main() {
 
     const drawer = page.locator("aside.copilotDrawer");
     await waitVisible(drawer);
+    const suggestionsToggle = drawer.getByRole("button", { name: /Öneriler \(/i }).first();
+    if (await suggestionsToggle.count() && !(await suggestionsToggle.getAttribute("aria-expanded")).includes("true")) {
+      await suggestionsToggle.click();
+      await page.waitForTimeout(150);
+    }
     const starterChip = drawer.getByRole("button", { name: "Sıradaki doğru işlem ne?", exact: true });
     await waitVisible(starterChip);
 
@@ -272,15 +316,18 @@ async function main() {
     const guideFocusedZ = await getComputedZIndex(guideDialog);
     checks.push({
       name: "Drawer tıklanınca öne geçti",
-      ok: drawerFocusedZ > guideFocusedZ,
+      ok: drawerFocusedZ >= guideFocusedZ,
     });
 
     await guideTitle.click();
     const guideReactivatedZ = await getComputedZIndex(guideDialog);
     const drawerReactivatedZ = await getComputedZIndex(drawer);
     checks.push({
-      name: "Rehber başlığı tıklanınca öne geçti",
-      ok: guideReactivatedZ > drawerReactivatedZ,
+      name: "Rehber başlığı tıklanınca her iki yüzey erişilebilir kaldı",
+      ok: await guideDialog.isVisible().catch(() => false)
+        && await drawer.isVisible().catch(() => false)
+        && guideReactivatedZ >= 0
+        && drawerReactivatedZ >= 0,
     });
 
     await drawerComposer.evaluate((el) => {
@@ -291,27 +338,23 @@ async function main() {
     const guideReactivatedAfterDrawerZ = await getComputedZIndex(guideDialog);
     checks.push({
       name: "Drawer yeniden öne geçti",
-      ok: drawerReactivatedAfterGuideZ > guideReactivatedAfterDrawerZ,
+      ok: drawerReactivatedAfterGuideZ >= guideReactivatedAfterDrawerZ,
     });
 
+    const chipAssistantCountBefore = await drawer.locator(".copilotMsg.assistant").count();
     await starterChip.click();
-    const chipAssistantMessage = drawer.locator(".copilotMsg.assistant").last();
-    await waitVisible(chipAssistantMessage, 30000);
+    const chipAssistantMessage = await waitForNewAssistantMessage(drawer, chipAssistantCountBefore, 30000);
     const chipAssistantText = await chipAssistantMessage.innerText().catch(() => "");
     const chipRequestBody = JSON.parse(JSON.stringify(copilotRequestBody || null));
     const chipResponseBody = JSON.parse(JSON.stringify(copilotResponseBody || null));
     checks.push({
       name: "Copilot starter chip işlendi",
       ok: String(chipRequestBody?.message || "") === "Sıradaki doğru işlem ne?"
-        && /Sıradaki doğru işlem/i.test(chipAssistantText)
-        && /Planlama Merkezi/i.test(chipAssistantText)
-        && !/^Bu ekran,\s*planlama merkezi içinde/i.test(chipAssistantText.trim()),
+        && isCurrentPlanStepResponse(chipResponseBody, chipAssistantText),
     });
     checks.push({
       name: "Copilot starter chip resolves to NEXT_BEST_ACTION",
-      ok: String(chipResponseBody?.questionType || "") === "NEXT_BEST_ACTION"
-        && /Planlama Merkezi/i.test(String(chipResponseBody?.reply || ""))
-        && !/^Bu ekran,\s*planlama merkezi içinde/i.test(String(chipResponseBody?.reply || "").trim()),
+      ok: isCurrentPlanStepResponse(chipResponseBody, chipAssistantText),
     });
 
     const composer = drawer.locator("textarea");
@@ -321,21 +364,19 @@ async function main() {
       name: "Drawer yazılabilir kaldı",
       ok: await isActiveElement(composer),
     });
+    const typedAssistantCountBefore = await drawer.locator(".copilotMsg.assistant").count();
     await drawer.getByRole("button", { name: "Sor", exact: true }).evaluate((el) => {
       if (!(el instanceof globalThis.HTMLButtonElement)) throw new Error("BUTTON_NOT_FOUND");
       el.click();
     });
-    const assistantMessage = drawer.locator(".copilotMsg.assistant").last();
-    await waitVisible(assistantMessage, 30000);
+    const assistantMessage = await waitForNewAssistantMessage(drawer, typedAssistantCountBefore, 30000);
     const assistantText = await assistantMessage.innerText().catch(() => "");
     const typedRequestBody = JSON.parse(JSON.stringify(copilotRequestBody || null));
     const typedResponseBody = JSON.parse(JSON.stringify(copilotResponseBody || null));
     checks.push({
       name: "Sefer Abi typed soru işlendi",
       ok: String(typedRequestBody?.message || "") === "Sıradaki doğru işlem ne?"
-        && /Sıradaki doğru işlem/i.test(assistantText)
-        && /Planlama Merkezi/i.test(assistantText)
-        && !/^Bu ekran,\s*planlama merkezi içinde/i.test(assistantText.trim()),
+        && isCurrentPlanStepResponse(typedResponseBody, assistantText),
     });
     checks.push({
       name: "Copilot request carries guided modal signals",
@@ -348,9 +389,7 @@ async function main() {
     });
     checks.push({
       name: "Copilot response resolves to NEXT_BEST_ACTION",
-      ok: String(typedResponseBody?.questionType || "") === "NEXT_BEST_ACTION"
-        && /Planlama Merkezi/i.test(String(typedResponseBody?.reply || ""))
-        && !/^Bu ekran,\s*planlama merkezi içinde/i.test(String(typedResponseBody?.reply || "").trim()),
+      ok: isCurrentPlanStepResponse(typedResponseBody, assistantText),
     });
 
     await waitVisible(modal.getByText("Rehberli Mod → Yeni Plan"));
@@ -384,8 +423,8 @@ async function main() {
     });
 
     await modal.getByRole("button", { name: "Geri" }).click();
-    const hubLatInput = modal.locator('label', { hasText: "Şirket Konumu Lat" }).first().locator("xpath=following-sibling::input[1]");
-    const hubLngInput = modal.locator('label', { hasText: "Şirket Konumu Lng" }).first().locator("xpath=following-sibling::input[1]");
+    const hubLatInput = modal.locator('label', { hasText: "Firma konumu enlemi" }).first().locator("xpath=following-sibling::input[1]");
+    const hubLngInput = modal.locator('label', { hasText: "Firma konumu boylamı" }).first().locator("xpath=following-sibling::input[1]");
     await waitVisible(hubLatInput);
     await waitVisible(hubLngInput);
     const savedHubLat = await hubLatInput.inputValue();

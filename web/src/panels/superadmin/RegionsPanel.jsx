@@ -138,7 +138,14 @@ export default function RegionsPanel() {
           <div className="panelMeta">Yönetim il ve bölge tanımlarını yönetir. Hizmet Alan Firma ve Taşımacılık Firması tarafındaki ilçe/bölge alanı bu tanımın alt kırılımı olarak görünür.</div>
         </div>
         <div className="saActions">
-          <span className="pill" data-status="COUNT">
+          <span
+            className="pill"
+            data-status="COUNT"
+            data-copilot-metric="true"
+            data-copilot-metric-label="Bölge"
+            data-copilot-metric-value={String(view.length)}
+            data-copilot-metric-source="AUTHORIZED_VISIBLE_SCREEN"
+          >
             {view.length} kayıt
           </span>
         </div>

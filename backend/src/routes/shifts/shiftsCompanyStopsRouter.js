@@ -8,6 +8,7 @@ import { rebuildShiftRouteStateBestEffort } from "../../services/shiftRouteState
 import { emitShift, decorateShiftWithRegionContext, getShiftAndCheckScopeOrThrow } from "./helpers.js";
 import {
   addStopSchema,
+  routeEvidenceSchema,
   updateStopSchema,
   applyTemplateSchema,
   reorderStopsSchema,
@@ -30,6 +31,62 @@ async function loadFullShift(shiftId) {
 
 export function buildShiftCompanyStopsRouter(io) {
   const r = express.Router();
+
+  // COMPANY/ROOM/SUPER_ADMIN: persist only the planned route shape for an
+  // existing shift. This is intentionally separate from PUT /:id because
+  // agreement shifts must not reopen commercial or dispatch mutation.
+  r.put(
+    "/:id/route-evidence",
+    authRequired(),
+    requireRole("ROOM", "COMPANY", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const shiftId = Number(req.params.id);
+        if (!Number.isFinite(shiftId)) return sendErrorResponse(res, httpError(400, "bad shiftId"));
+
+        const body = validateWithZod(routeEvidenceSchema, req.body ?? {});
+        const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+        if (shift.status === "ACTIVE") {
+          return sendErrorResponse(res, httpError(400, "Cannot update route evidence while shift is ACTIVE"));
+        }
+
+        const updated = await prisma.shift.update({
+          where: { id: shiftId },
+          data: {
+            hubLat: Object.prototype.hasOwnProperty.call(body, "hubLat") ? body.hubLat : undefined,
+            hubLng: Object.prototype.hasOwnProperty.call(body, "hubLng") ? body.hubLng : undefined,
+            direction: body.direction ?? undefined,
+            pattern: body.pattern ?? undefined,
+            emptyDistanceKm: Object.prototype.hasOwnProperty.call(body, "emptyDistanceKm") ? body.emptyDistanceKm : undefined,
+            emptyDistanceEvidenceRef: Object.prototype.hasOwnProperty.call(body, "emptyDistanceEvidenceRef") ? body.emptyDistanceEvidenceRef : undefined,
+            emptyDistanceReason: Object.prototype.hasOwnProperty.call(body, "emptyDistanceReason") ? body.emptyDistanceReason : undefined,
+          },
+        });
+
+        await rebuildShiftRouteStateBestEffort(shiftId);
+        await audit(req, {
+          action: "SHIFT_ROUTE_EVIDENCE_UPDATE",
+          entity: "Shift",
+          entityId: shiftId,
+          meta: {
+            hubChanged: Object.prototype.hasOwnProperty.call(body, "hubLat"),
+            direction: updated.direction,
+            pattern: updated.pattern,
+            emptyDistanceKm: updated.emptyDistanceKm,
+            emptyDistanceEvidenceRef: updated.emptyDistanceEvidenceRef,
+            emptyDistanceReason: updated.emptyDistanceReason,
+            source: "PLANNED_ROUTE_INPUT",
+          },
+        });
+
+        const full = await loadFullShift(shiftId);
+        emitShift(io, full, "route:plan");
+        return res.json({ ok: true, source: "PLANNED_ROUTE_INPUT", shift: full });
+      } catch (e) {
+        return sendErrorResponse(res, e);
+      }
+    }
+  );
 
   r.post(
     "/:id/stops",

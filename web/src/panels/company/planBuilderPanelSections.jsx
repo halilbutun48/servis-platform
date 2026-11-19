@@ -309,7 +309,7 @@ export function PlanBuilderBulkOfferModal({ bulkOffer, setBulkOffer, pbRooms, pb
             <label className="muted">Tutar (opsiyonel)</label>
             <input
               value={bulkOffer.amountCompany}
-              onChange={(e) => setBulkOffer((p) => ({ ...p, amountCompany: (() => { const n = Number(e.target.value); return Number.isFinite(n) && n > 0 ? n : undefined; })() }))}
+              onChange={(e) => setBulkOffer((p) => ({ ...p, amountCompany: e.target.value }))}
               placeholder="örn. 2500"
               disabled={bulkOffer.busy}
             />

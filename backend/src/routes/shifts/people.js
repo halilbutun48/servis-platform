@@ -14,6 +14,7 @@ import { clearShiftRoutePreviewCache, rebuildShiftRouteStateBestEffort } from ".
 import { decorateGeoItem, inferGeoState } from "../../services/geoState.js";
 import { rememberResponse } from "../../utils/responseCache.js";
 import { resolveAgreementSourceShiftPayload } from "../../services/agreementSourceShift.js";
+import { buildCompanyPersonelNaturalLookup } from "../../services/personelImportIdentity.js";
 
 const qModeSchema = z
   .preprocess((v) => {
@@ -217,7 +218,21 @@ async function upsertCompanyPersonel(companyId, item, defaultKind) {
     return { personel, action: existing ? "updated" : "created" };
   }
 
-  // Otherwise create a new record (no stable key)
+  // CSV/XLSX imports without a phone still need a stable natural key so a
+  // repeated user-approved import does not create a second economic person.
+  const naturalLookup = buildCompanyPersonelNaturalLookup({
+    companyId,
+    fullName: data.fullName,
+    homeAddress: data.homeAddress,
+    homeLat: data.homeLat,
+    homeLng: data.homeLng,
+  });
+  const existing = await prisma.personel.findFirst({ where: naturalLookup, select: { id: true } });
+  if (existing) {
+    const personel = await prisma.personel.update({ where: { id: existing.id }, data });
+    return { personel, action: "updated" };
+  }
+
   const personel = await prisma.personel.create({ data: { companyId, ...data } });
   return { personel, action: "created" };
 }

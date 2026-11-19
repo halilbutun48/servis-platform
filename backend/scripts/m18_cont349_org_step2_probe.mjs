@@ -1,0 +1,7 @@
+import { chromium } from "@playwright/test";
+const b=await chromium.launch({headless:true}); const c=await b.newContext({viewport:{width:1440,height:900},locale:'tr-TR'}); const p=await c.newPage();
+await p.goto('http://localhost:5273/',{waitUntil:'domcontentloaded'}); if(await p.locator('input[autocomplete="username"]').count()){await p.locator('input[autocomplete="username"]').fill('organization@demo.com'); await p.locator('input[autocomplete="current-password"]').fill('demo123'); await p.locator('button[type="submit"]').click(); await p.waitForTimeout(1200);}
+await p.goto('http://localhost:5273/#/organization',{waitUntil:'domcontentloaded'}); await p.waitForTimeout(800); await p.getByRole('button',{name:'Plan oluştur',exact:true}).click(); await p.waitForTimeout(400);
+console.log('before', await p.locator('button:visible').allInnerTexts());
+const dev=p.getByRole('button',{name:'Devam et',exact:true}); console.log('devcount',await dev.count()); if(await dev.count()) await dev.first().click(); await p.waitForTimeout(900);
+console.log(JSON.stringify({url:p.url(),text:(await p.locator('body').innerText()).slice(-9000),buttons:await p.locator('button:visible').allInnerTexts(),inputs:await p.locator('input:visible').evaluateAll(ns=>ns.map(n=>({type:n.type,placeholder:n.placeholder,name:n.name,value:n.value,aria:n.getAttribute('aria-label')}))),selects:await p.locator('select:visible').evaluateAll(ns=>ns.map(n=>({name:n.name,value:n.value,options:Array.from(n.options).map(o=>({text:o.text,value:o.value}))})))},null,2)); await b.close();

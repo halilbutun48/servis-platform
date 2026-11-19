@@ -10,7 +10,8 @@ import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import { navigate } from "../../router";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts, buildParentLiveNoVehicleFacts } from "../../utils/copilotFacts";
-import { formatRegionOwnership } from "../../utils/regionOwnership";
+import { isParentConsentBlocked } from "./parentConsentPolicy";
+import { buildWalkNavigationUrl, formatParentRegionLabel } from "./parentLiveNavigation";
 import { getEtaDisplay, getGpsAgeText } from "../../utils/etaSanity";
 import {
   getLiveTrackingApiFeedback,
@@ -101,15 +102,6 @@ function sameStop(a, b) {
   return haversineMeters(ac.lat, ac.lng, bc.lat, bc.lng) <= 3;
 }
 
-function buildWalkNavUrl(stop, myPos) {
-  const sc = stopCoord(stop);
-  if (!sc) return "";
-  const dest = `${sc.lat},${sc.lng}`;
-  const hasOrigin = Number.isFinite(Number(myPos?.lat)) && Number.isFinite(Number(myPos?.lng));
-  const originPart = hasOrigin ? `&origin=${Number(myPos.lat)},${Number(myPos.lng)}` : "";
-  return `https://www.google.com/maps/dir/?api=1${originPart}&destination=${dest}&travelmode=walking`;
-}
-
 function stopStateText(state) {
   const s = String(state || "PENDING").toUpperCase();
   if (s === "REACHED") return "Ulaşıldı";
@@ -134,7 +126,7 @@ function walkMinutesText(meters) {
 }
 
 function regionText(value) {
-  return String(formatRegionOwnership(value) || "").replace(/^Bölge:\s*/i, "") || "—";
+  return formatParentRegionLabel(value);
 }
 
 function timeText(value) {
@@ -172,7 +164,7 @@ const PARENT_LIVE_NO_VEHICLE_HINT = "Bu çocuk için şu an canlı araç görün
 
 export default function ParentLivePanel() {
   const { token, me } = useSession();
-  const consentBlocked = me?.role === "PARENT" && Number(me?.kvkk?.requiredCount || 0) > 0;
+  const consentBlocked = isParentConsentBlocked(me);
 
   const [children, setChildren] = useState([]);
   const [childId, setChildId] = useState("");
@@ -190,12 +182,17 @@ export default function ParentLivePanel() {
   const parentNoVehicleDetail = getLiveTrackingNoVehicleDetail("parent");
 
   const loadChildren = useCallback(async () => {
+    if (consentBlocked) {
+      setChildren([]);
+      setChildId("");
+      return [];
+    }
     const r = await api("/api/parent/children", { token });
     const items = Array.isArray(r?.items) ? r.items : [];
     setChildren(items);
     if (!childId && items[0]?.id) setChildId(String(items[0].id));
     return items;
-  }, [token, childId]);
+  }, [token, childId, consentBlocked]);
 
   const loadVehicles = useCallback(async (cid) => {
     const resolvedChildId = String(cid || "");
@@ -235,6 +232,11 @@ export default function ParentLivePanel() {
 
   const requestMyLocation = useCallback(() => {
     setGeoErr("");
+    if (consentBlocked) {
+      setGeoBusy(false);
+      setMyPos(null);
+      return;
+    }
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setGeoErr(getLiveTrackingGeoUnsupportedMessage("parent"));
       return;
@@ -251,7 +253,7 @@ export default function ParentLivePanel() {
       },
       { enableHighAccuracy: true, maximumAge: 60000, timeout: 10000 }
     );
-  }, []);
+  }, [consentBlocked]);
 
 
   useEffect(() => {
@@ -320,8 +322,8 @@ export default function ParentLivePanel() {
 
   const nearestStop = useMemo(() => nearestStops[0] || null, [nearestStops]);
   const nearbyStops = useMemo(() => nearestStops.slice(0, 3), [nearestStops]);
-  const childNavUrl = useMemo(() => buildWalkNavUrl(childStop, myPos), [childStop, myPos]);
-  const nearestNavUrl = useMemo(() => buildWalkNavUrl(nearestStop, myPos), [nearestStop, myPos]);
+  const childNavUrl = useMemo(() => buildWalkNavigationUrl(childStop, myPos), [childStop, myPos]);
+  const nearestNavUrl = useMemo(() => buildWalkNavigationUrl(nearestStop, myPos), [nearestStop, myPos]);
 
   const childDistanceM = useMemo(() => {
     if (!childStopPoint || !myPos) return null;
@@ -672,7 +674,7 @@ export default function ParentLivePanel() {
                         {allStops.map((stop, idx) => {
                           const isChild = sameStop(stop, childStop);
                           const isNearest = nearestStop && sameStop(stop, nearestStop);
-                          const navUrl = buildWalkNavUrl(stop, myPos);
+                          const navUrl = buildWalkNavigationUrl(stop, myPos);
                           const distanceMeters = myPos ? haversineMeters(Number(myPos.lat), Number(myPos.lng), Number(stopCoord(stop)?.lat), Number(stopCoord(stop)?.lng)) : null;
                           return (
                             <div key={stopUniqueKey(stop, idx)} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", padding: "8px 10px", borderRadius: 12, background: isChild ? "rgba(16,185,129,.10)" : isNearest ? "rgba(59,130,246,.10)" : "rgba(255,255,255,.03)" }}>

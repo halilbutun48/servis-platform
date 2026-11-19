@@ -168,6 +168,13 @@ export function getGpsReliabilityLabel(input) {
   return "Bekleniyor";
 }
 
+export function getDriverMapGpsReliabilityLabel(vehicle) {
+  return getGpsReliabilityLabel({
+    gpsState: vehicle?.gpsState,
+    gpsLast: vehicle?.gpsLast,
+  });
+}
+
 export function getGpsAgeText(input) {
   const ageSeconds = ageSecondsFromInput(input);
   if (ageSeconds == null) return "bilinmiyor";

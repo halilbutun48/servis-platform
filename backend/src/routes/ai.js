@@ -2,11 +2,13 @@ import express from "express";
 import { authRequired, requireStepUp } from "../auth/middleware.js";
 import { audit } from "../audit.js";
 import { normalizeCopilotRequestInput, parseCopilotRequest } from "../ai/schemas.js";
-import { runCopilotFoundation } from "../ai/service.js";
+import { buildDirectScreenMetricResponse, runCopilotFoundation } from "../ai/service.js";
+import { clearCanonicalConversationState } from "../ai/chat/canonicalConversationState.js";
 import { ENV } from "../env.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { httpError } from "../errors/http.js";
 import prisma from "../prisma.js";
+import { canViewDriverCompensation } from "../finance/roomCostAccess.js";
 
 async function buildCopilotUserContext(user) {
   if (String(user?.role || "") !== "COMPANY" || !user?.companyId) return user;
@@ -17,8 +19,25 @@ async function buildCopilotUserContext(user) {
   return { ...user, companyKind: company?.kind || null };
 }
 
+function authSessionIdForRequest(req) {
+  return [req.auth?.userId, req.auth?.jti || req.auth?.sid || req.auth?.iat, req.auth?.sv, req.auth?.pwdChangeOnly ? "pwd" : "full"]
+    .filter(Boolean)
+    .join(":");
+}
+
 export function aiRouter() {
   const r = express.Router();
+
+  r.post(
+    "/conversation/clear",
+    authRequired(),
+    requireStepUp("SUPER_ADMIN", "ROOM"),
+    asyncHandler(async (req, res) => {
+      const copilotUser = await buildCopilotUserContext(req.user);
+      clearCanonicalConversationState(copilotUser, authSessionIdForRequest(req));
+      return res.json({ ok: true, cleared: true, scope: "AUTHENTICATED_SESSION" });
+    })
+  );
 
   r.post(
     "/copilot",
@@ -48,10 +67,47 @@ export function aiRouter() {
       }
 
       const copilotUser = await buildCopilotUserContext(req.user);
+      const screenPath = String(parsed.data.screenContext?.path || "").split("?")[0];
+      const directMetricResponse = buildDirectScreenMetricResponse({
+        user: copilotUser,
+        entityType: parsed.data.entityType,
+        entityId: parsed.data.entityId,
+        screenContext: parsed.data.screenContext,
+        message: parsed.data.message,
+      });
+      if (directMetricResponse) {
+        await audit(req, {
+          action: "AI_COPILOT_QUERY",
+          entity: String(parsed.data.entityType || "ai").toUpperCase(),
+          entityId: Number(parsed.data.entityId),
+          meta: {
+            intent: parsed.data.intent,
+            entityType: parsed.data.entityType,
+            provider: directMetricResponse.provider,
+            mode: directMetricResponse.mode,
+            jobType: parsed.data.jobType || null,
+            guideLevel: parsed.data.guideLevel || null,
+            messageLength: String(parsed.data.message || "").length || 0,
+          },
+        });
+        return res.json(directMetricResponse);
+      }
+      const roomCostAccess = String(copilotUser?.role || "").toUpperCase() === "ROOM"
+        && screenPath === "/room/financial-operations"
+        ? {
+          salaryAllowed: await canViewDriverCompensation({
+            user: copilotUser,
+            roomId: copilotUser.roomId,
+            prisma,
+          }),
+          source: "TASK_4_ROOM_SALARY_ACCESS",
+        }
+        : { salaryAllowed: false, source: "TASK_4_ROOM_SALARY_ACCESS" };
       const payload = await runCopilotFoundation({
         ...parsed.data,
         user: copilotUser,
-        authSessionId: [req.auth?.userId, req.auth?.jti || req.auth?.sid || req.auth?.iat, req.auth?.sv, req.auth?.pwdChangeOnly ? "pwd" : "full"].filter(Boolean).join(":"),
+        authSessionId: authSessionIdForRequest(req),
+        roomCostAccess,
       });
 
       await audit(req, {

@@ -318,7 +318,7 @@ export default function ObservabilityPanel() {
         ...((score != null && score < 60) ? ["Konum sinyali güven skoru düşük görünüyor."] : []),
         ...(queueIncident?.severity && String(queueIncident.severity).toUpperCase() !== "OK" ? [`Kuyruk alarmı: ${technicalStateLabel(queueIncident.severity)}`] : []),
       ],
-      counters: { eventTypes: eventTypes.length, recentEvents: recentEvents.length, gpsScore: score != null ? score : "-", queueDepth, deadLetterDepth },
+      counters: { eventTypes: eventTypes.length, recentEvents: recentEvents.length, gpsScore: score != null ? score : "-", queueDepth, deadLetterDepth, openIssueCount },
       roadmapCounters: { activeWidgets: activeWidgets.length, roadmapWidgets: roadmapWidgets.length, queueDepth, deadLetterDepth },
       evidence: [
         `Canlı durum: ${liveStatusText(summary)}`,
@@ -343,6 +343,7 @@ export default function ObservabilityPanel() {
       summary: [liveStatusText(summary), gpsScoreText(summary), technicalStateLabel(queueThreshold?.status), technicalStateLabel(firstEvent?.severity)].filter((x) => x && x !== "-").join(" • "),
       fields: [
         { label: "Canlı Durum", value: liveStatusText(summary), help: "Saha akışının genel canlılık durumunu gösterir." },
+        { label: "Açık alarm / açık sorun", value: fmtCount(openIssueCount), help: "Bu ekranın yetkili canlı izleme metriğinde görünen açık alarm ve sorun toplamıdır." },
         { label: "Konum sinyali skoru", value: gpsScoreText(summary), help: "Konum sinyali güven katmanının skorunu gösterir." },
         { label: "Cihaz riski", value: readableAdminText(summary?.deviceHealth?.risk || "-"), help: "Cihaz sağlığı tarafında görünen risk özetini gösterir." },
         { label: "Son senkron", value: summary?.deviceHealth?.lastSyncAt || "-", help: "Son senkron zamanını gösterir." },
@@ -351,6 +352,13 @@ export default function ObservabilityPanel() {
         { label: "Kuyruk durumu", value: technicalStateLabel(queueThreshold?.status), help: "Kuyruk dayanıklılık kontrolünün son durumunu gösterir." },
         { label: "Kuyruk alarmı", value: technicalStateLabel(queueIncident?.severity), help: "Kuyruk alarm seviyesini gösterir." },
         { label: "İşlenemeyen kayıt", value: formatMaybeNumber(queueStats.deadLetterDepth), help: "Kuyrukta işlenemeyen kayıt sayısını gösterir." },
+      ],
+      selectedFields: [
+        { label: "Canlı Durum", value: liveStatusText(summary), help: "Saha akışının genel canlılık durumunu gösterir." },
+        { label: "Açık alarm / açık sorun", value: fmtCount(openIssueCount), help: "Bu ekranın yetkili canlı izleme metriğinde görünen açık alarm ve sorun toplamıdır." },
+        { label: "Konum sinyali skoru", value: gpsScoreText(summary), help: "Konum sinyali güven katmanının skorunu gösterir." },
+        { label: "Cihaz riski", value: readableAdminText(summary?.deviceHealth?.risk || "-"), help: "Cihaz sağlığı tarafında görünen risk özetini gösterir." },
+        { label: "Kuyruk durumu", value: technicalStateLabel(queueThreshold?.status), help: "Kuyruk dayanıklılık kontrolünün son durumunu gösterir." },
       ],
       badges: [
         { label: "Önem", value: firstEvent?.severity || "-", help: "Son canlı olayın önem seviyesini gösterir." },
@@ -361,7 +369,7 @@ export default function ObservabilityPanel() {
     });
 
     return () => clearCopilotSelection("/superadmin/observability");
-  }, [manifest, summary, eventTypes, recentEvents, activeWidgets.length, roadmapWidgets.length, queueThreshold, queueIncident, queueStats.queueDepth, queueStats.deadLetterDepth, recentEvent]);
+  }, [manifest, summary, eventTypes, recentEvents, activeWidgets.length, roadmapWidgets.length, queueThreshold, queueIncident, queueStats.queueDepth, queueStats.deadLetterDepth, recentEvent, openIssueCount]);
 
   const queueIncidentTitle = readableAdminText(queueIncident?.title || "Kuyruk alarmı yok");
   const criticalTitle = hasCriticalSignals ? "KVKK / alarm aktif" : "KVKK / canlı izleme hazır";

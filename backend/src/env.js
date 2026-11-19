@@ -78,9 +78,10 @@ export const ENV = {
   GPS_THROTTLE_STORE: (process.env.GPS_THROTTLE_STORE ?? "").toLowerCase(),
 
   // DB
-  DATABASE_URL:
-    process.env.DATABASE_URL ??
-    "postgresql://postgres:postgres@127.0.0.1:5433/servisdb?schema=public",
+  // Database target is intentionally empty when not explicitly configured.
+  // The Prisma runtime applies the canonical/isolated fail-closed policy;
+  // never silently fall back to the historical servisdb target.
+  DATABASE_URL: process.env.DATABASE_URL ?? "",
 
   // GPS monitors
   GPS_STALE_SEC: Number(process.env.GPS_STALE_SEC ?? 40),

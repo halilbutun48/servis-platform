@@ -9,6 +9,7 @@ import * as H from "./helpers.js";
 import { sanitizeOperationEventMeta, sanitizeShiftActorLabel, sanitizeShiftParticipantPayload } from "../../kvkk/enforcement.js";
 import { buildShiftCommercialBackboneMap } from "../../services/paymentBackbone.js";
 import { decorateShiftWithRegionContext } from "../../region/ownership.js";
+import { participantVehicleSelect } from "./participantReadSelects.js";
 
 const buildShiftsWhereFromQuery =
   H.buildShiftsWhereFromQuery ??
@@ -54,6 +55,7 @@ const buildShiftsWhereFromQuery =
 
 const getDriverIdOrThrow = H.getDriverIdOrThrow;
 const getPersonelIdOrThrow = H.getPersonelIdOrThrow;
+const isPersonelShiftAccessible = H.isPersonelShiftAccessible;
 const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
 const buildGuidedDraftResumeCandidates = H.buildGuidedDraftResumeCandidates;
 
@@ -196,6 +198,11 @@ export function attachShiftSharedRoutes(r) {
 
         const take = Math.min(Number(req.query.take ?? 200), 500);
 
+        const canSeeCommercialOfferFields = ["COMPANY", "SUPER_ADMIN"].includes(String(req.user?.role || "").toUpperCase());
+        const shiftOfferSelect = canSeeCommercialOfferFields
+          ? { id: true, roomId: true, status: true, amountCompany: true, amountRoom: true, noteCompany: true, noteRoom: true }
+          : { id: true, roomId: true, status: true };
+
         const items = await prisma.shift.findMany({
           where,
           orderBy: { startAt: "desc" },
@@ -230,7 +237,7 @@ export function attachShiftSharedRoutes(r) {
               },
             },
             stops: { orderBy: { order: "asc" } },
-            offers: { select: { id: true, roomId: true, status: true } },
+            offers: { select: shiftOfferSelect },
             organizationPlan: { select: { stops: { select: { passengerCount: true } } } },
             _count: { select: { assignments: true, people: true } },
           },
@@ -291,7 +298,7 @@ export function attachShiftSharedRoutes(r) {
             include: {
               stops: { orderBy: { order: "asc" } },
               progress: true,
-              vehicle: true,
+              vehicle: { select: participantVehicleSelect() },
               company: true,
               room: true,
             },
@@ -312,7 +319,7 @@ export function attachShiftSharedRoutes(r) {
               include: {
                 stops: { orderBy: { order: "asc" } },
                 progress: true,
-                vehicle: true,
+                vehicle: { select: participantVehicleSelect() },
                 company: true,
                 room: true,
               },
@@ -394,7 +401,7 @@ export function attachShiftSharedRoutes(r) {
   r.get(
     "/:id(\\d+)",
     authRequired(),
-    requireRole("ROOM", "COMPANY", "DRIVER", "SUPER_ADMIN"),
+    requireRole("ROOM", "COMPANY", "DRIVER", "PERSONEL", "SUPER_ADMIN"),
     asyncHandler(async (req, res) => {
         const id = Number(req.params.id);
 
@@ -438,6 +445,21 @@ export function attachShiftSharedRoutes(r) {
           });
           if (!driver) throw httpError(400, "DRIVER_PROFILE_MISSING", "Driver profile missing");
           if (shift.driverId !== driver.id) throw httpError(403, "FORBIDDEN", "Forbidden");
+        }
+
+        if (req.user.role === "PERSONEL") {
+          const personelId = await getPersonelIdOrThrow(req.user);
+          const pickupRequest = await prisma.pickupRequest.findFirst({
+            where: {
+              shiftId: id,
+              personelId,
+              status: { in: ["OPEN", "ACCEPTED"] },
+            },
+            select: { personelId: true, status: true },
+          });
+          if (!isPersonelShiftAccessible({ pickupRequests: pickupRequest ? [pickupRequest] : [] }, personelId)) {
+            throw httpError(403, "FORBIDDEN", "Forbidden");
+          }
         }
 
         return res.json(sanitizeShiftParticipantPayload(decorateShiftWithRegionContext(shift), { role: req.user?.role }));

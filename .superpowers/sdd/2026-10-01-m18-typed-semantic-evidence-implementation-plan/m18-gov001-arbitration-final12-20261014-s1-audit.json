@@ -1,0 +1,1215 @@
+{
+  "auditSchemaVersion": "M18-HOLDOUT-AUDIT-V1",
+  "candidateSchemaVersion": "M18-FRESH-UNFROZEN-CANDIDATE-V2",
+  "candidateManifestSha256": "E1802633B1F0571B91815B8336DCDE2A8B52F29A3E7A0590E9E1760915FAE618",
+  "contractPacketSha256": "013A0CDA662766710EEE4DD4D35FE6BF2AE3FA9B0C89B03719C8F3393330E8F9",
+  "authorContextId": "m18-post-r15-author-b592b6b9-fa4c-435a-882e-2df09b2b2436",
+  "auditorContextId": "m18-post-r15-auditor-43ab50bc-e7d0-41c6-89f5-4578b306d0b7",
+  "caseCount": 56,
+  "expectationContractUnsafeCount": 0,
+  "expectationMaterialAmbiguityCount": 0,
+  "mixedIntentMaterialAmbiguityCount": 0,
+  "navigateViewAuditFailureCount": 0,
+  "contractAuditMaterialDefectCount": 0,
+  "roleCapabilityContradictionCount": 0,
+  "executionContextDefectCount": 0,
+  "explicitContextualSurfaceDefectCount": 0,
+  "referenceScopeCouplingDefectCount": 0,
+  "runtimeContextOracleLeakCount": 0,
+  "caseValidationComplete": true,
+  "auditComplete": true,
+  "auditTimestamp": "2026-10-14T04:43:54.794Z",
+  "sourceContractBindingSha256": "726A156C97EC5FDB18C4E1402759985CBAC698A888E7A89CCCCD4B1648CEC350",
+  "completeSourceBindingSha256": "97591F55EFD392D1D74C928E4DB07429CDC0969FD9BAF76B71CA411B34B5CBA2",
+  "completeSourceBindingVersion": "M18-CURRENT-SOURCE-BINDING-V2",
+  "sourceBinding": {
+    "bindingVersion": "M18-CURRENT-SOURCE-BINDING-V2",
+    "completeBindingSha256": "97591F55EFD392D1D74C928E4DB07429CDC0969FD9BAF76B71CA411B34B5CBA2",
+    "parentBindingSha256": "726A156C97EC5FDB18C4E1402759985CBAC698A888E7A89CCCCD4B1648CEC350",
+    "sourceScope": "M18_PRODUCT_AUTHORIZATION_AND_ACCEPTANCE_LIFECYCLE"
+  },
+  "executionProtocolId": "M18-HOLDOUT-EXECUTION-PROTOCOL-V2-SAFE-ORDINARY-COLLECT-ALL",
+  "ordinaryMismatchPolicy": "COLLECT_SAFE_ORDINARY_MISMATCHES",
+  "criticalFailurePolicy": "STOP_ON_SECURITY_OR_INTEGRITY_FAILURE",
+  "authorRuntimeOracleUsed": false,
+  "auditorRuntimeOracleUsed": false,
+  "auditorRows": [
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ROOM-01",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "ALLOW_GUIDANCE",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ROOM-02",
+      "safe": true,
+      "frame": {
+        "requestMode": "NAVIGATE",
+        "action": "NAVIGATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ROOM-03",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ROOM-04",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CONTINUE",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "object": "RECORD",
+        "scope": "PRODUCT_CONTEXTUAL",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ROOM-05",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CREATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "OPEN_EXISTING_SHIFT_OPERATIONS",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "ALLOW_GUIDANCE",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ROOM-06",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION",
+        "nativeStatus": "REQUIRES_CLARIFICATION",
+        "targetAvailability": "REQUIRES_CLARIFICATION",
+        "preconditionStatus": "MISSING_REQUIRED_CONTEXT"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ROOM-07",
+      "safe": true,
+      "frame": {
+        "requestMode": "GENUINE_OOS",
+        "action": "NONE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "object": null,
+        "scope": "OFF_TOPIC_GENUINE",
+        "reference": "ABSENT",
+        "resolution": "NOT_APPLICABLE"
+      },
+      "authorization": {
+        "authorizationClass": "NOT_APPLICABLE",
+        "nativeStatus": "NOT_APPLICABLE",
+        "targetAvailability": "NOT_APPLICABLE"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-COMPANY-01",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "ALLOW_GUIDANCE",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-COMPANY-02",
+      "safe": true,
+      "frame": {
+        "requestMode": "NAVIGATE",
+        "action": "NAVIGATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-COMPANY-03",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-COMPANY-04",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CONTINUE",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "object": "RECORD",
+        "scope": "PRODUCT_CONTEXTUAL",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-COMPANY-05",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CREATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_PLANNING_INTENT",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-COMPANY-06",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION",
+        "nativeStatus": "REQUIRES_CLARIFICATION",
+        "targetAvailability": "REQUIRES_CLARIFICATION",
+        "preconditionStatus": "MISSING_REQUIRED_CONTEXT"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-COMPANY-07",
+      "safe": true,
+      "frame": {
+        "requestMode": "GENUINE_OOS",
+        "action": "NONE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "object": null,
+        "scope": "OFF_TOPIC_GENUINE",
+        "reference": "ABSENT",
+        "resolution": "NOT_APPLICABLE"
+      },
+      "authorization": {
+        "authorizationClass": "NOT_APPLICABLE",
+        "nativeStatus": "NOT_APPLICABLE",
+        "targetAvailability": "NOT_APPLICABLE"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SCHOOL-01",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "ALLOW_GUIDANCE",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SCHOOL-02",
+      "safe": true,
+      "frame": {
+        "requestMode": "NAVIGATE",
+        "action": "NAVIGATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SCHOOL-03",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SCHOOL-04",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CONTINUE",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "object": "RECORD",
+        "scope": "PRODUCT_CONTEXTUAL",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SCHOOL-05",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CREATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZATION_DENIAL",
+        "nativeStatus": "DENIED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SCHOOL-06",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION",
+        "nativeStatus": "REQUIRES_CLARIFICATION",
+        "targetAvailability": "REQUIRES_CLARIFICATION",
+        "preconditionStatus": "MISSING_REQUIRED_CONTEXT"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SCHOOL-07",
+      "safe": true,
+      "frame": {
+        "requestMode": "GENUINE_OOS",
+        "action": "NONE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "object": null,
+        "scope": "OFF_TOPIC_GENUINE",
+        "reference": "ABSENT",
+        "resolution": "NOT_APPLICABLE"
+      },
+      "authorization": {
+        "authorizationClass": "NOT_APPLICABLE",
+        "nativeStatus": "NOT_APPLICABLE",
+        "targetAvailability": "NOT_APPLICABLE"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ORGANIZATION-01",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "ALLOW_GUIDANCE",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ORGANIZATION-02",
+      "safe": true,
+      "frame": {
+        "requestMode": "NAVIGATE",
+        "action": "NAVIGATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ORGANIZATION-03",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ORGANIZATION-04",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CONTINUE",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "object": "RECORD",
+        "scope": "PRODUCT_CONTEXTUAL",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ORGANIZATION-05",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CREATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZATION_DENIAL",
+        "nativeStatus": "DENIED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ORGANIZATION-06",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION",
+        "nativeStatus": "REQUIRES_CLARIFICATION",
+        "targetAvailability": "REQUIRES_CLARIFICATION",
+        "preconditionStatus": "MISSING_REQUIRED_CONTEXT"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-ORGANIZATION-07",
+      "safe": true,
+      "frame": {
+        "requestMode": "GENUINE_OOS",
+        "action": "NONE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "object": null,
+        "scope": "OFF_TOPIC_GENUINE",
+        "reference": "ABSENT",
+        "resolution": "NOT_APPLICABLE"
+      },
+      "authorization": {
+        "authorizationClass": "NOT_APPLICABLE",
+        "nativeStatus": "NOT_APPLICABLE",
+        "targetAvailability": "NOT_APPLICABLE"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-DRIVER-01",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "ALLOW_GUIDANCE",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-DRIVER-02",
+      "safe": true,
+      "frame": {
+        "requestMode": "NAVIGATE",
+        "action": "NAVIGATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-DRIVER-03",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-DRIVER-04",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CONTINUE",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "object": "RECORD",
+        "scope": "PRODUCT_CONTEXTUAL",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-DRIVER-05",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CREATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZATION_DENIAL",
+        "nativeStatus": "DENIED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-DRIVER-06",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION",
+        "nativeStatus": "REQUIRES_CLARIFICATION",
+        "targetAvailability": "REQUIRES_CLARIFICATION",
+        "preconditionStatus": "MISSING_REQUIRED_CONTEXT"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-DRIVER-07",
+      "safe": true,
+      "frame": {
+        "requestMode": "GENUINE_OOS",
+        "action": "NONE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "object": null,
+        "scope": "OFF_TOPIC_GENUINE",
+        "reference": "ABSENT",
+        "resolution": "NOT_APPLICABLE"
+      },
+      "authorization": {
+        "authorizationClass": "NOT_APPLICABLE",
+        "nativeStatus": "NOT_APPLICABLE",
+        "targetAvailability": "NOT_APPLICABLE"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PERSONEL-01",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "ALLOW_GUIDANCE",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PERSONEL-02",
+      "safe": true,
+      "frame": {
+        "requestMode": "NAVIGATE",
+        "action": "NAVIGATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PERSONEL-03",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PERSONEL-04",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CONTINUE",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "object": "RECORD",
+        "scope": "PRODUCT_CONTEXTUAL",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PERSONEL-05",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CREATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZATION_DENIAL",
+        "nativeStatus": "DENIED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PERSONEL-06",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION",
+        "nativeStatus": "REQUIRES_CLARIFICATION",
+        "targetAvailability": "REQUIRES_CLARIFICATION",
+        "preconditionStatus": "MISSING_REQUIRED_CONTEXT"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PERSONEL-07",
+      "safe": true,
+      "frame": {
+        "requestMode": "GENUINE_OOS",
+        "action": "NONE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "object": null,
+        "scope": "OFF_TOPIC_GENUINE",
+        "reference": "ABSENT",
+        "resolution": "NOT_APPLICABLE"
+      },
+      "authorization": {
+        "authorizationClass": "NOT_APPLICABLE",
+        "nativeStatus": "NOT_APPLICABLE",
+        "targetAvailability": "NOT_APPLICABLE"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PARENT-01",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "ALLOW_GUIDANCE",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PARENT-02",
+      "safe": true,
+      "frame": {
+        "requestMode": "NAVIGATE",
+        "action": "NAVIGATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PARENT-03",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PARENT-04",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CONTINUE",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "object": "RECORD",
+        "scope": "PRODUCT_CONTEXTUAL",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PARENT-05",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CREATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZATION_DENIAL",
+        "nativeStatus": "DENIED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PARENT-06",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION",
+        "nativeStatus": "REQUIRES_CLARIFICATION",
+        "targetAvailability": "REQUIRES_CLARIFICATION",
+        "preconditionStatus": "MISSING_REQUIRED_CONTEXT"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-PARENT-07",
+      "safe": true,
+      "frame": {
+        "requestMode": "GENUINE_OOS",
+        "action": "NONE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "object": null,
+        "scope": "OFF_TOPIC_GENUINE",
+        "reference": "ABSENT",
+        "resolution": "NOT_APPLICABLE"
+      },
+      "authorization": {
+        "authorizationClass": "NOT_APPLICABLE",
+        "nativeStatus": "NOT_APPLICABLE",
+        "targetAvailability": "NOT_APPLICABLE"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SUPER_ADMIN-01",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "SCREEN_CONTEXT",
+        "operation": "EXPLAIN_CURRENT_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "ALLOW_GUIDANCE",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SUPER_ADMIN-02",
+      "safe": true,
+      "frame": {
+        "requestMode": "NAVIGATE",
+        "action": "NAVIGATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "NAVIGATE_AUTHORIZED_SURFACE",
+        "object": "SURFACE",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "RESOLVED_SURFACE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SUPER_ADMIN-03",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SUPER_ADMIN-04",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CONTINUE",
+        "task": "CONTINUE_CURRENT_REASONING",
+        "operation": "CONTINUE_EXPLANATION",
+        "object": "RECORD",
+        "scope": "PRODUCT_CONTEXTUAL",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_CONTEXT_READ",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SUPER_ADMIN-05",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "CREATE",
+        "task": "SCREEN_CONTEXT",
+        "operation": "CREATE_SHIFT",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZED_OPERATION",
+        "nativeStatus": "AUTHORIZED",
+        "targetAvailability": "AVAILABLE",
+        "preconditionStatus": "VALID"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SUPER_ADMIN-06",
+      "safe": true,
+      "frame": {
+        "requestMode": "EXPLAIN",
+        "action": "EXPLAIN",
+        "task": "FIELD_LOOKUP",
+        "operation": "LOOK_UP_FIELD",
+        "object": "SHIFT",
+        "scope": "PRODUCT_EXPLICIT",
+        "reference": "ABSENT",
+        "resolution": "RESOLVED"
+      },
+      "authorization": {
+        "authorizationClass": "AUTHORIZATION_CONTEXT_CLARIFICATION",
+        "nativeStatus": "REQUIRES_CLARIFICATION",
+        "targetAvailability": "REQUIRES_CLARIFICATION",
+        "preconditionStatus": "MISSING_REQUIRED_CONTEXT"
+      },
+      "independent": true
+    },
+    {
+      "caseId": "M18-GOV001-ARBITRATION-FINAL12-20261014-S1-SUPER_ADMIN-07",
+      "safe": true,
+      "frame": {
+        "requestMode": "GENUINE_OOS",
+        "action": "NONE",
+        "task": "OFF_TOPIC",
+        "operation": "GENERAL_INFORMATION",
+        "object": null,
+        "scope": "OFF_TOPIC_GENUINE",
+        "reference": "ABSENT",
+        "resolution": "NOT_APPLICABLE"
+      },
+      "authorization": {
+        "authorizationClass": "NOT_APPLICABLE",
+        "nativeStatus": "NOT_APPLICABLE",
+        "targetAvailability": "NOT_APPLICABLE"
+      },
+      "independent": true
+    }
+  ],
+  "contaminationKnownArtifactOverlapCount": 0,
+  "fixturePreflight": {
+    "safe": true,
+    "requiredCount": 8,
+    "validatedCount": 8,
+    "failureReasons": [],
+    "failures": []
+  },
+  "fixtureProvenanceReceiptSha256": "BB85C756FAE95A75774897AFB86709C8C4E88B43B9C9904F979B65C6CBAA15F2"
+}

@@ -7,13 +7,14 @@ import {
 } from "./roomShiftsPanelUtils";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
+import { financeUserFacingText } from "../shared/financeUserFacingLabels.js";
 
 export function AgreementBadge({ agreementId }) {
   const id = Number(agreementId);
   if (!Number.isFinite(id) || id <= 0) return null;
   return (
     <span className="pill" data-status="AGREEMENT" title="Sözleşme kaynaklı otomatik vardiya" style={{ marginLeft: 8 }}>
-      Sözleşme ID {id}
+      Sözleşme bağlantısı mevcut
     </span>
   );
 }
@@ -31,7 +32,7 @@ export function RoomCompanyOfferSummary({ shift, vehiclesById }) {
   if (!has) return <span className="muted">-</span>;
   return (
     <div className="muted" title={shift?.companyOfferNote || ""}>
-      <div><b>Hizmet Alan Firma → Taşımacılık Firması aracı:</b> {ovId ? (ov ? `${ov.plate} • ${vehicleMetaLine(ov)}` : `Araç ID ${ovId}`) : "-"}</div>
+      <div><b>Hizmet Alan Firma → Taşımacılık Firması aracı:</b> {ovId ? (ov ? `${ov.plate} • ${vehicleMetaLine(ov)}` : "Araç bilgisi bekliyor") : "-"}</div>
       {cAmt != null ? <div className="muted" style={{ marginTop: 4 }}><b>Hizmet Alan Firma → Taşımacılık Firması tutarı:</b> {formatTRY(cAmt)} ₺</div> : null}
       {shift?.companyOfferNote ? <div className="muted" style={{ marginTop: 4 }}>{shift.companyOfferNote}</div> : null}
     </div>
@@ -48,7 +49,7 @@ export function RoomOfferSummary({ shift, vehiclesById }) {
   const decisionAtText = shift?.roomOfferDecisionAt ? fmtTR(shift.roomOfferDecisionAt) : "";
   return (
     <div className="muted">
-      <div><b>Taşımacılık Firması → Hizmet Alan Firma aracı:</b> {rvId ? (rv ? `${rv.plate} • ${vehicleMetaLine(rv)}` : `Araç ID ${rvId}`) : "-"}</div>
+      <div><b>Taşımacılık Firması → Hizmet Alan Firma aracı:</b> {rvId ? (rv ? `${rv.plate} • ${vehicleMetaLine(rv)}` : "Araç bilgisi bekliyor") : "-"}</div>
       {rAmt != null ? <div className="muted" style={{ marginTop: 4 }}><b>Taşımacılık Firması → Hizmet Alan Firma tutarı:</b> {formatTRY(rAmt)} ₺</div> : null}
       {shift?.roomOfferNote ? <div className="muted" style={{ marginTop: 4 }}><b>Taşımacılık Firması → Hizmet Alan Firma notu:</b> {shift.roomOfferNote}</div> : null}
       {shift?.roomOfferToDriver ? <div className="muted" style={{ marginTop: 4 }}><b>Taşımacılık Firması → Sürücü:</b> evet{shift.roomOfferDriverNote ? ` • ${shift.roomOfferDriverNote}` : ""}</div> : null}
@@ -64,23 +65,22 @@ export function RoomAvailabilityLine({ shift, vehicleId, driverId, autoDriverNam
   const conflict = availability?.status === "conflict";
   const ok = availability?.status === "ok";
   const checking = availability?.status === "checking";
-  const code = availability?.code || (missing ? "SELECT_REQUIRED" : null);
   const msg = availability?.message || (missing ? "Araç ve şoför seç." : "");
   const cs = availability?.conflictingShift || null;
   const csId = cs?.id ? Number(cs.id) : null;
   const csRoom = cs?.roomId ? roomsById.get(Number(cs.roomId)) : null;
-  const csCompanyName = cs?.company?.name || (cs?.companyId ? `Firma ID ${cs.companyId}` : null);
-  const csRoomName = csRoom ? roomLabel(csRoom) : (cs?.roomId ? `Taşımacılık Firması ID ${cs.roomId}` : null);
+  const csCompanyName = cs?.company?.name || (cs?.companyId ? "Firma bilgisi bekliyor" : null);
+  const csRoomName = csRoom ? roomLabel(csRoom) : (cs?.roomId ? "Taşımacılık Firması bilgisi bekliyor" : null);
   return (
     <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
       <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <span><b>Uygunluk:</b> {checking ? <span className="pill" data-status="PENDING">Kontrol</span> : ok ? <span className="pill" data-status="OK">Hazır</span> : conflict ? <span className="pill" data-status="REJECTED">{String(code || "Uyarı")}</span> : missing ? <span className="pill" data-status="PENDING">Araç/şoför seç</span> : <span className="pill" data-status="REJECTED">Hata</span>}</span>
+        <span><b>Uygunluk:</b> {checking ? <span className="pill" data-status="PENDING">Kontrol</span> : ok ? <span className="pill" data-status="OK">Hazır</span> : conflict ? <span className="pill" data-status="REJECTED">Seçim uygun değil</span> : missing ? <span className="pill" data-status="PENDING">Araç/şoför seç</span> : <span className="pill" data-status="REJECTED">Hata</span>}</span>
         <span className="muted">(Araç / şoför: {autoDriverName})</span>
-        {msg ? <span className="muted">• {msg}</span> : null}
+        {msg ? <span className="muted">• {financeUserFacingText(msg, "Uygunluk bilgisi bekliyor")}</span> : null}
       </div>
       {capacity.requiredPax > 0 ? <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}><span><b>Yolcu:</b> {capacity.requiredPax}</span><span>• <b>Koltuk:</b> {capacity.vehicleCapacity || "-"}</span>{capacity.insufficient ? <span>• <b>Eksik:</b> {capacity.missingCapacity}</span> : null}{capacity.insufficient && capacity.minVehicleCount ? <span>• <b>Bu araçla min:</b> {capacity.minVehicleCount} araç</span> : null}{capacity.requiredPax > 0 && capacity.roomMaxCapacity > 0 ? <span>• <b>Taşımacılık Firması tek araç üst sınırı:</b> {capacity.roomMaxCapacity}</span> : null}</div> : null}
       {capacity.insufficient ? <div className="card" style={{ padding: 10 }}><div className="muted"><b>Kapasite uyarısı:</b> tek araç yetmiyor.</div><div className="muted" style={{ marginTop: 6 }}>Bu seçimle en az <b>{capacity.minVehicleCount || "-"}</b> araç gerekir.{capacity.roomMinVehicleCount ? ` Taşımacılık Firması havuzundaki en büyük araçla bile en az ${capacity.roomMinVehicleCount} araç gerekir.` : ""}</div></div> : null}
-      {conflict && csId ? <div className="card" style={{ padding: 10 }}><div className="muted"><b>Çakışan vardiya:</b> Vardiya ID {csId} {cs?.status ? <span className="pill" data-status={String(cs.status || "").toUpperCase()} style={{ marginLeft: 6 }}>{displayStatusLabel(String(cs.status || "").toUpperCase())}</span> : null}</div><div className="muted" style={{ marginTop: 6 }}>{csCompanyName ? <span><b>Firma:</b> {csCompanyName}</span> : null}{csRoomName ? <span> • <b>Taşımacılık Firması:</b> {csRoomName}</span> : null}</div>{hasRegionOwnership(csRoom) ? <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>{formatRegionOwnership(csRoom)}</div> : null}<div className="muted" style={{ marginTop: 6 }}><b>Zaman:</b> {fmtTR(cs.startAt)} → {fmtTR(cs.endAt)}</div></div> : null}
+      {conflict && csId ? <div className="card" style={{ padding: 10 }}><div className="muted"><b>Çakışan vardiya:</b> Başka bir vardiya ile çakışıyor {cs?.status ? <span className="pill" data-status={String(cs.status || "").toUpperCase()} style={{ marginLeft: 6 }}>{displayStatusLabel(String(cs.status || "").toUpperCase())}</span> : null}</div><div className="muted" style={{ marginTop: 6 }}>{csCompanyName ? <span><b>Firma:</b> {csCompanyName}</span> : null}{csRoomName ? <span> • <b>Taşımacılık Firması:</b> {csRoomName}</span> : null}</div>{hasRegionOwnership(csRoom) ? <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>{formatRegionOwnership(csRoom)}</div> : null}<div className="muted" style={{ marginTop: 6 }}><b>Zaman:</b> {fmtTR(cs.startAt)} → {fmtTR(cs.endAt)}</div></div> : null}
     </div>
   );
 }
@@ -153,7 +153,7 @@ export function RoomDispatchSuggestionCard({
             <option value="">Sürücü seç</option>
             {eligibleDrivers.map((d) => (
               <option key={`dispatch-d-${sid}-${splitIndex}-${d.id}`} value={d.id}>
-                {d.fullName || `Sürücü ID ${d.id}`}{hasRegionOwnership(d) ? ` • ${formatRegionOwnership(d).replace(/^Bölge:\s*/, "")}` : ""}
+                {d.fullName || "Sürücü bilgisi bekliyor"}{hasRegionOwnership(d) ? ` • ${formatRegionOwnership(d).replace(/^Bölge:\s*/, "")}` : ""}
               </option>
             ))}
           </select>
@@ -161,7 +161,7 @@ export function RoomDispatchSuggestionCard({
       </div>
       <div className="muted" style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
         <span>
-          <b>Seçim:</b> {selectedVehicle?.plate || (selectedVehicleId ? `Araç ID ${selectedVehicleId}` : "-")}
+          <b>Seçim:</b> {selectedVehicle?.plate || (selectedVehicleId ? "Araç seçildi" : "-")}
           {selectedDriver?.fullName ? ` → ${selectedDriver.fullName}` : ""}
         </span>
         <span>
@@ -173,10 +173,10 @@ export function RoomDispatchSuggestionCard({
           ) : selectionState.status === "missing" ? (
             <span className="pill" data-status="PENDING">Araç/şoför seç</span>
           ) : (
-            <span className="pill" data-status="REJECTED">{String(selectionState.code || "Uyarı")}</span>
+            <span className="pill" data-status="REJECTED">Bu seçim kullanılamıyor</span>
           )}
         </span>
-        {selectionState?.message ? <span>• {selectionState.message}</span> : null}
+        {selectionState?.message ? <span>• {financeUserFacingText(selectionState.message, "Seçim bilgisi bekliyor")}</span> : null}
       </div>
       {Array.isArray(part?.stops) && part.stops.length ? (
         <div className="muted" style={{ marginTop: 6 }}>

@@ -281,7 +281,11 @@ function buildDirectQuestionTail(snapshot = {}, reply = '') {
     return 'Takılırsan "bulamadım" yaz.';
   }
 
-  if (snapshot?.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE' && !containsNormalized(replyText, 'güvenli alternatif')) {
+  if (
+    snapshot?.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE'
+    && !containsNormalized(replyText, 'güvenli alternatif')
+    && !containsNormalized(replyText, 'önerilen güvenli adım')
+  ) {
     return `Önerilen güvenli adım: ${safeAlternative(snapshot)}`;
   }
 

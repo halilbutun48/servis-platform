@@ -140,12 +140,20 @@ function classifyScript(file) {
   if (filename === "m45_backup_create.js" || filename === "m45_backup_restore.js") {
     return "integration";
   }
+  const browserOrNetworkIntegration =
+    includesText(text, "fetch(") ||
+    includesText(text, "chromium.launch") ||
+    includesText(text, "playwright") ||
+    includesText(text, "page.goto(") ||
+    includesText(text, "http://127.0.0.1") ||
+    includesText(text, "http://localhost");
   const integration =
     includesText(text, "process.env.API_URL") ||
     includesText(text, "BASE_URL") ||
     includesText(text, "socket.io-client") ||
     includesText(text, "_harness.js") ||
-    (includesText(text, "http") && includesText(text, "https") && includesText(text, "request"));
+    (includesText(text, "http") && includesText(text, "https") && includesText(text, "request")) ||
+    browserOrNetworkIntegration;
 
   return integration ? "integration" : "static";
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 function Card({ title, children }) {
   return (
@@ -35,6 +36,37 @@ export default function SsotAlignmentPanel() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!manifest && !summary) {
+      clearCopilotSelection("/superadmin/ssot-alignment");
+      return;
+    }
+    const targetCount = Number(summary?.targetCount || 0);
+    const greenCount = Number(summary?.greenCount || 0);
+    const errorCount = Array.isArray(manifest?.route) ? manifest.route.length : 0;
+    const activeRule = String(summary?.activeRule || "Çalışma hattı izleniyor").trim();
+    setCopilotSelection({
+      scopeKey: "/superadmin/ssot-alignment",
+      entityType: "screen",
+      entityId: 6111,
+      label: "Sistem Standartları",
+      summary: `${targetCount} hedef • Green: ${greenCount} • Toplam hat: ${errorCount}`,
+      fields: [
+        { label: "Aktif çalışma kuralı", value: activeRule, help: "Ekranda görünen aktif çalışma kuralını gösterir." },
+        { label: "İzlenen dosyalar", value: `${targetCount} hedef`, help: "Ekranda izlenen hedef sayısını gösterir." },
+        { label: "Green", value: String(greenCount), help: "Ekranda görünen Green sayısını gösterir." },
+        { label: "Toplam hat", value: String(errorCount), help: "Manifestte görünen toplam hat satırı sayısını gösterir." },
+      ],
+      facts: {
+        screenType: "SSOT_ALIGNMENT",
+        counters: { targetCount, greenCount, errorCount },
+        activeRule,
+        evidence: [`İzlenen dosyalar: ${targetCount}`, `Green: ${greenCount}`, `Toplam hat: ${errorCount}`],
+      },
+    });
+    return () => clearCopilotSelection("/superadmin/ssot-alignment");
+  }, [manifest, summary]);
 
   return (
     <div className="card">

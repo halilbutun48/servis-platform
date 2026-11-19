@@ -1,4 +1,4 @@
-import { safeParseJson } from "./safeParseJson";
+import { safeParseJson } from "./safeParseJson.js";
 
 const NOTIFICATION_KIND_LABELS = {
   GPS_OFFLINE: "Konum sinyali yok",
@@ -38,4 +38,15 @@ export function normalizeNotifV1(payloadJsonOrObj) {
     status: p.status ?? null, // LIVE|STALE|OFFLINE
     kind: p.kind ?? null,     // GPS_STALE|OVERSPEED|MAINTENANCE...
   };
+}
+
+const NOTIFICATION_STATUS_LABELS = {
+  LIVE: "Güncel",
+  STALE: "Güncel değil",
+  OFFLINE: "Çevrimdışı",
+};
+
+export function notificationStatusLabel(value) {
+  const key = String(value || "").trim().toUpperCase();
+  return NOTIFICATION_STATUS_LABELS[key] || "";
 }

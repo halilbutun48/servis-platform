@@ -1,4 +1,5 @@
 import { prisma } from "../prisma.js";
+import { buildOperationEvidencePlan } from "./agreementOperationEvidence.js";
 
 function normalizeAgreementIds(agreementIds = []) {
   return Array.from(
@@ -41,7 +42,26 @@ function buildSourceSummary(sourceShift) {
   return `Kaynak vardiya #${sourceShift.id} • ${Number(sourceShift?._count?.people || 0)} personel • ${Number(sourceShift?._count?.stops || 0)} durak`;
 }
 
-export async function buildAgreementOpsBridgeById({ agreementIds = [], companyId = null, roomId = null } = {}) {
+function buildCompanyDecisionMap(rows = []) {
+  const out = Object.create(null);
+  for (const row of rows || []) {
+    const agreementId = Number(row?.entityId || 0);
+    if (agreementId <= 0 || out[agreementId]) continue;
+    const decision = String(row?.meta?.decision || "").trim().toUpperCase();
+    const finalStatus = String(row?.meta?.finalStatus || "").trim().toUpperCase();
+    if (!["ACCEPT", "REJECT"].includes(decision) || !finalStatus) continue;
+    out[agreementId] = {
+      decision,
+      finalStatus,
+      roomOfferAmountMinor: Number.isSafeInteger(Number(row?.meta?.roomOfferAmountMinor))
+        ? Number(row.meta.roomOfferAmountMinor)
+        : null,
+    };
+  }
+  return out;
+}
+
+export async function buildAgreementOpsBridgeById({ agreementIds = [], companyId = null, roomId = null, actorRole = null } = {}) {
   const ids = normalizeAgreementIds(agreementIds);
   if (!ids.length) return {};
 
@@ -49,6 +69,9 @@ export async function buildAgreementOpsBridgeById({ agreementIds = [], companyId
     where: buildAgreementWhere({ agreementIds: ids, companyId, roomId }),
     select: {
       id: true,
+      status: true,
+      startDate: true,
+      endDate: true,
       vehicleId: true,
       driverId: true,
       hubLat: true,
@@ -65,6 +88,20 @@ export async function buildAgreementOpsBridgeById({ agreementIds = [], companyId
 
   const allowedIds = normalizeAgreementIds(agreements.map((row) => row.id));
   if (!allowedIds.length) return {};
+
+  // The agreement scope above is the tenant boundary. Only the latest
+  // commercial decision summary is projected; actor/audit internals and
+  // ROOM cost data remain server-side.
+  const decisionRows = await prisma.auditLog.findMany({
+    where: {
+      entity: "Agreement",
+      entityId: { in: allowedIds },
+      action: "COMPANY_AGREEMENT_DECISION",
+    },
+    select: { entityId: true, meta: true },
+    orderBy: { id: "desc" },
+  });
+  const companyDecisionByAgreement = buildCompanyDecisionMap(decisionRows);
 
   const sourceRows = await prisma.commercialSource.findMany({
     where: { agreementId: { in: allowedIds }, shiftRootId: { not: null } },
@@ -83,9 +120,14 @@ export async function buildAgreementOpsBridgeById({ agreementIds = [], companyId
         where: { id: { in: sourceShiftIds } },
         select: {
           id: true,
+          agreementId: true,
+          startAt: true,
+          endAt: true,
+          status: true,
           routeSnapshotValidatedAt: true,
           routeSnapshotDistanceM: true,
           routeSnapshotDurationSec: true,
+          routeSnapshotInputHash: true,
           _count: { select: { stops: true, people: true } },
         },
       })
@@ -114,6 +156,7 @@ export async function buildAgreementOpsBridgeById({ agreementIds = [], companyId
         routeSnapshotValidatedAt: true,
         routeSnapshotDistanceM: true,
         routeSnapshotDurationSec: true,
+        routeSnapshotInputHash: true,
         vehicle: { select: { id: true, plate: true } },
         driver: { select: { id: true, fullName: true } },
         _count: { select: { stops: true, people: true } },
@@ -158,6 +201,7 @@ export async function buildAgreementOpsBridgeById({ agreementIds = [], companyId
       routeSnapshotValidatedAt: row.routeSnapshotValidatedAt || sourceShift?.routeSnapshotValidatedAt || null,
       routeSnapshotDistanceM: row.routeSnapshotDistanceM ?? sourceShift?.routeSnapshotDistanceM ?? null,
       routeSnapshotDurationSec: row.routeSnapshotDurationSec ?? sourceShift?.routeSnapshotDurationSec ?? null,
+      routeSnapshotInputHash: row.routeSnapshotInputHash || sourceShift?.routeSnapshotInputHash || null,
       stopCount,
       peopleCount,
       previewAvailable,
@@ -174,6 +218,7 @@ export async function buildAgreementOpsBridgeById({ agreementIds = [], companyId
       generatedCount: Number(countMap[agreementId] || 0),
       sourceShiftId: Number(sourceShiftIdByAgreement[agreementId] || 0) || null,
       sourceSummary: buildSourceSummary(sourceShift),
+      companyDecision: companyDecisionByAgreement[agreementId] || null,
       agreementVehicle: agreement.vehicle
         ? { id: agreement.vehicle.id, plate: agreement.vehicle.plate || null }
         : (agreement.vehicleId ? { id: agreement.vehicleId, plate: null } : null),
@@ -191,6 +236,14 @@ export async function buildAgreementOpsBridgeById({ agreementIds = [], companyId
       },
       lastShift: lastByAgreement[agreementId] || null,
     };
+    byId[agreementId].operationEvidencePlan = buildOperationEvidencePlan({
+      agreement,
+      companyDecision: byId[agreementId].companyDecision,
+      sourceShift,
+      generatedCount: byId[agreementId].generatedCount,
+      lastShift: byId[agreementId].lastShift,
+      actorRole,
+    });
   }
 
   return byId;

@@ -247,6 +247,8 @@ export default function OperationHealthPanel() {
   ], filterQ)), [issues, filterQ]);
   const copilotDriver = useMemo(() => filteredDrivers.find((item) => Number(item?.driverId || item?.id || 0) === Number(selectedDriverId || 0)) || filteredDrivers[0] || null, [filteredDrivers, selectedDriverId]);
   const copilotIssue = useMemo(() => filteredIssues.find((item, idx) => `${idx}:${item?.title || ''}` === String(selectedIssueKey || '')) || filteredIssues[0] || null, [filteredIssues, selectedIssueKey]);
+  const selectedCopilotIssue = activeTab === 'problems' ? copilotIssue : null;
+  const selectedCopilotDriver = activeTab === 'problems' ? copilotDriver : null;
   const facts = useMemo(() => ({
     ...buildOperationHealthCopilotFacts({
       summary,
@@ -262,24 +264,24 @@ export default function OperationHealthPanel() {
       scopeKey: '/room/operation-health',
       entityType: 'screen',
       entityId: 1114,
-      label: copilotIssue?.title || copilotDriver?.driverName || 'Operasyon sağlığı özeti',
-      summary: [copilotDriver?.liveState || null, copilotDriver?.issueSummary || null, copilotIssue?.severity || null].filter(Boolean).join(' • '),
+      label: selectedCopilotIssue?.title || selectedCopilotDriver?.driverName || 'Operasyon sağlığı özeti',
+      summary: [selectedCopilotDriver?.liveState || null, selectedCopilotDriver?.issueSummary || null, selectedCopilotIssue?.severity || null].filter(Boolean).join(' • '),
       fields: [
         { label: 'Aktif Sürücü', value: String(summary?.cards?.activeDrivers ?? '-'), help: 'Taşımacılık Firması içinde şu an görünen aktif sürücü sayısını gösterir.' },
         { label: 'Riskli Cihaz', value: String(summary?.cards?.riskyDevices ?? '-'), help: 'İzin, oturum veya GPS riski taşıyan cihaz sayısını gösterir.' },
         { label: 'Düşük canlılık / Çevrim dışı', value: String(summary?.cards?.staleOrOffline ?? '-'), help: 'Canlı konum akışı zayıf olan sürücü sayısını gösterir.' },
         { label: 'Açık Sorun', value: String(summary?.cards?.openIssues ?? '-'), help: 'Takip edilmesi gereken açık sorun sayısını gösterir.' },
-        { label: 'Örnek Sürücü', value: copilotDriver?.driverName || '-', help: 'İlk riskli sürücüyü örnek odak olarak gösterir.' },
-        { label: 'Örnek Sorun', value: copilotIssue?.title || '-', help: 'İlk açık sorun başlığını gösterir.' },
+        { label: 'Örnek Sürücü', value: selectedCopilotDriver?.driverName || '-', help: 'Seçili sorunlar sekmesindeki sürücüyü odak olarak gösterir.' },
+        { label: 'Örnek Sorun', value: selectedCopilotIssue?.title || '-', help: 'Seçili sorunlar sekmesindeki sorunu odak olarak gösterir.' },
       ],
       badges: [
-        { label: 'Canlılık', value: copilotDriver?.liveState || '-', help: 'İlk sürücünün canlılık durumunu gösterir.' },
-        { label: 'Önem', value: copilotIssue?.severity || '-', help: 'İlk açık sorunun önem seviyesini gösterir.' },
+        { label: 'Canlılık', value: selectedCopilotDriver?.liveState || '-', help: 'Seçili sürücünün canlılık durumunu gösterir.' },
+        { label: 'Önem', value: selectedCopilotIssue?.severity || '-', help: 'Seçili sorunun önem seviyesini gösterir.' },
       ],
       facts,
     });
     return () => clearCopilotSelection('/room/operation-health');
-  }, [summary, copilotDriver, copilotIssue, facts]);
+  }, [summary, selectedCopilotIssue, selectedCopilotDriver, facts, activeTab]);
 
   const cards = useMemo(() => {
     const c = summary?.cards || {};

@@ -17,6 +17,7 @@ export const SEMANTIC_SPECIFICITY_CONTRACT = Object.freeze({
   specificEvidenceRules: Object.freeze([
     "CONCRETE_FIELD_BLOCKS_GENERIC_SCREEN_CONTEXT",
     "EXPLICIT_RISK_REQUIRES_ANALYTICAL_EVIDENCE",
+    "FINANCIAL_PROCESS_READINESS_OUTRANKS_SELECTED_FIELD",
     "CONCRETE_FIELD_OUTRANKS_GENERIC_COST_CUE",
     "COUNT_EVIDENCE_BLOCKS_ROLE_HELP",
     "PRODUCT_GROUNDING_BLOCKS_OOS_WITHOUT_POSITIVE_NON_PRODUCT_EVIDENCE",
@@ -37,6 +38,33 @@ function normalizeText(value) {
     .trim();
 }
 
+function hasPlatformHistoricalReferenceEvidence(text) {
+  const value = normalizeText(text);
+  const platformScope = /\b(?:seferpakt|platform|genelinde|tum\s+odalar|odalar(?:in|i)?)\b/iu.test(value);
+  const historicalCue = /\b(?:benzer|gecmis|tarihsel|ortalama|referans)\b/iu.test(value);
+  const agreementValueCue = /\b(?:(?:anlas|anlaş)(?:ilmis|ilmiş|ildi|ıldı|ma|malar|malara)?|kaca|kaç|ne\s+kadar|fiyat|bedel|tutar)\b/iu.test(value);
+  return platformScope && historicalCue && agreementValueCue;
+}
+
+// A readiness/process question about hakediş, payment preparation, invoice or
+// reconciliation is not a scalar field lookup on the currently selected
+// record. Keep this lexical evidence compositional so unseen Turkish
+// inflections and word order remain covered without phrase-specific answers.
+export function hasFinancialReadinessEvidence(text) {
+  const value = normalizeText(text)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/gu, "")
+    .replace(/ı/g, "i");
+  const financeNoun = "(?:hakedi[sş]|odeme|fatura|mutabakat)\\p{L}*";
+  // Bare question words also occur in scalar field lookups ("ödeme limiti
+  // nedir?"). Keep explicit process/state words compositional; a bare `var`
+  // is intentionally excluded because permission questions commonly end in
+  // "iznim var mı?" and must remain capability/field semantics.
+  const readinessPredicate = "(?:hazir\\p{L}*|eksik\\p{L}*|durum\\p{L}*|asama\\p{L}*|neden\\p{L}*|niye\\p{L}*)";
+  return new RegExp(`\\b${financeNoun}\\b.{0,48}\\b${readinessPredicate}\\b`, "iu").test(value)
+    || new RegExp(`\\b${readinessPredicate}\\b.{0,48}\\b${financeNoun}\\b`, "iu").test(value);
+}
+
 function hasMatch(text, pattern) {
   return new RegExp(pattern, "iu").test(text);
 }
@@ -52,16 +80,40 @@ function hasQuoteFloorAnalysisEvidence(text) {
     .replace(/ı/g, "i");
   const floorConcept = /\b(?:teklif\s+taban\p{L}*|guvenli\s+taban\p{L}*|minimum\s+fiyat\p{L}*|quote\s+floor)\b/iu.test(value);
   const calculationQuestion = /\b(?:ne|nedir|toplam|toplami|kisi\s+basi|hesap|hesapla|hesaplandi|deger|degeri|oneri|onerilen|detay|ayrinti|ac|goster|gosterir|karsilastir|marj|kar)\p{L}*\b/iu.test(value);
-  return floorConcept && calculationQuestion;
+  return (floorConcept && calculationQuestion) || hasIndependentRouteQuoteAdviceEvidence(value);
 }
 
-function hasQuoteFloorContextualFollowUpEvidence(text, conversationState = null) {
+// A route-bound price recommendation is a financial preview request even
+// when the user does not say "teklif tabanı". It is intentionally narrower
+// than a generic price/offer lookup: a route or distance cue plus a request
+// for a new quote price is required. No agreement or offer record is invented.
+function hasIndependentRouteQuoteAdviceEvidence(text) {
+  const value = normalizeText(text)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/gu, "")
+    .replace(/ı/g, "i");
+  const routeCue = /\b(?:rota|guzergah|mesafe|km)\p{L}*\b/iu.test(value);
+  const recommendationCue = /(?:\b(?:kac|ne\s+kadar|hangi)\b[^.!?\n]{0,28}\b(?:lira|tl|fiyat|teklif)\b[^.!?\n]{0,32}\b(?:vereyim|verelim|vermeli|olmali|oner|yaz(?:ayim|alim))\p{L}*\b)|(?:\b(?:yeni\s+fiyat|fiyat\s+ne|yeni\s+teklif)\b)/iu.test(value);
+  return routeCue && recommendationCue;
+}
+
+function hasQuoteFloorContextualFollowUpEvidence(text, conversationState = null, context = null) {
   const value = normalizeText(text)
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/gu, "")
     .replace(/ı/g, "i");
   const deicticCalculation = /^(?:bu|bunun|bu\s+(?:tutar|deger|sonuc))\b.*\b(?:nasil|hesap|detay|ayrinti|neden|acikla|anlat)\p{L}*\b/iu.test(value);
   if (!deicticCalculation) return false;
+  const currentSurface = context?.currentSurface || {};
+  const currentSurfaceText = [currentSurface.path, currentSurface.label, currentSurface.foreground]
+    .filter(Boolean)
+    .join(" ");
+  const hasLiveSurface = Boolean(currentSurfaceText);
+  const currentSurfaceIsFinancial = /(?:financial-operations|teklif\s+ve\s+k[âa]rl[ıi]l[ıi]k|maliyet\s+ve\s+teklif)/iu.test(currentSurfaceText);
+  // A live non-financial surface owns a deictic request. Historical financial
+  // turns must not promote a vehicle, shift or operation question into a
+  // quote-floor follow-up merely because an earlier answer mentioned it.
+  if (hasLiveSurface && !currentSurfaceIsFinancial) return false;
   const previousRequest = conversationState?.lastSettledResult?.semanticPlan?.canonicalRequest
     || conversationState?.productContext?.semanticPlan?.canonicalRequest
     || conversationState?.lastSemanticPlan?.canonicalRequest
@@ -158,7 +210,12 @@ function hasExplicitAnalyticalEvidence(text, conversationState = null, context =
 
 function hasCardinalityEvidence(text, evidence, inferred) {
   const typedCardinality = evidence?.cardinality?.value && String(evidence.cardinality.value).toUpperCase() !== "NONE";
-  const inferredCount = ["COUNT"].includes(String(inferred?.taskType || "").toUpperCase());
+  const requestMode = String(evidence?.requestMode?.value || evidence?.requestMode || "").toUpperCase();
+  const explicitCollectionView = requestMode === "VIEW"
+    && hasWord(text, "(?:görüntüle|goruntule|incele|listele|göster|goster|aç|ac)")
+    && !hasWord(text, COUNT_TERMS);
+  const inferredCount = ["COUNT"].includes(String(inferred?.taskType || "").toUpperCase())
+    && !explicitCollectionView;
   const morphology = hasMatch(text, `\\b${COUNT_TERMS}\\p{L}*\\b`)
     && hasMatch(text, `\\b(?:${RECORD_TERMS})\\p{L}*\\b`);
   return Boolean(typedCardinality || inferredCount || morphology);
@@ -464,7 +521,11 @@ function taskShapeOverrides(taskType, { evidence, inferred } = {}) {
     ...(taskType === "FIELD_LOOKUP" ? { capabilityIntent: true, capabilityEvidence: true } : {}),
     scopeTarget: inferred?.scopeTarget || "CURRENT_SCREEN",
     ambiguity: null,
-    ...(taskType === "RISK" ? { requestedTasks: ["RISK"], domain: inferred?.domain || "BUDGET" } : {}),
+    // A generic risk request has no financial meaning by itself.  Keep the
+    // domain absent until explicit financial evidence or the active screen
+    // supplies one; defaulting it to BUDGET leaks cost analysis into shared
+    // non-financial surfaces.
+    ...(taskType === "RISK" ? { requestedTasks: ["RISK"], domain: inferred?.domain || null } : {}),
   };
 }
 
@@ -475,12 +536,28 @@ function taskShapeOverrides(taskType, { evidence, inferred } = {}) {
  */
 export function resolveSemanticSpecificity({ message, evidence = {}, inferred = {}, context = {}, conversationState = null } = {}) {
   const text = normalizeText(message);
+  const independentRouteQuoteAdviceEvidence = hasIndependentRouteQuoteAdviceEvidence(text);
+  const platformHistoricalReferenceEvidence = hasPlatformHistoricalReferenceEvidence(text);
   const quoteFloorAnalysisEvidence = hasQuoteFloorAnalysisEvidence(text)
-    || hasQuoteFloorContextualFollowUpEvidence(text, conversationState);
-  const concreteFieldEvidence = hasConcreteFieldEvidence(text, evidence, inferred) && !quoteFloorAnalysisEvidence;
+    || hasQuoteFloorContextualFollowUpEvidence(text, conversationState, context);
+  const financialReadinessEvidence = hasFinancialReadinessEvidence(text);
+  const concreteFieldEvidence = hasConcreteFieldEvidence(text, evidence, inferred)
+    && !quoteFloorAnalysisEvidence
+    && !financialReadinessEvidence;
   const financialMetricIdentityEvidence = hasFinancialMetricIdentityEvidence(text, { conversationState, context });
-  const explicitAnalyticalEvidence = hasExplicitAnalyticalEvidence(text, conversationState, context) || quoteFloorAnalysisEvidence;
-  const cardinalityEvidence = hasCardinalityEvidence(text, evidence, inferred);
+  const explicitAnalyticalEvidence = hasExplicitAnalyticalEvidence(text, conversationState, context)
+    || quoteFloorAnalysisEvidence
+    || financialReadinessEvidence;
+  const explicitCollectionView = String(evidence?.requestMode?.value || evidence?.requestMode || "").toUpperCase() === "VIEW"
+    && hasWord(text, "(?:görüntüle|goruntule|incele|listele|göster|goster|aç|ac)")
+    && !hasWord(text, COUNT_TERMS)
+    && !hasWord(text, "(?:sorun|problem|arıza|ariza|aksak|gps|konum)")
+    && (
+      inferred?.collectionSummaryIntent === true
+      || String(inferred?.taskType || "").toUpperCase() === "COUNT"
+      || String(inferred?.workflowIntent || "").toUpperCase() === "OPEN_SHIFT_SURFACE"
+    );
+  const cardinalityEvidence = hasCardinalityEvidence(text, evidence, inferred) && !explicitCollectionView;
   const navigationEvidence = hasNavigationEvidence(text, evidence, inferred);
   const capabilityEvidence = hasCapabilityOrPermissionEvidence(text, evidence);
   const liveCanonicalTargetViewEvidence = Boolean(inferred?.currentTargetReference?.targetKey)
@@ -497,12 +574,18 @@ export function resolveSemanticSpecificity({ message, evidence = {}, inferred = 
   const concreteTargetEvidence = hasConcreteTargetEvidence(text, evidence, inferred);
   const surfaceHelpEvidence = hasSurfaceHelpEvidence(text, evidence, inferred);
   const roleCapabilityExplanationEvidence = hasRoleCapabilityExplanationEvidence(evidence);
+  const typedConcreteRecordCapabilityField = capabilityEvidence
+    && concreteTargetEvidence
+    && String(evidence?.targetRequest?.value || "").toUpperCase() === "RECORD"
+    && ["BOUNDARY", "CAPABILITY", "LIMITATION"].includes(String(evidence?.roleAspect?.value || "").toUpperCase());
+  const fieldEvidenceMayOutrankScreenContext = typedConcreteRecordCapabilityField || Boolean(evidence?.field?.value && String(evidence.field.value).toUpperCase() !== "NONE");
   const navigationTargetClass = navigationEvidence && (
     hasSurfaceNavigationTarget(text)
       || String(inferred?.targetEntityType || "").toUpperCase() === "SURFACE"
       || Boolean(inferred?.currentTargetReference?.targetKey)
   ) ? "SURFACE" : null;
   const referenceRequiresResolution = requiresConcreteReferenceResolution(evidence);
+  const referenceLessRouteQuoteAdvice = independentRouteQuoteAdviceEvidence;
   const continuationEvidence = String(evidence?.requestMode?.value || "").toUpperCase() === "CONTINUE"
     || String(inferred?.taskType || "").toUpperCase() === "CONTINUE_CURRENT_REASONING"
     || Boolean(context?.continuity?.continuation?.status === "VALID");
@@ -510,14 +593,21 @@ export function resolveSemanticSpecificity({ message, evidence = {}, inferred = 
   let selectedTask = null;
   if (positiveNonProductEvidence) selectedTask = "OFF_TOPIC";
   else if (continuationEvidence) selectedTask = null;
-  else if (referenceRequiresResolution) selectedTask = null;
+  // A reference-less financial readiness question can be answered at the
+  // current authorized surface with a truthful capability boundary. It must
+  // not inherit a selected record, but it also should not fall into a generic
+  // "which record?" clarification. Deictic non-financial requests retain the
+  // strict unresolved-reference guard above.
+  else if (referenceRequiresResolution && !financialReadinessEvidence && !referenceLessRouteQuoteAdvice) selectedTask = null;
   else if (explicitMutationEvidence && concreteTargetEvidence && !explicitAnalyticalEvidence) selectedTask = "UPDATE";
   else if (explicitCreateEvidence && !explicitAnalyticalEvidence) selectedTask = "CREATE";
+  else if (platformHistoricalReferenceEvidence) selectedTask = "RISK";
   else if (preparationEvidence && !explicitAnalyticalEvidence) selectedTask = "SCREEN_CONTEXT";
   else if (explicitAnalyticalEvidence && !concreteFieldEvidence) selectedTask = "RISK";
   else if (explicitSurfaceViewEvidence && !concreteFieldEvidence) selectedTask = "VIEW";
   else if (liveCanonicalTargetViewEvidence) selectedTask = "NAVIGATION";
   else if (navigationEvidence && navigationTargetClass === "SURFACE") selectedTask = "NAVIGATION";
+  else if (explicitCollectionView) selectedTask = "VIEW";
   else if (inferred?.collectionSummaryIntent) selectedTask = "COUNT";
   else if (concreteFieldEvidence
     // Current-screen purpose remains authoritative for operation-inventory
@@ -527,6 +617,9 @@ export function resolveSemanticSpecificity({ message, evidence = {}, inferred = 
     && String(inferred?.screenKnowledgeKind || "").toUpperCase() !== "SCREEN_PURPOSE"
     && !inferred?.roleHelpIntent
     && !inferred?.generalProductHelpIntent
+    && (!inferred?.screenContextIntent || fieldEvidenceMayOutrankScreenContext)
+    && (!inferred?.explicitUiGuidance || fieldEvidenceMayOutrankScreenContext)
+    && (String(inferred?.taskType || "").toUpperCase() !== "SCREEN_CONTEXT" || fieldEvidenceMayOutrankScreenContext)
     && String(inferred?.taskType || "").toUpperCase() !== "RECORD_DETAILS"
     && !explicitAnalyticalEvidence) selectedTask = "FIELD_LOOKUP";
   else if (capabilityEvidence
@@ -534,6 +627,9 @@ export function resolveSemanticSpecificity({ message, evidence = {}, inferred = 
     && String(inferred?.screenKnowledgeKind || "").toUpperCase() !== "SCREEN_PURPOSE"
     && !inferred?.roleHelpIntent
     && !inferred?.generalProductHelpIntent
+    && (!inferred?.screenContextIntent || fieldEvidenceMayOutrankScreenContext)
+    && (!inferred?.explicitUiGuidance || fieldEvidenceMayOutrankScreenContext)
+    && (String(inferred?.taskType || "").toUpperCase() !== "SCREEN_CONTEXT" || fieldEvidenceMayOutrankScreenContext)
     && String(inferred?.taskType || "").toUpperCase() !== "RECORD_DETAILS"
     && !explicitAnalyticalEvidence) selectedTask = "FIELD_LOOKUP";
   else if (cardinalityEvidence && !concreteFieldEvidence && !explicitAnalyticalEvidence) selectedTask = "COUNT";
@@ -542,16 +638,25 @@ export function resolveSemanticSpecificity({ message, evidence = {}, inferred = 
 
   const blocksGenericFallback = Boolean(selectedTask && ["OFF_TOPIC", "FIELD_LOOKUP", "COUNT", "RISK", "SCREEN_CONTEXT", "NAVIGATION", "VIEW", "UPDATE", "CREATE"].includes(selectedTask));
   const inferredOverrides = selectedTask ? taskShapeOverrides(selectedTask, { evidence, inferred }) : {};
-  const quoteFloorOverrides = quoteFloorAnalysisEvidence && selectedTask === "RISK"
+  const financialReadinessOverrides = financialReadinessEvidence && selectedTask === "RISK"
     ? {
       ...inferredOverrides,
-      domain: "BUDGET",
       targetEntityType: null,
       targetCandidates: [],
       explicitUserTarget: true,
       scopeTarget: "CURRENT_SCREEN",
     }
     : inferredOverrides;
+  const quoteFloorOverrides = quoteFloorAnalysisEvidence && selectedTask === "RISK"
+    ? {
+      ...financialReadinessOverrides,
+      domain: "BUDGET",
+      targetEntityType: null,
+      targetCandidates: [],
+      explicitUserTarget: true,
+      scopeTarget: "CURRENT_SCREEN",
+    }
+    : financialReadinessOverrides;
   const requestModeOverride = selectedTask === "OFF_TOPIC"
     ? "GENUINE_OOS"
     : selectedTask === "SCREEN_CONTEXT"
@@ -573,6 +678,9 @@ export function resolveSemanticSpecificity({ message, evidence = {}, inferred = 
     concreteFieldEvidence,
     explicitAnalyticalEvidence,
     financialMetricIdentityEvidence,
+    platformHistoricalReferenceEvidence,
+    financialReadinessEvidence,
+    independentRouteQuoteAdviceEvidence,
     quoteFloorAnalysisEvidence,
     cardinalityEvidence,
     navigationEvidence,
@@ -587,6 +695,7 @@ export function resolveSemanticSpecificity({ message, evidence = {}, inferred = 
     concreteTargetEvidence,
     positiveNonProductEvidence,
     referenceRequiresResolution,
+    referenceLessRouteQuoteAdvice,
     continuationEvidence,
     selectedTask,
     blocksGenericFallback,

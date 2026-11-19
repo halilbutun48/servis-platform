@@ -468,6 +468,19 @@ export async function getShiftContext(user, shiftId) {
       agreement: { select: { id: true, status: true, startDate: true, endDate: true } },
       progress: { select: { id: true, lastReachedOrder: true, startedAt: true, pausedAt: true, completedAt: true } },
       checkinEvents: { select: { eventType: true } },
+      people: {
+        select: {
+          personelId: true,
+          personel: {
+            select: {
+              credentials: {
+                where: { status: "ACTIVE" },
+                select: { type: true },
+              },
+            },
+          },
+        },
+      },
       _count: { select: { people: true, assignments: true } },
       organizationPlan: { select: { id: true, stops: { select: { passengerCount: true } } } },
     },
@@ -489,6 +502,15 @@ export async function getShiftContext(user, shiftId) {
     BOARD: checkinEvents.filter((event) => String(event?.eventType || "").toUpperCase() === "BOARD").length,
     ALIGHT: checkinEvents.filter((event) => String(event?.eventType || "").toUpperCase() === "ALIGHT").length,
   };
+  const activeCredentialTypes = unique(
+    (Array.isArray(shift.people) ? shift.people : [])
+      .flatMap((person) => Array.isArray(person?.personel?.credentials) ? person.personel.credentials : [])
+      .map((credential) => String(credential?.type || "").toUpperCase())
+      .filter(Boolean),
+  );
+  const activeCredentialPersonelCount = (Array.isArray(shift.people) ? shift.people : [])
+    .filter((person) => Array.isArray(person?.personel?.credentials) && person.personel.credentials.length > 0)
+    .length;
 
   return {
     id: shift.id,
@@ -524,6 +546,11 @@ export async function getShiftContext(user, shiftId) {
     extendDecision: shift.extendDecision,
     progress: shift.progress,
     checkinCounts,
+    accessCredentials: {
+      activeCount: activeCredentialTypes.length,
+      types: activeCredentialTypes,
+      personelCount: activeCredentialPersonelCount,
+    },
     boardingCount: checkinCounts.BOARD,
     alightingCount: checkinCounts.ALIGHT,
   };
@@ -566,6 +593,36 @@ export async function getVehicleContext(user, vehicleId) {
     currentShiftIds: Array.isArray(vehicle.shifts) ? vehicle.shifts.map((x) => x.id) : [],
     currentCompanyNames,
   };
+}
+
+export async function getVehicleContextByPlate(user, plate) {
+  const normalizedPlate = String(plate || '').trim().toUpperCase().replace(/\s+/gu, '');
+  if (!normalizedPlate) {
+    const error = new Error('VEHICLE_PLATE_REQUIRED');
+    error.status = 400;
+    error.code = 'VEHICLE_PLATE_REQUIRED';
+    throw error;
+  }
+  const roomId = Number(user?.roomId || 0);
+  const candidates = await prisma.vehicle.findMany({
+    where: String(user?.role || '').toUpperCase() === 'ROOM' && roomId > 0 ? { roomId } : {},
+    select: { id: true, plate: true },
+    orderBy: { id: 'asc' },
+  });
+  const matches = candidates.filter((vehicle) => String(vehicle.plate || '').toUpperCase().replace(/\s+/gu, '') === normalizedPlate);
+  if (matches.length > 1) {
+    const error = new Error('VEHICLE_PLATE_AMBIGUOUS');
+    error.status = 409;
+    error.code = 'VEHICLE_PLATE_AMBIGUOUS';
+    throw error;
+  }
+  if (!matches.length) {
+    const error = new Error('VEHICLE_NOT_FOUND');
+    error.status = 404;
+    error.code = 'VEHICLE_NOT_FOUND';
+    throw error;
+  }
+  return getVehicleContext(user, matches[0].id);
 }
 
 export async function getDriverContext(user, driverId) {

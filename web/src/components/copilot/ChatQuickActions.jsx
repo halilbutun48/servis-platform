@@ -11,6 +11,7 @@ function actionText(action, index = 0) {
   if (kind === "OPEN_GUIDE") return humanizeUserFacingText(action?.label, "Rehberi aç");
   if (kind === "ASK") return humanizeUserFacingText(action?.label, "Bunu sor");
   if (kind === "COPY_TEXT") return humanizeUserFacingText(action?.label, "Metni kopyala");
+  if (kind === "CLEAR_FILTER") return humanizeUserFacingText(action?.label, "Filtreyi temizle");
   return humanizeUserFacingText(action?.label, index === 0 ? "Bu ekrana git" : "Buraya git");
 }
 

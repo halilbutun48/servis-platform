@@ -8,9 +8,21 @@ The Project Execution Operating System is adopted through the existing owners on
 
 The current mutable progress checkpoint is the additive handoff at the top of `docs/NEXT_BACKLOG_V1.md` (2026-10-14). The dated overlays below are retained as historical contract/provenance material and must not override that handoff or current source/runtime evidence.
 
+## DEMO_DATA_READINESS_AND_FIELD_LAUNCH_V1
+
+SeferPakt saha kullanımına açılmadan önceki aşamadadır; mevcut çalışma kayıtları canonical bir karar ile üretim/müşteri ortamı ilan edilmedikçe DEMO/ÇALIŞMA verisidir. Bu politika `ROOM`, `COMPANY`, `SCHOOL`, `ORGANIZATION`, `DRIVER`, `PERSONEL`, `PARENT` ve `SUPER_ADMIN` rollerinin tamamına ve mevcut/gelecek milestone'lara uygulanır. Demo/test verisi hazırlamak, ürünün çalışma zamanındaki iş yazma yetkisi değildir.
+
+Her milestone ve rol FULL PRODUCT RUN'ından önce hedef veritabanı demo/test olarak doğrulanır, mevcut kayıtlar ve ilişkiler envanterlenip yeniden kullanılır ve yalnızca gerçekten eksik minimum ilişkili kayıtlar canonical seed/fixture/domain mekanizmalarıyla idempotent, izlenebilir ve tenant/rol/veri bütünlüğü kontrolleriyle hazırlanır. Hazırlık; gerçek repo yüzeylerinden çıkarılan pozitif, negatif, eksik bilgi, istisna, sınır durum ve çok adımlı senaryoları kapsar; uygulanmamış işlevleri uygulanmış göstermez. Toplu silme, reset, migration reset, kontrolsüz yeniden seed, ilgisiz kayıt değişikliği, yetki/KVKK gevşetmesi ve gerçek müşteri/üretim verisine yazma yasaktır. Yalnız `SEFERPAKT_LOCAL_DEMO_REBUILD_2026_V1`, ürün sahibinin açık onayıyla doğrulanmış local Docker `personel_db` / `servisdb` hedefinde, canonical backup + isolated restore kanıtından sonra, `_prisma_migrations` ve repository korunarak, marker-scoped canonical seed ile tek seferlik kontrollü rebuild için istisnadır; production/customer, migration, payment/accounting, auth/KVKK veya sonraki reset/reseed kapsamına genişlemez. Pozitif, eksik, istisna ve yetki reddi durumları ayrı kanıtlanır; izole test runtime'ı, public demo runtime'ı ve üretim/müşteri kanıtı birbirine karıştırılmaz.
+
+Her `NOT_PROVEN` önce `DATA_MISSING`, `DATA_RELATION_MISSING`, `PRODUCT_DEFECT`, `UI_TARGET_NOT_PROVEN`, `HARNESS_DEFECT`, `AUTHORIZATION_BOUNDARY`, `RUNTIME_PROVENANCE`, `ENVIRONMENT_BLOCK` veya `GOVERNANCE_BLOCK` olarak sınıflandırılır. Veri hazırlığı yalnızca ilk iki sınıfı çözebilir; diğer sınıflar veri eklenerek kapatılamaz.
+
+Fixture/seed/checker sonucu tek başına ürün PASS değildir. Gerçek kabul; güncel source/runtime, gerçek browser/cihaz, seçili kayıt ve bağlam, kullanıcıya görünen semantic sonuç, role/tenant/security negatifleri ve ilgili UI görev zinciriyle kanıtlanır. Kritik rol ve operasyonlar bu kanıtı tamamlamadan SeferPakt veya Sefer Abi saha kullanımına hazır ilan edilmez. Bu politika M18'in `M18_NO_BUSINESS_WRITE` sınırını, ödeme/onay/dispatch/route/accounting yürütme yasağını ve mevcut governance kapılarını değiştirmez.
+
 ## PRODUCT_QUALITY_AND_REAL_USER_ACCEPTANCE_V1
 
 SeferPakt'ın kalıcı ürün ilkesi **İÇERİDE GÜÇLÜ — DIŞARIDA BASİT**'tir: kullanıcı teknik mimariyi bilmeden ekranın amacını, mevcut durumu ve ilk güvenli eylemi yaklaşık beş saniyede anlamalıdır. Gereksiz seçenek, jargon, enum ve iç sistem işareti görünür yüzeye sızmaz; desktop/mobile/erişilebilirlik gerçek görevlerle doğrulanır.
+
+Kanonik geliştirme ve kabul sırası her mevcut/gelecek milestone için `KULLANICI İHTİYACI → ÇALIŞAN ÜRÜN DAVRANIŞI → GERÇEK TARAYICI/KULLANICI KABULÜ → KALICI REGRESYON → ZORUNLU GÜVENLİK VE MILESTONE KAPANIŞI`dır. Ürün checker'ı GREEN yapmak için değiştirilmez; checker güncel canonical ürün sözleşmesini doğrular. Checker eski, mükerrer veya yanlış beklentiliyse güvenlik, KVKK, tenant izolasyonu ve fail-closed sınırları korunarak düzeltilir, birleştirilir veya kullanım dışı bırakılır. HTTP 200, intent etiketi, API/JSON, highlight veya statik GREEN tek başına ürün PASS değildir.
 
 İlgili her rol ve milestone için gerçek kabul; source/runtime provenance, gerçek backend/frontend, doğal dil görevi, gerçek Chromium/cihaz, görünür ve kullanılabilir UI hedefi, role/tenant güvenlik negatifleri, responsive kullanım, gerektiğinde aynı-build public runtime ve kullanıcıya görünen semantic sonucu birlikte değerlendirir. Backend PASS, HTTP 200, statik checker veya intent etiketi tek başına kabul değildir. Kanıtlanan kusur kalıcı RED→GREEN regresyonla kapatılır; kapanan alan somut regresyon olmadan yeniden açılmaz.
 
@@ -35,6 +47,54 @@ Bu bölüm, aşağıdaki tarihsel milestone anlatılarının üzerinde duran gü
 - Accepted scope is screen-grounded Sefer Abi guidance: `ANLAT → GÖSTER → BİRLİKTE YAP` foundation, semantic target resolution, bounded scroll/highlight/focus, safe in-product navigation and continuation/recovery. Critical business writes, approvals, dispatch, authorization changes and force-click remain outside M18.
 - Real-browser evidence covers all 8 roles, `109/109` current menu/route targets, desktop/tablet/mobile representative guidance, desktop resize, mobile compact drawer, suggestions, modal stacking, current-screen help, continuation/recovery/back, offer navigation and nonexistent-target rejection. Local and same-build public-runtime representative checks are accepted; `fake navigation = 0`, `business write execution = 0`, and product defects remaining are `0`.
 - Canonical verification is green: package ownership/current-head authority, M90C.6, onboarding audit, smart-chips audit, `verify:repo = 32/32 PASS`, `verify:final = PASS`, and `git diff --check = PASS`. M18 broad guided/menu acceptance is bounded and does not claim exhaustive all-system/business-state E2E; that integrated owner remains #39.
+
+### M18 final frontend / brand / premium UX closure gate (user-approved, additive)
+
+This is a final acceptance gate inside the existing M18 closure; it is not a new
+milestone, overlay owner, product capability or redesign package. B-04 and the
+subsequent role-based functional tests keep their current order and ownership;
+this gate does not restart, split or supersede them. Existing M18 functional
+acceptance, Finans 11 evidence, and closed B/C evidence remain preserved.
+
+The gate keeps the following state until every required proof is current and
+same-build attributable:
+
+- `M18_FRONTEND_BRAND_UX_FINAL_GATE = NOT_PROVEN`
+- `FULL_D_LEVEL_CLOSED = FALSE`
+- `SAFE_TO_PROMOTE = FALSE`
+- `#19 COPILOT-NATURAL-LANGUAGE-FORM-PREP-01 = NOT_STARTED`
+
+Required closure proof covers the already approved SeferPakt brand assets and
+their source/runtime visibility; Login, AppShell, NavDock, mobile menu, favicon
+and manifest; consistent forms, tables, charts, maps, modals and notifications;
+all eight roles; ROOM finance/operations; COMPANY/SCHOOL/ORGANIZATION budget,
+offer and service tracking; DRIVER/PERSONEL/PARENT mobile flows; Sefer Abi's
+accepted identity, placement, readability, state behavior and suggestions; and
+1440/1024/390/320 Chromium, keyboard, safe-area and relevant device evidence.
+Task success, click/step count, manual-entry count, elapsed time, error/recovery
+and five-second comprehension must be recorded from real user flows where
+claimed. Visual tests not yet executed remain `NOT_PROVEN`; prior 72/72 or other
+closed evidence is preserved and is not silently relabeled as this final gate.
+
+Within the ROOM Finans row, `D-FIN-01` is a required real-user criterion: both
+`Araç Karşılaştır` and `Teklif ve Kârlılık` must select from authorized real
+ROOM/tenant request/offer records, show the customer and request/offer/
+counter-offer/accepted-offer/contract context plus status, period, route and
+vehicle, preserve the selection across tabs, and carry the vehicle into
+profitability. Switching offers must clear all prior price, cost, period and
+vehicle context. Offer price, planning estimate, realized expense and proven
+profit remain separate; missing data links to the actual record; Sefer Abi
+receives the selected offer/vehicle context. Two-offer switching, vehicle
+change, missing-data completion, tenant/RBAC negatives, responsive behavior,
+audit and durable regression require real Chromium proof. This extends #18
+ROOM Finans acceptance only; it does not move ledger ownership, create a new
+finance engine/tab, or turn a technical test PASS into final user acceptance.
+
+The final gate must also prove the same source/build/runtime epoch, tenant/RBAC/
+KVKK boundaries, no unexpected business writes, and no functional regression.
+The approved brand identity and product logo are separate from removed or
+non-rendered internal #18 design descriptions; neither may be deleted or
+reintroduced as user-facing copy by this gate.
 
 ### Sefer Abi cross-milestone product contract
 
@@ -125,7 +185,7 @@ Every active Sefer Abi task carries explicit `TENANT/ORGANIZATION + ACTIVE ROLE 
 - `COPILOT-DISPATCH-ACTION-PREP-01` shift sonrası gelen read-only dispatch prep companion milestone'dır; `check:copilotdispatchactionprep01`, `docs/COPILOT_DISPATCH_ACTION_PREP_01.md` ve `backend/src/ai/chat/copilotDispatchActionPrep.js` ile yaşar; route apply ve dispatch apply öncesi güvenli hazırlık çizgisini taşır.
 - `COPILOT-ACTION-PREP-01` dispatch, shift ve human approval kaynaklarını ortak read-only owner pack altında birleştiren companion milestone'dır; `check:copilotactionprep01`, `docs/COPILOT_ACTION_PREP_01.md` ve `backend/src/ai/chat/copilotActionPrep.js` ile yaşar; dispatch apply, route apply, driver/vehicle assignment, agreement execute, payment/hakediş ve messaging/email/SMS/push açmaz.
 - FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01, COPILOT-ACTION-PREP-01 sonrasındaki resmi finansal blok başlangıcıdır; mevcut dynamic savings, hakediş önizleme, kalite/payment bridge, payment preview, CSV export ve Sefer Abi cost cevapları yeniden kullanılır; full muhasebe/e-Fatura/e-Defter/vergi programı değildir; ROOM ve COMPANY yüzeyleri RBAC ile bağlanır.
-- `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01` `check:financialoperationssurfaceandrbac01`, `docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md` ve `backend/src/finance/financialOperationsScope.js` ile yaşar; preview/lifecycle/RBAC sınırını korur.
+- `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01` `check:financialoperationssurfaceandrbac01`, `docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md` ve `backend/src/finance/financialOperationsScope.js` ile yaşar; preview/lifecycle/RBAC sınırını korur. ROOM rutin gider ve sürücü işveren maliyeti işlemleri yalnız rol + aynı `roomId` ile yetkilidir; `ROOM_FINANCE_SALARY` ayrı grant veya TOTP kapısı değildir, diğer yüksek riskli TOTP kapıları değişmez.
 - `OPERATIONAL-COST-MODEL-01` `check:operationalcostmodel01`, `docs/OPERATIONAL_COST_MODEL_01.md`, `backend/src/finance/operationalCostModel.js` ve `backend/src/finance/operationalCostMath.js` ile yaşar; pure deterministic read-only cost modeldir; write-action, muhasebe/program, payment execute ve provider credential açmaz.
 - `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01` `check:roomprofitabilityandquotefloor01`, `docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md` ve `backend/src/finance/roomProfitabilityAndQuoteFloor.js` ile yaşar; room profitability ve quote floor önizleme katmanını read-only tutar.
 - `COMPANY-BUDGET-AND-SERVICE-COST-01` `check:companybudgetandservicecost01`, `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md`, `backend/src/finance/companyBudgetAndServiceCost.js` ve `backend/src/services/financialOperationsLifecycle.js` ile yaşar; company budget lifecycle + service cost preview katmanını bağlar.

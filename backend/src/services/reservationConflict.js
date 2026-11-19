@@ -50,14 +50,14 @@ async function findShiftConflictForAgreementResource({ proposedAgreement, resour
   return null;
 }
 
-export async function findReservationConflictForRange({ driverId, vehicleId, startAt, endAt, excludeShiftId }) {
+export async function findReservationConflictForRange({ driverId, vehicleId, startAt, endAt, excludeShiftId, excludeAgreementId }) {
   if (driverId) {
-    const agDriver = await findAgreementConflictForRange({ driverId, startAt, endAt });
+    const agDriver = await findAgreementConflictForRange({ driverId, startAt, endAt, excludeAgreementId });
     if (agDriver) return agreementConflictResponse({ kind: "driver", agreement: agDriver });
   }
 
   if (vehicleId) {
-    const agVehicle = await findAgreementConflictForRange({ vehicleId, startAt, endAt });
+    const agVehicle = await findAgreementConflictForRange({ vehicleId, startAt, endAt, excludeAgreementId });
     if (agVehicle) return agreementConflictResponse({ kind: "vehicle", agreement: agVehicle });
   }
 

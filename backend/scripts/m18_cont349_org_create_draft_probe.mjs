@@ -1,0 +1,7 @@
+import { chromium } from "@playwright/test";
+const b=await chromium.launch({headless:true}); const c=await b.newContext({viewport:{width:1440,height:900},locale:'tr-TR'}); const p=await c.newPage();
+await p.goto('http://localhost:5273/',{waitUntil:'domcontentloaded'}); if(await p.locator('input[autocomplete="username"]').count()){await p.locator('input[autocomplete="username"]').fill('organization@demo.com'); await p.locator('input[autocomplete="current-password"]').fill('demo123'); await p.locator('button[type="submit"]').click(); await p.waitForTimeout(1200);}
+await p.goto('http://localhost:5273/#/organization',{waitUntil:'domcontentloaded'}); await p.waitForTimeout(800); await p.getByRole('button',{name:'Plan oluştur',exact:true}).click(); await p.waitForTimeout(300); await p.getByRole('button',{name:'Devam et',exact:true}).first().click(); await p.waitForTimeout(300);
+// Keep the existing TEST_SIMULATED draft values; only make the action explicit and UI-driven.
+await p.getByRole('button',{name:'Taslak vardiya oluştur',exact:true}).click(); await p.waitForTimeout(1200);
+console.log(JSON.stringify({text:(await p.locator('body').innerText()).slice(-11000),buttons:await p.locator('button:visible').allInnerTexts(),inputs:await p.locator('input:visible').evaluateAll(ns=>ns.map(n=>({type:n.type,placeholder:n.placeholder,value:n.value}))),selects:await p.locator('select:visible').evaluateAll(ns=>ns.map(n=>({value:n.value,options:Array.from(n.options).map(o=>o.text)})))},null,2)); await b.close();

@@ -10,7 +10,8 @@ import PanelChrome from "../../components/PanelChrome";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts } from "../../utils/copilotFacts";
 import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
-import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
+import { getDriverMapGpsReliabilityLabel, getEtaDisplay, getGpsAgeText } from "../../utils/etaSanity";
+import { resolveDriverMapCopilotTarget } from "./driverMapCopilotSelection";
 import { gpsSourcePresentationLabel } from "../../utils/gpsSource";
 
 
@@ -142,7 +143,7 @@ export default function DriverMapPanel() {
   const nextStop = useMemo(() => firstPendingStop(stops), [stops]);
   const stats = useMemo(() => routeStats(stops), [stops]);
   const gpsAge = useMemo(() => gpsAgeText(selectedVehicle?.gpsLast), [selectedVehicle?.gpsLast]);
-  const gpsStatusText = getGpsReliabilityLabel(selectedVehicle?.gpsState?.lastUiStatus || selectedVehicle?.gpsState?.lastStatus || (selectedVehicle ? "LIVE" : "-"));
+  const gpsStatusText = getDriverMapGpsReliabilityLabel(selectedVehicle);
   const rawGpsSource = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel;
   const gpsSourceLabel = rawGpsSource ? gpsSourcePresentationLabel(rawGpsSource) : (selectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
   const routeProofText = String(activeShift?.operationProofStatus || activeShift?.proofStatus || selectedVehicle?.operationProofStatus || "").trim() || "Belirgin değil";
@@ -193,10 +194,11 @@ export default function DriverMapPanel() {
   ]);
   const copilotSelection = useMemo(() => {
     const routeLabel = activeShift?.id ? `Vardiya #${activeShift.id}` : "Canlı rota";
+    const copilotTarget = resolveDriverMapCopilotTarget(activeShift);
     return {
       scopeKey: "/driver/map",
-      entityType: selectedVehicle ? "vehicle" : "shift",
-      entityId: Number(selectedVehicle?.id || activeShift?.id || 0) || 0,
+      entityType: copilotTarget.entityType,
+      entityId: copilotTarget.entityId,
       label: `${selectedVehicle?.plate || routeLabel} • Canlı rota`,
       summary: [
         `Seçili araç: ${selectedVehicle?.plate || "-"}`,
@@ -205,8 +207,8 @@ export default function DriverMapPanel() {
         `Sıradaki durak: ${nextStop?.name || "-"}`,
         `Tahmini süre: ${routeEtaText}`,
       ].join(" • "),
-      selectedRecordType: selectedVehicle ? "vehicle" : "shift",
-      selectedRecordId: Number(selectedVehicle?.id || activeShift?.id || 0) || 0,
+      selectedRecordType: copilotTarget.entityType,
+      selectedRecordId: copilotTarget.entityId,
       selectedRecordLabel: selectedVehicle?.plate || routeLabel,
       selectedRecordStatus: [
         `Araç: ${selectedVehicle?.plate || "-"}`,
@@ -271,13 +273,13 @@ export default function DriverMapPanel() {
   }, [activeShift, selectedVehicle, nextStop, routeEta, routeEtaText, stats, gpsAge, gpsStatusText, gpsSourceLabel, routeProofText, copilotFacts]);
 
   useEffect(() => {
-    if (!selectedVehicle && !activeShift) {
-      clearCopilotSelection("/driver/map");
-      return undefined;
-    }
+    // Keep a safe screen-scoped selection even when the driver has no current
+    // authorized vehicle/shift.  The copilot must be able to explain the
+    // legitimate empty state without receiving or inventing a record.
     setCopilotSelection(copilotSelection);
-    return () => clearCopilotSelection("/driver/map");
-  }, [copilotSelection, selectedVehicle, activeShift]);
+  }, [copilotSelection]);
+
+  useEffect(() => () => clearCopilotSelection("/driver/map"), []);
 
   return (
     <div className="wrap wrap--fluid">

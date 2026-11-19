@@ -1,0 +1,123 @@
+{
+  "receiptSchemaVersion": "M18-RUN-PROVENANCE-RECEIPT-V1",
+  "runId": "m18-docker-fixture-1791953045807",
+  "startManifestSha256": "5E735D4B172FB360E3F82E441B6AB6BE9B027BE01ADABAF0427354F0D15BB961",
+  "endManifestSha256": "5E735D4B172FB360E3F82E441B6AB6BE9B027BE01ADABAF0427354F0D15BB961",
+  "runtimeBinding": {
+    "authority": {
+      "downstreamSemanticRedecisionCount": 0,
+      "liveAuthoritativePath": "NEW_TYPED_EVIDENCE",
+      "runtimeFallbackCount": 0,
+      "semanticAuthorityCount": 1,
+      "semanticAuthorityMode": "NEW",
+      "shadowSemanticAuthorityCount": 0
+    },
+    "bindingSchemaVersion": "M18-DOCKER-RUNTIME-BINDING-V2",
+    "buildContext": "D:/servis-platform",
+    "commandLine": "",
+    "containerId": "7c9d787a46414df414d4ac1526c87ffa2673a00e6a88a3dde8aa96522d311b78",
+    "containerLaunchCommand": "docker-entrypoint.sh sh -lc npm run dev",
+    "containerName": "personel_api",
+    "containerPid": 2015,
+    "containerPort": 3000,
+    "containerProcessCommand": "node src/server.js",
+    "containerProcessCwd": "/app/backend",
+    "containerProcessStartTime": "proc-stat-starttime:570518",
+    "containerProcessStartTimeSource": "PROC_STAT_STARTTIME",
+    "containerProcessStartTimeTicks": 570518,
+    "containerSourceContractBindingSha256": "726A156C97EC5FDB18C4E1402759985CBAC698A888E7A89CCCCD4B1648CEC350",
+    "containerSourceIdentity": "726A156C97EC5FDB18C4E1402759985CBAC698A888E7A89CCCCD4B1648CEC350",
+    "containerStartTime": "2026-10-14T03:07:56.70211107Z",
+    "cwd": "backend",
+    "entrypoint": "backend/src/server.js",
+    "executablePath": "",
+    "headSha": "D85EA52218ADCFCBACBDAC279526CA0E767C4D0D",
+    "healthEndpoint": "http://127.0.0.1:3000/health",
+    "healthStatus": "PASS",
+    "hostPort": 3000,
+    "hostPortBindingAddresses": [
+      "0.0.0.0",
+      "::"
+    ],
+    "hostPortForwarders": [
+      {
+        "bindingAddress": "0.0.0.0",
+        "localAddress": "::",
+        "mappingReason": "IPV6_WILDCARD_EQUIVALENT_TO_IPV4_WILDCARD",
+        "owningProcess": 19680,
+        "process": "com.docker.backend",
+        "processKind": "DOCKER_DESKTOP_BACKEND"
+      },
+      {
+        "bindingAddress": "0.0.0.0",
+        "localAddress": "::1",
+        "mappingReason": "LOOPBACK_RELAY_FOR_DOCKER_WILDCARD",
+        "owningProcess": 21728,
+        "process": "wslrelay",
+        "processKind": "DOCKER_DESKTOP_WSL_RELAY"
+      }
+    ],
+    "hostPortForwardingMode": "DOCKER_DESKTOP_PROXY",
+    "hostPortListenerAddresses": [
+      "::",
+      "::1"
+    ],
+    "hostPortOwnerObservation": "VERIFIED_HOST_SOCKET_OWNERS",
+    "hostPortOwnerPids": [
+      19680,
+      21728
+    ],
+    "hostPortOwnerProcesses": [
+      "com.docker.backend",
+      "wslrelay"
+    ],
+    "hostPortOwnerSource": "WINDOWS_GET_NET_TCP_CONNECTION",
+    "imageId": "sha256:5584d5566811bf3b15c4fc2458c0bc159bf95edd1c6e4a6b7e07cde796634793",
+    "mountSource": "D:/servis-platform",
+    "mountTarget": "/app",
+    "mountType": "bind",
+    "pid": 2015,
+    "pidObservationSource": "docker-exec-procfs",
+    "pidStableAcrossProbe": true,
+    "port": 3000,
+    "portOwnerPids": [
+      19680,
+      21728
+    ],
+    "processPidNamespace": "CONTAINER",
+    "processStartTime": "proc-stat-starttime:570518",
+    "repoRoot": "D:/servis-platform",
+    "runtimeKind": "DOCKER",
+    "runtimeObservedAfterManifest": true,
+    "sourceContractBindingSha256": "726A156C97EC5FDB18C4E1402759985CBAC698A888E7A89CCCCD4B1648CEC350",
+    "sourceIdentity": "726A156C97EC5FDB18C4E1402759985CBAC698A888E7A89CCCCD4B1648CEC350",
+    "sourceManifestSha256": "5E735D4B172FB360E3F82E441B6AB6BE9B027BE01ADABAF0427354F0D15BB961",
+    "sourceMutation": false,
+    "staleListener": false,
+    "startedAfterManifest": false
+  },
+  "suiteResults": [
+    {
+      "verificationScope": "NON_HOLDOUT_DOCKER_CANONICAL_PROVENANCE",
+      "candidateManifestSha256": "E1802633B1F0571B91815B8336DCDE2A8B52F29A3E7A0590E9E1760915FAE618",
+      "fixtureRegistrySha256": "3E78C5084D46113A95785CB6CA0822F44B5E80377D975A22805B0F4EC2DB8C13",
+      "completeSourceBindingSha256": "97591F55EFD392D1D74C928E4DB07429CDC0969FD9BAF76B71CA411B34B5CBA2",
+      "parentSourceBindingSha256": "726A156C97EC5FDB18C4E1402759985CBAC698A888E7A89CCCCD4B1648CEC350",
+      "upstreamRuntimeReceiptSha256": "8D206C53C1B935C52593C0211AA7EA19F22641185A3C71A7C09E5D28BCB37CEA",
+      "businessWriteExecution": 0,
+      "authorizationMutation": 0,
+      "downstreamBusinessWrite": 0,
+      "externalLlmProviderCount": 0,
+      "externalLlmNetworkCallCount": 0,
+      "llmApiSecretCount": 0,
+      "runtimeFallbackCount": 0,
+      "downstreamSemanticRedecisionCount": 0,
+      "shadowSemanticAuthorityCount": 0
+    }
+  ],
+  "sourceMutation": false,
+  "sourceDifferences": [],
+  "finalStatus": "GREEN",
+  "capturedAt": "2026-10-14T04:44:08.847Z",
+  "receiptSha256": "4BABB85081D2B07F5F94B7EAD33639BE278A970AB72067EBFF44CD123AD4AFCA"
+}

@@ -1,0 +1,289 @@
+// #11 domain owner: room-cost
+
+enum RoomCostCategoryKind {
+  BUILT_IN
+  CUSTOM
+}
+
+enum RoomCostRecordKind {
+  ACTUAL
+  BUDGET
+  FORECAST
+  ACCRUAL
+}
+
+enum RoomCostOccurrenceKind {
+  ONE_OFF
+  PERIODIC
+  RECURRING
+  PER_KM
+  PER_TRIP
+  PER_SHIFT
+}
+
+enum RoomCostVatMode {
+  INCLUDED
+  EXCLUDED
+  NOT_APPLICABLE
+  UNKNOWN
+}
+
+enum RoomCostVatClassification {
+  UNKNOWN
+  DOCUMENTED_VAT
+  OUT_OF_SCOPE
+  DOCUMENTED_EXEMPT
+  VERIFIED_ZERO_RATE
+}
+
+enum RoomCostVatDeductibility {
+  UNKNOWN
+  DEDUCTIBLE
+  NON_DEDUCTIBLE
+  NOT_APPLICABLE
+}
+
+enum RoomCostLifecycle {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+enum RoomCostAllocation {
+  DIRECT
+  COUNT_IN_ROLLUP
+  EXCLUDED_FROM_ROLLUP
+}
+
+enum RoomAccountingPeriodStatus {
+  OPEN
+  REVIEW
+  READY_TO_CLOSE
+  CLOSED
+  REOPEN_REQUESTED
+  REOPENED
+}
+
+enum RoomCostSettlementStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+enum RoomCostAllocationLineageKind {
+  COMPONENT
+  REFERENCE
+}
+
+enum RoomCostAllocationTargetKind {
+  VEHICLE
+  DRIVER
+  AGREEMENT
+  SHIFT
+  PERIOD
+}
+
+enum UserCapabilityKey {
+  ROOM_FINANCE_SALARY
+}
+
+model RoomCostCategory {
+  id        Int                  @id @default(autoincrement())
+  roomId    Int
+  key       String
+  label     String
+  kind      RoomCostCategoryKind @default(BUILT_IN)
+  isActive  Boolean              @default(true)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  room    Room            @relation("RoomCostCategories", fields: [roomId], references: [id], onDelete: Restrict)
+  entries RoomCostEntry[] @relation("RoomCostCategoryEntries")
+
+  @@unique([roomId, key])
+  @@unique([roomId, id])
+  @@index([roomId, isActive])
+}
+
+model RoomCostEntry {
+  id                      Int                       @id @default(autoincrement())
+  roomId                  Int
+  categoryId              Int
+  vehicleId               Int?
+  driverId                Int?
+  agreementId             Int?
+  shiftId                 Int?
+  occurredAt              DateTime?
+  periodStart             DateTime?                 @db.Date
+  periodEnd               DateTime?                 @db.Date
+  amountMinor             Int
+  currencyCode            String                    @default("TRY")
+  vatMode                 RoomCostVatMode
+  vatAmountMinor          Int?
+  vatClassification       RoomCostVatClassification @default(UNKNOWN)
+  vatDeductibility        RoomCostVatDeductibility  @default(UNKNOWN)
+  vatEvidenceRef          String?
+  vatClassificationReason String?
+  recordKind              RoomCostRecordKind        @default(ACTUAL)
+  occurrenceKind          RoomCostOccurrenceKind    @default(ONE_OFF)
+  allocation              RoomCostAllocation        @default(DIRECT)
+  allocationQuantity      Decimal?                  @db.Decimal(18, 4)
+  allocationUnit          String?
+  allocationUnitRateMinor Int?
+  evidenceRef             String?
+  sourceRef               String?
+  sourceType              String?
+  description             String?
+  lifecycle               RoomCostLifecycle         @default(DRAFT)
+  version                 Int                       @default(1)
+  isReversal              Boolean                   @default(false)
+  reversalOfEntryId       Int?
+  createdByUserId         Int?
+  updatedByUserId         Int?
+  confirmedByUserId       Int?
+  confirmedAt             DateTime?
+  cancelledByUserId       Int?
+  cancelledAt             DateTime?
+  draftBatchId            String?                   @db.Uuid
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+
+  room               Room                     @relation("RoomCostEntryRoom", fields: [roomId], references: [id], onDelete: Restrict)
+  category           RoomCostCategory         @relation("RoomCostCategoryEntries", fields: [roomId, categoryId], references: [roomId, id], onDelete: Restrict)
+  vehicle            Vehicle?                 @relation("VehicleRoomCostEntries", fields: [roomId, vehicleId], references: [roomId, id], onDelete: Restrict)
+  driver             Driver?                  @relation("DriverRoomCostEntries", fields: [roomId, driverId], references: [roomId, id], onDelete: Restrict)
+  agreement          Agreement?               @relation("AgreementRoomCostEntries", fields: [roomId, agreementId], references: [roomId, id], onDelete: Restrict)
+  shift              Shift?                   @relation("ShiftRoomCostEntries", fields: [roomId, shiftId], references: [roomId, id], onDelete: Restrict)
+  reversalOfEntry    RoomCostEntry?           @relation("RoomCostEntryReversal", fields: [roomId, reversalOfEntryId], references: [roomId, id], onDelete: Restrict)
+  reversals          RoomCostEntry[]          @relation("RoomCostEntryReversal")
+  accrualSettlements RoomCostSettlement[]     @relation("RoomCostAccrualSettlements")
+  actualSettlements  RoomCostSettlement[]     @relation("RoomCostActualSettlements")
+  allocationLines    RoomCostAllocationLine[] @relation("RoomCostEntryAllocationLines")
+  createdBy          User?                    @relation("RoomCostEntryCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedBy          User?                    @relation("RoomCostEntryUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  confirmedBy        User?                    @relation("RoomCostEntryConfirmedBy", fields: [confirmedByUserId], references: [id], onDelete: SetNull)
+  cancelledBy        User?                    @relation("RoomCostEntryCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([roomId, id])
+  @@index([roomId, occurredAt])
+  @@index([roomId, periodStart, periodEnd])
+  @@index([roomId, recordKind, lifecycle])
+  @@index([roomId, vehicleId])
+  @@index([roomId, driverId])
+  @@index([roomId, categoryId])
+  @@index([roomId, sourceRef, periodStart, periodEnd])
+  @@index([roomId, createdByUserId, draftBatchId])
+}
+
+model RoomCostSettlement {
+  id                 Int                      @id @default(autoincrement())
+  roomId             Int
+  accrualEntryId     Int
+  actualEntryId      Int
+  settledAmountMinor Int
+  currencyCode       String                   @default("TRY")
+  settlementRef      String
+  idempotencyKey     String
+  evidenceRef        String
+  reason             String
+  status             RoomCostSettlementStatus @default(CONFIRMED)
+  createdByUserId    Int?
+  confirmedByUserId  Int?
+  confirmedAt        DateTime?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  room         Room          @relation("RoomCostSettlementRoom", fields: [roomId], references: [id], onDelete: Restrict)
+  accrualEntry RoomCostEntry @relation("RoomCostAccrualSettlements", fields: [roomId, accrualEntryId], references: [roomId, id], onDelete: Restrict)
+  actualEntry  RoomCostEntry @relation("RoomCostActualSettlements", fields: [roomId, actualEntryId], references: [roomId, id], onDelete: Restrict)
+
+  @@unique([roomId, idempotencyKey])
+  @@unique([roomId, settlementRef])
+  @@index([roomId, accrualEntryId])
+  @@index([roomId, actualEntryId])
+  @@index([roomId, status])
+}
+
+model RoomCostAllocationLine {
+  id                   Int                           @id @default(autoincrement())
+  roomId               Int
+  entryId              Int
+  lineageKind          RoomCostAllocationLineageKind @default(COMPONENT)
+  targetKind           RoomCostAllocationTargetKind
+  lineageKey           String
+  vehicleId            Int?
+  driverId             Int?
+  agreementId          Int?
+  shiftId              Int?
+  periodStart          DateTime?                     @db.Date
+  periodEnd            DateTime?                     @db.Date
+  quantity             Decimal?                      @db.Decimal(18, 4)
+  unit                 String?
+  unitRateMinor        Int?
+  allocatedAmountMinor Int
+  currencyCode         String                        @default("TRY")
+  sourceRef            String?
+  evidenceRef          String?
+  createdAt            DateTime                      @default(now())
+  updatedAt            DateTime                      @updatedAt
+
+  room      Room          @relation("RoomCostAllocationLines", fields: [roomId], references: [id], onDelete: Restrict)
+  entry     RoomCostEntry @relation("RoomCostEntryAllocationLines", fields: [roomId, entryId], references: [roomId, id], onDelete: Cascade)
+  vehicle   Vehicle?      @relation("VehicleRoomCostAllocationLines", fields: [roomId, vehicleId], references: [roomId, id], onDelete: Restrict)
+  driver    Driver?       @relation("DriverRoomCostAllocationLines", fields: [roomId, driverId], references: [roomId, id], onDelete: Restrict)
+  agreement Agreement?    @relation("AgreementRoomCostAllocationLines", fields: [roomId, agreementId], references: [roomId, id], onDelete: Restrict)
+  shift     Shift?        @relation("ShiftRoomCostAllocationLines", fields: [roomId, shiftId], references: [roomId, id], onDelete: Restrict)
+
+  @@unique([roomId, id])
+  @@unique([roomId, entryId, lineageKey])
+  @@index([roomId, entryId])
+  @@index([roomId, targetKind, vehicleId, driverId, agreementId, shiftId], map: "RoomCostAllocationLine_roomId_targetKind_vehicleId_driverId_agr")
+  @@index([roomId, periodStart, periodEnd])
+}
+
+model RoomAccountingPeriod {
+  id                      Int                        @id @default(autoincrement())
+  roomId                  Int
+  periodStart             DateTime                   @db.Date
+  periodEnd               DateTime                   @db.Date
+  status                  RoomAccountingPeriodStatus @default(OPEN)
+  version                 Int                        @default(1)
+  closeReason             String?
+  reopenReason            String?
+  policyDecisionRef       String?
+  createdByUserId         Int?
+  updatedByUserId         Int?
+  closedByUserId          Int?
+  closedAt                DateTime?
+  reopenRequestedByUserId Int?
+  reopenRequestedAt       DateTime?
+  createdAt               DateTime                   @default(now())
+  updatedAt               DateTime                   @updatedAt
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Restrict)
+
+  @@unique([roomId, periodStart, periodEnd])
+  @@index([roomId, status])
+  @@index([roomId, periodStart, periodEnd, status])
+}
+
+model UserCapabilityGrant {
+  id              Int               @id @default(autoincrement())
+  roomId          Int
+  userId          Int
+  capability      UserCapabilityKey
+  grantedByUserId Int
+  // Prisma 5.22 cannot represent a PostgreSQL partial unique index. The canonical grant transaction
+  // keeps ACTIVE only on the current non-revoked grant and assigns an id-derived key before revocation.
+  activeGrantKey  String            @default("ACTIVE")
+  revokedAt       DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  room      Room @relation("RoomCapabilityGrants", fields: [roomId], references: [id], onDelete: Restrict)
+  user      User @relation("UserCapabilityGrants", fields: [roomId, userId], references: [roomId, id], onDelete: Restrict)
+  grantedBy User @relation("UserCapabilityGrantsGiven", fields: [roomId, grantedByUserId], references: [roomId, id], onDelete: Restrict)
+
+  @@unique([roomId, userId, capability, activeGrantKey], name: "UserCapabilityGrant_active_slot_key")
+  @@index([roomId, capability, revokedAt])
+  @@index([userId, capability, revokedAt])
+}

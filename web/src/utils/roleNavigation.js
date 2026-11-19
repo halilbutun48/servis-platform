@@ -24,7 +24,7 @@ function companyContext(me) {
     isCompany,
     // "Planlama Merkezi" is the decision starting point. The distinct plans
     // route below remains explicitly named for record-level plan work.
-    homeLabel: isSchool ? "Okul Merkezi" : "Planlama Merkezi",
+    homeLabel: "Planlama Merkezi",
     operationsLabel: isSchool ? "Okul Operasyon Paneli" : isOrganization ? "Organizasyon Operasyon Paneli" : "Operasyon Paneli",
     peopleTitle: isSchool ? "ÖĞRENCİ VE VELİ" : isOrganization ? "KATILIMCI VE KONUM" : "PERSONEL VE KONUM",
   };
@@ -51,19 +51,18 @@ function companyNavigation(me) {
     },
   ];
 
-  // School navigation intentionally stays focused on school operations.
-  // Commercial controls remain available to the roles that own those
-  // decisions instead of adding company complexity to the school homepage.
-  if (!ctx.isSchool) {
-    sections.push({
-      title: "FİNANS VE TİCARİ AKIŞ",
-      items: [
-        { label: "Bütçe ve Servis Maliyeti", path: `${base}/financial-operations` },
-        { label: "Ticari Akış", path: `${base}/commercial-flow` },
-        { label: "Hizmet Değerlendirme", path: `${base}/service-evaluation` },
-      ],
-    });
-  }
+  // All three buyer roles share the same canonical buyer-finance surface.
+  // The role-specific request context is resolved by the API and shared panel;
+  // hiding the entry for SCHOOL would make its accepted two-tab surface
+  // unreachable from the normal user flow.
+  sections.push({
+    title: "FİNANS VE TİCARİ AKIŞ",
+    items: [
+      { label: "Bütçe ve Servis Maliyeti", path: `${base}/financial-operations` },
+      { label: "Ticari Akış", path: `${base}/commercial-flow` },
+      { label: "Hizmet Değerlendirme", path: `${base}/service-evaluation` },
+    ],
+  });
 
   if (ctx.isSchool) {
     sections.push({
@@ -103,6 +102,11 @@ export function navigationContextKey(me = {}) {
     if (kind === "ORGANIZATION") return "ORGANIZATION";
   }
   return role;
+}
+
+export function isPostLoginEntryPath(path = "") {
+  const route = String(path || "").trim();
+  return route === "" || route === "/" || route === "/login";
 }
 
 const ROUTE_CONTEXTS = [
@@ -153,9 +157,9 @@ export function getRoleNavigation(me = {}) {
       sections: [
         { title: "ANA SAYFA", items: [{ label: "Operasyon Merkezi", path: "/room" }] },
         { title: "TİCARİ AKIŞ", items: [{ label: "Ticari Çalışma Alanı", path: "/room/commercial-flow" }, { label: "Teklifler", path: "/room/offers" }, { label: "Sözleşmeler", path: "/room/agreements" }] },
-        { title: "OPERASYON", items: [{ label: "Vardiyalar", path: "/room/shifts" }, { label: "Operasyon Sağlığı", path: "/room/operation-health" }, { label: "Finansal Operasyonlar", path: "/room/financial-operations" }, { label: "Araçlar", path: "/room/vehicles" }] },
+        { title: "OPERASYON", items: [{ label: "Canlı Takip", path: "/room/map" }, { label: "Vardiyalar", path: "/room/shifts" }, { label: "Operasyon Sağlığı", path: "/room/operation-health" }, { label: "Finansal Operasyonlar", path: "/room/financial-operations" }, { label: "Araçlar", path: "/room/vehicles" }] },
       ],
-      advanced: [{ label: "Canlı Takip", path: "/room/map" }, { label: "Sürücüler", path: "/room/drivers" }, { label: "Raporlar", path: "/room/reports" }, { label: "Taşımacılık Firması Konumu", path: "/room/hub" }, { label: "Biniş kayıtları", path: "/room/checkin" }, ...SHARED_ADVANCED],
+      advanced: [{ label: "Sürücüler", path: "/room/drivers" }, { label: "Raporlar", path: "/room/reports" }, { label: "Taşımacılık Firması Konumu", path: "/room/hub" }, { label: "Biniş kayıtları", path: "/room/checkin" }, ...SHARED_ADVANCED],
     };
   }
   if (role === "COMPANY" || role === "SCHOOL" || role === "ORGANIZATION") return companyNavigation(me);

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { detectOperationHealthSurface, buildOperationHealthState } from '../src/ai/chat/conversationOperationHealthEngine.js';
+import { buildAuthorizedReasoningAnswer } from '../src/services/authorizedProductAwareness.js';
 
 const cases = [
   {
@@ -93,3 +94,28 @@ process.stdout.write(`OPERATION_HEALTH_PROFILE_PRECEDENCE_CASES=${cases.length}\
 process.stdout.write(`OPERATION_HEALTH_PROFILE_PRECEDENCE_PASS=${passCount}\n`);
 process.stdout.write(`OPERATION_HEALTH_PROFILE_PRECEDENCE_FAIL=${failures.length}\n`);
 if (failures.length > 0) process.exitCode = 1;
+
+const staleSelectionAnswer = await buildAuthorizedReasoningAnswer({
+  user: { id: 980002, role: 'ROOM', roomId: 1, companyId: null, companyKind: 'ROOM' },
+  message: 'Bu ekrandaki açık sorunları açıkla.',
+  screenContext: {
+    id: 1114,
+    path: '/room/operation-health',
+    label: 'Operasyon Sağlığı',
+    role: 'ROOM',
+    selectedEntityType: 'screen',
+    selectedEntityId: 1114,
+    selectedRecordStatus: 'Kayıt #1 için durum: yetkili kayıtta yok.',
+    structuredFacts: {
+      summary: 'Operasyon sağlığı özetinde üç açık sorun görünüyor.',
+      counters: { activeDrivers: 4, riskyDevices: 1, staleOrOffline: 2, openIssues: 3 },
+    },
+  },
+});
+if (!/Açık sorun[^0-9]*3/i.test(String(staleSelectionAnswer?.reply || ''))
+  || /Kayıt #1/i.test(String(staleSelectionAnswer?.reply || ''))) {
+  console.error('FAIL operation-health current issue evidence must beat stale selected-record text');
+  process.exitCode = 1;
+} else {
+  console.log('PASS operation-health current issue evidence beats stale selected-record text');
+}

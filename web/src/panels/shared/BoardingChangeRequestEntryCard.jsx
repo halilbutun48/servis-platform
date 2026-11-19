@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api, createBoardingChangeRequest, getBoardingChangeRequestContext, listMyBoardingChangeRequests } from "../../api";
 import { getApiErrorInfo, getApiErrorMessage } from "../../utils/apiContract";
 import { resolvePersonDisplayLabel } from "../../utils/labels";
+import { setCopilotSelection } from "../../utils/copilotSelection";
 import {
   getLiveTrackingGeoErrorMessage,
   getLiveTrackingGeoUnsupportedMessage,
@@ -10,6 +11,7 @@ import {
 import GeoLocationPicker from "../../components/geo/GeoLocationPicker";
 import BoardingRouteImpactPreviewCard from "./BoardingRouteImpactPreviewCard";
 import {
+  boardingChangeCopilotSelectionIdentity,
   boardingChangeDecisionOwnerNote,
   boardingChangeRequestEntryKindLabel,
   boardingChangeRequestStatusLabel,
@@ -111,6 +113,14 @@ function useLatestRequestPreview(requests, selectedRequestId) {
     }
     return rows[0] || null;
   }, [requests, selectedRequestId]);
+}
+
+function currentCopilotScopeKey() {
+  if (typeof window === "undefined") return "";
+  const hashPath = String(window.location?.hash || "").replace(/^#/, "").split("?", 1)[0];
+  const pathname = String(window.location?.pathname || "");
+  const path = hashPath || pathname;
+  return path.startsWith("/") ? path : `/${path}`;
 }
 
 export default function BoardingChangeRequestEntryCard({
@@ -220,6 +230,70 @@ export default function BoardingChangeRequestEntryCard({
   const noLiveVehicleCopy = normalizedMode === "PARENT"
     ? "Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır."
     : "Bu servis için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.";
+
+  // An explicitly selected request must replace the screen's default vehicle
+  // selection for Sefer Abi.  The API still authorizes the request by role and
+  // tenant; this only carries the user's visible selection into the chat.
+  const requestCopilotSelection = useMemo(() => {
+    if (!previewRequest?.id) return null;
+    const identity = boardingChangeCopilotSelectionIdentity(previewRequest.id);
+    const preview = previewRequest?.routeImpactPreview || null;
+    const kindLabel = boardingChangeRequestEntryKindLabel(previewRequest?.requestKind || previewRequest?.kind);
+    const requestStatus = boardingChangeRequestStatusLabel(previewRequest);
+    const summary = [
+      kindLabel,
+      requestStatus,
+      ownerNote,
+      previewRequest?.decisionText,
+      previewRequest?.requestReason,
+    ].filter(Boolean).join(" • ");
+    const scopeKey = currentCopilotScopeKey();
+    return {
+      scopeKey,
+      entityType: identity.entityType,
+      entityId: identity.entityId,
+      label: `${kindLabel} • ${normalizedMode === "PARENT" ? (childLabel || "Çocuk") : "Kendi talebim"}`,
+      summary,
+      selectedLabel: kindLabel,
+      selectedSummary: summary,
+      selectedRecordLabel: kindLabel,
+      selectedRecordSummary: summary,
+      selectedRecordStatus: requestStatus,
+      selectedFields: [
+        { label: "Talep", value: kindLabel },
+        { label: "Durum", value: requestStatus },
+        { label: "Karar sahibi", value: ownerNote || "-" },
+        { label: "Vardiya", value: resolvedShift?.id ? `#${resolvedShift.id}` : "-" },
+      ],
+      selectedBadges: [
+        { label: "Talep durumu", value: requestStatus },
+        { label: "Uygulama", value: previewRequest?.boardingChangeApplicationStatus || "-" },
+      ],
+      selectedRecord: {
+        id: identity.entityId,
+        type: identity.entityType,
+        label: kindLabel,
+        status: requestStatus,
+        summary,
+        previewOnly: Boolean(preview?.previewOnly),
+      },
+      facts: {
+        selectedRecordType: identity.entityType,
+        selectedRecordId: identity.entityId,
+        selectedRecordLabel: kindLabel,
+        selectedRecordStatus: requestStatus,
+        requestStatus,
+        applicationStatus: previewRequest?.boardingChangeApplicationStatus || null,
+        shiftId: Number(previewRequest?.shiftId || resolvedShift?.id || 0) || null,
+      },
+      screenPath: scopeKey,
+    };
+  }, [childLabel, normalizedMode, ownerNote, previewRequest, resolvedShift?.id]);
+
+  useEffect(() => {
+    if (!requestCopilotSelection?.entityId) return;
+    setCopilotSelection(requestCopilotSelection);
+  }, [requestCopilotSelection]);
 
   const disabledReason = useMemo(() => buildDisabledReason({
     shift: resolvedShift,

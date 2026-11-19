@@ -1,4 +1,5 @@
 import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
+import { formatOfferAmountMinor } from "../shared/offerAmountPresentation";
 import { fmtTR } from "./guidedPlanModalUtils";
 
 export { GuidedDestinationRowCard, GuidedOrganizationPlanCard } from "./guidedPlanModalDestinationCards";
@@ -158,7 +159,7 @@ function amountTry(value) {
 }
 
 function moneyTry(amount) {
-  const n = Number(amount);
+  const n = Number(amount) / 100;
   if (!Number.isFinite(n) || n <= 0) return "-";
   return `${new Intl.NumberFormat("tr-TR").format(n)} ₺`;
 }
@@ -192,6 +193,12 @@ export function GuidedBulkOffersCard({
   const lockedRoomLabel = routeRefreshLaunch?.roomName
     ? `${routeRefreshLaunch.roomName}${routeRefreshLaunch?.roomId ? ` (#${routeRefreshLaunch.roomId})` : ""}`
     : (routeRefreshLaunch?.roomId ? `Taşımacılık Firması #${routeRefreshLaunch.roomId}` : "-");
+  const routeRefreshCurrentAmount = Number(routeRefreshLaunch?.currentCompanyOfferAmount);
+  const visibleOfferAmount = routeRefreshMode
+    && Number.isFinite(routeRefreshCurrentAmount)
+    && Number(offerAmount) === routeRefreshCurrentAmount
+    ? formatOfferAmountMinor(routeRefreshCurrentAmount)
+    : offerAmount;
 
   return (
     <div className="card">
@@ -242,7 +249,7 @@ export function GuidedBulkOffersCard({
                     Rota değişikliği ticari etki yaratıyorsa bu alandan yeni teklif tutarını gir.
                   </div>
                   <label className="muted" style={{ marginTop: 8 }}>Önerilen yeni ücret (₺) (isteğe bağlı)</label>
-                  <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 27500" disabled={busy} />
+                  <input value={visibleOfferAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 27500" disabled={busy} />
                   <div className="muted" style={{ marginTop: 8 }}>
                     Fark: {(() => {
                       const current = amountTry(routeRefreshLaunch?.currentCompanyOfferAmount);

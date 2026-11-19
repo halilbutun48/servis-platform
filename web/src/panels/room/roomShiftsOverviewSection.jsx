@@ -6,6 +6,8 @@ import { RoomDispatchPoolSummary } from "./roomShiftsPanelSections";
 
 export function RoomShiftsOverviewSection({
   err,
+  loadState = "ready",
+  onRetry = null,
   pendingCount = 0,
   contractCount = 0,
   otherCount = 0,
@@ -13,7 +15,25 @@ export function RoomShiftsOverviewSection({
   autoSplitApprove = null,
   fallbackPreview = null,
   onOpenFallbackPreview = null,
+  onOpenRouteEvidence = null,
 }) {
+  if (loadState === "loading") {
+    return <div className="roomInlineNotice" role="status">Vardiyalar yükleniyor...</div>;
+  }
+
+  if (loadState === "error") {
+    return (
+      <div className="roomInlineNotice roomInlineNotice--error" role="alert">
+        <div>{err || "Vardiyalar yüklenemedi. Lütfen Tekrar Dene ile yeniden deneyin."}</div>
+        {onRetry ? (
+          <button type="button" className="btn sm roomActionCTA" onClick={onRetry}>
+            Tekrar Dene
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
   const showDispatchApplyAction = Boolean(
     autoSplitApprove &&
       copilotShift &&
@@ -38,6 +58,16 @@ export function RoomShiftsOverviewSection({
             `Diğer ${otherCount}`,
           ]}
         />
+        {copilotShift && onOpenRouteEvidence ? (
+          <div className="roomShiftsDispatchApplyRow">
+            <button type="button" className="btn sm primary roomActionCTA" onClick={onOpenRouteEvidence}>
+              Eksik bilgiyi tamamla
+            </button>
+            <div className="roomShiftsDispatchApplyHint">
+              Seçili vardiya için kayıtlı rota ve durak girişini açar.
+            </div>
+          </div>
+        ) : null}
         {showDispatchApplyAction ? (
           <div className="roomShiftsDispatchApplyRow">
             <button type="button" className="btn sm primary roomActionCTA" onClick={() => autoSplitApprove(copilotShift)}>
@@ -67,7 +97,7 @@ export function RoomShiftsOverviewSection({
         ) : null}
       </div>
 
-      {err ? <div className="roomInlineNotice roomInlineNotice--error">{err}</div> : null}
+      {err ? <div className="roomInlineNotice roomInlineNotice--error" role="alert">{err}</div> : null}
     </>
   );
 }
@@ -133,7 +163,7 @@ export function RoomShiftsModalSection({
         onClose={onClosePreview}
         title={
           hasRealPreviewShiftId
-            ? `Vardiya ID ${previewShift.id} — Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
+            ? `Vardiya önizlemesi — Harita${previewLoading ? " (yükleniyor...)" : ""}`
             : `Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
         }
         subtitle={previewSubtitle}

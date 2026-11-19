@@ -57,6 +57,32 @@ model ApiRequest {
   @@index([role, createdAt])
 }
 
+enum GuidedBatchRequestStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// Durable batch-level idempotency for GuidedPlanModal. Scope is explicit so
+// the same client key cannot cross actor or company boundaries.
+model GuidedBatchRequest {
+  id             Int                      @id @default(autoincrement())
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @default(now()) @updatedAt
+  actorUserId    Int
+  actorRole      String
+  companyId      Int
+  idempotencyKey String
+  requestHash    String
+  status         GuidedBatchRequestStatus @default(PROCESSING)
+  resultJson     Json?
+  errorCode      String?
+  errorMessage   String?
+
+  @@unique([actorUserId, companyId, idempotencyKey])
+  @@index([companyId, createdAt])
+}
+
 model AuditLog {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())

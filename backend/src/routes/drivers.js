@@ -298,6 +298,18 @@ export function driversRouter(io) {
         return { driver, issued };
       });
 
+      await audit(req, {
+        action: "ROOM_DRIVER_CREATE",
+        entity: "Driver",
+        entityId: result.driver.id,
+        meta: {
+          driverId: result.driver.id,
+          roomId: u.roomId,
+          driverCode: result.issued.driverCode,
+          temporary: true,
+        },
+      });
+
       io?.to(`room:${u.roomId}`).emit("driver:update", { driverId: result.driver.id, action: "created" });
 
       return res.json({

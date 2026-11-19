@@ -1,3 +1,5 @@
+import { buildRoomCounterPayload } from "./roomCounterValidation";
+
 export function offerBundleKey(offer) {
   const sh = offer?.shift || {};
   const companyId = sh?.companyId ?? sh?.company?.id ?? null;
@@ -115,12 +117,15 @@ export async function sendMarketCounterAction(ctx, offer) {
   const oid = Number(offer?.id);
   if (!oid) return;
   const st = ctx.marketCounterSel[oid] || {};
-  const amountRoom = st.amountRoom == null || st.amountRoom === "" ? undefined : ctx.parseTryInput(st.amountRoom);
-  const noteRoom = String(st.noteRoom ?? "").trim() || undefined;
+  const payload = buildRoomCounterPayload(st);
+  if (payload.error) {
+    ctx.setErr(payload.error);
+    return;
+  }
   ctx.setBusy(true);
   ctx.setErr("");
   try {
-    await ctx.api(`/api/offers/${oid}/counter`, { method: "PUT", token: ctx.token, body: { amountRoom, noteRoom } });
+    await ctx.api(`/api/offers/${oid}/counter`, { method: "PUT", token: ctx.token, body: payload });
     ctx.invalidate("offers");
     await ctx.load({ force: true });
   } catch (e) {

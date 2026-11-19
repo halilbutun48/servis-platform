@@ -24,6 +24,12 @@ backend/.env
 infra/.env
 infra/osrm-data/
 
+# Local browser profiles and generated Chromium acceptance captures. These
+# remain available in the worktree for evidence review but are not repository
+# source or reproducible build inputs.
+.playwright/
+.playwright-cli/
+output/playwright/
 
 # M82.7 repo hygiene
 mobile/dist/

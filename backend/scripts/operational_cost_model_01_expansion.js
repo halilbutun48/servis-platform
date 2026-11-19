@@ -480,7 +480,7 @@ function runOperationalBoundaryChecks() {
         checkEqual(component(result, 'vehicle_fixed_allocated').status, 'incomplete', 'vehicle fixed missing basis component status');
         checkIncludes(component(result, 'vehicle_fixed_allocated').missingFields, 'vehicleFixedCostAllocationMode', 'vehicle fixed missing basis mode field');
         checkIncludes(component(result, 'vehicle_fixed_allocated').missingFields, 'allocation basis', 'vehicle fixed missing basis basis field');
-        checkEqual(result.baselineOperationalCostMinor, 0, 'vehicle fixed missing basis baseline');
+        checkEqual(result.baselineOperationalCostMinor, null, 'vehicle fixed missing basis does not fabricate zero baseline');
       },
     },
     {

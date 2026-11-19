@@ -145,7 +145,10 @@ export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
     safeAlternative: 'Önce teklif, araç / sürücü ve kapasite satırlarını kontrol et.',
     repeatLead: 'Operasyon açısından kısa not:',
     chips: Object.freeze(['Araç / sürücü', 'Kapasite', 'Kalite / risk', 'Operasyon kontrolü']),
-    maxLength: 420,
+    // ROOM risk/surface answers carry the visible explanation and the safe
+    // next step together. Keep a bounded budget large enough for the complete
+    // visible explanation; the composer still enforces this ceiling.
+    maxLength: 1000,
   }),
   DRIVER: Object.freeze({
     role: 'DRIVER',
@@ -347,7 +350,8 @@ function detectSeferAbiReasoningIntentFamily({
 } = {}) {
   const text = normalizeText(message);
   const lastQuestionType = String(
-    conversationState?.taskState?.currentQuestionType
+    conversationState?.taskState?.questionType
+    || conversationState?.taskState?.currentQuestionType
     || conversationState?.taskState?.lastQuestionType
     || conversationState?.lastQuestionType
     || conversationState?.taskState?.currentGuidedTaskQuestionType

@@ -28,17 +28,25 @@ import {
   refreshCompanyShiftRouteStateAfterMutation,
   syncCompanyShiftCommercialBackbone,
 } from "../../services/companyShiftMutationTail.js";
+import {
+  buildGuidedBatchRequestHash,
+  isGuidedBatchUniqueConflict,
+  jsonSafe,
+  normalizeGuidedBatchIdempotencyKey,
+  readGuidedBatchResult,
+} from "../../services/guidedBatchIdempotency.js";
 import { requireSameRegionOrThrow } from "../../region/ownership.js";
 import { isGreenpackBypassAllowed } from "../../auth/securityPolicy.js";
 import { buildShiftCompanyStopsRouter } from "./shiftsCompanyStopsRouter.js";
+import { buildCompanyOfferUpdateData } from "./companyOfferPatch.js";
 
 const emitShift = H.emitShift;
 const decorateShiftWithRegionContext = H.decorateShiftWithRegionContext;
 
 const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
 
-async function loadFullShift(shiftId) {
-  const shift = await prisma.shift.findUnique({
+async function loadFullShift(shiftId, db = prisma) {
+  const shift = await db.shift.findUnique({
     where: { id: Number(shiftId) },
     include: {
       stops: { orderBy: { order: "asc" } },
@@ -50,6 +58,28 @@ async function loadFullShift(shiftId) {
     },
   });
   return decorateShiftWithRegionContext(shift);
+}
+
+function guidedBatchRequestWhere({ actorUserId, companyId, idempotencyKey }) {
+  return {
+    actorUserId_companyId_idempotencyKey: {
+      actorUserId: Number(actorUserId),
+      companyId: Number(companyId),
+      idempotencyKey,
+    },
+  };
+}
+
+function resolveGuidedBatchRequest(existing, requestHash) {
+  if (!existing) return null;
+  if (String(existing.requestHash) !== String(requestHash)) {
+    throw httpError(409, "GUIDED_BATCH_IDEMPOTENCY_CONFLICT", "Bu plan işlemi farklı bilgilerle yeniden gönderilemez.");
+  }
+  if (String(existing.status) === "COMPLETED") {
+    const result = readGuidedBatchResult(existing);
+    if (result) return { requestId: existing.id, result, replay: true };
+  }
+  throw httpError(409, "GUIDED_BATCH_IN_PROGRESS", "Plan işlemi hâlâ hazırlanıyor. Kısa süre sonra tekrar kontrol edin.");
 }
 
 async function assertCompanyRoomRegionMatchOrThrow({ companyId, roomId, label }) {
@@ -128,6 +158,7 @@ export function attachShiftCompanyRoutes(r, io) {
     requireRole("COMPANY", "SUPER_ADMIN"),
     async (req, res) => {
       try {
+        const idempotencyKey = normalizeGuidedBatchIdempotencyKey(req.body?.idempotencyKey);
         const rows = Array.isArray(req.body?.items) ? req.body.items : [];
         const uniqueStartDays = new Set(
           rows
@@ -152,7 +183,7 @@ export function attachShiftCompanyRoutes(r, io) {
           return sendErrorResponse(res, httpError(400, "companyId required"));
         }
 
-          const parsedRows = rows.map((row) => validateWithZod(createShiftSchema, row));
+        const parsedRows = rows.map((row) => validateWithZod(createShiftSchema, row));
           for (const body of parsedRows) {
             requireHubPairOrThrow(body);
             await assertCompanyRoomRegionMatchOrThrow({
@@ -168,41 +199,117 @@ export function attachShiftCompanyRoutes(r, io) {
           }
         }
 
-        const created = await prisma.$transaction(async (tx) => {
-          const rowsOut = [];
-          for (const body of parsedRows) {
-            const createdRow = await createShiftWithStopsTx(tx, {
-              body,
-              effectiveCompanyId,
-              effectiveStatus: "DRAFT",
-            });
-            rowsOut.push(createdRow);
-          }
-          return rowsOut;
+        const actorUserId = Number(req.user?.id || 0);
+        if (!actorUserId) {
+          return sendErrorResponse(res, httpError(401, "UNAUTHORIZED", "Yetkili kullanıcı bulunamadı."));
+        }
+        const requestHash = buildGuidedBatchRequestHash({
+          actorUserId,
+          actorRole: req.user.role,
+          companyId: effectiveCompanyId,
+          items: parsedRows,
         });
+        const requestWhere = guidedBatchRequestWhere({ actorUserId, companyId: effectiveCompanyId, idempotencyKey });
 
-        const fullItems = [];
-        for (const shift of created) {
+        let execution;
+        try {
+          execution = await prisma.$transaction(async (tx) => {
+            const existing = await tx.guidedBatchRequest.findUnique({ where: requestWhere });
+            const resolved = resolveGuidedBatchRequest(existing, requestHash);
+            if (resolved) return resolved;
+
+            const request = await tx.guidedBatchRequest.create({
+              data: {
+                actorUserId,
+                actorRole: String(req.user.role || ""),
+                companyId: Number(effectiveCompanyId),
+                idempotencyKey,
+                requestHash,
+                status: "PROCESSING",
+              },
+            });
+
+            const created = [];
+            for (const body of parsedRows) {
+              const createdRow = await createShiftWithStopsTx(tx, {
+                body,
+                effectiveCompanyId,
+                effectiveStatus: "DRAFT",
+              });
+              created.push(createdRow);
+            }
+
+            const fullRows = await tx.shift.findMany({
+              where: { id: { in: created.map((shift) => Number(shift.id)) } },
+              include: {
+                stops: { orderBy: { order: "asc" } },
+                progress: true,
+                vehicle: true,
+                driver: true,
+                company: true,
+                room: true,
+              },
+            });
+            const fullById = new Map(fullRows.map((shift) => [Number(shift.id), decorateShiftWithRegionContext(shift)]));
+            const fullItems = created.map((shift) => fullById.get(Number(shift.id))).filter(Boolean);
+            const result = jsonSafe({
+              ok: true,
+              createdIds: fullItems.map((x) => Number(x.id)),
+              items: fullItems,
+              totalShiftCount,
+              dayCount,
+              idempotencyKey,
+            });
+
+            for (const shift of created) {
+              await tx.auditLog.create({
+                data: {
+                  actorUserId,
+                  actorRole: String(req.user.role || ""),
+                  action: "SHIFT_CREATE",
+                  entity: "Shift",
+                  entityId: Number(shift.id),
+                  meta: {
+                    status: "DRAFT",
+                    via: "GUIDED_BATCH",
+                    idempotencyKey,
+                    guidedBatchRequestId: request.id,
+                  },
+                },
+              });
+            }
+
+            await tx.guidedBatchRequest.update({
+              where: { id: request.id },
+              data: { status: "COMPLETED", resultJson: result },
+            });
+            return { requestId: request.id, result, replay: false };
+          });
+        } catch (error) {
+          if (!isGuidedBatchUniqueConflict(error)) throw error;
+          const existing = await prisma.guidedBatchRequest.findUnique({ where: requestWhere });
+          execution = resolveGuidedBatchRequest(existing, requestHash);
+        }
+
+        if (execution.replay) {
+          return res.json({ ...execution.result, idempotentReplay: true });
+        }
+
+        const finalItems = [];
+        for (const shift of execution.result.items || []) {
           await refreshCompanyShiftRouteStateAfterMutation(shift.id, true);
           await syncCompanyShiftCommercialBackbone(shift.id);
           const full = await loadFullShift(shift.id);
-          fullItems.push(full);
-          await audit(req, {
-            action: "SHIFT_CREATE",
-            entity: "Shift",
-            entityId: shift.id,
-            meta: { status: "DRAFT", via: "GUIDED_BATCH" },
-          });
+          finalItems.push(full);
           publishCompanyShiftMutation(io, emitShift, full, "shift:list");
         }
 
-        return res.json({
-          ok: true,
-          createdIds: fullItems.map((x) => Number(x.id)),
-          items: fullItems,
-          totalShiftCount,
-          dayCount,
+        const finalResult = jsonSafe({ ...execution.result, items: finalItems });
+        await prisma.guidedBatchRequest.update({
+          where: { id: execution.requestId },
+          data: { resultJson: finalResult },
         });
+        return res.json({ ...finalResult, idempotentReplay: false });
       } catch (e) {
         return sendErrorResponse(res, e);
       }
@@ -359,7 +466,7 @@ export function attachShiftCompanyRoutes(r, io) {
 
         // Market shift only: roomId must be null
         if (shift.roomId != null) {
-          return sendErrorResponse(res, httpError(400, "Shift already assigned to a room"));
+          return sendErrorResponse(res, httpError(409, "SHIFT_ALREADY_ASSIGNED", "Bu vardiya zaten bir taşımacılık firmasına atanmış."));
         }
 
         if (shift.status !== "REQUESTED" && shift.status !== "DRAFT") {
@@ -430,7 +537,11 @@ export function attachShiftCompanyRoutes(r, io) {
             await tx.shift.update({ where: { id: shiftId }, data: { status: "REQUESTED" } });
           }
           for (const rid of effectiveRoomIds) {
-            await tx.shiftOffer.upsert({
+            const existingOffer = await tx.shiftOffer.findUnique({
+              where: { shiftId_roomId: { shiftId, roomId: rid } },
+              select: { id: true },
+            });
+            const savedOffer = await tx.shiftOffer.upsert({
               where: { shiftId_roomId: { shiftId, roomId: rid } },
               create: {
                 shiftId,
@@ -443,6 +554,21 @@ export function attachShiftCompanyRoutes(r, io) {
                 status: "OPEN",
                 amountCompany: body.amountCompany ?? null,
                 noteCompany: body.noteCompany ?? null,
+              },
+            });
+            await tx.auditLog.create({
+              data: {
+                actorUserId: req.user?.id || null,
+                actorRole: req.user?.role || null,
+                action: existingOffer ? "SHIFT_OFFER_REPLAYED" : "SHIFT_OFFER_SENT",
+                entity: "ShiftOffer",
+                entityId: savedOffer.id,
+                meta: {
+                  shiftId,
+                  roomId: rid,
+                  amountCompany: body.amountCompany ?? null,
+                  idempotent: Boolean(existingOffer),
+                },
               },
             });
           }
@@ -577,11 +703,7 @@ export function attachShiftCompanyRoutes(r, io) {
 
         const updated = await prisma.shift.update({
           where: { id },
-          data: {
-            companyOfferVehicleId: body.companyOfferVehicleId ?? null,
-            companyOfferAmount: body.companyOfferAmount ?? null,
-            companyOfferNote: body.companyOfferNote ?? null,
-          },
+          data: buildCompanyOfferUpdateData(body),
           include: {
             stops: { orderBy: { order: "asc" } },
             progress: true,

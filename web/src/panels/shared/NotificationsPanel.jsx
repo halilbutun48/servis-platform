@@ -6,10 +6,12 @@ import { useAutoReload } from "../../live/useAutoReload";
 import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 import CollapsibleSection from "../../components/CollapsibleSection";
 import { normalizeNotifV1, notificationKindLabel, notificationTitleLabel } from "../../utils/notificationV1";
+import { buildNotificationEvidenceSummary } from "../../utils/notificationEvidence.js";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
 import { pillKeyFromAny } from "../../utils/uiStatus";
 import { formatDateTimeTR } from "../../utils/time";
 import { userFacingScopeLabel, userFacingStatusLabel } from "../../utils/terminology";
+import { buildNotificationCopilotSelection, clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 function fmt(v) {
   if (v == null) return "";
@@ -101,7 +103,7 @@ export default function NotificationsPanel() {
       const status = p.status ? userFacingStatusLabel(p.status) : "";
       const regionLabel = formatRegionOwnership(n?.regionOwnership);
 
-      const payloadPretty = JSON.stringify(p, null, 2);
+      const evidenceSummary = buildNotificationEvidenceSummary(p);
 
       return {
         key: n?.id ?? idx,
@@ -118,7 +120,7 @@ export default function NotificationsPanel() {
         ageSec: p.ageSec,
         at,
         atRaw: fmt(atRaw),
-        payloadPretty,
+        evidenceSummary,
       };
     });
   }, [items]);
@@ -165,9 +167,22 @@ export default function NotificationsPanel() {
 
   const visibleStatusText = `${filteredRows.length} / ${rows.length}`;
   const visibleTone = filteredRows.length ? "success" : "warning";
+  const selectedCopilotSelection = useMemo(
+    () => buildNotificationCopilotSelection(selected),
+    [selected],
+  );
+
+  useEffect(() => {
+    if (!selectedCopilotSelection) {
+      clearCopilotSelection("/shared/notifications");
+      return undefined;
+    }
+    setCopilotSelection(selectedCopilotSelection);
+    return () => clearCopilotSelection("/shared/notifications");
+  }, [selectedCopilotSelection]);
 
   return (
-    <div className="wrap notifWide">
+    <div className="wrap notifWide" data-copilot-target="shared:notifications" data-copilot-label="Bildirimler" data-copilot-semantic-id="product:shared:notifications">
       <style>{`
         .wrap.notifWide { max-width:none !important; width:100% !important; }
 
@@ -531,12 +546,16 @@ export default function NotificationsPanel() {
             </div>
 
             <CollapsibleSection
-              title="Sistem kanıtı"
-              subtitle="Ham bildirim verisi yalnız ikinci katmanda görünür."
+              title="Bildirim özeti"
+              subtitle="Sistem kaydı kullanıcı dilinde özetlenir."
               defaultOpen={false}
               compact
             >
-              <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{selected.payloadPretty}</pre>
+              <div style={{ display: "grid", gap: 6 }}>
+                {(selected.evidenceSummary?.lines || ["Bu bildirim için ek ayrıntı bulunmuyor."]).map((line) => (
+                  <div key={line}>{line}</div>
+                ))}
+              </div>
             </CollapsibleSection>
           </div>
         </div>

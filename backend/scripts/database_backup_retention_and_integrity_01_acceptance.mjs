@@ -62,7 +62,7 @@ function randomPassword() {
   return `bkp_${crypto.randomBytes(16).toString("hex")}`;
 }
 
-function startPostgres(container, database, password) {
+function startPostgres(container, database, password, workerPassword) {
   docker(["run", "--detach", "--rm", "--publish", "127.0.0.1::5432", "--name", container,
     "--env", "POSTGRES_USER=backup_acceptance", "--env", `POSTGRES_PASSWORD=${password}`,
     "--env", `POSTGRES_DB=${database}`, "postgres:16"]);
@@ -72,6 +72,7 @@ function startPostgres(container, database, password) {
       const portText = docker(["port", container, "5432/tcp"]);
       const match = portText.match(/:(\d+)\s*$/m);
       if (!match) throw new Error("published PostgreSQL port unavailable");
+      docker(["exec", container, "psql", "-v", "ON_ERROR_STOP=1", "-U", "backup_acceptance", "-d", database, "-c", `CREATE ROLE backup_worker LOGIN PASSWORD '${workerPassword}'; GRANT CONNECT ON DATABASE "${database}" TO backup_worker;`]);
       return Number(match[1]);
     } catch {
       const waitUntil = Date.now() + 1500;
@@ -83,6 +84,29 @@ function startPostgres(container, database, password) {
 
 function removeContainer(container) {
   try { docker(["rm", "--force", container], { timeout: 60_000 }); } catch {}
+}
+
+function startRedis(container) {
+  docker(["run", "--detach", "--rm", "--publish", "127.0.0.1::6379", "--name", container, "redis:7"]);
+  for (let i = 0; i < 40; i += 1) {
+    try {
+      docker(["exec", container, "redis-cli", "ping"], { timeout: 20_000 });
+      const portText = docker(["port", container, "6379/tcp"]);
+      const match = portText.match(/:(\d+)\s*$/m);
+      if (!match) throw new Error("published Redis port unavailable");
+      docker([
+        "exec", container, "redis-cli", "HSET", "seferpakt:global-write-freeze:v1",
+        "state", "OPEN", "token", "0", "owner", "backup-acceptance",
+        "reason", "isolated-restore", "changedAt", new Date().toISOString(),
+        "changeControlId", "BACKUP-ACCEPTANCE-ISOLATED",
+      ]);
+      return Number(match[1]);
+    } catch {
+      const waitUntil = Date.now() + 500;
+      while (Date.now() < waitUntil) {}
+    }
+  }
+  throw new Error(`isolated Redis container did not become ready: ${container}`);
 }
 
 function getFreePort() {
@@ -102,8 +126,8 @@ function prismaCommand() {
   return candidate;
 }
 
-function databaseUrl(port, database, password) {
-  return `postgresql://backup_acceptance:${encodeURIComponent(password)}@127.0.0.1:${port}/${database}?schema=public`;
+function databaseUrl(port, database, password, username = "backup_acceptance") {
+  return `postgresql://${username}:${encodeURIComponent(password)}@127.0.0.1:${port}/${database}?schema=public`;
 }
 
 function pushSchema(url) {
@@ -122,7 +146,13 @@ function pushSchema(url) {
 async function seedCanonicalFixture(url) {
   run(process.execPath, ["prisma/seed.js"], {
     cwd: backendRoot,
-    env: { ...process.env, DATABASE_URL: url, NODE_ENV: "test" },
+    env: {
+      ...process.env,
+      DATABASE_URL: url,
+      NODE_ENV: "test",
+      SEFERPAKT_DATABASE_MODE: "isolated",
+      SEFERPAKT_ALLOW_ISOLATED_SEED: "1",
+    },
     timeout: 240_000,
   });
   const { PrismaClient } = await import("@prisma/client");
@@ -220,23 +250,32 @@ function normalizeSchemaDump(value) {
   return String(value).split("\n").filter((line) => !/^\\(?:un)?restrict\s/.test(line)).join("\n");
 }
 
-async function backendHealth(url) {
+async function backendHealth(url, workerUrl, redisUrl) {
   const port = await getFreePort();
+  const childOutput = { stdout: "", stderr: "" };
   const child = spawn(process.execPath, ["src/server.js"], {
     cwd: backendRoot,
     windowsHide: true,
-    stdio: "ignore",
+    stdio: ["ignore", "pipe", "pipe"],
     env: {
       ...process.env,
       NODE_ENV: "test",
+      SEFERPAKT_DATABASE_MODE: "isolated",
       PORT: String(port),
       DATABASE_URL: url,
+      WORKER_DATABASE_URL: workerUrl,
+      REDIS_URL: redisUrl,
       JWT_SECRET: "#12-isolated-test-only",
-      REDIS_URL: "",
       LOG_RETENTION_ENABLED: "0",
       TELEMATICS_ENABLED: "0",
       AI_COPILOT_ENABLED: "0",
     },
+  });
+  child.stdout.on("data", (chunk) => {
+    childOutput.stdout = `${childOutput.stdout}${chunk}`.slice(-8000);
+  });
+  child.stderr.on("data", (chunk) => {
+    childOutput.stderr = `${childOutput.stderr}${chunk}`.slice(-8000);
   });
   try {
     let response = null;
@@ -247,17 +286,25 @@ async function backendHealth(url) {
       } catch {}
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
-    if (!response || response.status !== 200) throw new Error("restored backend /health did not return 200");
+    if (!response || response.status !== 200) {
+      throw new Error(`restored backend /health did not return 200: ${childOutput.stderr || childOutput.stdout}`);
+    }
     const body = await response.json();
     if (body.dbOk !== true) throw new Error("restored backend /health dbOk was not true");
     const login = await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ identifier: "superadmin@demo.com", password: "demo123" }),
     });
-    if (!login.ok) throw new Error(`restored backend login failed with ${login.status}`);
+    if (!login.ok) {
+      const bodyText = await login.text();
+      throw new Error(`restored backend login failed with ${login.status}: ${bodyText}; logs=${childOutput.stderr || childOutput.stdout}`);
+    }
     const loginBody = await login.json();
     const me = await fetch(`http://127.0.0.1:${port}/api/me`, { headers: { authorization: `Bearer ${loginBody.token}` } });
-    if (!me.ok) throw new Error(`restored backend /api/me failed with ${me.status}`);
+    if (!me.ok) {
+      const bodyText = await me.text();
+      throw new Error(`restored backend /api/me failed with ${me.status}: ${bodyText}; logs=${childOutput.stderr || childOutput.stdout}`);
+    }
     return { health: body, apiStatus: me.status };
   } finally {
     if (child.exitCode == null) child.kill("SIGTERM");
@@ -275,15 +322,20 @@ async function main() {
   const restoreDb = "backup_restore";
   const sourcePassword = randomPassword();
   const restorePassword = randomPassword();
+  const sourceWorkerPassword = randomPassword();
+  const restoreWorkerPassword = randomPassword();
+  const redisContainer = uniqueName("seferpakt_bkp_redis");
   let sourceUrl = null;
   let restoreUrl = null;
   let backup = null;
   try {
     docker(["version", "--format", "{{.Server.Version}}"], { timeout: 30_000 });
-    const sourcePort = startPostgres(sourceContainer, sourceDb, sourcePassword);
-    const restorePort = startPostgres(restoreContainer, restoreDb, restorePassword);
+    const sourcePort = startPostgres(sourceContainer, sourceDb, sourcePassword, sourceWorkerPassword);
+    const restorePort = startPostgres(restoreContainer, restoreDb, restorePassword, restoreWorkerPassword);
     sourceUrl = databaseUrl(sourcePort, sourceDb, sourcePassword);
     restoreUrl = databaseUrl(restorePort, restoreDb, restorePassword);
+    const redisPort = startRedis(redisContainer);
+    const redisUrl = `redis://127.0.0.1:${redisPort}`;
     process.env.DATABASE_URL = sourceUrl;
     process.env.BACKUP_EXECUTION_MODE = "docker";
     process.env.BACKUP_DOCKER_CONTAINER = sourceContainer;
@@ -387,7 +439,8 @@ async function main() {
     const runtime = await collectSnapshot(restoreUrl);
     if (runtime.postgresVersion !== after.postgresVersion || runtime.counts.user < 1) throw new Error("post-restore Prisma runtime query failed");
     pass("post-restore Prisma connect, DMMF-backed client and read queries", { postgresVersion: runtime.postgresVersion });
-    const app = await backendHealth(restoreUrl);
+    const restoreWorkerUrl = databaseUrl(restorePort, restoreDb, restoreWorkerPassword, "backup_worker");
+    const app = await backendHealth(restoreUrl, restoreWorkerUrl, redisUrl);
     pass("post-restore backend health and representative authenticated API", app);
 
     const retentionDir = path.join(root, "retention");
@@ -554,6 +607,7 @@ async function main() {
   } finally {
     removeContainer(sourceContainer);
     removeContainer(restoreContainer);
+    removeContainer(redisContainer);
     fs.rmSync(root, { recursive: true, force: true });
   }
   if (checks.some((check) => !check.pass)) process.exitCode = 1;

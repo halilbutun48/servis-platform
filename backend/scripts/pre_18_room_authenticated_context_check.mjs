@@ -4,6 +4,8 @@
  * fabricate product session data or interact with a live browser.
  */
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 const modulePath = "./lib/pre_18_authenticated_role_context.mjs";
 const cases = [];
@@ -163,6 +165,145 @@ test("RED-AUTH-14 telemetry is secret-free", async () => {
     clientSessionHydrated: true,
     roomShellRendered: true,
   });
+});
+
+test("RED-AUTH-15 read-only browser policy allows transport posts but classifies business mutations", async () => {
+  const lib = await auth();
+  assert.equal(lib.classifyReadOnlyBrowserRequest({ method: "GET", url: "http://127.0.0.1:3000/api/room/shifts" }).isBusinessMutation, false);
+  assert.equal(lib.classifyReadOnlyBrowserRequest({ method: "POST", url: "http://127.0.0.1:3000/api/auth/login" }).isBusinessMutation, false);
+  assert.equal(lib.classifyReadOnlyBrowserRequest({ method: "POST", url: "http://127.0.0.1:3000/api/ai/copilot" }).isBusinessMutation, false);
+  assert.equal(lib.classifyReadOnlyBrowserRequest({ method: "POST", url: "http://127.0.0.1:3000/api/agreements" }).isBusinessMutation, true);
+  assert.equal(lib.classifyReadOnlyBrowserRequest({ method: "PUT", url: "http://127.0.0.1:3000/api/shifts/168" }).isBusinessMutation, true);
+  const ledger = lib.createReadOnlyBrowserRequestLedger();
+  ledger.record({ method: "POST", url: "http://127.0.0.1:3000/api/agreements", blocked: true });
+  ledger.record({ method: "GET", url: "http://127.0.0.1:3000/api/room/shifts" });
+  assert.deepEqual(ledger.snapshot(), {
+    requestCount: 2,
+    businessMutationAttemptCount: 1,
+    businessMutationExecutionCount: 0,
+    blockedMutationAttemptCount: 1,
+  });
+});
+
+test("RED-AUTH-16 responsive acceptance accepts only the canonical exact viewports", async () => {
+  const lib = await auth();
+  assert.deepEqual(lib.resolveAcceptanceViewport("desktop"), { safe: true, name: "desktop", width: 1440, height: 900 });
+  assert.deepEqual(lib.resolveAcceptanceViewport("mobile390"), { safe: true, name: "mobile390", width: 390, height: 844 });
+  assert.deepEqual(lib.resolveAcceptanceViewport("mobile320"), { safe: true, name: "mobile320", width: 320, height: 844 });
+  assert.deepEqual(lib.resolveAcceptanceViewport("mobile"), { safe: false, name: "mobile", reason: "UNSUPPORTED_VIEWPORT" });
+});
+
+test("RED-AUTH-17 browser acceptance fails closed without a verified current runtime receipt", async () => {
+  const lib = await auth();
+  assert.equal(lib.evaluateRuntimeFreshnessProof().safe, false);
+  const valid = lib.evaluateRuntimeFreshnessProof({
+    receiptVerified: true,
+    receipt: {
+      finalStatus: "PASS",
+      sourceMutation: false,
+      startManifestSha256: "A".repeat(64),
+      endManifestSha256: "A".repeat(64),
+      suiteResults: [{ businessWriteExecution: 0, authorizationMutation: 0, downstreamBusinessWrite: 0 }],
+      runtimeBinding: {
+        runtimeKind: "DOCKER",
+        bindingSchemaVersion: "M18-DOCKER-RUNTIME-BINDING-V2",
+        containerName: "personel_api",
+        imageId: `sha256:${"b".repeat(64)}`,
+        port: 3000,
+        hostPort: 3000,
+        containerPort: 3000,
+        hostPortOwnerPids: [58340],
+        hostPortOwnerProcesses: ["com.docker.backend"],
+        hostPortOwnerSource: "WINDOWS_GET_NET_TCP_CONNECTION",
+        hostPortOwnerObservation: "VERIFIED_HOST_SOCKET_OWNERS",
+        hostPortForwardingMode: "DOCKER_DESKTOP_PROXY",
+        hostPortBindingAddresses: ["0.0.0.0", "::"],
+        hostPortListenerAddresses: [":::3000"],
+        hostPortForwarders: [{ localAddress: ":::3000", owningProcess: 58340, process: "com.docker.backend" }],
+        pidObservationSource: "docker-exec-procfs",
+        processPidNamespace: "CONTAINER",
+        pidStableAcrossProbe: true,
+        containerLaunchCommand: "sh -lc npm run dev",
+        containerPid: 31,
+        healthStatus: "PASS",
+        healthEndpoint: "http://127.0.0.1:3000/health",
+        sourceManifestSha256: "A".repeat(64),
+        sourceIdentity: "C".repeat(64),
+        sourceContractBindingSha256: "D".repeat(64),
+        containerSourceIdentity: "C".repeat(64),
+        containerSourceContractBindingSha256: "D".repeat(64),
+        containerId: "a".repeat(64),
+        containerProcessCommand: "node src/server.js",
+        containerProcessCwd: "/app/backend",
+        containerProcessStartTime: "proc-stat-starttime:12345",
+        containerProcessStartTimeTicks: 12345,
+        containerProcessStartTimeSource: "PROC_STAT_STARTTIME",
+        mountType: "bind",
+        mountTarget: "/app",
+        runtimeObservedAfterManifest: true,
+        staleListener: false,
+        startedAfterManifest: true,
+      },
+    },
+  });
+  assert.equal(valid.safe, true);
+});
+
+test("RED-AUTH-18 continuation browser defaults to the canonical Vite port", async () => {
+  const source = readFileSync(resolve("backend/scripts/m18_dlevel_continue_browser_smoke_01.mjs"), "utf8");
+  assert.match(source, /process\.env\.WEB_BASE_URL\s*\|\|\s*['"]http:\/\/127\.0\.0\.1:5173['"]/u);
+});
+
+test("RED-AUTH-19 runtime freshness rejects incomplete Docker binding identity", async () => {
+  const lib = await auth();
+  const proof = {
+    finalStatus: "PASS",
+    sourceMutation: false,
+    startManifestSha256: "A".repeat(64),
+    endManifestSha256: "A".repeat(64),
+    suiteResults: [{ businessWriteExecution: 0, authorizationMutation: 0, downstreamBusinessWrite: 0 }],
+      runtimeBinding: {
+        runtimeKind: "DOCKER",
+        bindingSchemaVersion: "M18-DOCKER-RUNTIME-BINDING-V2",
+        containerName: "other_container",
+        imageId: `sha256:${"b".repeat(64)}`,
+        port: 3000,
+        hostPort: 3000,
+        containerPort: 3000,
+        hostPortOwnerPids: [58340],
+        hostPortOwnerProcesses: ["com.docker.backend"],
+        hostPortOwnerSource: "WINDOWS_GET_NET_TCP_CONNECTION",
+        hostPortOwnerObservation: "VERIFIED_HOST_SOCKET_OWNERS",
+        hostPortForwardingMode: "DOCKER_DESKTOP_PROXY",
+        hostPortBindingAddresses: ["0.0.0.0", "::"],
+        hostPortListenerAddresses: [":::3000"],
+        hostPortForwarders: [{ localAddress: ":::3000", owningProcess: 58340, process: "com.docker.backend" }],
+        pidObservationSource: "docker-exec-procfs",
+        processPidNamespace: "CONTAINER",
+        pidStableAcrossProbe: true,
+        containerLaunchCommand: "sh -lc npm run dev",
+        containerPid: 31,
+        healthStatus: "PASS",
+        healthEndpoint: "http://127.0.0.1:3000/health",
+        sourceManifestSha256: "A".repeat(64),
+        sourceIdentity: "C".repeat(64),
+        sourceContractBindingSha256: "D".repeat(64),
+        containerSourceIdentity: "C".repeat(64),
+        containerSourceContractBindingSha256: "D".repeat(64),
+        containerId: "a".repeat(64),
+        containerProcessCommand: "node src/server.js",
+        containerProcessCwd: "/app/backend",
+        containerProcessStartTime: "proc-stat-starttime:12345",
+        containerProcessStartTimeTicks: 12345,
+        containerProcessStartTimeSource: "PROC_STAT_STARTTIME",
+        mountType: "bind",
+        mountTarget: "/app",
+        runtimeObservedAfterManifest: true,
+        staleListener: false,
+        startedAfterManifest: true,
+      },
+  };
+  assert.equal(lib.evaluateRuntimeFreshnessProof({ receiptVerified: true, receipt: proof }).safe, false);
 });
 
 let failures = 0;

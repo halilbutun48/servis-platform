@@ -50,13 +50,20 @@ export function compactCopilotMessages(messages, limit = MAX_PERSISTED_MESSAGES)
 function compactSelection(selection) {
   if (!selection || typeof selection !== "object") return null;
   const entityType = String(selection.entityType || selection.selectedRecordType || "").trim();
-  const entityId = Number(selection.entityId || selection.selectedRecordId || 0);
-  if (!entityType || !Number.isInteger(entityId) || entityId <= 0) return null;
+  const rawEntityId = selection.entityId ?? selection.selectedRecordId;
+  const entityId = Number(rawEntityId || 0);
+  const isPublicLead = entityType.toLowerCase() === "public-lead";
+  const publicLeadId = isPublicLead
+    && /^[A-Za-z0-9_-]{1,64}$/u.test(String(rawEntityId || "").trim())
+    ? String(rawEntityId).trim()
+    : "";
+  if (!entityType || (!publicLeadId && (!Number.isInteger(entityId) || entityId <= 0))) return null;
   return {
     scopeKey: String(selection.scopeKey || "").slice(0, 120),
     entityType: entityType.slice(0, 60),
-    entityId,
+    entityId: publicLeadId || entityId,
     ...(selection.label ? { label: String(selection.label).slice(0, 180) } : {}),
+    ...(publicLeadId ? { facts: { screenType: "PUBLIC_LEAD_REVIEW", leadId: publicLeadId } } : {}),
   };
 }
 
@@ -89,14 +96,17 @@ function compactSharedState(next = {}, previous = {}) {
   const rawSelectedContext = nextOrPrevious(next, previous, "selectedContext");
   const selection = clearsRouteBoundState ? null : compactSelection(rawSelection ?? rawSelectedContext);
   const screenPath = clearsRouteBoundState ? null : compactText(nextOrPrevious(next, previous, "screenPath"), 240);
+  const sourceScreenPath = clearsRouteBoundState ? null : compactText(nextOrPrevious(next, previous, "sourceScreenPath"), 240);
   const screenLabel = clearsRouteBoundState ? null : compactText(nextOrPrevious(next, previous, "screenLabel"), 180);
   const messages = hasOwn(next, "messages") ? next.messages : previous.messages;
   return {
     ...(nextOrPrevious(next, previous, "scopeKey") ? { scopeKey: String(nextOrPrevious(next, previous, "scopeKey")).slice(0, 160) } : {}),
     screenPath,
+    sourceScreenPath,
     screenLabel,
     ...(nextOrPrevious(next, previous, "role") ? { role: String(nextOrPrevious(next, previous, "role")).slice(0, 40) } : {}),
     ...(nextOrPrevious(next, previous, "companyKind") ? { companyKind: String(nextOrPrevious(next, previous, "companyKind")).slice(0, 40) } : {}),
+    chatContextKey: compactText(nextOrPrevious(next, previous, "chatContextKey"), 240) || null,
     routeContextStatus,
     routeDenied: routeContextStatus !== "ALLOW",
     metadataStatus: metadataStatus || null,
@@ -105,6 +115,7 @@ function compactSharedState(next = {}, previous = {}) {
     routeHandoff: clearsRouteBoundState ? null : (nextOrPrevious(next, previous, "routeHandoff") ?? null),
     routeBoundEntryHint: clearsRouteBoundState ? null : (nextOrPrevious(next, previous, "routeBoundEntryHint") ?? null),
     routeBoundResult: clearsRouteBoundState ? null : (nextOrPrevious(next, previous, "routeBoundResult") ?? null),
+    draft: compactText(nextOrPrevious(next, previous, "draft"), 4000) || "",
     messages: compactCopilotMessages(messages),
   };
 }

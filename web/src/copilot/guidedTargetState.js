@@ -32,6 +32,19 @@ export function shouldRestoreGuidedTargetAfterRouteChange(target, currentPath) {
   return !targetPath || !routePath || targetPath === routePath;
 }
 
+// A canonical navigation target may intentionally belong to a different
+// route.  It is safe to start that transition only when the backend supplied
+// an explicit navigation action and canonical identity; legacy labels must
+// never become arbitrary client-side routes.
+export function shouldNavigateGuidedTarget(target, currentPath) {
+  if (!target || target.status !== 'FOUND') return false;
+  if (String(target.safeAction || '').toUpperCase() !== 'NAVIGATE') return false;
+  if (String(target.identitySource || '').toUpperCase() !== 'CANONICAL') return false;
+  const targetPath = String(target.screenPath || '').trim();
+  const routePath = String(currentPath || '').trim();
+  return Boolean(targetPath && routePath && targetPath !== routePath);
+}
+
 export function setGuidedTarget(target) {
   currentTarget = normalizeGuidedTarget(target);
   if (typeof window !== 'undefined') {

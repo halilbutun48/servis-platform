@@ -71,6 +71,8 @@ export function RoomVehicleManageSection({
   setCapacity,
   type,
   setType,
+  hgsClass,
+  setHgsClass,
   speedLimitKmh,
   setSpeedLimitKmh,
   inspectionDueAt,
@@ -168,6 +170,15 @@ export function RoomVehicleManageSection({
             </div>
 
             <div className="col">
+              <label className="muted">HGS sınıfı</label>
+              <select value={hgsClass} onChange={(e) => setHgsClass(e.target.value)}>
+                <option value="">Ruhsattan doğrula (henüz girilmedi)</option>
+                {[1, 2, 3, 4, 5, 6].map((value) => <option key={value} value={value}>{value}. sınıf</option>)}
+              </select>
+              <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>Ücretli yol hesabı için resmî araç sınıfını bir kez girin. Araç tipinden tahmin edilmez.</div>
+            </div>
+
+            <div className="col">
               <label className="muted">Hız limit</label>
               <input type="number" value={speedLimitKmh} onChange={(e) => setSpeedLimitKmh(e.target.value)} />
             </div>
@@ -251,6 +262,7 @@ export function RoomVehicleManageSection({
                 <th>Plaka</th>
                 <th>Kapasite</th>
                 <th>Tip</th>
+                <th>HGS</th>
                 <th>Hız limit</th>
                 <th>Muayene</th>
                 <th>Km / Bakım</th>
@@ -282,6 +294,7 @@ export function RoomVehicleManageSection({
                     </td>
                     <td className="muted">{v.capacity}</td>
                     <td className="muted">{v.type ?? "-"}</td>
+                    <td className="muted">{v.hgsClass != null ? `${v.hgsClass}. sınıf` : "Eksik"}</td>
                     <td className="muted">{v.speedLimitKmh ?? "-"}</td>
                     <td className="muted">{fmtDate(v.inspectionDueAt)}</td>
                     <td className="muted">{v.odometerKm != null ? `${v.odometerKm} km` : "-"}{remainingKm != null ? ` • kalan ${remainingKm} km` : ""}</td>
@@ -349,8 +362,17 @@ export function RoomVehicleStatusSection({
   focusVehicleId,
   onSelectVehicle,
 }) {
+  const filterValue = `${plateQuery} ${statusFilter}`.trim();
+  const totalCount = items.filter((v) => !v.archivedAt).length;
   return (
-    <div className="card">
+    <div
+      className="card"
+      data-copilot-filter-scope="vehicles"
+      data-copilot-filter-value={filterValue}
+      data-copilot-filter-visible-count={statusRows.length}
+      data-copilot-filter-total-count={totalCount}
+      data-copilot-filter-clear-target="room:vehicles:filter-clear"
+    >
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
         <div>
           <label className="muted">Plaka ara</label>
@@ -374,8 +396,9 @@ export function RoomVehicleStatusSection({
         selectedLabel={focusVehicle?.plate || ""}
         selectedSummary={[focusUi?.label, focusDriverLabel, focusVehicle?.type].filter(Boolean).join(" • ")}
         visibleCount={statusRows.length}
-        totalCount={items.filter((v) => !v.archivedAt).length}
-        filterValue={`${plateQuery} ${statusFilter}`.trim()}
+        totalCount={totalCount}
+        filterValue={filterValue}
+        clearFilterTargetKey="room:vehicles:filter-clear"
         onClearFilter={() => {
           setPlateQuery("");
           setStatusFilter("ALL");
@@ -405,12 +428,12 @@ export function RoomVehicleStatusSection({
                   {!hasGps ? <div className="muted" style={{ fontSize: 12 }}>📡 GPS yok</div> : null}
                 </td>
                 <td>
-                  <span className="pill" data-status={pillKey}>{getGpsReliabilityLabel(v.gpsLast?.status || v.gpsState?.lastUiStatus || ui || "-")}</span>
+                  <span className="pill" data-status={pillKey}>{getGpsReliabilityLabel(ui || "-")}</span>
                 </td>
                 <td className="muted">{gpsAtLabel(v)}</td>
                 <td className="muted">{v.gpsLast?.speed != null ? `${v.gpsLast.speed} km/h` : "-"}</td>
                 <td className="muted">{hasGps ? `${v.gpsLast.lat.toFixed(4)}, ${v.gpsLast.lng.toFixed(4)}` : "📡 GPS yok"}</td>
-                <td className="muted">{getGpsReliabilityLabel(v.gpsLast?.status || v.gpsState?.lastUiStatus || v.gpsState?.status || "-")}</td>
+                <td className="muted">{getGpsReliabilityLabel(ui || "-")}</td>
               </tr>
             );
           })}

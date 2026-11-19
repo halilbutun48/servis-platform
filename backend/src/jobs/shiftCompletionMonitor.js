@@ -1,5 +1,5 @@
 // backend/src/jobs/shiftCompletionMonitor.js
-import { prisma } from "../prisma.js";
+import { workerPrisma } from "../prisma.js";
 import logger from "../lib/logger.js";
 
 /**
@@ -10,6 +10,8 @@ import logger from "../lib/logger.js";
  * and ensures Company/Room does not show stale ACTIVE for completed shifts.
  */
 export function startShiftCompletionMonitor(io, opts = {}) {
+  const db = opts.prismaClient || workerPrisma;
+  if (!db) return () => {};
   const intervalMs = opts.intervalMs ?? 5000;
   let running = false;
   let timer = null;
@@ -26,7 +28,7 @@ export function startShiftCompletionMonitor(io, opts = {}) {
     if (running) return;
     running = true;
     try {
-      const rows = await prisma.shiftProgress.findMany({
+      const rows = await db.shiftProgress.findMany({
         where: {
           completedAt: { not: null },
           shift: { status: { not: "DONE" } },
@@ -41,13 +43,13 @@ export function startShiftCompletionMonitor(io, opts = {}) {
         if (!shiftId) continue;
 
         // idempotent update
-        const upd = await prisma.shift.updateMany({
+        const upd = await db.shift.updateMany({
           where: { id: shiftId, NOT: { status: "DONE" } },
           data: { status: "DONE" },
         });
 
         if (upd.count > 0) {
-          const shift = await prisma.shift.findUnique({ where: { id: shiftId } });
+          const shift = await db.shift.findUnique({ where: { id: shiftId } });
           await emitShiftUpdate(shift, { action: "reconcile", status: "DONE" });
         }
       }

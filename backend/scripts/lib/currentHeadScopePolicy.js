@@ -70,6 +70,20 @@ export const CURRENT_HEAD_APPROVED_CURRENT_ACCEPTED_SERVICE_SOURCES = Object.fre
     .map(({ path, sha256, owner }) => ({ path, sha256, owner })),
 );
 
+// These exact Prisma worktree identities are the accepted ROOM/COMPANY/M18
+// fixture and schema changes already recorded in the locked invariant ledger.
+// They are a bounded current-head exception, not permission for arbitrary
+// future Prisma edits or a production DB write.
+export const CURRENT_HEAD_APPROVED_PRISMA_WORKTREE_ENTRIES = Object.freeze([
+  { path: "backend/prisma/m18DemoFixtureFoundation.js", sha256: "18C884984968AE679C1C2D10D0D0E58E89FDF2735EF6C2D6C00CA155A70D10D7", owner: "M18_COPILOT_UI_ELEMENT_ANCHOR_AND_GUIDED_HIGHLIGHT_01" },
+  { path: "backend/prisma/schema/commercial.prisma", sha256: "804EB171E61F3911883D454E4CBEB54E376B4F2B5BD2BD609C6310E9316F7359", owner: "ROOM_FINANCE_PRODUCT_ACCEPTED_BOUNDED" },
+  { path: "backend/prisma/schema/fleet.prisma", sha256: "472B3F857C22D737B92C9B139A4F63D8C771B184BBC274A4BB893DA04E00383B", owner: "ROOM_FINANCE_PRODUCT_ACCEPTED_BOUNDED" },
+  { path: "backend/prisma/schema/identity.prisma", sha256: "F1428195EFC1AF389CC6FA54383F6BF8BA867D1A068A70CDB735F2E914C807A9", owner: "ROOM_FINANCE_PRODUCT_ACCEPTED_BOUNDED" },
+  { path: "backend/prisma/schema/operations.prisma", sha256: "1B829EDA3EAF499B266E7D9F3A37029CB1F81835CBB52A0C78BF13A35BD0DD8A", owner: "ROOM_FINANCE_PRODUCT_ACCEPTED_BOUNDED" },
+  { path: "backend/prisma/schema/tenant.prisma", sha256: "6AF51E1D2D988B3E9DDA6FCB08F99BF770A2622CC3128EE6EE75DF9CB7088C10", owner: "ROOM_FINANCE_PRODUCT_ACCEPTED_BOUNDED" },
+  { path: "backend/prisma/seed.js", sha256: "22B4CE52AE930E3ED7F91F7241830FF96C7EC14BC106CAA03E014691999CDC90", owner: "M18_COPILOT_UI_ELEMENT_ANCHOR_AND_GUIDED_HIGHLIGHT_01" },
+]);
+
 // Screen-context authority has a distinct owner from presentation identity.
 // These exact pins were accepted by the bounded route-policy, stale-context,
 // Floating/full Copilot and server-hint isolation contract. They do not grant
@@ -77,7 +91,7 @@ export const CURRENT_HEAD_APPROVED_CURRENT_ACCEPTED_SERVICE_SOURCES = Object.fre
 export const CURRENT_HEAD_APPROVED_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE = Object.freeze([
   {
     path: "web/src/App.jsx",
-    sha256: "804362A517CD0A5D49570BB37EE32A4370E2C8D657EC5864C9CBE0CAC9C2DE2F",
+    sha256: "1AEEF8F9A4195024E1AB6EA50BF72DDBEA8006226EA4E4E05924739CD8472B52",
     owner: "PRE_18_SCREEN_CONTEXT_AUTHORITY_ACCEPTANCE",
   },
   {
@@ -144,6 +158,8 @@ export const CURRENT_HEAD_APPROVED_SEFER_ABI_SEMANTIC_REASONING_ACCEPTANCE = Obj
   },
   {
     path: "backend/src/ai/chat/canonicalSemanticRequest.js",
+    // Immutable PRE-18 identity; M18 records the superseding current source
+    // separately in its active ownership manifest.
     sha256: "7C39D5F458FBAB8F86E105722197298ECE8045BF0872F8DA9C967321C1C5E252",
     owner: "PRE_18_SEFER_ABI_SEMANTIC_PRIORITY_ACCEPTANCE",
   },
@@ -193,6 +209,11 @@ export const CURRENT_HEAD_APPROVED_SEFER_ABI_SEMANTIC_REASONING_ACCEPTANCE = Obj
 // evidence of the immutable closure; they are not a requirement that those
 // paths stay dirty after PRE-#18 is committed.
 export const PRE18_HISTORICAL_CONCURRENT_BACKEND_DIFF = Object.freeze([
+  {
+    path: "backend/scripts/lib/pre_18_authenticated_role_context.mjs",
+    sha256: "A456E01013C39585395FB45A521CF3DF6412757319FC24FE26C63BFAC9BE9315",
+    owner: "PRE_18_FOUNDATION",
+  },
   // Current working-tree driver-create correction: connect the required
   // Prisma room relation and omit an empty optional device value. Keep exact
   // identity pinning; this does not expand authorization or tenant scope.

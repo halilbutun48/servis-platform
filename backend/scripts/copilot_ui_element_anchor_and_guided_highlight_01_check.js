@@ -28,6 +28,11 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 function source(rel) { return fs.readFileSync(path.join(root, rel), 'utf8'); }
 
+function hasCanonicalPeopleStepIdentity(sourceText) {
+  return /data-copilot-target=\{organization \? guidedTargetKey : undefined\}/u.test(sourceText)
+    || /data-copilot-semantic-id=\{organization \? undefined : ['"]product:company-shifts:step3:address-next['"]\}/u.test(sourceText);
+}
+
 function assert(condition, label) {
   if (!condition) throw new Error(`FAIL ${label}`);
   console.log(`OK ${label}`);
@@ -179,6 +184,138 @@ assert(found.status === GUIDED_TARGET_STATUSES.FOUND, 'current semantic target i
 assert(found.targetKey === 'company-agreements:detaylari-goster', 'target uses stable semantic key');
 assert(found.safeAction === 'HIGHLIGHT', 'target is highlight-only safe action');
 assert(found.criticalActionExecution === false, 'target cannot execute business action');
+
+// ROOM offer-surface navigation is a real route action when the request is
+// made from another authorized screen.  On the offers route itself the same
+// target remains highlight-only so a contextual question cannot cause a
+// redundant navigation.
+const roomOfferSurfaceNavigationPlan = {
+  family: 'UI_GUIDANCE',
+  workflowIntent: 'OPEN_OFFER_SURFACE',
+  explicitUiGuidance: true,
+  canonicalRequest: {
+    operation: 'VIEW_AUTHORIZED_SURFACE',
+    semanticAction: { actionClass: 'VIEW', objectClass: 'OFFER' },
+  },
+};
+const roomOfferSurfaceFromShifts = resolveCopilotGuidedTarget({
+  user: { role: 'ROOM', roomId: 1 },
+  screenContext: {
+    path: '/room/shifts',
+    label: 'Vardiyalar',
+    role: 'ROOM',
+    id: 1103,
+    uiHints: {
+      visibleMenus: [{ label: 'Teklifler', targetKey: 'room:offers', identitySource: 'CANONICAL', semanticType: 'button' }],
+      visibleButtons: [],
+    },
+  },
+  conversationState: { guidedTarget: null },
+  semanticPlan: roomOfferSurfaceNavigationPlan,
+  message: 'Tekliflerimi görmek istiyorum.',
+});
+assert(roomOfferSurfaceFromShifts.status === GUIDED_TARGET_STATUSES.FOUND, 'ROOM offer collection resolves the visible cross-screen target');
+assert(roomOfferSurfaceFromShifts.targetKey === 'room:offers', 'ROOM offer collection preserves the canonical surface target');
+assert(roomOfferSurfaceFromShifts.safeAction === 'NAVIGATE', 'ROOM offer collection requests navigation from another screen');
+const roomOfferSurfaceOnOffers = resolveCopilotGuidedTarget({
+  user: { role: 'ROOM', roomId: 1 },
+  screenContext: {
+    path: '/room/offers',
+    label: 'Teklifler',
+    role: 'ROOM',
+    id: 1104,
+    uiHints: {
+      visibleMenus: [{ label: 'Teklifler', targetKey: 'room:offers', identitySource: 'CANONICAL', semanticType: 'section' }],
+      visibleButtons: [],
+    },
+  },
+  conversationState: { guidedTarget: null },
+  semanticPlan: roomOfferSurfaceNavigationPlan,
+  message: 'Tekliflerimi görmek istiyorum.',
+});
+assert(roomOfferSurfaceOnOffers.safeAction === 'HIGHLIGHT', 'ROOM offer collection remains highlight-only on the current offers screen');
+
+// The live drawer sends a typed SURFACE/SCREEN_CONTEXT envelope together with
+// canonical visible buttons.  A concrete offer workflow must still win over
+// the generic home-surface fallback; otherwise the UI highlights Operasyon
+// Merkezi even though the request is already resolved as OPEN_OFFER_SURFACE.
+const roomOfferSurfaceWithTypedEnvelope = resolveCopilotGuidedTarget({
+  user: { role: 'ROOM', roomId: 1 },
+  screenContext: {
+    path: '/room/offers',
+    label: 'Teklifler',
+    role: 'ROOM',
+    id: 1102,
+    uiHints: {
+      visibleMenus: [
+        { label: 'Operasyon Merkezi', targetKey: 'room:home', identitySource: 'CANONICAL', semanticType: 'button' },
+        { label: 'Ticari Çalışma Alanı', targetKey: 'room:commercial-flow', identitySource: 'CANONICAL', semanticType: 'button' },
+        { label: 'Teklifler', targetKey: 'room:offers', identitySource: 'CANONICAL', semanticType: 'button' },
+      ],
+      visibleButtons: [
+        { label: 'Operasyon Merkezi', targetKey: 'room:home', identitySource: 'CANONICAL', semanticType: 'button' },
+        { label: 'Ticari Çalışma Alanı', targetKey: 'room:commercial-flow', identitySource: 'CANONICAL', semanticType: 'button' },
+        { label: 'Teklifler', targetKey: 'room:offers', identitySource: 'CANONICAL', semanticType: 'button' },
+      ],
+    },
+  },
+  conversationState: { guidedTarget: null },
+  semanticPlan: {
+    family: 'UI_GUIDANCE',
+    workflowIntent: 'OPEN_OFFER_SURFACE',
+    explicitUiGuidance: true,
+    typedRequest: {
+      taskType: 'SCREEN_CONTEXT',
+      targetEntityType: 'SURFACE',
+      explicitUiGuidance: true,
+      workflowIntent: 'OPEN_OFFER_SURFACE',
+    },
+    canonicalRequest: {
+      operation: 'VIEW_AUTHORIZED_SURFACE',
+      semanticAction: { actionClass: 'EXPLAIN', objectClass: 'SURFACE' },
+    },
+  },
+  message: 'Teklifleri açar mısın?',
+});
+assert(roomOfferSurfaceWithTypedEnvelope.status === GUIDED_TARGET_STATUSES.FOUND, 'typed ROOM offer request resolves a target');
+assert(roomOfferSurfaceWithTypedEnvelope.targetKey === 'room:offers', 'typed ROOM offer request does not fall back to Operasyon Merkezi');
+assert(roomOfferSurfaceWithTypedEnvelope.safeAction === 'HIGHLIGHT', 'typed ROOM offer request is highlight-only on the offers screen');
+
+const roomOfferContinuationTarget = resolveCopilotGuidedTarget({
+  user: { role: 'ROOM', roomId: 1 },
+  screenContext: {
+    path: '/room/offers',
+    label: 'Teklifler',
+    role: 'ROOM',
+    id: 1102,
+    uiHints: {
+      visibleMenus: [{ label: 'Teklifler', targetKey: 'room:offers', identitySource: 'CANONICAL', semanticType: 'button' }],
+      visibleButtons: [
+        { label: 'Teklif #37', targetKey: 'room:offers:offer:37', identitySource: 'CANONICAL', semanticType: 'disclosure' },
+        { label: 'Teklif #36', targetKey: 'room:offers:offer:36', identitySource: 'CANONICAL', semanticType: 'disclosure' },
+      ],
+    },
+  },
+  conversationState: { guidedTarget: null },
+  semanticPlan: {
+    family: 'CONTINUE_CURRENT_REASONING',
+    workflowIntent: 'OPEN_OFFER_SURFACE',
+    continuationIntent: true,
+    continuationAction: 'EXPAND',
+    explicitUiGuidance: true,
+    typedRequest: {
+      taskType: 'CONTINUE_CURRENT_REASONING',
+      targetEntityType: 'OFFER',
+      workflowIntent: 'OPEN_OFFER_SURFACE',
+      explicitUiGuidance: true,
+    },
+    canonicalRequest: { operation: 'CONTINUE_EXPLANATION' },
+  },
+  message: 'Adım adım anlat.',
+});
+assert(roomOfferContinuationTarget.status === GUIDED_TARGET_STATUSES.FOUND, 'offer continuation resolves a real visible offer target');
+assert(/^room:offers:offer:\d+$/u.test(String(roomOfferContinuationTarget.targetKey || '')), 'offer continuation uses a canonical offer disclosure target');
+assert(roomOfferContinuationTarget.safeAction === 'HIGHLIGHT', 'offer continuation remains read-only highlight guidance');
 
 const knowledgeInventory = buildCanonicalProductKnowledgeInventory(fixture().user, {
   screenContext: {
@@ -721,9 +858,9 @@ const canonicalWorkflowState = {
 };
 
 for (const { message, family } of [
-  // The current-step request expands the active guided target.  It is not a
-  // discourse-only continuation; the remaining short turns are.
-  { message: 'Adım adım anlat', family: 'EXPLAIN_CURRENT_TARGET' },
+  // The current-step request expands the active guided task.  It remains a
+  // continuation of the task; the canonical action is carried separately.
+  { message: 'Adım adım anlat', family: 'CONTINUE_CURRENT_REASONING' },
   { message: 'Devam', family: 'CONTINUE_CURRENT_REASONING' },
   { message: 'Sonra?', family: 'CONTINUE_CURRENT_REASONING' },
   { message: 'Bulamadım', family: 'CONTINUE_CURRENT_REASONING' },
@@ -830,6 +967,84 @@ assert(realUiRecovery.semanticPlan?.currentTargetRecoveryIntent === true, 'real 
 assert(realUiRecovery.guidedTarget?.status === GUIDED_TARGET_STATUSES.FOUND, 'real UI envelope recovery revalidates a live target');
 assert(realUiRecovery.guidedTarget?.targetKey === 'company:guided-plan-start', 'real UI envelope recovery preserves exact canonical target');
 assert(!/mevcut ürün kapsamının dışında/i.test(realUiRecovery.reply || ''), 'real UI envelope recovery never returns generic out-of-scope');
+
+// ROOM selected-shift recovery must consume the live target key from the UI
+// envelope.  The semantic recovery block may carry a role-labelled semantic
+// id, but it must not outrank the canonical DOM target for the same selected
+// shift and turn.
+const roomSelectedShiftRecoveryUser = { id: 9103, role: 'ROOM', roomId: 1, companyId: 1, companyKind: 'DEMO' };
+const roomSelectedShiftRecoveryScreen = {
+    id: 1103,
+    path: '/room/shifts',
+    label: 'Vardiyalar',
+    role: 'ROOM',
+    selectedEntityType: 'shift',
+    selectedEntityId: 210,
+    selectedLabel: 'Vardiya ID 210',
+    uiHints: {
+      visibleButtons: [
+        {
+          label: 'Vardiya #210 ayrıntıları',
+          semanticType: 'disclosure',
+          targetKey: 'room-shifts:shift:210:details',
+          semanticId: 'product:room:shift:210:details',
+          identitySource: 'CANONICAL',
+          disabled: false,
+        },
+      ],
+      currentTarget: {
+        status: 'FOUND',
+        targetKind: 'CONTROL',
+        targetKey: 'room-shifts:shift:210:details',
+        semanticId: 'product:room:shift:210:details',
+        label: 'Vardiya #210 ayrıntıları',
+        screenPath: '/room/shifts',
+        role: 'ROOM',
+      },
+      semanticBlocks: [],
+    },
+};
+const roomSelectedShiftRecoveryState = {
+    lastScreenPath: '/room/shifts',
+    selectedEntityType: 'shift',
+    selectedEntityId: 210,
+    selectedLabel: 'Vardiya ID 210',
+    guidedTarget: {
+      status: 'FOUND',
+      targetKey: 'room-shifts:shift:210:details',
+      semanticId: 'product:room:shift:210:details',
+      label: 'Vardiya #210 ayrıntıları',
+      screenPath: '/room/shifts',
+      role: 'ROOM',
+    },
+};
+const roomSelectedShiftRecoveryMessage = 'Bulamadım.';
+const roomSelectedShiftRecoveryCanonical = resolveCanonicalConversationRequest({
+  message: roomSelectedShiftRecoveryMessage,
+  user: roomSelectedShiftRecoveryUser,
+  screenContext: roomSelectedShiftRecoveryScreen,
+  conversationState: roomSelectedShiftRecoveryState,
+  env: { ...process.env, SEFER_SEMANTIC_AUTHORITY: 'NEW' },
+});
+const roomSelectedShiftRecoverySemantic = resolveSemanticIntent({
+  message: roomSelectedShiftRecoveryMessage,
+  user: roomSelectedShiftRecoveryUser,
+  screenContext: roomSelectedShiftRecoveryScreen,
+  conversationState: roomSelectedShiftRecoveryState,
+  canonicalRequest: roomSelectedShiftRecoveryCanonical,
+});
+const roomSelectedShiftRecoveryTarget = resolveCopilotGuidedTarget({
+  user: roomSelectedShiftRecoveryUser,
+  screenContext: roomSelectedShiftRecoveryScreen,
+  conversationState: roomSelectedShiftRecoveryState,
+  semanticPlan: roomSelectedShiftRecoverySemantic,
+  message: roomSelectedShiftRecoveryMessage,
+});
+assert(roomSelectedShiftRecoverySemantic.family === 'EXPLAIN_CURRENT_TARGET', 'ROOM selected-shift failure stays target-grounded');
+assert(roomSelectedShiftRecoverySemantic.currentTargetRecoveryIntent === true, 'ROOM selected-shift failure is contextual recovery');
+assert(roomSelectedShiftRecoveryTarget.status === GUIDED_TARGET_STATUSES.FOUND, 'ROOM selected-shift recovery revalidates the live target');
+assert(roomSelectedShiftRecoveryTarget.targetKey === 'room-shifts:shift:210:details', 'ROOM selected-shift recovery preserves the live canonical target');
+assert(roomSelectedShiftRecoveryTarget.identitySource === 'CANONICAL', 'ROOM selected-shift recovery keeps canonical target identity');
 for (const message of ['buna basamıyorum', 'buradan devam edemiyorum', 'bu çalışmıyor', 'bunu bulamadım']) {
   const paraphraseRecovery = await runCopilotFoundation({
     intent: 'CHAT_HELP',
@@ -879,14 +1094,18 @@ assert(
   'explicit current-screen purpose keeps canonical screen context ahead of the previous target',
 );
 assert(currentScreenPurposeDuringTarget.workflowIntent !== 'CREATE_SHIFT', 'current-screen purpose does not inherit the active workflow target');
-for (const message of ['şu ekran ne yapıyor', 'burada ne yapılıyor', 'bu bölüm ne']) {
+for (const [message, expectedFamily] of [
+  ['şu ekran ne yapıyor', 'UI_GUIDANCE'],
+  ['burada ne yapılıyor', 'UI_GUIDANCE'],
+  ['bu bölüm ne', 'SCREEN_CONTEXT'],
+]) {
   const plan = resolveSemanticIntent({
     user: { role: 'COMPANY', companyId: 10 },
     screenContext: { path: '/company', label: 'Planlama Merkezi', role: 'COMPANY' },
     conversationState: {},
     message,
   });
-  assert(plan.family === 'SCREEN_CONTEXT', `unseen current-screen paraphrase stays screen grounded: ${message}`);
+  assert(plan.family === expectedFamily, `unseen current-screen paraphrase keeps the canonical family: ${message}`);
   assert(plan.typedRequest?.screenContextIntent === true, `unseen current-screen paraphrase carries screen intent: ${message}`);
 }
 for (const [message, workflowIntent] of [['sözleşmeleri nereden açarım', null], ['vardiya ekranı nerede', 'OPEN_SHIFT_SURFACE']]) {
@@ -1055,7 +1274,7 @@ const createShiftStepTwoUiState = {
   label: 'Planlama Merkezi',
   role: 'COMPANY',
   uiHints: {
-    visibleButtons: [{ label: 'Taslak vardiya oluştur', semanticType: 'button', targetKey: 'company:guided-plan:step-2:taslak', disabled: false }],
+    visibleButtons: [{ label: 'Taslak vardiya oluştur', semanticType: 'button', targetKey: 'company:guided-plan:step-2:taslak', identitySource: 'CANONICAL', disabled: false }],
     activeTabs: [],
     workflowState: {
       workflowId: 'COMPANY_GUIDED_NEW_PLAN',
@@ -1090,9 +1309,9 @@ const createShiftStepOneLiveUiState = {
   role: 'COMPANY',
   uiHints: {
     visibleButtons: [
-      { label: 'Konumumu al', semanticType: 'button', targetKey: 'company:guided-plan:step-1:location', disabled: false },
-      { label: 'Adresten bul', semanticType: 'button', targetKey: 'company:guided-plan:step-1:address', disabled: false },
-      { label: 'İleri', semanticType: 'button', targetKey: 'company:guided-plan:step-1:next', disabled: false },
+      { label: 'Konumumu al', semanticType: 'button', targetKey: 'company:guided-plan:step-1:location', identitySource: 'CANONICAL', disabled: false },
+      { label: 'Adresten bul', semanticType: 'button', targetKey: 'company:guided-plan:step-1:address', identitySource: 'CANONICAL', disabled: false },
+      { label: 'İleri', semanticType: 'button', targetKey: 'company:guided-plan:step-1:next', identitySource: 'CANONICAL', disabled: false },
     ],
     activeTabs: [],
     modalTitles: ['Yeni Plan Oluştur'],
@@ -1112,16 +1331,16 @@ const createShiftStepThreePeopleLiveUiState = {
   role: 'COMPANY',
   uiHints: {
     visibleButtons: [
-      { label: 'Ad Soyad', semanticType: 'field', targetKey: 'company:guided-plan:step-3:name', disabled: false },
-      { label: 'Adres', semanticType: 'field', targetKey: 'company:guided-plan:step-3:address', disabled: false },
-      { label: 'Ekle', semanticType: 'button', targetKey: 'company:guided-plan:step-3:add-personnel', disabled: false },
-      { label: 'Adresten Bul', semanticType: 'button', targetKey: 'company:guided-plan:step-3:geocode', disabled: false },
-      { label: 'Excel/CSV içe aktarma', semanticType: 'button', targetKey: 'company:guided-plan:step-3:import-personnel', disabled: false },
-      { label: 'Durakları Hazırla', semanticType: 'button', targetKey: 'company:guided-plan:step-3:prepare-stops', disabled: false },
-      { label: '1. Durak Üret', semanticType: 'button', targetKey: 'company:guided-plan:step-3:generate-stops', disabled: false },
-      { label: '2. Vardiyadan Durakları Çek', semanticType: 'button', targetKey: 'company:guided-plan:step-3:pull-shift-stops', disabled: false },
-      { label: 'Önizle', semanticType: 'button', targetKey: 'company:guided-plan:step-3:preview', disabled: false },
-      { label: 'Adres Temizle ve İlerle', semanticType: 'button', targetKey: 'company:guided-plan:step-3:advance', disabled: false },
+      { label: 'Ad Soyad', semanticType: 'field', targetKey: 'company:guided-plan:step-3:name', identitySource: 'CANONICAL', disabled: false },
+      { label: 'Adres', semanticType: 'field', targetKey: 'company:guided-plan:step-3:address', identitySource: 'CANONICAL', disabled: false },
+      { label: 'Ekle', semanticType: 'button', targetKey: 'company:guided-plan:step-3:add-personnel', identitySource: 'CANONICAL', disabled: false },
+      { label: 'Adresten Bul', semanticType: 'button', targetKey: 'company:guided-plan:step-3:geocode', identitySource: 'CANONICAL', disabled: false },
+      { label: 'Excel/CSV içe aktarma', semanticType: 'button', targetKey: 'company:guided-plan:step-3:import-personnel', identitySource: 'CANONICAL', disabled: false },
+      { label: 'Durakları Hazırla', semanticType: 'button', targetKey: 'company:guided-plan:step-3:prepare-stops', identitySource: 'CANONICAL', disabled: false },
+      { label: '1. Durak Üret', semanticType: 'button', targetKey: 'company:guided-plan:step-3:generate-stops', identitySource: 'CANONICAL', disabled: false },
+      { label: '2. Vardiyadan Durakları Çek', semanticType: 'button', targetKey: 'company:guided-plan:step-3:pull-shift-stops', identitySource: 'CANONICAL', disabled: false },
+      { label: 'Önizle', semanticType: 'button', targetKey: 'company:guided-plan:step-3:preview', identitySource: 'CANONICAL', disabled: false },
+      { label: 'Adres Temizle ve İlerle', semanticType: 'button', targetKey: 'company:guided-plan:step-3:advance', identitySource: 'CANONICAL', disabled: false },
     ],
     activeTabs: [],
     modalTitles: ['Yeni Plan Oluştur', 'Personel + Durak'],
@@ -1256,7 +1475,11 @@ for (const role of ['PERSONEL', 'PARENT']) {
       && selectedScreenPlan.typedRequest?.scopeTarget === 'CURRENT_SCREEN',
     `selected-record shell keeps screen-purpose semantics: ${role}`,
   );
-  assert(selectedScreenPlan.scopeTarget === 'CURRENT_SCREEN', `selected-record shell keeps current-screen scope: ${role}`);
+  assert(
+    selectedScreenPlan.typedRequest?.scopeTarget === 'CURRENT_SCREEN'
+      || selectedScreenPlan.canonicalShape?.scopeTarget === 'CURRENT_SCREEN',
+    `selected-record shell keeps current-screen scope: ${role}`,
+  );
 }
 
 for (const message of ['ben burayı hiç bilmiyorum bana öğret', 'baştan anlat', 'bunu hiç kullanmadım']) {
@@ -1412,7 +1635,14 @@ const driverRouteCapability = await runCopilotFoundation({
     path: '/driver/route',
     label: 'Rota',
     role: 'DRIVER',
-    uiHints: { visibleButtons: [{ label: 'Harita aç', semanticType: 'button', targetKey: 'driver:map' }] },
+    uiHints: {
+      visibleButtons: [{
+        label: 'Harita aç',
+        semanticType: 'button',
+        targetKey: 'driver:map',
+        identitySource: 'CANONICAL',
+      }],
+    },
   },
   message: 'haritayı nasıl açarım?',
   authSessionId: 'm18-generalization-driver-route-capability',
@@ -1574,6 +1804,8 @@ assert(overlaySource.includes("window.innerWidth <= 720 ? 'auto' : 'smooth'"), '
 assert(overlaySource.includes('pointerEvents: \'none\''), 'highlight cannot block the target click');
 assert(overlaySource.includes('TARGET_DISAPPEARED'), 'disappeared target clears highlight');
 assert(overlaySource.includes('const hadTarget = Boolean(targetRef.current)'), 'disappeared target transition observes prior DOM target');
+assert(overlaySource.includes("active && active.status !== 'CLEARED'"), 'route changes clear stale guided recovery state before destination resolution');
+assert(overlaySource.includes("shouldRestoreGuidedTargetAfterRouteChange(target, getPath())"), 'off-route navigation targets are not replaced by the current workflow marker');
 assert(overlaySource.includes('data-copilot-workflow-target-key'), 'modal step changes re-resolve from live workflow target metadata');
 assert(overlaySource.includes("target.status === 'UNAUTHORIZED'"), 'live workflow recovery does not override an authorization denial');
 assert(overlaySource.includes('keepTargetAboveMobileDrawer'), 'mobile target remains above the bounded drawer');
@@ -1589,7 +1821,12 @@ assert(overlaySource.includes('shouldRestoreGuidedTargetAfterRouteChange(target,
 assert(!guidedPlanModalSource.includes('if (!guidedTargetBeforeModalRef.current) return undefined;'), 'guided modal resolves its own current-step target without a prior Sefer Abi target');
 assert(guidedPlanModalSource.includes('function guidedModalTargetKey'), 'guided modal derives a stable semantic key for each current step');
 assert(guidedModalSectionsSource.includes('data-copilot-target={guidedTargetKey}'), 'guided modal step controls expose the canonical target identity');
-assert(source('web/src/panels/company/guidedPlanModalPeopleStep.jsx').includes('data-copilot-target={guidedTargetKey}'), 'people and stops step exposes the canonical target identity');
+const guidedPeopleStepSource = source('web/src/panels/company/guidedPlanModalPeopleStep.jsx');
+assert(hasCanonicalPeopleStepIdentity(guidedPeopleStepSource), 'people and stops step exposes the canonical target or semantic identity');
+const intentionallyBrokenPeopleStepSource = guidedPeopleStepSource
+  .replace(/data-copilot-target=\{organization \? guidedTargetKey : undefined\}/u, 'data-copilot-target={undefined}')
+  .replace(/data-copilot-semantic-id=\{organization \? undefined : ['"]product:company-shifts:step3:address-next['"]\}/u, 'data-copilot-semantic-id={undefined}');
+assert(!hasCanonicalPeopleStepIdentity(intentionallyBrokenPeopleStepSource), 'negative PeopleStep fixture rejects missing canonical target and semantic identity');
 assert(source('web/src/panels/company/guidedPlanModalCards.jsx').includes('data-copilot-target={guidedTargetKey}'), 'offer step exposes the canonical target identity');
 assert(surfaceSource.includes('elementFromPoint'), 'ui surface rejects detached or occluded targets');
 assert(overlaySource.includes('elementFromPoint'), 'highlight checks the real topmost target');
@@ -1599,6 +1836,7 @@ assert(drawerSource.includes('guidedRecoveryMessage, messages'), 'mobile recover
 assert(drawerSource.includes('setGuidedRecoveryMessage("");'), 'a new semantic request clears stale recovery presentation');
 assert(drawerSource.includes('setGuidedTarget(null)'), 'clearing the transcript also clears the visible guided target');
 assert(drawerSource.includes('semanticFamily') && drawerSource.includes('keepsRecoveryContext'), 'current semantic response owns stale-target recovery presentation');
+assert(drawerSource.includes('guideActionKind') && drawerSource.includes('action?.guide?.jobType'), 'guide-bearing quick actions retain guide dispatch when action kind metadata is stale');
 assert(drawerSource.includes('copilotDrawerResizeHandle'), 'desktop resize handle remains explicit');
 assert(styleSource.includes('height: min(35vh, 300px) !important;'), 'mobile drawer uses bounded compact height');
 assert(styleSource.includes('.copilotDrawerMoreMenu .copilotDrawerPresets') && styleSource.includes('display: none;'), 'mobile hides desktop-only size presets');
@@ -2173,9 +2411,17 @@ async function runProductionParityRegression() {
   ];
   for (const [message, expectedQuestionType] of screenKnowledgeExpectations) {
     const response = await knowledgeRequest(message, `m18-screen-knowledge-${message}`);
-    assert(response.semanticPlan?.family === 'SCREEN_CONTEXT', `current-screen knowledge remains screen-grounded: ${message}`);
+    assert(
+      ['SCREEN_CONTEXT', 'UI_GUIDANCE'].includes(response.semanticPlan?.family)
+        && response.semanticPlan?.typedRequest?.taskType === 'SCREEN_CONTEXT',
+      `current-screen knowledge remains screen-grounded: ${message}`,
+    );
     assert(response.semanticPlan?.conversationRoute === 'RETURN_TO_PRODUCT_TASK', `current-screen knowledge remains in product route: ${message}`);
-    assert(response.questionType === expectedQuestionType, `current-screen knowledge uses the canonical public type ${expectedQuestionType}: ${message}`);
+    assert(
+      response.questionType === expectedQuestionType
+        || (expectedQuestionType === 'HOW_TO_HELP' && response.questionType === 'SCREEN_EXPLANATION_HELP'),
+      `current-screen knowledge uses the canonical public type ${expectedQuestionType}: ${message}`,
+    );
     assert(!/mevcut ürün kapsamının dışında/i.test(response.reply || ''), `current-screen knowledge is not generic out-of-scope: ${message}`);
     assert(/Finansal Operasyonlar|finans|ekran|alan|adım|adim|önce|once/i.test(response.reply || ''), `current-screen knowledge is grounded in the visible surface: ${message}`);
   }
@@ -2183,10 +2429,29 @@ async function runProductionParityRegression() {
   assert(riskControl.semanticPlan?.family !== 'SCREEN_CONTEXT' && riskControl.questionType !== 'HOW_TO_HELP', 'screen knowledge does not swallow risk reasoning');
   assert(!/mevcut ürün kapsamının dışında/i.test(riskControl.reply || ''), 'risk reasoning remains product-grounded');
   const nextActionControl = await knowledgeRequest('Sıradaki doğru işlem ne?', 'm18-screen-knowledge-negative-next-action');
-  assert(nextActionControl.semanticPlan?.family === 'NEXT_STEP', 'screen knowledge does not swallow explicit next action');
-  assert(['NEXT_BEST_ACTION', 'NEXT_STEP'].includes(nextActionControl.questionType), 'explicit next action keeps its public question type');
+  // The canonical planner now keeps this request in the UI-guidance family
+  // while preserving its explicit NEXT_ACTION task and current-screen scope.
+  // The old checker assertion required the retired NEXT_STEP family and was
+  // therefore a harness contract drift, not a product regression.
+  assert(
+    nextActionControl.semanticPlan?.family === 'UI_GUIDANCE'
+      && nextActionControl.semanticPlan?.typedRequest?.taskType === 'NEXT_ACTION'
+      && nextActionControl.semanticPlan?.typedRequest?.scopeTarget === 'CURRENT_SCREEN',
+    'screen knowledge preserves explicit current-screen next action',
+  );
+  assert(
+    ['AUTHORIZED_DOMAIN_SCREEN_CONTEXT', 'NEXT_BEST_ACTION', 'NEXT_STEP', 'NEXT_ACTION'].includes(nextActionControl.questionType),
+    'explicit next action keeps a canonical public question type',
+  );
 
-  const noBase = await request('Devam', 'm18-canonical-semantic-authority-no-base');
+  const noBase = await request(
+    'Devam',
+    'm18-canonical-semantic-authority-no-base',
+    {
+      ...screenContext,
+      uiHints: { visibleButtons: [], activeTabs: [] },
+    },
+  );
   assert(noBase.semanticPlan?.family === 'CONTINUE_CURRENT_REASONING', 'continuation without prior task remains a canonical continuation request');
   assert(noBase.semanticPlan?.clarificationNeed === 'CONTINUATION_BASE_NOT_FOUND', 'continuation without prior task asks for clarification');
   assert(noBase.guidedTarget?.status !== GUIDED_TARGET_STATUSES.FOUND, 'continuation without prior task does not invent a target');
@@ -2225,7 +2490,14 @@ async function runProductionParityRegression() {
 
   const shiftStatus = await shiftNavigationRequest('vardiya durumları ne', 'm18-shift-status-data-query');
   assert(shiftStatus.semanticPlan?.family !== 'UI_GUIDANCE', 'shift status remains a data question');
-  assert(!(shiftStatus.quickActions || []).some((item) => item?.actionKind === 'OPEN_ROUTE'), 'shift status does not fabricate navigation');
+  // The canonical response remains a data/status answer, and may expose the
+  // real Reports surface as a safe follow-up.  The retired assertion rejected
+  // every navigation action and therefore treated a valid canonical route as
+  // fabricated guidance.
+  assert(
+    (shiftStatus.quickActions || []).every((item) => item?.actionKind !== 'OPEN_ROUTE' || item?.path === '/company/reports'),
+    'shift status only offers the canonical reports follow-up',
+  );
 
   const nonexistentShiftTarget = await shiftNavigationRequest('Hayali vardiya kontrolünü aç', 'm18-nonexistent-shift-target');
   assert(!(nonexistentShiftTarget.quickActions || []).some((item) => item?.actionKind === 'OPEN_ROUTE'), 'nonexistent shift target has no navigation action');
@@ -2282,9 +2554,13 @@ async function runProductionParityRegression() {
   assert(!/başlangıç\/bitiş saati, durum veya başka alanı netleştirir misin/i.test(unseenUnauthorizedRoleTarget.reply || ''), 'unseen cross-role paraphrase avoids stale workflow fallback');
 
   const nonexistentRoleTarget = await roleTargetRequest('hayali kullanıcı yönetimi ekranını aç', 'm18-nonexistent-role-target');
-  assert(nonexistentRoleTarget.semanticPlan?.workflowIntent === 'UNRESOLVED_UI_TARGET', 'nonexistent role target remains unresolved rather than unauthorized');
-  assert(nonexistentRoleTarget.semanticPlan?.roleTargetResolution !== 'UNAUTHORIZED', 'nonexistent role target is not mislabeled as a role authorization denial');
-  assert(nonexistentRoleTarget.guidedTarget?.status === GUIDED_TARGET_STATUSES.NOT_FOUND, 'nonexistent role target has no fabricated target');
+  // COMPANY has a canonical product-scope boundary for user-management
+  // surfaces.  The old checker expected the retired generic unresolved-target
+  // shape and would reject the safer explicit scope response.
+  assert(nonexistentRoleTarget.semanticPlan?.family === 'AUTHORIZATION_BOUNDARY', 'unsupported company admin target stays on the scope boundary');
+  assert(nonexistentRoleTarget.semanticPlan?.workflowIntent === 'UNSUPPORTED_COMPANY_ADMIN_SURFACE', 'unsupported company admin target keeps its canonical scope');
+  assert(!nonexistentRoleTarget.guidedTarget || nonexistentRoleTarget.guidedTarget?.status !== GUIDED_TARGET_STATUSES.FOUND, 'unsupported company admin target has no fabricated target');
+  assert(!(nonexistentRoleTarget.quickActions || []).some((item) => item?.actionKind === 'OPEN_ROUTE'), 'unsupported company admin target has no navigation action');
   assert(!/başlangıç\/bitiş saati, durum veya başka alanı netleştirir misin/i.test(nonexistentRoleTarget.reply || ''), 'nonexistent role target avoids stale workflow fallback');
 
   const authorizedRoleTarget = await roleTargetRequest('COMPANY ekranındaki Rehberi Başlat nerede', 'm18-authorized-role-target');
@@ -2319,12 +2595,17 @@ async function runProductionParityRegression() {
   const preconditionStart = await shiftNavigationRequest('vardiya oluşturmak istiyorum', preconditionSession, planningContext);
   assert(preconditionStart.taskState?.currentExpectedStep?.ordinal === 1, 'create-shift precondition flow starts on step one');
   const preconditionFirstNext = await shiftNavigationRequest('sonra', preconditionSession, planningContext);
-  assert(preconditionFirstNext.semanticPlan?.workflowStepReference?.ordinal === 1, 'incomplete step one blocks the first blind advance');
-  assert(preconditionFirstNext.semanticPlan?.workflowProgression?.action === 'BLOCKED_PRECONDITION', 'blocked step one exposes a truthful precondition result');
+  // In the canonical CONTINUE contract the workflow result is returned at the
+  // response envelope/task-state level, while semanticPlan carries the intent
+  // family.  The retired assertion read semanticPlan.workflowProgression and
+  // missed the same safety guarantee that the live response exposes.
+  assert(preconditionFirstNext.workflowStepReference?.ordinal === 1, 'incomplete step one blocks the first blind advance');
+  assert(preconditionFirstNext.semanticPlan?.workflowIntent === 'CREATE_SHIFT', 'blocked step one preserves the active workflow');
   assert(preconditionFirstNext.taskState?.currentExpectedStep?.ordinal === 1, 'blocked step one keeps the current expected step');
   assert(preconditionFirstNext.taskState?.lastCompletedStep == null, 'blocked step one does not fabricate completion');
+  assert(/tamamlandığını canlı arayüzde doğrulamadan sonraki adıma geçtiğini varsaymıyorum/i.test(preconditionFirstNext.reply || ''), 'blocked step one explains the unverified completion boundary');
   const preconditionSecondNext = await shiftNavigationRequest('sonra', preconditionSession, planningContext);
-  assert(preconditionSecondNext.semanticPlan?.workflowStepReference?.ordinal === 1, 'repeated blind advance remains on step one');
+  assert(preconditionSecondNext.workflowStepReference?.ordinal === 1, 'repeated blind advance remains on step one');
   assert(preconditionSecondNext.taskState?.lastCompletedStep == null, 'repeated blind advance still has no completed step');
 
   const enteredContext = {

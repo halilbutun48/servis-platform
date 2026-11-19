@@ -20,7 +20,7 @@ export async function osrmRoute(points, { profile = "driving", timeoutMs = 12000
     .map((p) => `${Number(p.lng).toFixed(5)},${Number(p.lat).toFixed(5)}`)
     .join(";");
 
-  const url = `${base}/route/v1/${encodeURIComponent(profile)}/${coords}?geometries=geojson&overview=full&steps=false`;
+  const url = `${base}/route/v1/${encodeURIComponent(profile)}/${coords}?geometries=geojson&overview=full&steps=true&annotations=true`;
 
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -43,9 +43,24 @@ export async function osrmRoute(points, { profile = "driving", timeoutMs = 12000
     return {
       ok: true,
       points: outPts,
+      inputPoints: inPts,
       profile,
       distanceM: Number.isFinite(Number(route?.distance)) ? Number(route.distance) : null,
       durationSec: Number.isFinite(Number(route?.duration)) ? Number(route.duration) : null,
+      steps: Array.isArray(route?.legs)
+        ? route.legs.flatMap((leg) => Array.isArray(leg?.steps)
+          ? leg.steps.map((step) => ({
+            name: String(step?.name || "").trim() || null,
+            ref: String(step?.ref || "").trim() || null,
+            distanceM: Number.isFinite(Number(step?.distance)) ? Number(step.distance) : null,
+            durationSec: Number.isFinite(Number(step?.duration)) ? Number(step.duration) : null,
+            maneuverLocation: Array.isArray(step?.maneuver?.location) && step.maneuver.location.length >= 2
+              ? { lng: Number(step.maneuver.location[0]), lat: Number(step.maneuver.location[1]) }
+              : null,
+            classes: Array.isArray(step?.classes) ? step.classes.map((item) => String(item)) : [],
+          }))
+          : [])
+        : [],
     };
   } catch (e) {
     return { ok: false, error: "osrm:fetchFailed", detail: e?.message || String(e) };

@@ -11,3 +11,12 @@ Dockerfile text eol=lf
 *.sh text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+
+# Prisma applied migrations are byte-identified by _prisma_migrations.checksum.
+# Preserve the five canonical historical blobs exactly as applied; do not
+# normalize their line endings during checkout.
+backend/prisma/migrations/20260125133200_driver_telematics_route_learning_baseline/migration.sql -text -whitespace
+backend/prisma/migrations/20260303011000_add_company_region_id_missing_bridge/migration.sql -text -whitespace
+backend/prisma/migrations/20260801210000_user_surface_reconciliation_01/migration.sql -text -whitespace
+backend/prisma/migrations/20260801211000_room_company_cleanup_01/migration.sql -text -whitespace
+backend/prisma/migrations/20260801212000_shift_agreement_unique_bridge_01/migration.sql -text -whitespace

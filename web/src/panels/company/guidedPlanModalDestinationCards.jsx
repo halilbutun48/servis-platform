@@ -14,7 +14,7 @@ export function GuidedDestinationRowCard({
   openDestinationNavigation,
 }) {
   return (
-    <div className="card" style={{ padding: 10, border: "1px solid #223" }}>
+    <div className="card guidedDestinationRowCard" style={{ padding: 10, border: "1px solid #223" }}>
       <div className="row" style={{ gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
         <div style={{ fontWeight: 700 }}>Konum {idx + 1}</div>
         <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
@@ -24,7 +24,7 @@ export function GuidedDestinationRowCard({
         </div>
       </div>
 
-      <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      <div className="guidedDestinationFields" style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
           <label className="muted">Konum adı</label>
           <input
@@ -45,7 +45,7 @@ export function GuidedDestinationRowCard({
         </div>
       </div>
 
-      <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      <div className="guidedDestinationFields" style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
           <label className="muted">Enlem (manuel / yedek)</label>
           <input
@@ -108,13 +108,13 @@ export function GuidedOrganizationPlanCard({
   setOrgReturnType,
 }) {
   return (
-    <div className="card">
+    <div className="card guidedOrganizationPlanCard">
       <div style={{ fontWeight: 800 }}>Organizasyon detayları</div>
       <div className="muted" style={{ marginTop: 4 }}>
         Gezi planını burada kurarsın. Tahmini kişi sayısı, toplanma konumu, gidilecek konumlar ve dönüş tipi aynı ekranda kalır.
       </div>
 
-      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      <div className="guidedOrganizationSummaryGrid" style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
           <label className="muted">Tahmini kişi sayısı</label>
           <input

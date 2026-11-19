@@ -32,16 +32,29 @@ import {
   ShiftSummary,
 } from "./roomAgreementsPanelHelpers";
 import { userFacingDirectionLabel, userFacingFactText, userFacingPatternLabel, userFacingStatusText } from "../../utils/terminology";
+import { roomFinanceViewPath } from "../shared/financialOperationsSections";
+import { buildRoomQuotePreviewParams } from "../shared/roomQuoteRequestContext";
 
 const EMPTY_QUALITY_BRIDGE_LIST = [];
 const ROOM_AGREEMENT_TABS = [
   { key: "bridge", label: "Operasyon Köprüsü" },
   { key: "route", label: "Rota Talepleri" },
-  { key: "applied", label: "Uygulanan Rota" },
+  { key: "applied", label: "Uygulanan Rota", copilotTarget: "room:agreements:tab:applied", copilotSemanticId: "product:room:agreements:tab:applied" },
   { key: "extend", label: "Uzatma Talepleri" },
   { key: "pending", label: "Bekleyen" },
   { key: "other", label: "Diğer Sözleşmeler" },
 ];
+const ROOM_AGREEMENT_SELECTION_KEY = "psv1:room:agreements:selected:v1";
+
+function readPersistedRoomAgreementId() {
+  try {
+    if (typeof window === "undefined") return null;
+    const id = Number(window.sessionStorage.getItem(ROOM_AGREEMENT_SELECTION_KEY) || 0);
+    return Number.isSafeInteger(id) && id > 0 ? id : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function AgreementsPanel() {
   const { token } = useSession();
@@ -77,11 +90,35 @@ export default function AgreementsPanel() {
   const [extendCounterId, setExtendCounterId] = useState(null);
   const [extendCounterAmount, setExtendCounterAmount] = useState("");
   const [extendCounterNote, setExtendCounterNote] = useState("");
-  const [selectedAgreementId, setSelectedAgreementId] = useState(null);
+  const [selectedAgreementId, setSelectedAgreementId] = useState(readPersistedRoomAgreementId);
   const [filterQ, setFilterQ] = useState("");
+  const [suppressImplicitAgreementTarget, setSuppressImplicitAgreementTarget] = useState(false);
   const [viewMode, setViewMode] = useState("bridge");
   const [bridgeDetailsRequested, setBridgeDetailsRequested] = useState(false);
+  const [surfaceFeedback, setSurfaceFeedback] = useState("");
+  const [surfaceFocusRequest, setSurfaceFocusRequest] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshFeedback, setRefreshFeedback] = useState("");
+  const surfaceFocusSequenceRef = useRef(0);
   const viewModeInitializedRef = useRef(false);
+
+  useEffect(() => {
+    try {
+      if (selectedAgreementId) window.sessionStorage.setItem(ROOM_AGREEMENT_SELECTION_KEY, String(selectedAgreementId));
+      else window.sessionStorage.removeItem(ROOM_AGREEMENT_SELECTION_KEY);
+    } catch {
+      // Selection persistence is best effort; API authorization remains authoritative.
+    }
+  }, [selectedAgreementId]);
+  const bridgePeriod = useMemo(() => {
+    if (typeof window === "undefined") return { periodStart: "", periodEnd: "" };
+    const hashQuery = String(window.location.hash || "").split("?")[1] || "";
+    const query = new URLSearchParams(hashQuery);
+    return {
+      periodStart: String(query.get("focusPeriodStart") || "").trim(),
+      periodEnd: String(query.get("focusPeriodEnd") || "").trim(),
+    };
+  }, []);
 
   const approveTarget = useMemo(() => pending.find((x) => x.id === approveId), [pending, approveId]);
   const counterTarget = useMemo(() => pending.find((x) => x.id === counterId), [pending, counterId]);
@@ -91,7 +128,9 @@ export default function AgreementsPanel() {
     if (!wanted) return null;
     return pending.find((x) => Number(x.id) === wanted) || others.find((x) => Number(x.id) === wanted) || extendItems.find((x) => Number(x.id) === wanted) || null;
   }, [selectedAgreementId, pending, others, extendItems]);
-  const copilotAgreementTarget = useMemo(() => selectedAgreement || approveTarget || counterTarget || extendCounterTarget || pending[0] || others[0] || null, [selectedAgreement, approveTarget, counterTarget, extendCounterTarget, pending, others]);
+  // Keep the visual bridge populated without publishing an implicit list row
+  // as the user's selected Copilot record.
+  const copilotAgreementTarget = useMemo(() => selectedAgreement || approveTarget || counterTarget || extendCounterTarget || null, [selectedAgreement, approveTarget, counterTarget, extendCounterTarget]);
   const filteredExtendItems = useMemo(() => extendItems.filter((a) => includesFilter([
     a?.id, a?.status, a?.extendStatus, a?.startDate, a?.endDate, a?.extendRequestedEndDate, a?.extendRequestedEndAt,
     a?.companyOfferAmount, a?.roomOfferAmount, a?.extendOfferAmount, a?.extendCounterAmount,
@@ -105,6 +144,26 @@ export default function AgreementsPanel() {
     a?.id, a?.status, a?.startDate, a?.endDate, a?.companyOfferAmount, a?.roomOfferAmount, a?.companyOfferNote, a?.roomOfferNote,
     a?.direction, a?.pattern, a?.hubLat, a?.hubLng, weekMaskToText(a?.weekMask),
   ], filterQ)), [others, filterQ]);
+  const agreementDisplayTarget = useMemo(() => {
+    const hasFilter = String(filterQ || "").trim().length > 0;
+    const visibleIds = new Set([
+      ...filteredPending,
+      ...filteredOthers,
+      ...filteredExtendItems,
+    ].map((item) => Number(item?.id || 0)).filter((id) => id > 0));
+
+    if (copilotAgreementTarget) {
+      const targetId = Number(copilotAgreementTarget?.id || 0);
+      if (!hasFilter || visibleIds.has(targetId)) return copilotAgreementTarget;
+      return null;
+    }
+
+    // A non-matching filter is an explicit empty-result state. Do not
+    // resurrect the first agreement as an unrelated preview/selected target.
+    if (hasFilter) return filteredPending[0] || filteredOthers[0] || filteredExtendItems[0] || null;
+    if (suppressImplicitAgreementTarget) return null;
+    return pending[0] || others[0] || null;
+  }, [copilotAgreementTarget, filterQ, filteredExtendItems, filteredOthers, filteredPending, others, pending, suppressImplicitAgreementTarget]);
   const pendingRouteRefreshItems = useMemo(() => routeRefreshItems.filter((item) => ["PENDING", "COUNTERED"].includes(String(item?.status || '').toUpperCase())), [routeRefreshItems]);
   const acceptedRouteRefreshItems = useMemo(() => routeRefreshItems.filter((item) => String(item?.status || '').toUpperCase() === 'ACCEPTED'), [routeRefreshItems]);
   const filteredRouteRefreshItems = useMemo(() => pendingRouteRefreshItems.filter((item) => includesFilter([
@@ -212,7 +271,7 @@ export default function AgreementsPanel() {
     });
     return map;
   }, [pending, others, extendItems]);
-  const selectedRouteRefreshAgreementId = Number(copilotAgreementTarget?.id || selectedAgreement?.id || 0);
+  const selectedRouteRefreshAgreementId = Number(agreementDisplayTarget?.id || selectedAgreement?.id || 0);
   const selectedRouteRefreshItem = useMemo(() => (
     selectedRouteRefreshAgreementId > 0
       ? routeRefreshItems.find((item) => Number(item?.agreementId || 0) === selectedRouteRefreshAgreementId) || null
@@ -226,7 +285,7 @@ export default function AgreementsPanel() {
   const selectedRouteRefreshStatus = String(selectedRouteRefreshItem?.status || "").toUpperCase();
   const selectedRouteRefreshCountered = selectedRouteRefreshStatus === "COUNTERED";
   const selectedRouteRefreshSummaryText = selectedRouteRefreshItem
-    ? `Talep ID ${selectedRouteRefreshItem.id} • ${String(selectedRouteRefreshItem.startDate || "").slice(0, 10)} → ${String(selectedRouteRefreshItem.endDate || "").slice(0, 10)} • ${Number(selectedRouteRefreshItem.shiftCount || 0)} taslak vardiya`
+    ? `Talep #${selectedRouteRefreshItem.id} • ${String(selectedRouteRefreshItem.startDate || "").slice(0, 10)} → ${String(selectedRouteRefreshItem.endDate || "").slice(0, 10)} • ${Number(selectedRouteRefreshItem.shiftCount || 0)} taslak vardiya`
     : "";
   const selectedRouteRefreshCurrentText = routeSummaryText(selectedRouteRefreshPreview?.current, {
     peopleCount: Number(selectedRouteRefreshItem?.peopleCount || 0),
@@ -340,7 +399,7 @@ export default function AgreementsPanel() {
       shiftCount: Number(shiftStats?.[item.id]?.todayTotal || 0) + Number(shiftStats?.[item.id]?.horizonOpen || 0),
       routeRefreshState: selectedRouteRefreshItem ? selectedRouteRefreshStatus : '',
       routeRefreshRequestId: Number(selectedRouteRefreshItem?.id || 0),
-      routeRefreshLabel: selectedRouteRefreshItem ? `Rota güncelleme ID ${selectedRouteRefreshItem.id}` : '',
+      routeRefreshLabel: selectedRouteRefreshItem ? `Rota güncellemesi #${selectedRouteRefreshItem.id}` : '',
       routeRefreshNote: selectedRouteRefreshItem
         ? (selectedRouteRefreshStatus === 'ACCEPTED'
           ? 'Kabul edildi'
@@ -401,15 +460,15 @@ export default function AgreementsPanel() {
       scopeKey: '/room/agreements',
       entityType: 'agreement',
       entityId: Number(item?.id || 0) || null,
-      label: `Sözleşme ID ${item.id}`,
-      summary: [String(item?.status || '').toUpperCase() || '-', ymdTR(item?.startDate), ymdTR(item?.endDate), qualityBridgeSummaryText, seferScoreSummaryText, platformFeeSummaryText].filter(Boolean).join(' • '),
+      label: `Sözleşme #${item.id}`,
+      summary: [userFacingStatusText(item?.status), ymdTR(item?.startDate), ymdTR(item?.endDate), qualityBridgeSummaryText, seferScoreSummaryText, platformFeeSummaryText].filter(Boolean).join(' • '),
       fields: [
-        { label: 'Durum', value: String(item?.status || '-').toUpperCase(), help: 'Sözleşmenin karar veya aktiflik durumunu gösterir.' },
+        { label: 'Durum', value: userFacingStatusText(item?.status), help: 'Sözleşmenin karar veya aktiflik durumunu gösterir.' },
         { label: 'Başlangıç', value: ymdTR(item?.startDate), help: 'Sözleşmenin başlangıç tarihini gösterir.' },
         { label: 'Bitiş', value: ymdTR(item?.endDate), help: 'Sözleşmenin bitiş tarihini gösterir.' },
         { label: 'Tutar', value: moneyTry(item?.companyOfferAmount ?? item?.amount ?? '-'), help: 'Şirkete ait teklif veya sözleşme tutarını gösterir.' },
-        { label: 'Araç', value: item?.vehicleId ? `Araç ID ${item.vehicleId}` : '-', help: 'Onay sırasında seçilen aracı gösterir.' },
-        { label: 'Sürücü', value: item?.driverId ? `Sürücü ID ${item.driverId}` : '-', help: 'Onay sırasında seçilen sürücüyü gösterir.' },
+        { label: 'Araç', value: item?.vehicle?.plate || 'Araç bilgisi yok', help: 'Onay sırasında seçilen aracın plakası.' },
+        { label: 'Sürücü', value: item?.driver?.fullName || 'Sürücü bilgisi yok', help: 'Onay sırasında seçilen sürücünün adı.' },
         qualityBridgePreview ? {
           label: 'Kalite durumu',
           value: qualityBridgeStatusText || '-',
@@ -569,7 +628,7 @@ export default function AgreementsPanel() {
 
   useEffect(() => {
     let cancelled = false;
-    const agreementId = Number(copilotAgreementTarget?.id || 0);
+    const agreementId = Number(agreementDisplayTarget?.id || 0);
     if (!token || !agreementId) {
       setQualityPaymentBridgePreview({ loading: false, data: null, err: "" });
       setPlatformFeePreview({ loading: false, data: null, err: "" });
@@ -612,13 +671,30 @@ export default function AgreementsPanel() {
       cancelled = true;
       controller.abort();
     };
-  }, [token, copilotAgreementTarget?.id]);
+  }, [token, agreementDisplayTarget?.id]);
 
   function openAgreementShift(shiftId) {
     const sid = Number(shiftId || 0);
     if (!sid) return;
     try { localStorage.setItem("room:focusShiftId", String(sid)); } catch (e) { void e; }
     navigate("/room/shifts");
+  }
+
+  function openAgreementShifts(agreementId) {
+    const aid = Number(agreementId || 0);
+    if (!aid) return;
+    navigate(`/room/shifts?focusAgreementId=${aid}`);
+  }
+
+  function openAgreementQuotePreview(agreement) {
+    const agreementId = Number(agreement?.id || 0);
+    if (!agreementId) return;
+    // For an approved agreement the last linked shift is operational
+    // evidence, while the costed quote draft remains Agreement-scoped. The
+    // request-context helper omits that shift so final approval cannot hide
+    // the previously saved planning assumptions.
+    const shiftId = Number(opsBridge?.[String(agreementId)]?.lastShift?.id || 0);
+    navigate(roomFinanceViewPath("quote-profitability", buildRoomQuotePreviewParams(agreement, { shiftId })));
   }
 
   function openAgreementPreview(shiftId, options = {}) {
@@ -632,12 +708,85 @@ export default function AgreementsPanel() {
     });
   }
 
+  function requestSurfaceFocus(agreementId, surface, message) {
+    surfaceFocusSequenceRef.current += 1;
+    setSurfaceFeedback(message);
+    setSurfaceFocusRequest({ agreementId, surface, sequence: surfaceFocusSequenceRef.current });
+  }
+
+  function agreementDetailTab(agreement) {
+    const id = Number(agreement?.id || 0);
+    if (!id) return "bridge";
+    if (pending.some((item) => Number(item?.id || 0) === id)) return "pending";
+    if (others.some((item) => Number(item?.id || 0) === id)) return "other";
+    if (extendItems.some((item) => Number(item?.id || 0) === id)) return "extend";
+    return "bridge";
+  }
+
   function openAgreementDetail(agreement) {
     const id = Number(agreement?.id || 0);
     if (!id) return;
+    setSuppressImplicitAgreementTarget(false);
+    setSelectedAgreementId(id);
+    setBridgeDetailsRequested(false);
+    setViewMode(agreementDetailTab(agreement));
+    requestSurfaceFocus(id, "detail", `Sözleşme #${id} ayrıntıları açıldı.`);
+  }
+
+  function openAgreementBridge(agreement) {
+    const id = Number(agreement?.id || 0);
+    if (!id) return;
+    setSuppressImplicitAgreementTarget(false);
     setSelectedAgreementId(id);
     setBridgeDetailsRequested(true);
     setViewMode("bridge");
+    requestSurfaceFocus(id, "bridge", `Sözleşme #${id} operasyon köprüsü açıldı.`);
+  }
+
+  async function refreshAgreements() {
+    setRefreshFeedback("");
+    setRefreshing(true);
+    try {
+      const loaded = await loadAll({ force: true });
+      setRefreshFeedback(loaded ? "Sözleşmeler yenilendi." : "Sözleşmeler yenilenemedi.");
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  function startAgreementApproval(agreement) {
+    const id = Number(agreement?.id || 0);
+    if (!id) return;
+    setSuppressImplicitAgreementTarget(false);
+    setSelectedAgreementId(id);
+    setApproveId(id);
+    setCounterId(null);
+    setConflict(null);
+    setViewMode("bridge");
+    setBridgeDetailsRequested(true);
+  }
+
+  function clearAgreementFilter() {
+    const selectedId = Number(selectedAgreementId || 0);
+    const visibleIds = new Set([
+      ...filteredRouteRefreshItems,
+      ...filteredAcceptedRouteRefreshItems,
+      ...filteredPending,
+      ...filteredOthers,
+      ...filteredExtendItems,
+    ].map((item) => Number(item?.id || item?.agreementId || 0)).filter((id) => id > 0));
+    setFilterQ("");
+    setSuppressImplicitAgreementTarget(true);
+    // A selected agreement hidden by the active filter is stale for the
+    // user's empty-result recovery. Clear it together with that filter so
+    // the unfiltered view does not silently resurrect an old preview.
+    if (selectedId > 0 && !visibleIds.has(selectedId)) {
+      setSelectedAgreementId(null);
+      setBridgeDetailsRequested(false);
+      setApproveId(null);
+      setCounterId(null);
+      setExtendCounterId(null);
+    }
   }
 
   function agreementPreviewShiftId(agreement) {
@@ -705,6 +854,11 @@ export default function AgreementsPanel() {
     try {
       const all = await cachedGet("/api/agreements?take=200", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 90 });
       const items = all?.items ?? [];
+      const hashQuery = typeof window !== "undefined" ? String(window.location.hash || "").split("?")[1] || "" : "";
+      const requestedFocusAgreementId = Number(new URLSearchParams(hashQuery).get("focusAgreementId") || 0);
+      if (requestedFocusAgreementId > 0 && items.some((agreement) => Number(agreement?.id || 0) === requestedFocusAgreementId)) {
+        setSelectedAgreementId(requestedFocusAgreementId);
+      }
 
       // ✅ M59: shift stats (today/horizon) for UI clarity
       try {
@@ -746,8 +900,10 @@ export default function AgreementsPanel() {
 
       const d = await api("/api/drivers", { token });
       setDrivers(d?.items ?? d ?? []);
+      return true;
     } catch (e) {
       setErr(e?.message || "Load failed");
+      return false;
     }
   }, [token]);
 
@@ -764,6 +920,24 @@ export default function AgreementsPanel() {
       setBridgeDetailsRequested(false);
     }
   }, [viewMode]);
+
+  useEffect(() => {
+    if (!surfaceFocusRequest) return undefined;
+    const selector = surfaceFocusRequest.surface === "detail"
+      ? `[data-room-agreement-detail-surface="${surfaceFocusRequest.agreementId}"]`
+      : `[data-room-operation-bridge="${surfaceFocusRequest.agreementId}"]`;
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.querySelector(selector);
+      if (!target) return;
+      target.scrollIntoView({ behavior: "auto", block: "start", inline: "nearest" });
+      target.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [surfaceFocusRequest, viewMode, agreementDisplayTarget?.id]);
+
+  const agreementDetailSurface = selectedAgreement && (viewMode === "pending" || viewMode === "other")
+    ? selectedAgreement
+    : null;
 
   useEffect(() => {
     if (viewModeInitializedRef.current) return;
@@ -812,11 +986,35 @@ export default function AgreementsPanel() {
     }
   }
 
+  async function syncOperationShifts(agreement) {
+    const agreementId = Number(agreement?.id || 0);
+    if (!agreementId) return;
+    setErr("");
+    setBusy(true);
+    try {
+      const result = await api(`/api/agreements/${agreementId}/operation-shifts/sync`, {
+        token,
+        method: "POST",
+        body: {},
+      });
+      const created = Array.isArray(result?.createdShiftIds) ? result.createdShiftIds : [];
+      const existing = Array.isArray(result?.existingShiftIds) ? result.existingShiftIds : [];
+      setRefreshFeedback(created.length ? `Operasyon vardiyası hazırlandı: #${created.join(", #")}.` : `Operasyon vardiyası zaten hazır: #${existing.join(", #")}.`);
+      await loadAll({ force: true });
+      setSelectedAgreementId(agreementId);
+      setBridgeDetailsRequested(true);
+    } catch (e) {
+      setErr(e?.message || "Operasyon vardiyası hazırlanamadı.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function counter() {
     setErr("");
     if (!counterId) return;
     const amount = parseTryInput(counterAmount);
-    if (!amount) return setErr("Karşı teklif amount gerekli");
+    if (!amount) return setErr("Karşı teklif tutarı gerekli");
 
     setBusy(true);
     try {
@@ -924,7 +1122,7 @@ export default function AgreementsPanel() {
     setErr("");
     if (!extendCounterId) return;
     const amount = parseTryInput(extendCounterAmount);
-    if (!amount) return setErr("Uzatma karşı teklif amount gerekli");
+    if (!amount) return setErr("Uzatma karşı teklif tutarı gerekli");
 
     setBusy(true);
     try {
@@ -977,12 +1175,36 @@ export default function AgreementsPanel() {
           <div className="title">Taşımacılık Firması / Sözleşmeler</div>
           <div className="muted">Bekleyen sözleşmeler burada karar bekler. Taşımacılık Firması bu ekranda kabul / karşı teklif / red kararını verir. Not: sözleşme durumu zaman bazlıdır. Sürücü vardiyayı bitirse bile sözleşme bitiş tarihine kadar devam ediyor görünebilir. Uzatma talepleri de burada yönetilir.</div>
         </div>
-        <button type="button" className="btn sm ghost" disabled={busy} onClick={loadAll}>
-          Yenile
+        <button type="button" className="btn sm ghost" disabled={busy || refreshing} onClick={refreshAgreements}>
+          {refreshing ? "Yenileniyor..." : "Yenile"}
         </button>
       </div>
 
       {err ? <div className="card err">{String(err)}</div> : null}
+      {refreshFeedback ? (
+        <div className="muted" data-testid="room-agreements-refresh-feedback" aria-live="polite" style={{ marginTop: 8 }}>
+          {refreshFeedback}
+        </div>
+      ) : null}
+      {surfaceFeedback ? (
+        <div className="muted" data-testid="room-agreements-surface-feedback" aria-live="polite" style={{ marginTop: 8 }}>
+          {surfaceFeedback}
+        </div>
+      ) : null}
+
+      {viewMode === "bridge" ? (
+        <ReconciliationPreviewCard
+          agreementId={agreementDisplayTarget?.id}
+          token={token}
+          onOpenOperation={openAgreementShift}
+          onOpenAgreementShifts={openAgreementShifts}
+          roomSummaryMode
+          collectionEnabled
+          periodStart={bridgePeriod.periodStart}
+          periodEnd={bridgePeriod.periodEnd}
+          style={{ marginTop: 12 }}
+        />
+      ) : null}
 
       {roomAgreementsNotice ? (
         <div
@@ -1003,12 +1225,25 @@ export default function AgreementsPanel() {
             <div className="muted" style={{ marginTop: 4 }}>{roomAgreementsNotice.detail}</div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            {copilotAgreementTarget ? (
-              <button type="button" className="btn sm" onClick={() => openAgreementDetail(copilotAgreementTarget)}>
-                Detayı aç
+            {agreementDisplayTarget ? (
+              <button type="button" className="btn sm" onClick={() => openAgreementDetail(agreementDisplayTarget)}>
+                Sözleşme detayını aç
               </button>
             ) : null}
-            <button type="button" className="btn sm primary" onClick={() => setViewMode(roomAgreementsNotice.actionTab)}>
+            {agreementDisplayTarget ? (
+              <button type="button" className="btn sm" data-testid="room-agreement-quote-preview" onClick={() => openAgreementQuotePreview(agreementDisplayTarget)}>
+                Teklif önizlemesine geç
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="btn sm primary"
+              onClick={() => (
+                roomAgreementsNotice.actionTab === "bridge" && agreementDisplayTarget
+                  ? openAgreementBridge(agreementDisplayTarget)
+                  : setViewMode(roomAgreementsNotice.actionTab)
+              )}
+            >
               {roomAgreementsNotice.actionLabel}
             </button>
           </div>
@@ -1019,6 +1254,11 @@ export default function AgreementsPanel() {
         data-copilot-target="room:agreements:list"
         data-copilot-semantic-id="product:room:agreements:list"
         data-copilot-label="Sözleşme listesi"
+        data-copilot-filter-scope="agreements"
+        data-copilot-filter-value={String(filterQ || '').trim()}
+        data-copilot-filter-visible-count={filteredRouteRefreshItems.length + filteredAcceptedRouteRefreshItems.length + filteredPending.length + filteredOthers.length + filteredExtendItems.length}
+        data-copilot-filter-total-count={routeRefreshItems.length + pending.length + others.length + extendItems.length}
+        data-copilot-filter-clear-target="room:agreements:filter-clear"
       >
         <div className="card" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
           <div>
@@ -1026,6 +1266,16 @@ export default function AgreementsPanel() {
             <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="Kayıt no / durum / teklif / tarih / not" />
           </div>
           <div className="muted">Gösterilen: <b>{filteredRouteRefreshItems.length + filteredAcceptedRouteRefreshItems.length + filteredPending.length + filteredOthers.length + filteredExtendItems.length}</b> / Toplam: <b>{routeRefreshItems.length + pending.length + others.length + extendItems.length}</b></div>
+          {String(filterQ || '').trim() ? (
+            <button
+              type="button"
+              className="btn sm ghost"
+              data-copilot-target="room:agreements:filter-clear"
+              onClick={clearAgreementFilter}
+            >
+              Filtreyi Temizle
+            </button>
+          ) : null}
         </div>
 
         <PanelSegmentTabs
@@ -1036,19 +1286,71 @@ export default function AgreementsPanel() {
         />
       </div>
 
-      {viewMode === "bridge" ? (
-        <ReconciliationPreviewCard agreementId={copilotAgreementTarget?.id} token={token} style={{ marginTop: 12 }} />
+      {agreementDetailSurface ? (
+        <section
+          className="card"
+          data-room-agreement-detail-surface={String(agreementDetailSurface.id)}
+          tabIndex={-1}
+          aria-labelledby={`room-agreement-detail-title-${agreementDetailSurface.id}`}
+          style={{ marginTop: 12, display: "grid", gap: 12, scrollMarginTop: 18 }}
+        >
+          <div className="topbar" style={{ alignItems: "flex-start", gap: 12 }}>
+            <div>
+              <h3 id={`room-agreement-detail-title-${agreementDetailSurface.id}`} style={{ margin: 0 }}>
+                Sözleşme #{agreementDetailSurface.id} ayrıntıları
+              </h3>
+              <div className="muted" style={{ marginTop: 4 }}>
+                {viewMode === "pending"
+                  ? "Bu kayıt karar aşamasında; bağlı operasyon karardan sonra oluşur."
+                  : "Bu kayıt kabul edilmiş veya devam eden sözleşmeler arasındadır; operasyon bağlantısı aşağıdaki köprüden izlenir."}
+              </div>
+            </div>
+            <button type="button" className="btn sm" onClick={() => openAgreementBridge(agreementDetailSurface)}>
+              Operasyon köprüsüne geç
+            </button>
+            <button type="button" className="btn sm primary" data-testid="room-agreement-detail-quote-preview" onClick={() => openAgreementQuotePreview(agreementDetailSurface)}>
+              Teklif önizlemesine geç
+            </button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+            <div>
+              <div className="muted">Mevcut durum</div>
+              <div style={{ marginTop: 4 }}>{pill(agreementDetailSurface.status)}</div>
+            </div>
+            <div>
+              <div className="muted">Tarih</div>
+              <div style={{ marginTop: 4 }}>{String(agreementDetailSurface.startDate || "-").slice(0, 10)} → {String(agreementDetailSurface.endDate || "-").slice(0, 10)}</div>
+            </div>
+            <div>
+              <div className="muted">Saat / plan</div>
+              <div style={{ marginTop: 4 }}>{toHHMM(agreementDetailSurface.startMin)} → {toHHMM(agreementDetailSurface.endMin)} • {userFacingDirectionLabel(agreementDetailSurface.direction || "INBOUND")} / {userFacingPatternLabel(agreementDetailSurface.pattern || "ONE_WAY")}</div>
+            </div>
+            <div>
+              <div className="muted">Araç / sürücü</div>
+              <div style={{ marginTop: 4 }}>{agreementDetailSurface.vehicle?.plate || "Araç bilgisi yok"} / {agreementDetailSurface.driver?.fullName || "Sürücü bilgisi yok"}</div>
+            </div>
+          </div>
+
+          <div className="muted" style={{ borderTop: "1px solid var(--border, #d9dee8)", paddingTop: 10 }}>
+            Sonraki işlem: {viewMode === "pending"
+              ? "Kabul et, karşı teklif ver veya reddet."
+              : "Operasyon Köprüsü'nde bağlı vardiyayı ve operasyon kanıtını kontrol et."}
+          </div>
+        </section>
       ) : null}
 
       {viewMode === "bridge" ? (
         <RoomAgreementsBridgeSection
           busy={busy}
-          copilotAgreementTarget={copilotAgreementTarget}
+          copilotAgreementTarget={agreementDisplayTarget}
           opsBridge={opsBridge}
           bridgeDetailsRequested={bridgeDetailsRequested}
           onRequestBridgeDetails={() => setBridgeDetailsRequested(true)}
           onOpenShift={openAgreementShift}
           onOpenPreview={openAgreementPreview}
+          onStartApproval={startAgreementApproval}
+          onSyncOperation={syncOperationShifts}
           qualityPaymentBridgePreview={qualityPaymentBridgePreview}
           seferScorePreviewData={seferScorePreviewData}
           seferScorePreview={seferScorePreview}
@@ -1159,7 +1461,7 @@ export default function AgreementsPanel() {
               </thead>
               <tbody>
                 {filteredPending.map((a) => (
-                  <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
+                  <tr key={a.id} data-room-agreement-detail={String(a.id)} tabIndex={-1} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
                     <td><div>{a.id}</div><CommercialReadonlySummary item={a.commercialBackbone} compact /></td>
                     <td className="muted">
                       {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
@@ -1194,7 +1496,7 @@ export default function AgreementsPanel() {
                         disabled={!agreementPreviewShiftId(a)}
                         onClick={(e) => {
                           e.stopPropagation();
-                          openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme ID ${a.id} — Rota Önizleme` });
+                          openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme #${a.id} — Rota Önizleme` });
                         }}
                       >
                         Rota Önizle
@@ -1253,6 +1555,7 @@ export default function AgreementsPanel() {
               </tbody>
             </table>
           </div>
+
         </div>
       ) : null}
 
@@ -1260,43 +1563,45 @@ export default function AgreementsPanel() {
         <div className="card">
           <div className="topbar" style={{ marginBottom: 10 }}>
             <div style={{ fontWeight: 900 }}>Diğer Sözleşmeler</div>
-            <div className="muted">Kabul edildi / devam ediyor / tamamlandı / iptal edildi...</div>
+            <div className="muted">Durum, dönem, ilgili firma ve teklif tutarı; ayrıntılar seçili kayıtta.</div>
           </div>
 
-          <div className="tableWrap">
+          <div className="tableWrap roomAgreementsOtherDesktopTable">
             <table className="tbl">
               <thead>
                 <tr>
                   <th>ID</th>
                   <th>Durum</th>
-                  <th>Tarih</th>
-                  <th>Saat</th>
-                  <th>Günler</th>
-                  <th>Yön / plan</th>
-                  <th>Hizmet Alan Firma Teklifi</th>
-                  <th>Taşımacılık Firması Karşı Teklifi</th>
-                  <th>Araç</th>
-                  <th>Sürücü</th>
+                  <th>Dönem</th>
+                  <th>İlgili firma</th>
+                  <th>Teklif tutarı</th>
+                  <th>Araç / sürücü</th>
                   <th>Aksiyon</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredOthers.map((a) => (
-                  <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
+                  <tr key={a.id} data-room-agreement-detail={String(a.id)} tabIndex={-1} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
                     <td>{a.id}</td>
                     <td>{pill(a.status)}</td>
                     <td className="muted">
                       {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
                     </td>
-                    <td className="muted">
-                      {toHHMM(a.startMin)} → {toHHMM(a.endMin)} {a.endMin < a.startMin ? <span title="midnight">🌙</span> : null}
+                    <td className="muted" data-room-agreement-company>{a.company?.name || "Firma bilgisi yok"}</td>
+                    <td>
+                      <OfferCell
+                        amount={a.roomOfferAmount ?? a.companyOfferAmount}
+                        note={a.roomOfferNote ?? a.companyOfferNote}
+                        secondaryAmount={a.roomOfferAmount != null ? a.companyOfferAmount : null}
+                        secondaryNote={a.companyOfferNote}
+                        secondaryLabel="Firma teklifi"
+                      />
                     </td>
-                    <td className="muted" title="Çalışma günleri">{weekMaskToText(a.weekMask)}</td>
-                    <td className="muted">{userFacingDirectionLabel(a.direction || "INBOUND")} / {userFacingPatternLabel(a.pattern || "ONE_WAY")}</td>
-                    <td><OfferCell amount={a.companyOfferAmount} note={a.companyOfferNote} /></td>
-                    <td><OfferCell amount={a.roomOfferAmount} note={a.roomOfferNote} /></td>
-                    <td className="muted">{a.vehicle?.plate ?? a.vehicleId ?? "-"}</td>
-                    <td className="muted">{a.driver?.fullName ?? a.driverId ?? "-"}</td>
+                    <td className="muted">
+                      <span data-room-agreement-vehicle>{a.vehicle?.plate || "Araç bilgisi yok"}</span>
+                      <span aria-hidden="true"> / </span>
+                      <span data-room-agreement-driver>{a.driver?.fullName || "Sürücü bilgisi yok"}</span>
+                    </td>
                     <td>
                       <button
                         type="button"
@@ -1314,7 +1619,7 @@ export default function AgreementsPanel() {
                         disabled={!agreementPreviewShiftId(a)}
                         onClick={(e) => {
                           e.stopPropagation();
-                          openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme ID ${a.id} — Rota Önizleme` });
+                          openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme #${a.id} — Rota Önizleme` });
                         }}
                       >
                         Rota Önizle
@@ -1324,11 +1629,67 @@ export default function AgreementsPanel() {
                 ))}
                 {!filteredOthers.length ? (
                   <tr>
-                    <td colSpan={11} className="muted">Kayıt yok.</td>
+                    <td colSpan={7} className="muted">Kayıt yok.</td>
                   </tr>
                 ) : null}
               </tbody>
             </table>
+          </div>
+
+          <div className="roomAgreementsOtherMobileCards">
+            {filteredOthers.map((a) => (
+              <article
+                key={`mobile-${a.id}`}
+                className="card roomAgreementMobileCard"
+                data-room-agreement-mobile-detail={String(a.id)}
+                tabIndex={-1}
+                onClick={() => setSelectedAgreementId(a.id)}
+                style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}
+              >
+                <div className="topbar" style={{ alignItems: "flex-start", gap: 8 }}>
+                  <div>
+                    <div style={{ fontWeight: 900 }}>Sözleşme #{a.id}</div>
+                    <div className="muted" style={{ marginTop: 4 }}>{a.company?.name || "Firma bilgisi yok"}</div>
+                  </div>
+                  {pill(a.status)}
+                </div>
+                <div className="roomAgreementMobileMeta">
+                  <div><div className="muted">Dönem</div><div>{String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)}</div></div>
+                  <div><div className="muted">Teklif tutarı</div><OfferCell
+                    amount={a.roomOfferAmount ?? a.companyOfferAmount}
+                    note={a.roomOfferNote ?? a.companyOfferNote}
+                    secondaryAmount={a.roomOfferAmount != null ? a.companyOfferAmount : null}
+                    secondaryNote={a.companyOfferNote}
+                    secondaryLabel="Firma teklifi"
+                  /></div>
+                  <div><div className="muted">Araç / sürücü</div><div><span data-room-agreement-vehicle>{a.vehicle?.plate || "Araç bilgisi yok"}</span> / <span data-room-agreement-driver>{a.driver?.fullName || "Sürücü bilgisi yok"}</span></div></div>
+                </div>
+                <div className="actionsRow" style={{ marginTop: 12 }}>
+                  <button
+                    type="button"
+                    className="btn sm primary roomActionCTA"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openAgreementDetail(a);
+                    }}
+                  >
+                    Detayı aç
+                  </button>
+                  <button
+                    type="button"
+                    className="btn sm ghost roomActionCTA"
+                    disabled={!agreementPreviewShiftId(a)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                          openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme #${a.id} — Rota Önizleme` });
+                    }}
+                  >
+                    Rota Önizle
+                  </button>
+                </div>
+              </article>
+            ))}
+            {!filteredOthers.length ? <div className="muted">Kayıt yok.</div> : null}
           </div>
         </div>
       ) : null}

@@ -1,3 +1,5 @@
+import { formatOfferAmountMinor, parseOfferAmountInput } from "../shared/offerAmountPresentation";
+
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
 export function vehicleMetaLine(v) {
@@ -21,18 +23,11 @@ export function trimOrNull(s) {
 }
 
 export function formatTRY(amount) {
-  if (amount == null) return "";
-  const n = Number(amount);
-  if (!Number.isFinite(n)) return "";
-  return new Intl.NumberFormat("tr-TR").format(n);
+  return amount == null ? "" : formatOfferAmountMinor(amount);
 }
 
 export function parseTryInput(raw) {
-  if (raw == null) return null;
-  const cleaned = String(raw).replace(/\./g, "").replace(/[^\d]/g, "");
-  if (!cleaned) return null;
-  const n = Number(cleaned);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  return parseOfferAmountInput(raw);
 }
 
 export function offerGapMeta(amountCompany, amountRoom) {

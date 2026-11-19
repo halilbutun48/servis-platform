@@ -4,14 +4,24 @@ import { getApiErrorInfo } from "../../utils/apiContract";
 import {
   buildGuidedPlanModalResetState,
   clearGuidedPlanModalDraftState,
+  createGuidedBatchIdempotencyKey,
   normalizePersistedGuidedPlanDraftState,
+  writeGuidedPlanModalDraftState,
 } from "./guidedPlanModalUtils";
 import {
   clearPlanTermsForShiftIds,
+  buildGuidedResumeCompanyOfferPatch,
   parseTryInput,
   writeGuidedTempShiftIds,
   ymdMinToIso,
 } from "./guidedPlanModalUtils";
+import { validateGuidedHubCoordinates } from "./guidedPlanModalCoordinates";
+import { shouldPreserveResumedGuidedDraft } from "./guidedPlanResumeSafety";
+import { guidedDraftInfoText } from "./guidedPlanUserCopy";
+import { buildGuidedBulkReorderPlan } from "./guidedPlanBulkReorder";
+import { buildGuidedResumeStopSyncPlan } from "./guidedPlanResumeStops";
+import { guidedPlanHubSavedMessage } from "./guidedPlanRoleCopy";
+import { guidedResumeDraftsEndpoint, selectGuidedResumeDrafts } from "./guidedPlanDraftLoading";
 
 export async function geocodeGuidedLocation({ token, q }) {
   return api("/api/geocode", { token, method: "POST", body: { q, country: "tr" } });
@@ -36,9 +46,9 @@ export async function cleanupGuidedDraftShifts({ token, ids }) {
 export async function loadGuidedResumeDraftShifts({ token, ids }) {
   const uniqueIds = Array.from(new Set((Array.isArray(ids) ? ids : []).map((x) => Number(x)).filter(Number.isFinite)));
   if (!token || !uniqueIds.length) return [];
-  const list = await api("/api/shifts?take=500&includeDrafts=1&includeStops=1", { token });
+  const list = await api(guidedResumeDraftsEndpoint(), { token });
   const itemsAll = Array.isArray(list?.items) ? list.items : [];
-  return itemsAll.filter((x) => uniqueIds.includes(Number(x.id)));
+  return selectGuidedResumeDrafts(itemsAll, uniqueIds);
 }
 
 export async function loadGuidedDraftCandidates({ token }) {
@@ -58,6 +68,8 @@ export async function saveGuidedCompanyHub({ token, hubLat, hubLng }) {
 export async function createGuidedDraftShiftsAction({
   token,
   existingDraftShiftIds,
+  resumedFromServer = false,
+  loadDraftShifts = loadGuidedResumeDraftShifts,
   cleanupDraftShifts,
   stepItems,
   startDate,
@@ -73,13 +85,92 @@ export async function createGuidedDraftShiftsAction({
   orgGatheringName,
   hubLat,
   hubLng,
+  idempotencyKey,
 }) {
+  const existingIds = Array.from(
+    new Set(
+      (Array.isArray(existingDraftShiftIds) ? existingDraftShiftIds : [])
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value) && value > 0),
+    ),
+  );
+  const requestIdempotencyKey = String(idempotencyKey || createGuidedBatchIdempotencyKey());
+
+  // A server-resumed draft is an existing business record. The resume UI
+  // promises to continue that record, so never delete it and recreate a new
+  // shift batch merely because the user advances from the saved step.
+  if (shouldPreserveResumedGuidedDraft({ resumedFromServer, organization, draftShiftIds: existingIds })) {
+    let draftShifts = await loadDraftShifts({ token, ids: existingIds });
+    if (draftShifts.length !== existingIds.length) {
+      throw new Error("Kayıtlı taslak artık bulunamadı; mevcut kayıt korunarak akış durduruldu.");
+    }
+
+    const resumeNoteParts = [];
+    if (draftNote) resumeNoteParts.push(String(draftNote).trim());
+    if (organization && orgNoteSummaryText) resumeNoteParts.push(String(orgNoteSummaryText).trim());
+    const companyOfferPatch = buildGuidedResumeCompanyOfferPatch({
+      draftAmount,
+      draftNote: resumeNoteParts.filter(Boolean).join("\n"),
+    });
+
+    // Resuming a saved organization plan must keep the same business shift,
+    // while still persisting destination edits made in step 2.  The existing
+    // stop endpoints are the canonical owner; never recreate the batch.
+    if (Object.keys(companyOfferPatch).length || (organization && Array.isArray(orgFilledDestinations) && orgFilledDestinations.length)) {
+      for (const shift of draftShifts) {
+        if (Object.keys(companyOfferPatch).length) {
+          await api(`/api/shifts/${shift.id}/company-offer`, {
+            token,
+            method: "PUT",
+            body: companyOfferPatch,
+          });
+        }
+
+        if (!(organization && Array.isArray(orgFilledDestinations) && orgFilledDestinations.length)) continue;
+        const syncPlan = buildGuidedResumeStopSyncPlan({
+          shiftId: shift?.id,
+          currentStops: shift?.stops,
+          destinations: orgFilledDestinations,
+        });
+        if (!syncPlan) continue;
+        for (const update of syncPlan.updates) {
+          await api(`/api/shifts/${syncPlan.shiftId}/stops/${update.stopId}`, {
+            token,
+            method: "PUT",
+            body: {
+              name: update.name,
+              lat: update.lat,
+              lng: update.lng,
+              order: update.order,
+              type: update.type,
+            },
+          });
+        }
+        for (const addition of syncPlan.additions) {
+          await api(`/api/shifts/${syncPlan.shiftId}/stops`, {
+            token,
+            method: "POST",
+            body: addition,
+          });
+        }
+      }
+      draftShifts = await loadDraftShifts({ token, ids: existingIds });
+    }
+    return {
+      createdIds: existingIds,
+      draftShifts,
+      dayCount: 0,
+      totalShiftCount: existingIds.length,
+      resumed: true,
+    };
+  }
+
   const lat = hubLat === "" ? null : Number(hubLat);
   const lng = hubLng === "" ? null : Number(hubLng);
   const items = Array.isArray(stepItems) ? stepItems : [];
 
-  if (existingDraftShiftIds?.length) {
-    await cleanupDraftShifts(existingDraftShiftIds);
+  if (existingIds.length) {
+    await cleanupDraftShifts(existingIds);
   }
 
   const createdIds = [];
@@ -162,22 +253,14 @@ export async function createGuidedDraftShiftsAction({
     }
   }
 
-  let createdItems = [];
-  try {
-    const batchResp = await api("/api/shifts/guided-batch", {
-      token,
-      method: "POST",
-      body: { items: rows.map((row) => row.body) },
-    });
-    createdItems = Array.isArray(batchResp?.items) ? batchResp.items : [];
-  } catch (e) {
-    const msg = String(e?.message || e || "");
-    if (!msg.includes("Cannot POST /api/shifts/guided-batch")) throw e;
-    for (const row of rows) {
-      const shift = await api("/api/shifts", { token, method: "POST", body: row.body });
-      if (shift?.id) createdItems.push(shift);
-    }
-  }
+  // Never fall back to one-request-per-shift: that would bypass the durable
+  // batch idempotency contract and could duplicate a timed-out submission.
+  const batchResp = await api("/api/shifts/guided-batch", {
+    token,
+    method: "POST",
+    body: { items: rows.map((row) => row.body), idempotencyKey: requestIdempotencyKey },
+  });
+  const createdItems = Array.isArray(batchResp?.items) ? batchResp.items : [];
 
   createdItems.forEach((shift, idx) => {
     if (shift?.id) createdIds.push(Number(shift.id));
@@ -214,7 +297,7 @@ export async function createGuidedDraftShiftsAction({
 
   writeGuidedTempShiftIds(createdIds);
   const draftShifts = createdItems.length ? createdItems : await loadGuidedResumeDraftShifts({ token, ids: createdIds });
-  return { createdIds, draftShifts, dayCount, totalShiftCount };
+  return { createdIds, draftShifts, dayCount, totalShiftCount, idempotencyKey: requestIdempotencyKey };
 }
 
 export async function refreshGuidedDraftShiftsAction({ token, draftShiftIds }) {
@@ -410,6 +493,7 @@ export function useGuidedPlanModalActions(ctx) {
   const {
     token,
     organization,
+    school,
     routeRefreshMode,
     launchContext,
     guidedPlanDraftStorageKey,
@@ -434,6 +518,9 @@ export function useGuidedPlanModalActions(ctx) {
     endDate,
     draftShiftIds,
     draftShifts,
+    guidedBatchIdempotencyKey,
+    persistedGuidedPlanDraftSnapshot,
+    resumedFromServer = false,
     selectedRoomIds,
     offerAmount,
     offerNote,
@@ -468,6 +555,7 @@ export function useGuidedPlanModalActions(ctx) {
     setMapPickPoint,
     setDraftShiftIds,
     setDraftShifts,
+    setGuidedBatchIdempotencyKey,
     setOsrmBatch,
     setOsrmResById,
     setRoomQ,
@@ -534,6 +622,7 @@ export function useGuidedPlanModalActions(ctx) {
     setMapPickPoint(next.mapPickPoint);
     setDraftShiftIds(next.draftShiftIds);
     setDraftShifts(next.draftShifts);
+    setGuidedBatchIdempotencyKey(next.guidedBatchIdempotencyKey);
     setOsrmBatch(next.osrmBatch);
     setOsrmResById(next.osrmResById);
     setCompanyGeoGate(next.companyGeoGate);
@@ -553,21 +642,22 @@ export function useGuidedPlanModalActions(ctx) {
     setErr("");
     setInfo("");
     if (!token) return;
-    const lat = hubLat === "" ? null : Number(hubLat);
-    const lng = hubLng === "" ? null : Number(hubLng);
-    if ((lat == null) !== (lng == null)) {
-      setErr("Konum enlem/boylam birlikte olmalı.");
-      return;
-    }
-    if (lat != null && lng != null && (lat === 0 || lng === 0)) {
-      setErr("Konum 0,0 olamaz.");
+    const coordinates = validateGuidedHubCoordinates(hubLat, hubLng);
+    if (!coordinates.ok) {
+      setErr(organization && coordinates.message === "Önce hizmet konumunu belirle."
+        ? "Önce toplanma konumunu belirle."
+        : coordinates.message);
       return;
     }
 
     setBusy(true);
     try {
-      await saveGuidedCompanyHub({ token, hubLat: lat, hubLng: lng });
-      setInfo(organization ? hubSaveFeedback?.organization || "Toplanma konumu kaydedildi." : hubSaveFeedback?.company || "Firma konumu kaydedildi.");
+      await saveGuidedCompanyHub({ token, hubLat: coordinates.hubLat, hubLng: coordinates.hubLng });
+      setInfo(
+        organization
+          ? hubSaveFeedback?.organization || guidedPlanHubSavedMessage({ organization: true })
+          : hubSaveFeedback?.[school ? "school" : "company"] || guidedPlanHubSavedMessage({ school }),
+      );
       setStep(1);
     } catch (e) {
       setErr(getApiErrorMessage(e));
@@ -684,6 +774,14 @@ export function useGuidedPlanModalActions(ctx) {
 
     setBusy(true);
     try {
+      const requestIdempotencyKey = guidedBatchIdempotencyKey || createGuidedBatchIdempotencyKey();
+      setGuidedBatchIdempotencyKey(requestIdempotencyKey);
+      if (guidedPlanDraftStorageKey) {
+        writeGuidedPlanModalDraftState(guidedPlanDraftStorageKey, {
+          ...normalizePersistedGuidedPlanDraftState(persistedGuidedPlanDraftSnapshot),
+          guidedBatchIdempotencyKey: requestIdempotencyKey,
+        });
+      }
       const orgNoteSummaryText = organization
         ? (() => {
             const gathering = String(orgGatheringName || "").trim();
@@ -704,6 +802,7 @@ export function useGuidedPlanModalActions(ctx) {
       const created = await createGuidedDraftShiftsAction({
         token,
         existingDraftShiftIds: draftShiftIds,
+        resumedFromServer,
         cleanupDraftShifts,
         stepItems: items,
         startDate,
@@ -719,6 +818,7 @@ export function useGuidedPlanModalActions(ctx) {
         orgGatheringName,
         hubLat,
         hubLng,
+        idempotencyKey: requestIdempotencyKey,
       });
       if (!created.createdIds.length) {
         setErr("Seçili tarih aralığında (gün filtresine göre) vardiya üretilecek gün yok. Başlangıç / günler / süreyi değiştir.");
@@ -744,7 +844,12 @@ export function useGuidedPlanModalActions(ctx) {
 
       setDraftShiftIds(created.createdIds);
       setDraftShifts(nextDraftShifts);
-      setInfo(`Taslak vardiya oluşturuldu: ${created.createdIds.map((x) => "#" + x).join(", ")}${hydrationInfo}`);
+      if (created.idempotencyKey) setGuidedBatchIdempotencyKey(created.idempotencyKey);
+      setInfo(guidedDraftInfoText({
+        resumed: created.resumed,
+        createdIds: created.createdIds,
+        hydrationInfo,
+      }));
       setStep(2);
     } catch (e) {
       setErr(getApiErrorMessage(e));
@@ -754,18 +859,15 @@ export function useGuidedPlanModalActions(ctx) {
   }
 
   async function refreshDraftShifts() {
-    if (!token) return;
-    if (!draftShiftIds.length) return;
+    if (!token) return null;
+    if (!draftShiftIds.length) return [];
     try {
       const items = await refreshGuidedDraftShiftsAction({ token, draftShiftIds });
       setDraftShifts(items);
+      return items;
     } catch {
-      // ignore
+      return null;
     }
-  }
-
-  async function osrmReorderCore(sid) {
-    return osrmReorderGuidedCore({ token, draftShifts, shiftId: sid });
   }
 
   async function osrmReorder(shiftId) {
@@ -778,7 +880,13 @@ export function useGuidedPlanModalActions(ctx) {
 
     setBusy(true);
     try {
-      const res = await osrmReorderCore(sid);
+      // The student/stop step can persist new stops without replacing the
+      // object captured when the modal first resumed. Refresh before a
+      // single-row reorder so the action cannot reject a now-valid draft
+      // because it still sees the old stop list.
+      const refreshedDraftShifts = await refreshDraftShifts();
+      const workingDraftShifts = Array.isArray(refreshedDraftShifts) ? refreshedDraftShifts : draftShifts;
+      const res = await osrmReorderGuidedCore({ token, draftShifts: workingDraftShifts, shiftId: sid });
       if (!res.ok) {
         setOsrmResById((prev) => ({ ...prev, [sid]: { ok: false, error: res.error } }));
         setErr(res.error || "Sıralama başarısız.");
@@ -812,13 +920,23 @@ export function useGuidedPlanModalActions(ctx) {
     setOsrmBatch({ running: true, done: 0, total: ids.length });
 
     try {
+      const refreshedDraftShifts = await refreshDraftShifts();
+      const reorderPlan = buildGuidedBulkReorderPlan({ draftShifts, refreshedDraftShifts });
+      const workingDraftShifts = reorderPlan.draftShifts;
+      const workingIds = reorderPlan.ids;
+
+      if (!workingIds.length) {
+        setErr("Taslak vardiya yok.");
+        return;
+      }
+
       let okCount = 0;
       let errCount = 0;
 
-      for (let i = 0; i < ids.length; i++) {
-        const sid = ids[i];
+      for (let i = 0; i < workingIds.length; i++) {
+        const sid = workingIds[i];
         try {
-          const res = await osrmReorderCore(sid);
+          const res = await osrmReorderGuidedCore({ token, draftShifts: workingDraftShifts, shiftId: sid });
           if (res.ok) {
             okCount++;
             setOsrmResById((prev) => ({ ...prev, [sid]: { ok: true } }));
@@ -831,7 +949,7 @@ export function useGuidedPlanModalActions(ctx) {
           setOsrmResById((prev) => ({ ...prev, [sid]: { ok: false, error: getApiErrorMessage(e) } }));
         }
 
-        setOsrmBatch({ running: true, done: i + 1, total: ids.length });
+        setOsrmBatch({ running: true, done: i + 1, total: workingIds.length });
       }
 
       await refreshDraftShifts();

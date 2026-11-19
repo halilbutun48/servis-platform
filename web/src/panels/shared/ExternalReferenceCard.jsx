@@ -8,6 +8,7 @@ import {
   externalReferenceFreshnessLabel,
   externalReferenceFreshnessTone,
   externalReferenceValueLabel,
+  buildRoomServiceCostEvidence,
 } from "./financialOperationsPresentation";
 import { humanizeUserFacingText } from "../../utils/terminology";
 
@@ -47,17 +48,28 @@ function referenceStateLabel(value, fallback = "Belirtilmedi") {
     AVAILABLE: "Mevcut",
     MISSING: "Eksik bilgi",
     INSUFFICIENT_SAMPLE: "Yeterli örnek yok",
+    NOT_PROVEN: "Doğrulanmadı; kapalı",
     NOT_AVAILABLE: "Mevcut değil",
   };
   return labels[key] || humanizeUserFacingText(value, fallback);
 }
 
 function layerLabel(layer) {
+  if (layer?.layer === "EXTERNAL_MARKET_REFERENCE" && layer?.unit === "CURRENCY_PER_L") return "Yakıt fiyatı referansı";
+  if (layer?.layer === "SEFERPAKT_PLATFORM_REFERENCE") {
+    return layer?.controlledDemoOnly ? "Kontrollü DEMO platform geçmiş anlaşma referansı" : "Platform geçmiş anlaşma referansı";
+  }
   if (layer?.label) return layer.label;
   if (layer?.layer === "EXTERNAL_MARKET_REFERENCE") return "Dış piyasa referansı";
-  if (layer?.layer === "SEFERPAKT_PLATFORM_REFERENCE") return "SeferPakt Bölgesel Referansı";
   return "Mevcut gerçek verileriniz";
 }
+
+const ROOM_SERVICE_COST_LABELS = Object.freeze({
+  FUEL: "Yakıt",
+  MAINTENANCE: "Bakım",
+  DRIVER: "Sürücü maliyeti",
+  RENT: "Araç kirası",
+});
 
 function LayerSummary({ layer }) {
   if (!layer) return null;
@@ -97,6 +109,14 @@ export default function ExternalReferenceCard({ token, canView, refreshTick = 0,
   const snapshot = preview?.snapshot || {};
   const regionName = regionNameProp || snapshot.regionName || preview?.regionName || null;
   const scopeKey = String(scope || "ROOM").toUpperCase();
+  const roomServiceCostEvidence = buildRoomServiceCostEvidence(preview || {});
+  const isRoomServiceContext = scopeKey === "ROOM"
+    && Boolean(roomServiceCostEvidence.selectedShiftId || roomServiceCostEvidence.selectedAgreementId);
+  const roomServiceEvidenceByCategory = new Map(
+    roomServiceCostEvidence.categoryTotals.map((item) => [item.categoryKey, item]),
+  );
+  const roomCategoryAmount = (categoryKey) => roomServiceEvidenceByCategory.get(categoryKey)?.amountMinor ?? null;
+  const roomHasEvidence = isRoomServiceContext && roomServiceCostEvidence.hasEvidence && !roomServiceCostEvidence.contextMismatch;
   const query = useMemo(() => ({
     family: "FUEL_DIESEL",
     unit: "CURRENCY_PER_L",
@@ -125,8 +145,8 @@ export default function ExternalReferenceCard({ token, canView, refreshTick = 0,
         if (!controller.signal.aborted) setPayload(result || null);
       } catch (requestError) {
         if (requestError?.name === "AbortError" || controller.signal.aborted) return;
-        const info = getApiErrorInfo(requestError, "Piyasa referansı okunamadı.");
-        setError(info.message || "Piyasa referansı okunamadı.");
+        const info = getApiErrorInfo(requestError, "Yakıt fiyatı referansı okunamadı.");
+        setError(info.message || "Yakıt fiyatı referansı okunamadı.");
         setPayload(null);
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -167,8 +187,8 @@ export default function ExternalReferenceCard({ token, canView, refreshTick = 0,
   if (loading) {
     return (
       <div className="card" data-testid="external-reference-card" data-testid-layers="loading" style={{ marginTop: 12, ...toneStyle("warm") }}>
-        <div className="panelSectionTitle">Piyasa referansı</div>
-        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Operasyon kapsamına uygun piyasa referansı yükleniyor.</div>
+        <div className="panelSectionTitle">Yakıt fiyatı referansı</div>
+        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Operasyon kapsamına uygun yakıt fiyatı referansı yükleniyor.</div>
       </div>
     );
   }
@@ -176,8 +196,8 @@ export default function ExternalReferenceCard({ token, canView, refreshTick = 0,
   if (error) {
     return (
       <div className="card" data-testid="external-reference-card" data-reference-state="error" style={{ marginTop: 12, ...toneStyle("warm") }}>
-        <div className="panelSectionTitle">Piyasa referansı</div>
-        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Piyasa referansı şu anda okunamadı.</div>
+        <div className="panelSectionTitle">Yakıt fiyatı referansı</div>
+        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Yakıt fiyatı referansı şu anda okunamadı.</div>
         <div className="panelMeta" style={{ marginTop: 6 }}>Gerçek maliyet ve sözleşme verileri kullanılmaya devam eder.</div>
       </div>
     );
@@ -191,9 +211,9 @@ export default function ExternalReferenceCard({ token, canView, refreshTick = 0,
     <div className="card" data-testid="external-reference-card" data-testid-layers="reference-layers" data-reference-state={isAvailable ? "available" : "no-data"} data-reference-completeness={referenceReadiness} style={{ marginTop: 12, ...toneStyle(visualTone) }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <div className="panelSectionTitle">{hasReferenceEvidence ? "Piyasa referansı kısmen hazır" : "Piyasa referansı"}</div>
+          <div className="panelSectionTitle">Yakıt fiyatı referansı</div>
           <div data-testid="external-reference-value" className="panelStatValue" style={{ marginTop: 8 }}>
-          {isAvailable ? referenceValue : <span data-testid="external-reference-no-data">Piyasa referansı henüz mevcut değil.</span>}
+          {isAvailable ? referenceValue : <span data-testid="external-reference-no-data">Yakıt fiyatı referansı henüz mevcut değil.</span>}
           </div>
           {guidance?.costBased ? <div className="panelMeta" style={{ marginTop: 8 }}>Maliyet bazlı teklif rehberi: {formatBand(guidance.costBased, guidance.costBased.currencyCode || "TRY")}</div> : null}
         </div>
@@ -215,18 +235,72 @@ export default function ExternalReferenceCard({ token, canView, refreshTick = 0,
         <div className="panelMeta" style={{ display: "grid", gap: 4 }}>
           <span>Kanıt kapsamı: {referenceStateLabel(referenceReadiness)}</span>
           <span>Yakıt verisi: {referenceStateLabel(isAvailable ? "AVAILABLE" : "MISSING")}</span>
-          <span>Sürücü maliyeti: Mevcut değil</span>
-          <span>Bakım maliyeti: Mevcut değil</span>
-          <span>Platform gözlemi: {referenceStateLabel(platform?.available ? "AVAILABLE" : "INSUFFICIENT_SAMPLE")}</span>
-          <span>Gerçek maliyet: {referenceStateLabel(actual?.available ? "AVAILABLE" : "NOT_AVAILABLE")}</span>
+          {isRoomServiceContext ? (
+            <>
+              <span>Sürücü maliyeti: {roomCategoryAmount("DRIVER") != null ? `Hizmet payı mevcut · ${formatMoneyMinor(roomCategoryAmount("DRIVER"), "TRY")}` : "Hizmet payı doğrulanamıyor"}</span>
+              <span>Bakım maliyeti: {roomCategoryAmount("MAINTENANCE") != null ? `Hizmet payı mevcut · ${formatMoneyMinor(roomCategoryAmount("MAINTENANCE"), "TRY")}` : "Hizmet payı doğrulanamıyor"}</span>
+              <span>Araç kirası: {roomCategoryAmount("RENT") != null ? `Hizmet payı mevcut · ${formatMoneyMinor(roomCategoryAmount("RENT"), "TRY")}` : "Hizmet payı doğrulanamıyor"}</span>
+            </>
+          ) : (
+            <>
+              <span>Sürücü maliyeti: Mevcut değil</span>
+              <span>Bakım maliyeti: Mevcut değil</span>
+            </>
+          )}
+          <span>{platform?.controlledDemoOnly ? "Kontrollü DEMO platform geçmiş anlaşma referansı" : "Platform geçmiş anlaşma referansı"}: {referenceStateLabel(platform?.status || (platform?.available ? "AVAILABLE" : "NOT_PROVEN"))}</span>
+          <span>{isRoomServiceContext ? "Gerçek hizmet payı" : "Gerçek maliyet"}: {isRoomServiceContext ? (roomHasEvidence ? "Kanıt mevcut" : "Doğrulama bekliyor") : referenceStateLabel(actual?.available ? "AVAILABLE" : "NOT_AVAILABLE")}</span>
         </div>
       </div>
-      {guidance?.observedRegional?.available ? (
-        <div className="panelMeta" style={{ marginTop: 8 }}>Bölgesel gözlenen teklif bandı: {formatBand(guidance.observedRegional, guidance.observedRegional.currencyCode || "TRY")}</div>
-      ) : scopeKey === "ROOM" ? (
-        <div className="panelMeta" style={{ marginTop: 8 }}>Bölgesel gözlenen teklif bandı için henüz yeterli anonim gözlem yok.</div>
+      {isRoomServiceContext ? (
+        <div data-testid="room-service-cost-evidence" className="card" style={{ marginTop: 10, padding: 12, background: "rgba(255,255,255,0.025)" }}>
+          <div className="panelSectionTitle">İç maliyet kanıtı</div>
+          <div className="panelMeta" style={{ marginTop: 6, lineHeight: 1.45 }}>
+            Seçili hizmetin doğrulanmış gider ve dağıtım payları. Piyasa referansından ve tahmini planlama maliyetinden ayrıdır.
+          </div>
+          {roomServiceCostEvidence.contextMismatch ? (
+            <div className="panelMeta" style={{ marginTop: 8 }}>Seçili hizmetle eşleşen maliyet kaydı bulunamadı; başka bir hizmetin verisi kullanılmadı.</div>
+          ) : roomServiceCostEvidence.categoryTotals.length ? (
+            <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
+              {roomServiceCostEvidence.categoryTotals.map((item) => (
+                <div key={item.categoryKey} style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
+                  <span>{ROOM_SERVICE_COST_LABELS[item.categoryKey] || item.categoryKey}</span>
+                  <span className="panelMeta">{formatMoneyMinor(item.amountMinor, "TRY")} · Hizmet payı kanıtı</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="panelMeta" style={{ marginTop: 8 }}>Seçili hizmet için kanıtlanmış gider payı bulunmuyor.</div>
+          )}
+          {roomServiceCostEvidence.provenAmountMinor != null ? (
+            <div className="panelMeta" style={{ marginTop: 10 }}>
+              Kanıtlı hizmet payı: <strong>{formatMoneyMinor(roomServiceCostEvidence.provenAmountMinor, "TRY")}</strong>
+            </div>
+          ) : null}
+          {roomServiceCostEvidence.pendingAmountMinor > 0 ? (
+            <div className="panelMeta" style={{ marginTop: 6 }}>
+              Dağıtım bekleyen dönem payı: <strong>{formatMoneyMinor(roomServiceCostEvidence.pendingAmountMinor, "TRY")}</strong>. Bu nedenle kesin toplam henüz doğrulanmadı.
+            </div>
+          ) : null}
+          {roomServiceCostEvidence.grossAmountMinor != null ? (
+            <div className="panelMeta" style={{ marginTop: 6 }}>
+              Kaynak dönem toplamı: {formatMoneyMinor(roomServiceCostEvidence.grossAmountMinor, "TRY")} · Bu tutar seçili hizmetin kesin maliyeti değildir.
+            </div>
+          ) : null}
+        </div>
       ) : null}
-      <div className="panelMeta" style={{ marginTop: 6 }}>Bu bilgi gerçek maliyetinizin veya sözleşme tutarınızın yerine geçmez. Bu değer gerçek maliyetiniz değildir; iç maliyet ve sözleşme verileri önceliklidir.</div>
+      {platform?.available && platform?.controlledDemoOnly ? (
+        <div className="card" data-testid="platform-demo-reference-summary" style={{ marginTop: 10, padding: 14, border: "1px solid rgba(58,102,255,0.35)", background: "rgba(58,102,255,0.06)" }}>
+          <div className="panelSectionTitle">{scopeKey === "COMPANY" ? "Genel kontrollü DEMO anlaşma referansı" : "İzinli DEMO SeferPakt anlaşma referansı"}</div>
+          <div className="panelStatValue" style={{ marginTop: 8 }}>{formatMoneyMinor(platform.averageAmountMinor ?? platform.valueMinor, platform.currencyCode || "TRY")}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Kanıtlanan aralık: {formatBand(platform.range, platform.currencyCode || "TRY")}</div>
+          <div className="panelMeta" style={{ marginTop: 8, lineHeight: 1.45 }}>Yalnızca karşılaştırılabilir ve anonim DEMO ROOM anlaşmalarının toplu sonucudur. {scopeKey === "COMPANY" ? "Seçili hizmete özel emsal değildir. " : ""}ROOM özel maliyetleri, teklif alt sınırları ve kâr marjları gösterilmez. Bu canlı platform ortalaması değildir.</div>
+        </div>
+      ) : guidance?.observedRegional?.available ? (
+        <div className="panelMeta" style={{ marginTop: 8 }}>Platform geçmiş anlaşma bandı: {formatBand(guidance.observedRegional, guidance.observedRegional.currencyCode || "TRY")}</div>
+      ) : scopeKey === "ROOM" ? (
+        <div className="panelMeta" style={{ marginTop: 8 }}>Platform geçmiş anlaşma bandı kapalı; onaylı politika ve bağımsız ROOM kanıtı olmadan ortalama veya aralık gösterilmez.</div>
+      ) : null}
+      <div className="panelMeta" style={{ marginTop: 6 }}>Yakıt fiyatı referansı gerçek maliyetinizin veya sözleşme tutarınızın yerine geçmez. Bu değer gerçek maliyetiniz değildir; iç maliyet ve sözleşme verileri önceliklidir.</div>
       <div className="panelMeta" style={{ marginTop: 6 }}>Yalnızca salt okunur önizleme desteğidir; otomatik işlem başlatmaz.</div>
       {externalReferenceFallbackLabel(external?.fallbackState) ? <div className="panelMeta" style={{ marginTop: 6 }}>{externalReferenceFallbackLabel(external.fallbackState)}.</div> : null}
       <details data-testid="external-reference-details" style={{ marginTop: 10 }}>

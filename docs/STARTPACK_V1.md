@@ -4,6 +4,10 @@ Tarih: 2026-04-08
 Repo: `servis-platform`  
 Amaç: Bu dosya, projenin güncel çalışma kurallarını, aktif milestone hattını ve değişmez mimari kararlarını tek yerde toplar.
 
+## Project Execution Contract reference
+
+For bounded execution, read the canonical contract in [PRIMER_SSOT.md](PRIMER_SSOT.md#project_execution_contract_v1), then resume from [NEXT_BACKLOG_V1.md](NEXT_BACKLOG_V1.md). The backlog is the sole executing-frontier owner; the milestone registry owns contract/freeze provenance; the locked-invariant registry and violation ledger own stop-the-line status. Do not duplicate those records here.
+
 ## 1) Güncel resmi durum
 - Güncel doğrulanmış baz: `MASTER PACK PASS OK (M0->M89)`
 - Tarihsel tam master anchor korunur: `M0->M79`

@@ -6,6 +6,7 @@ import { prisma } from "../prisma.js";
 import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { httpError } from "../errors/http.js";
+import { audit } from "../audit.js";
 
 function companyIdOf(req) {
   const v = req.user?.companyId ?? req.me?.companyId ?? req.auth?.companyId;
@@ -54,6 +55,18 @@ export function companyHubRouter() {
       where: { id: companyId },
       data: { hubLat: parsed.data.hubLat, hubLng: parsed.data.hubLng },
       select: { id: true, hubLat: true, hubLng: true },
+    });
+
+    await audit(req, {
+      action: "COMPANY_HUB_UPDATE",
+      entity: "Company",
+      entityId: updated.id,
+      meta: {
+        companyId: updated.id,
+        hubLat: updated.hubLat,
+        hubLng: updated.hubLng,
+        source: "COMPANY_HUB_UI",
+      },
     });
 
     return res.json({ ok: true, companyId: updated.id, hubLat: updated.hubLat, hubLng: updated.hubLng });

@@ -60,6 +60,7 @@ const APPLICATION_LABELS = {
 const PREVIEW_STATE_LABELS = {
   PREVIEW_ONLY: "Sadece önizleme",
   READY: "Kabul bekliyor",
+  ACCEPTED_READY: "Kabul edildi • uygulamaya hazır",
   APPLIED: "Operasyona ulaştı",
   REJECTED: "Uygulanmadı",
 };
@@ -67,6 +68,7 @@ const PREVIEW_STATE_LABELS = {
 const PREVIEW_STATE_TONES = {
   PREVIEW_ONLY: "info",
   READY: "warning",
+  ACCEPTED_READY: "success",
   APPLIED: "success",
   REJECTED: "critical",
 };
@@ -96,6 +98,18 @@ function normalize(value) {
   return String(value || "").trim().toUpperCase();
 }
 
+export function isOpenBoardingChangeRequest(itemOrState) {
+  const state = normalize(itemOrState?.status || itemOrState?.decisionState || itemOrState);
+  return ["REQUESTED", "OPEN", "PENDING", "COUNTERED"].includes(state);
+}
+
+export function boardingChangeCopilotSelectionIdentity(requestId) {
+  return {
+    entityType: "service_request",
+    entityId: Number(requestId || 0) || 0,
+  };
+}
+
 export function boardingChangeKindLabel(kind) {
   return KIND_LABELS[normalize(kind)] || "Biniş değişikliği";
 }
@@ -118,10 +132,12 @@ export function boardingChangeDecisionTone(state) {
 
 export function boardingChangeDecisionOwnerLabel(itemOrState, context = {}) {
   const state = normalize(itemOrState?.status || itemOrState?.decisionState || itemOrState?.boardingChangeApplicationStatus || itemOrState);
-  if (["ACCEPTED", "AUTO_ACCEPTED", "ROOM_ACCEPTED", "ROOM_CANCELLED", "DRIVER_ACCEPTED", "DRIVER_CANCELLED", "COMPANY_ACCEPTED", "COMPANY_CANCELLED", "APPLIED"].includes(state)) {
+  const applicationStatus = normalize(itemOrState?.boardingChangeApplicationStatus || itemOrState?.applicationStatus || context?.applicationStatus || "");
+  const routeRefreshState = normalize(itemOrState?.boardingChangeRouteRefreshState || itemOrState?.routeRefreshState || context?.routeRefreshState || "");
+  if (applicationStatus === "APPLIED" || routeRefreshState === "VISIBLE" || state === "APPLIED") {
     return "İşlendi";
   }
-  if (["CANCELLED"].includes(state)) return "Kapandı";
+  if (["CANCELLED", "ROOM_CANCELLED", "DRIVER_CANCELLED", "COMPANY_CANCELLED"].includes(state)) return "Kapandı";
   const ownerRole = normalize(itemOrState?.decisionOwnerRole || context?.decisionOwnerRole || itemOrState?.decisionOwner || context?.decisionOwner || "");
   if (ownerRole === "DRIVER") return "Sürücü";
   if (ownerRole === "COMPANY") return "Hizmet alan taraf";
@@ -130,8 +146,13 @@ export function boardingChangeDecisionOwnerLabel(itemOrState, context = {}) {
 
 export function boardingChangeDecisionOwnerNote(itemOrState, context = {}) {
   const state = normalize(itemOrState?.status || itemOrState?.decisionState || itemOrState?.boardingChangeApplicationStatus || itemOrState);
-  if (["ACCEPTED", "AUTO_ACCEPTED", "ROOM_ACCEPTED", "DRIVER_ACCEPTED", "COMPANY_ACCEPTED", "APPLIED"].includes(state)) {
+  const applicationStatus = normalize(itemOrState?.boardingChangeApplicationStatus || itemOrState?.applicationStatus || context?.applicationStatus || "");
+  const routeRefreshState = normalize(itemOrState?.boardingChangeRouteRefreshState || itemOrState?.routeRefreshState || context?.routeRefreshState || "");
+  if (applicationStatus === "APPLIED" || routeRefreshState === "VISIBLE" || state === "APPLIED") {
     return "Değişiklik günlük atamaya işlendi.";
+  }
+  if (["ACCEPTED", "AUTO_ACCEPTED", "ROOM_ACCEPTED", "DRIVER_ACCEPTED", "COMPANY_ACCEPTED"].includes(state)) {
+    return "Kabul edildi; günlük atamaya uygulanmaya hazır. Sürücü rotası henüz yenilenmedi.";
   }
   if (["CANCELLED", "ROOM_CANCELLED", "DRIVER_CANCELLED", "COMPANY_CANCELLED"].includes(state)) {
     return "İstek kapandı.";
@@ -162,14 +183,20 @@ function previewStateFrom(itemOrState, context = {}) {
   if (!requestStatus && !applicationStatus && !routeRefreshState && !itemOrState?.id) {
     return "PREVIEW_ONLY";
   }
-  if (["CANCELLED", "REJECTED", "ROOM_CANCELLED", "DRIVER_CANCELLED", "COMPANY_CANCELLED"].includes(requestStatus) || ["CANCELLED", "REJECTED", "BLOCKED"].includes(applicationStatus)) {
+  if (["CANCELLED", "REJECTED", "ROOM_CANCELLED", "DRIVER_CANCELLED", "COMPANY_CANCELLED"].includes(requestStatus) || ["CANCELLED", "REJECTED"].includes(applicationStatus)) {
     return "REJECTED";
   }
   if (["APPLIED", "VISIBLE"].includes(routeRefreshState) || applicationStatus === "APPLIED") {
     return "APPLIED";
   }
+  if (["ACCEPTED", "AUTO_ACCEPTED", "ROOM_ACCEPTED", "DRIVER_ACCEPTED", "COMPANY_ACCEPTED"].includes(requestStatus)) {
+    return "ACCEPTED_READY";
+  }
   if (["ACCEPTED", "APPROVED", "OPEN", "REQUESTED", "PENDING", "COUNTERED", "MANUAL_REVIEW", "CUTOFF_REVIEW", "READY"].includes(requestStatus) || applicationStatus === "READY") {
     return "READY";
+  }
+  if (applicationStatus === "BLOCKED") {
+    return "REJECTED";
   }
   return "PREVIEW_ONLY";
 }
@@ -185,6 +212,7 @@ export function boardingChangePreviewStateTone(itemOrState, context = {}) {
 export function boardingChangePreviewStateNote(itemOrState, context = {}) {
   const state = previewStateFrom(itemOrState, context);
   if (state === "APPLIED") return "Günlük atamaya işlendi.";
+  if (state === "ACCEPTED_READY") return "Kabul edildi; günlük atamaya uygulanmaya hazır. Sürücü rotası henüz yenilenmedi.";
   if (state === "READY") return "İnsan onayı bekliyor.";
   if (state === "REJECTED") return "İstek kapandı.";
   return "Salt okunur önizleme.";

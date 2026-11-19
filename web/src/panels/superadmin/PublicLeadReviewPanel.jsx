@@ -3,7 +3,8 @@ import { listPublicLeadReviewQueue, updatePublicLeadReviewStatus } from "../../a
 import { useSession } from "../../state/session";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
-import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { clearCopilotSelection, copilotSelectionEventName, setCopilotSelection } from "../../utils/copilotSelection";
+import { copilotAuthScopeKey, writeCopilotSharedState } from "../../utils/copilotSharedState";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { statusBadgeInlineStyle } from "../../utils/statusBadge";
 
@@ -96,6 +97,10 @@ function renderObjectBlock(title, rows) {
 
 export default function PublicLeadReviewPanel() {
   const { me, token } = useSession();
+  const reviewScopeKey = typeof window !== "undefined"
+    && String(window.location.hash || "").replace(/^#/, "").split("?", 1)[0] === "/superadmin/public-leads"
+    ? "/superadmin/public-leads"
+    : "/superadmin/onboarding-review";
   const [items, setItems] = useState([]);
   const [counts, setCounts] = useState({ total: 0, byStatus: {}, byType: {}, pendingCount: 0, inviteReadyCount: 0, rejectedCount: 0 });
   const [busy, setBusy] = useState(false);
@@ -156,7 +161,25 @@ export default function PublicLeadReviewPanel() {
 
   useEffect(() => {
     if (!selectedLead) {
-      clearCopilotSelection("/superadmin/onboarding-review");
+      clearCopilotSelection(reviewScopeKey);
+      try {
+        if (token) {
+          writeCopilotSharedState({
+            scopeKey: copilotAuthScopeKey(token, me),
+            screenPath: reviewScopeKey,
+            sourceScreenPath: reviewScopeKey,
+            screenLabel: "Başvuru İncelemesi",
+            role: me?.role || "",
+            companyKind: me?.companyKind || "",
+            selection: null,
+            selectedContext: null,
+            messages: [],
+            draft: "",
+            routeContextStatus: "ALLOW",
+            metadataStatus: "READY",
+          });
+        }
+      } catch { /* best effort: route cleanup remains authoritative */ }
       return;
     }
 
@@ -166,8 +189,8 @@ export default function PublicLeadReviewPanel() {
       selectedLead.organizationName || selectedLead.city || selectedLead.district || null,
     ].filter(Boolean);
 
-    setCopilotSelection({
-      scopeKey: "/superadmin/onboarding-review",
+    const nextCopilotSelection = {
+      scopeKey: reviewScopeKey,
       entityType: "public-lead",
       entityId: selectedLead.id,
       label: selectedLead.name || "Başvuru incelemesi",
@@ -207,10 +230,47 @@ export default function PublicLeadReviewPanel() {
                 ? "Davet hazırlığına uygunluk var; yine de davet veya kullanıcı açma yok."
                 : "Kararı ve notları son kez gözden geçir.",
       },
-    });
+    };
+    setCopilotSelection(nextCopilotSelection);
+    // The floating drawer is mounted from the shell and may use a separate
+    // lazy bundle instance. Keep a bounded, auth-scoped selection envelope in
+    // the existing shared-state bridge so the drawer can hydrate the explicit
+    // lead context even when the live window mirror is unavailable.
+    try {
+      writeCopilotSharedState({
+        scopeKey: copilotAuthScopeKey(token, me),
+        screenPath: reviewScopeKey,
+        sourceScreenPath: reviewScopeKey,
+        screenLabel: "Başvuru İncelemesi",
+        role: me?.role || "",
+        companyKind: me?.companyKind || "",
+        selection: nextCopilotSelection,
+        selectedContext: nextCopilotSelection,
+        routeContextStatus: "ALLOW",
+        metadataStatus: "READY",
+      });
+    } catch { /* best effort: live event remains the fast path */ }
+    // The shared selection helper is intentionally best-effort for frozen
+    // browser globals. Publish the same explicit selection event as a direct
+    // route-local handoff so an already-mounted drawer cannot miss the
+    // selected lead during lazy-panel hydration.
+    let handoffTimer = null;
+    try {
+      // Lazy route mounts can finish after this effect's synchronous event.
+      // Replay the same bounded selection on the next task so the already
+      // mounted shell drawer receives it without persisting raw lead data.
+      handoffTimer = window.setTimeout(() => {
+        try {
+          window.dispatchEvent(new CustomEvent(copilotSelectionEventName(), { detail: nextCopilotSelection }));
+        } catch { /* best effort: shared state remains the fallback */ }
+      }, 0);
+    } catch { /* best effort: drawer still reads the helper mirror */ }
 
-    return () => clearCopilotSelection("/superadmin/onboarding-review");
-  }, [draftOperationNote, draftReviewNote, selectedLead]);
+    return () => {
+      if (handoffTimer) window.clearTimeout(handoffTimer);
+      clearCopilotSelection(reviewScopeKey);
+    };
+  }, [draftOperationNote, draftReviewNote, me, reviewScopeKey, selectedLead, token]);
 
   const statusTabs = useMemo(() => {
     const byStatus = counts.byStatus || {};

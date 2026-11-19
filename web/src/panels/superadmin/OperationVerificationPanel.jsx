@@ -149,6 +149,7 @@ export default function OperationVerificationPanel() {
         `Rol: ${readableVerificationText(surface?.role?.label || selectedRole)}`,
         `Kayıtlı kontrol: ${Number(surface?.savedCount || 0)}`,
         `Toplam kontrol: ${Number(surface?.checks?.length || 0)}`,
+        `Durum özeti: ${(statusOptions || []).map((item) => `${readableVerificationText(item.label)}: ${surface?.statusCounts?.[item.id] || 0}`).join(' • ')}`,
         copilotCheck?.title ? `İlk kontrol: ${readableVerificationText(copilotCheck.title)}` : '',
       ].filter(Boolean),
       reasoningLead: 'Bu ekranda amaç rol bazlı operasyon kontrolünü kanıt tipi ve kısa notla kayıt altına almaktır.',
@@ -170,6 +171,7 @@ export default function OperationVerificationPanel() {
         { label: 'Varsayılan karar', value: readableVerificationText(statusMap[surface?.defaultStatus] || surface?.defaultStatus), help: 'Kayıt yoksa baz alınan varsayılan karar bilgisini gösterir.' },
         { label: 'Kayıtlı Kontrol', value: String(surface?.savedCount || 0), help: 'Şu an kaydedilmiş kontrol sayısını gösterir.' },
         { label: 'Toplam Kontrol', value: String(surface?.checks?.length || 0), help: 'Seçili rol yüzeyindeki toplam kontrol sayısını gösterir.' },
+        { label: 'Durum özeti', value: (statusOptions || []).map((item) => `${readableVerificationText(item.label)}: ${surface?.statusCounts?.[item.id] || 0}`).join(' • '), help: 'Ekranda görünen durum dağılımını gösterir.' },
         { label: 'İlk kontrol', value: readableVerificationText(copilotCheck?.title), help: 'Tablodaki ilk kontrol maddesini örnek odak olarak gösterir.' },
       ],
       badges: [

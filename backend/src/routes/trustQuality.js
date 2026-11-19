@@ -1,6 +1,7 @@
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
+import { SERVICE_EVALUATION_BUYER_ROLES } from "../ops/serviceEvaluationScope.js";
 import { audit } from "../audit.js";
 import { wrapAsyncRouterMethods } from "../middleware/asyncHandler.js";
 import {
@@ -29,6 +30,7 @@ import {
 import { readOperationVerificationRecords } from "../ops/operationVerificationRecordStore.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { resolveGpsSourceVisibility } from "../gps/sourceVisibility.js";
+import { readServiceEvaluations } from "../ops/serviceEvaluationStore.js";
 import { clearResponseCache, rememberResponse } from "../utils/responseCache.js";
 
 const SHIFT_EVIDENCE_STATUSES = new Set(["REQUESTED", "APPROVED", "ACTIVE", "DONE", "SPLIT", "REJECTED"]);
@@ -390,7 +392,7 @@ export function trustQualityRouter() {
     return res.json(payload);
   });
 
-  r.get("/company/summary", authRequired(), requireRole("COMPANY", "SUPER_ADMIN"), async (req, res) => {
+  r.get("/company/summary", authRequired(), requireRole(...SERVICE_EVALUATION_BUYER_ROLES), async (req, res) => {
     const payload = await rememberResponse("trust-quality:company-summary", () => buildCompanyServiceEvaluationSummary(req.user), { ttlMs: 45000, scope: userScope(req.user) });
     return res.json(payload);
   });
@@ -398,7 +400,7 @@ export function trustQualityRouter() {
     return list.slice(0, take);
   }
 
-  r.get("/company/items", authRequired(), requireRole("COMPANY", "SUPER_ADMIN"), async (req, res) => {
+  r.get("/company/items", authRequired(), requireRole(...SERVICE_EVALUATION_BUYER_ROLES), async (req, res) => {
     const q = String(req.query?.q || "").trim().toLowerCase();
     const take = Math.min(200, Math.max(1, Number(req.query?.take || 60) || 60));
     const pendingOnly = String(req.query?.pendingOnly || "") === "1" || String(req.query?.pendingOnly || "").toLowerCase() === "true";
@@ -410,9 +412,30 @@ export function trustQualityRouter() {
     const items = applyTakeLimit(list, take);
     return res.json({ items, meta: { take, pendingOnly, q } });
   });
-  r.post("/company/evaluations", authRequired(), requireRole("COMPANY", "SUPER_ADMIN"), requireStepUpWrite("COMPANY", "SUPER_ADMIN"), async (req, res) => {
+  r.post("/company/evaluations", authRequired(), requireRole(...SERVICE_EVALUATION_BUYER_ROLES), requireStepUpWrite(...SERVICE_EVALUATION_BUYER_ROLES), async (req, res) => {
     try {
-      const saved = await submitCompanyServiceEvaluation(req.user, req.body || {});
+      const input = req.body || {};
+      const shiftId = Number(input?.shiftId || 0) || 0;
+      const companyId = Number(req.user?.companyId || 0) || 0;
+      const existing = (await readServiceEvaluations()).find(
+        (item) => Number(item?.shiftId || 0) === shiftId && Number(item?.companyId || 0) === companyId,
+      );
+      const saved = await submitCompanyServiceEvaluation(req.user, input);
+      await audit(req, {
+        action: existing ? "SERVICE_EVALUATION_REPLAYED" : "SERVICE_EVALUATION_SUBMITTED",
+        entity: "ServiceEvaluation",
+        entityId: Number(saved?.shiftId || shiftId) || null,
+        meta: {
+          evaluationId: saved?.id || null,
+          shiftId: Number(saved?.shiftId || shiftId) || null,
+          companyId,
+          roomId: Number(saved?.roomId || 0) || null,
+          idempotent: Boolean(existing),
+          dataClass: "DEMO_USER_SUBMITTED",
+          businessExecution: false,
+          externalSideEffects: false,
+        },
+      });
       clearResponseCache("trust-quality:", userScope(req.user));
       return res.json({ ok: true, item: saved });
     } catch (e) {

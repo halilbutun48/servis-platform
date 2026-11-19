@@ -47,8 +47,12 @@ export function getCompanyVehicles(token, { signal, force = false, q, take = COM
   return cachedGet(withQuery('/api/vehicles', { q, take, onlyActive: onlyActive ? 1 : null }), { token, signal, force, ttlMs, delayMs });
 }
 
-export function getCompanyShifts(token, { signal, force = false, take = COMPANY_DATA_TAKE.shifts, status, onlyNow, ttlMs = COMPANY_DATA_TTL.shifts, delayMs = 80 } = {}) {
-  return cachedGet(withQuery('/api/shifts', { take, status, onlyNow }), { token, signal, force, ttlMs, delayMs });
+export function getCompanyShifts(token, { signal, force = false, take = COMPANY_DATA_TAKE.shifts, status, onlyNow, includeStops = false, ttlMs = COMPANY_DATA_TTL.shifts, delayMs = 80 } = {}) {
+  return cachedGet(withQuery('/api/shifts', { take, status, onlyNow, includeStops: includeStops ? 1 : null }), { token, signal, force, ttlMs, delayMs });
+}
+
+export function getCompanyHub(token, { signal, force = false, ttlMs = COMPANY_DATA_TTL.trustQuality, delayMs = 40 } = {}) {
+  return cachedGet('/api/company/hub', { token, signal, force, ttlMs, delayMs });
 }
 
 export function getCompanyMapShifts(token, { signal, force = false, ttlMs = COMPANY_DATA_TTL.mapShifts, delayMs = 70 } = {}) {

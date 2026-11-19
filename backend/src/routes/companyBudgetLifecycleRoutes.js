@@ -6,6 +6,7 @@ import {
   archiveCompanyBudgetPlan,
   getCompanyBudgetPlanOverview,
   saveCompanyBudgetPlanDraft,
+  selectCompanyBudgetPlanForPreview,
   submitCompanyBudgetPlan,
 } from "../services/financialOperationsLifecycle.js";
 
@@ -49,11 +50,15 @@ export function attachCompanyBudgetLifecycleRoutes(
       }
 
       const overview = await getCompanyBudgetPlanOverview(company.id);
+      const selected = selectCompanyBudgetPlanForPreview(
+        overview,
+        req.query?.budgetPlanId,
+      );
 
       return res.json({
         ok: true,
         companyId: company.id,
-        current: overview.current,
+        current: selected,
         active: overview.active,
         draft: overview.draft,
         items: overview.items,
@@ -142,6 +147,7 @@ export function attachCompanyBudgetLifecycleRoutes(
         planId: Number(req.params.id || 0),
         expectedVersion: req.body?.version,
         actorUserId: req.user?.id || null,
+        actorRole: req.user?.role || null,
       });
 
       return res.json({
@@ -172,6 +178,7 @@ export function attachCompanyBudgetLifecycleRoutes(
         planId: Number(req.params.id || 0),
         expectedVersion: req.body?.version,
         actorUserId: req.user?.id || null,
+        actorRole: req.user?.role || null,
       });
 
       return res.json({
@@ -202,6 +209,7 @@ export function attachCompanyBudgetLifecycleRoutes(
         planId: Number(req.params.id || 0),
         expectedVersion: req.body?.version,
         actorUserId: req.user?.id || null,
+        actorRole: req.user?.role || null,
       });
 
       return res.json({
@@ -232,6 +240,7 @@ export function attachCompanyBudgetLifecycleRoutes(
         planId: Number(req.params.id || 0),
         expectedVersion: req.body?.version,
         actorUserId: req.user?.id || null,
+        actorRole: req.user?.role || null,
       });
 
       return res.json({

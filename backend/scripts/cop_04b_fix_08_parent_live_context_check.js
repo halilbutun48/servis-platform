@@ -164,10 +164,22 @@ must(parentLivePanelSource, 'selectedRecordLabel', 'parent live panel keeps sele
 must(parentLivePanelSource, 'Araç konum sinyali', 'parent live panel keeps vehicle signal badge');
 must(parentLivePanelSource, 'Sürücünün telefonundan konum sinyali', 'parent live panel keeps driver phone signal badge');
 
-must(drawerSource, 'const requestSelection = liveSelection || selection || null;', 'floating drawer resolves the current explicit selection');
+// The current drawer intentionally re-reads the shared selection and rejects
+// selections that belong to another route before resolving the request.  The
+// older exact-string assertion (`liveSelection || selection`) drifted after
+// that safety refinement and incorrectly failed the checker even though the
+// current contract is stricter: live shared state wins, then route-bound
+// component state is used as the fallback.
+must(drawerSource, 'const latestSelection = readCopilotSelection();', 'floating drawer reads the latest explicit selection');
+must(drawerSource, 'const liveSelection = selectionApplies(latestSelection, currentPath) ? latestSelection : null;', 'floating drawer keeps selection route-bound');
+must(drawerSource, 'const stateSelection = selectionApplies(selection, currentPath) ? selection : null;', 'floating drawer keeps state selection route-bound');
+must(drawerSource, 'const requestSelection = liveSelection || stateSelection || null;', 'floating drawer resolves the current explicit selection');
 must(drawerSource, 'const uiSurface = captureCopilotUiSurface();', 'floating drawer captures the current UI surface');
 must(drawerSource, 'selectedEntitySet: Array.isArray(requestSelection?.entitySet) ? requestSelection.entitySet : []', 'floating drawer forwards the selected entity set');
-must(copilotPanelSource, 'const requestSelection = liveSelection || chatSelection || null;', 'copilot panel resolves the current explicit selection');
+must(copilotPanelSource, 'const latestSelection = readCopilotSelection();', 'copilot panel reads the latest explicit selection');
+must(copilotPanelSource, 'const liveSelection = String(latestSelection?.scopeKey || "") === String(selectedChatScreen?.path || "") ? latestSelection : null;', 'copilot panel keeps selection screen-bound');
+must(copilotPanelSource, 'const scopedChatSelection = chatSelection', 'copilot panel keeps chat selection screen-bound');
+must(copilotPanelSource, 'const requestSelection = liveSelection || scopedChatSelection || null;', 'copilot panel resolves the current explicit selection');
 must(copilotPanelSource, 'const uiSurface = captureCopilotUiSurface();', 'copilot panel captures the current UI surface');
 must(copilotPanelSource, 'selectedEntityType: requestSelection?.entityType || ""', 'copilot panel forwards the selected entity type');
 

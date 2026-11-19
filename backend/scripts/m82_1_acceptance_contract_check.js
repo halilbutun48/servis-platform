@@ -105,7 +105,7 @@ expectIncludes(ensureMarketShift, 'await rebuildShiftRouteStateBestEffort(shift.
 expectIncludes(routeState, 'clearResponseCacheExact(shiftRoutePreviewCacheKey(shiftId));', 'route state service clears preview cache by exact key');
 expectIncludes(routeState, 'routeSnapshotInputHash: null,', 'route state invalidation nulls snapshot input hash');
 expectIncludes(routeState, 'clearShiftRoutePreviewCache(shiftId);', 'route state rebuild clears preview cache before refresh');
-expectIncludes(routeState, 'return refreshShiftRouteSnapshot(shiftId);', 'route state rebuild refreshes snapshot after invalidation');
+expectIncludes(routeState, 'return refreshShiftRouteSnapshot(shiftId, db);', 'route state rebuild refreshes snapshot after invalidation with the active database context');
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log('M82.1 ACCEPTANCE + CONTRACT CHECK PASS');

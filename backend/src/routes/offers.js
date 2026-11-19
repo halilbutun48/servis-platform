@@ -7,12 +7,14 @@ import express from "express";
 import { z } from "zod";
 import prisma from "../prisma.js";
 import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
+import { audit } from "../audit.js";
 import { rememberResponse } from "../utils/responseCache.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
 import { validateWithZod } from "../z.js";
 import { findPackageShiftIdsByShiftId } from "../services/shiftPackage.js";
 import { wrapAsyncRouterMethods } from "../middleware/asyncHandler.js";
 import { sanitizeUserFacingOfferNote } from "../services/userFacingOfferNote.js";
+import { roomCounterPayloadError } from "./roomCounterValidation.js";
 
 import { counterShiftOfferSchema } from "./shifts/schemas.js";
 import * as H from "./shifts/helpers.js";
@@ -40,6 +42,18 @@ const bulkCompanyCounterSchema = z.object({
 const companyAcceptPackageSchema = z.object({
   shiftIds: z.array(z.coerce.number().int().positive()).min(1).max(100),
   roomId: z.coerce.number().int().positive(),
+});
+
+const roomFinanceCounterSchema = counterShiftOfferSchema.extend({
+  roomOfferVehicleId: z.coerce.number().int().positive().nullable().optional(),
+  confirmed: z.boolean().optional(),
+  confirmationToken: z.string().max(20).optional(),
+  quoteFloorDraftId: z.coerce.number().int().positive().nullable().optional(),
+  quoteDraftVersion: z.coerce.number().int().positive().nullable().optional(),
+  quoteContextHash: z.string().max(200).nullable().optional(),
+  scenarioId: z.string().max(200).nullable().optional(),
+  estimatedCostMinor: z.coerce.number().int().positive().nullable().optional(),
+  quoteFloorMinor: z.coerce.number().int().positive().nullable().optional(),
 });
 
 const roomAcceptPackageSchema = z.object({
@@ -87,6 +101,7 @@ async function finalizeAcceptedOfferTx(tx, offer) {
   const shiftId = Number(offer.shiftId);
   const companyId = Number(offer?.shift?.companyId || 0);
   const acceptedRoomId = Number(offer.roomId);
+  const acceptedAmount = offer.amountRoom ?? offer.amountCompany ?? null;
 
   const offerRows = await tx.shiftOffer.findMany({
     where: { shiftId },
@@ -94,7 +109,13 @@ async function finalizeAcceptedOfferTx(tx, offer) {
   });
   const allRoomIds = Array.from(new Set(offerRows.map((x) => Number(x.roomId)).filter((x) => x > 0)));
 
-  await tx.shiftOffer.update({ where: { id: offer.id }, data: { status: "ACCEPTED" } });
+  await tx.shiftOffer.update({
+    where: { id: offer.id },
+    data: {
+      status: "ACCEPTED",
+      ...(offer.amountRoom != null ? { amountCompany: acceptedAmount } : {}),
+    },
+  });
   const upd = await tx.shiftOffer.updateMany({
     where: { shiftId, id: { not: offer.id }, status: { in: ["OPEN", "COUNTERED"] } },
     data: { status: "CANCELLED" },
@@ -104,8 +125,8 @@ async function finalizeAcceptedOfferTx(tx, offer) {
     where: { id: shiftId },
     data: {
       roomId: acceptedRoomId,
-      companyOfferAmount: offer.amountCompany ?? null,
-      roomOfferAmount: offer.amountRoom ?? null,
+      companyOfferAmount: acceptedAmount,
+      roomOfferAmount: acceptedAmount,
       roomOfferDecision: "ACCEPTED",
       roomOfferDecisionAt: new Date(),
     },
@@ -235,7 +256,7 @@ async function loadRoomPackageAcceptanceTargetsOrThrow({ roomId, offerIds }) {
   const accepted = targetOffers.find((offer) => String(offer.status || "").toUpperCase() === "ACCEPTED");
   if (accepted) throw httpError(409, "Offer already accepted");
   const assignedElsewhere = targetOffers.find((offer) => offer.shift?.roomId != null && Number(offer.shift.roomId) !== Number(roomId));
-  if (assignedElsewhere) throw httpError(409, "Shift already assigned");
+  if (assignedElsewhere) throw httpError(409, "SHIFT_ALREADY_ASSIGNED", "Bu vardiya zaten başka bir taşımacılık firmasına atanmış.");
   // Package accept is a commercial decision; vehicle/driver readiness is checked later in the pending operation flow.
 
   return { targetShiftIds, offers: targetOffers };
@@ -431,11 +452,11 @@ export function offersRouter(io) {
         const id = Number(req.params.id);
         if (!Number.isFinite(id)) return sendErrorResponse(res, httpError(400, "bad offerId"));
 
-        const body = validateWithZod(counterShiftOfferSchema, req.body);
+        const body = validateWithZod(roomFinanceCounterSchema, req.body);
 
         const offer = await prisma.shiftOffer.findUnique({
           where: { id },
-          include: { shift: { select: { id: true, companyId: true, agreementId: true } } },
+          include: { shift: { select: { id: true, companyId: true, roomId: true, agreementId: true, status: true, roomOfferVehicleId: true, roomOfferAmount: true } } },
         });
         if (!offer) return sendErrorResponse(res, httpError(404, "Offer not found"));
 
@@ -446,19 +467,123 @@ export function offersRouter(io) {
         if (offer.status === "CANCELLED") return sendErrorResponse(res, httpError(409, "Offer cancelled"));
         if (offer.status === "ACCEPTED") return sendErrorResponse(res, httpError(409, "Offer already accepted"));
 
+        if (offer.shift.roomId != null && Number(offer.shift.roomId) !== Number(offer.roomId)) {
+          return sendErrorResponse(res, httpError(409, "SHIFT_ALREADY_ASSIGNED", "Bu vardiya zaten başka bir taşımacılık firmasına atanmış."));
+        }
+
+        const confirmed = body.confirmed === true || body.confirmationToken != null;
+        if (confirmed && body.confirmed !== true) {
+          return sendErrorResponse(res, httpError(409, "EXPLICIT_CONFIRMATION_REQUIRED", "Teklif gönderimi için açık onay gerekir."));
+        }
+        if (confirmed && String(body.confirmationToken || "").trim().toUpperCase() !== "ONAYLA") {
+          return sendErrorResponse(res, httpError(409, "EXPLICIT_CONFIRMATION_REQUIRED", "Teklif gönderimi için ONAYLA yazılmalıdır."));
+        }
+        if (confirmed && (!Number.isSafeInteger(Number(body.amountRoom)) || Number(body.amountRoom) <= 0)) {
+          return sendErrorResponse(res, httpError(400, "ROOM_OFFER_AMOUNT_REQUIRED", "Gönderilecek teklif tutarı 0'dan büyük olmalı."));
+        }
+        const payloadError = roomCounterPayloadError(body);
+        if (payloadError) {
+          return sendErrorResponse(res, httpError(400, payloadError.code, payloadError.message));
+        }
+        if (confirmed && !["DRAFT", "REQUESTED"].includes(String(offer.shift.status || "").toUpperCase())) {
+          return sendErrorResponse(res, httpError(409, "SHIFT_NOT_OFFERABLE", "Bu hizmet artık teklif hazırlama aşamasında değil."));
+        }
+
+        if (body.roomOfferVehicleId != null) {
+          const selectedVehicle = await prisma.vehicle.findUnique({
+            where: { id: Number(body.roomOfferVehicleId) },
+            select: { id: true, roomId: true, status: true },
+          });
+          if (!selectedVehicle || Number(selectedVehicle.roomId || 0) !== Number(offer.roomId || 0)) {
+            return sendErrorResponse(res, httpError(403, "ROOM_VEHICLE_SCOPE_MISMATCH", "Seçilen araç bu taşımacılık firmasına ait değil."));
+          }
+          if (String(selectedVehicle.status || "").toUpperCase() !== "ACTIVE") {
+            return sendErrorResponse(res, httpError(409, "ROOM_VEHICLE_NOT_ACTIVE", "Seçilen araç teklif için aktif değil."));
+          }
+        }
+
+        if (body.quoteFloorDraftId != null) {
+          const draft = await prisma.roomQuoteFloorDraft.findUnique({
+            where: { id: Number(body.quoteFloorDraftId) },
+            select: { id: true, roomId: true, version: true, inputSnapshot: true },
+          });
+          if (!draft || Number(draft.roomId) !== Number(offer.roomId)) {
+            return sendErrorResponse(res, httpError(403, "ROOM_QUOTE_DRAFT_SCOPE_MISMATCH", "Teklif senaryosu bu taşımacılık firmasına ait değil."));
+          }
+          if (body.quoteDraftVersion != null && Number(body.quoteDraftVersion) !== Number(draft.version)) {
+            return sendErrorResponse(res, httpError(409, "ROOM_QUOTE_DRAFT_STALE", "Teklif senaryosu güncel değil; sayfayı yenileyip tekrar deneyin."));
+          }
+          const savedScopeHash = String(draft.inputSnapshot?.serviceContext?.scopeHash || "").trim();
+          if (body.quoteContextHash && savedScopeHash && String(body.quoteContextHash).trim() !== savedScopeHash) {
+            return sendErrorResponse(res, httpError(409, "ROOM_QUOTE_DRAFT_STALE_CONTEXT", "Teklif senaryosu seçili hizmetle eşleşmiyor."));
+          }
+        }
+
         // ✅ M54: Agreement kaynaklı shiftlerde market offers kapalı
         if (offer?.shift?.agreementId) {
           return sendErrorResponse(res, httpError(409, "AGREEMENT_NO_OFFERS", "Agreement shift: offers disabled"));
         }
 
-        const updated = await prisma.shiftOffer.update({
-          where: { id },
-          data: {
-            status: "COUNTERED",
-            amountRoom: body.amountRoom ?? null,
-            noteRoom: body.noteRoom ?? null,
-          },
-          include: { room: true },
+        const normalizedAmountRoom = body.amountRoom ?? null;
+        const normalizedNoteRoom = body.noteRoom ?? null;
+        const sameCounter = offer.status === "COUNTERED"
+          && Number(offer.amountRoom ?? 0) === Number(normalizedAmountRoom ?? 0)
+          && String(offer.noteRoom || "") === String(normalizedNoteRoom || "")
+          && (body.roomOfferVehicleId === undefined
+            || Number(offer.shift.roomOfferVehicleId || 0) === Number(body.roomOfferVehicleId || 0));
+
+        const updated = await prisma.$transaction(async (tx) => {
+          const row = sameCounter
+            ? await tx.shiftOffer.findUnique({ where: { id }, include: { room: true } })
+            : await tx.shiftOffer.update({
+              where: { id },
+              data: {
+                status: "COUNTERED",
+                amountRoom: normalizedAmountRoom,
+                noteRoom: normalizedNoteRoom,
+              },
+              include: { room: true },
+            });
+
+          if (!sameCounter && (body.amountRoom !== undefined || body.roomOfferVehicleId !== undefined)) {
+            await tx.shift.update({
+              where: { id: offer.shiftId },
+              data: {
+                ...(body.amountRoom !== undefined ? { roomOfferAmount: normalizedAmountRoom } : {}),
+                ...(body.roomOfferVehicleId !== undefined ? { roomOfferVehicleId: body.roomOfferVehicleId ?? null } : {}),
+                roomOfferDecision: "PENDING",
+                roomOfferDecisionAt: null,
+                roomOfferDecisionNote: null,
+              },
+            });
+          }
+
+          await tx.auditLog.create({
+            data: {
+              actorUserId: req.user?.id || null,
+              actorRole: req.user?.role || null,
+              action: sameCounter ? "ROOM_OFFER_COUNTER_REPLAYED" : "ROOM_OFFER_COUNTERED",
+              entity: "ShiftOffer",
+              entityId: id,
+              meta: {
+                roomId: Number(offer.roomId),
+                companyId: Number(offer.shift.companyId),
+                shiftId: Number(offer.shiftId),
+                amountRoom: normalizedAmountRoom,
+                roomOfferVehicleId: body.roomOfferVehicleId ?? offer.shift.roomOfferVehicleId ?? null,
+                quoteFloorDraftId: body.quoteFloorDraftId ?? null,
+                quoteDraftVersion: body.quoteDraftVersion ?? null,
+                quoteContextHash: body.quoteContextHash ?? null,
+                scenarioId: body.scenarioId ?? null,
+                estimatedCostMinor: body.estimatedCostMinor ?? null,
+                quoteFloorMinor: body.quoteFloorMinor ?? null,
+                confirmed,
+                idempotent: sameCounter,
+              },
+            },
+          });
+
+          return row;
         });
 
         emitOffer(io, {
@@ -469,7 +594,7 @@ export function offersRouter(io) {
           companyId: offer.shift.companyId,
         });
 
-        return res.json(updated);
+        return res.json({ ...updated, idempotent: sameCounter });
       } catch (e) {
         return sendErrorResponse(res, e);
       }
@@ -564,7 +689,7 @@ export function offersRouter(io) {
         if (offer.status === "CANCELLED") return sendErrorResponse(res, httpError(409, "Offer cancelled"));
         if (offer.status === "ACCEPTED") return sendErrorResponse(res, httpError(409, "Offer already accepted"));
         if (offer?.shift?.roomId != null && Number(offer.shift.roomId) !== Number(offer.roomId)) {
-          return sendErrorResponse(res, httpError(409, "Shift already assigned"));
+          return sendErrorResponse(res, httpError(409, "SHIFT_ALREADY_ASSIGNED", "Bu vardiya zaten başka bir taşımacılık firmasına atanmış."));
         }
 
         const updated = await prisma.shiftOffer.update({
@@ -728,7 +853,7 @@ export function offersRouter(io) {
         }
         if (offer.status === "CANCELLED") return sendErrorResponse(res, httpError(409, "Offer cancelled"));
         if (offer.status === "ACCEPTED") return sendErrorResponse(res, httpError(409, "Offer already accepted"));
-        if (offer.shift.roomId != null && Number(offer.shift.roomId) !== Number(offer.roomId)) return sendErrorResponse(res, httpError(409, "Shift already assigned"));
+        if (offer.shift.roomId != null && Number(offer.shift.roomId) !== Number(offer.roomId)) return sendErrorResponse(res, httpError(409, "SHIFT_ALREADY_ASSIGNED", "Bu vardiya zaten başka bir taşımacılık firmasına atanmış."));
 
         const result = await finalizeAcceptedOffer(io, offer);
         return res.json({ ok: true, ...result });
@@ -770,9 +895,65 @@ export function offersRouter(io) {
           return sendErrorResponse(res, httpError(409, "AGREEMENT_NO_OFFERS", "Agreement shift: offers disabled"));
         }
 
-        if (offer.shift.roomId != null) return sendErrorResponse(res, httpError(409, "Shift already assigned"));
+        if (offer.status === "ACCEPTED" && Number(offer.shift.roomId) === Number(offer.roomId)) {
+          const acceptedAmount = offer.amountRoom ?? offer.amountCompany ?? null;
+          await prisma.$transaction(async (tx) => {
+            await tx.shiftOffer.update({
+              where: { id },
+              data: { amountCompany: acceptedAmount },
+            });
+            await tx.shift.update({
+              where: { id: offer.shiftId },
+              data: {
+                companyOfferAmount: acceptedAmount,
+                roomOfferAmount: acceptedAmount,
+                roomOfferDecision: "ACCEPTED",
+              },
+            });
+          });
+          await audit(req, {
+            action: "OFFER_ACCEPTED_REPLAYED",
+            entity: "ShiftOffer",
+            entityId: id,
+            meta: {
+              shiftId: offer.shiftId,
+              roomId: offer.roomId,
+              companyId: offer.shift.companyId,
+              amountCompany: acceptedAmount,
+              amountRoom: acceptedAmount,
+              idempotent: true,
+            },
+          });
+          return res.json({
+            ok: true,
+            idempotent: true,
+            offerId: id,
+            shiftId: offer.shiftId,
+            roomId: offer.roomId,
+            amountCompany: acceptedAmount,
+            amountRoom: acceptedAmount,
+          });
+        }
+
+        if (offer.shift.roomId != null) return sendErrorResponse(res, httpError(409, "SHIFT_ALREADY_ASSIGNED", "Bu vardiya zaten bir taşımacılık firmasına atanmış."));
 
         const result = await finalizeAcceptedOffer(io, offer);
+        const acceptedAmount = offer.amountRoom ?? offer.amountCompany ?? null;
+        await audit(req, {
+          action: "OFFER_ACCEPTED",
+          entity: "ShiftOffer",
+          entityId: id,
+          meta: {
+            shiftId: offer.shiftId,
+            roomId: offer.roomId,
+            companyId: offer.shift.companyId,
+            amountCompany: acceptedAmount,
+            amountRoom: acceptedAmount,
+            sourceAmountCompany: offer.amountCompany ?? null,
+            sourceAmountRoom: offer.amountRoom ?? null,
+            idempotent: false,
+          },
+        });
 
         return res.json({ ok: true, ...result });
       } catch (e) {

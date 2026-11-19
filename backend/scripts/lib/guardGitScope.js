@@ -13,7 +13,10 @@ import {
 import {
   CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES,
 } from "./pre18LifecycleClassification.js";
-import { activeMilestoneTouchedPaths } from "./milestoneOwnershipAuthority.js";
+import {
+  activeMilestoneTouchedPaths,
+  isGeneratedIdentityEntry,
+} from "./milestoneOwnershipAuthority.js";
 import { LIFECYCLE_DEFERRED_SUPERSEDED_ORPHAN_PATHS } from "./presentationProvenanceAuthority.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -56,8 +59,31 @@ export function gitStatusNames() {
     .filter(Boolean);
 }
 
+const GIT_PATH_ARGUMENT_BUDGET = 8000;
+
+function gitPathChunks(paths) {
+  const normalized = [...new Set((paths || []).map((entry) => normalizePath(entry)).filter(Boolean))];
+  if (normalized.length === 0) return [[]];
+
+  const chunks = [];
+  let current = [];
+  let currentLength = 0;
+  for (const entry of normalized) {
+    const entryLength = entry.length + 1;
+    if (current.length > 0 && currentLength + entryLength > GIT_PATH_ARGUMENT_BUDGET) {
+      chunks.push(current);
+      current = [];
+      currentLength = 0;
+    }
+    current.push(entry);
+    currentLength += entryLength;
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks;
+}
+
 export function gitDiffNames(paths) {
-  return gitLines(["diff", "--name-only", "--", ...paths]);
+  return gitPathChunks(paths).flatMap((chunk) => gitLines(["diff", "--name-only", "--", ...chunk]));
 }
 
 function normalizePath(relPath) {
@@ -76,8 +102,8 @@ function sortedUniquePaths(paths) {
 }
 
 export function gitStatusEntries(paths) {
-  return String(
-    gitExec(["status", "--porcelain=v1", "--untracked-files=all", "--", ...paths]) || ""
+  return gitPathChunks(paths).flatMap((chunk) => String(
+    gitExec(["status", "--porcelain=v1", "--untracked-files=all", "--", ...chunk]) || ""
   )
     .split(/\r?\n/)
     .filter(Boolean)
@@ -85,7 +111,7 @@ export function gitStatusEntries(paths) {
       const rawPath = line.slice(3);
       const pathText = rawPath.includes(" -> ") ? rawPath.split(" -> ").pop() : rawPath;
       return { path: normalizePath(pathText), raw: line };
-    });
+    }));
 }
 
 export function mustNoDiff(paths, label) {
@@ -131,7 +157,14 @@ function allowedDiffMap(allowedEntries) {
     ...CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES,
     // Active milestone records are last so a current, explicitly accepted
     // identity can supersede only the corresponding frozen historical pin.
-    ...activeMilestoneEntries,
+    // Active milestone entries use the milestone manifest's canonical raw
+    // identity field. Normalize it to the legacy sha256 shape consumed by
+    // this guard so a newly accepted milestone path can supersede a frozen
+    // historical presentation pin without weakening the diff gate.
+    ...activeMilestoneEntries.map((entry) => ({
+      ...entry,
+      sha256: isGeneratedIdentityEntry(entry) ? null : (entry.sha256 || entry.rawSha256),
+    })),
   ].map((entry) => [normalizePath(entry.path), String(entry.sha256 || "").toUpperCase()]));
   return new Map(
     allowedEntries.map((entry) => {
@@ -147,6 +180,18 @@ function allowedDiffMap(allowedEntries) {
       // when its own canonical manifest explicitly declares that supersession.
       if (activeHistoricalSupersession) {
         return [normalized.path, String(activeHistoricalSupersession.rawSha256).toUpperCase()];
+      }
+      const activeMilestoneIdentity = activeMilestoneEntries.find(
+        (candidate) => normalizePath(candidate.path) === normalized.path && candidate.rawSha256,
+      );
+      if (activeMilestoneIdentity) {
+        return [normalized.path, String(activeMilestoneIdentity.rawSha256).toUpperCase()];
+      }
+      const generatedIdentity = activeMilestoneEntries.find(
+        (candidate) => normalizePath(candidate.path) === normalized.path && isGeneratedIdentityEntry(candidate),
+      );
+      if (generatedIdentity) {
+        return [normalized.path, null];
       }
       const canonicalPresentation = CANONICAL_PRESENTATION_PROVENANCE_BY_PATH.get(normalized.path);
       if (
@@ -492,7 +537,7 @@ const APP_JSX_ROLE_TENANT_SCOPE_ENTRIES = Object.freeze([
     path: "web/src/App.jsx",
     // PRE-#18 keeps App as the exact, content-pinned consumer of the
     // canonical roleNavigation route/tenant owner.
-    sha256: "804362A517CD0A5D49570BB37EE32A4370E2C8D657EC5864C9CBE0CAC9C2DE2F",
+    sha256: "1AEEF8F9A4195024E1AB6EA50BF72DDBEA8006226EA4E4E05924739CD8472B52",
   }),
 ]);
 

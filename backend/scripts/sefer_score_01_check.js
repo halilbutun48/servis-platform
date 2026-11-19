@@ -235,7 +235,10 @@ for (const [needle, label] of [
     continue;
   }
   if (needle === "banka") {
-    mustNotRegex(safetyText, /(?:^|[^a-z0-9])banka(?:$|[^a-z0-9])/i, label);
+    // Other accepted product surfaces legitimately explain that a manual
+    // collection is not bank-verified.  This guard belongs to SeferPuanı's
+    // own service/UI boundary, not to the entire assistant knowledge base.
+    mustNotRegex(coreSafetyText, /(?:^|[^a-z0-9])banka(?:$|[^a-z0-9])/i, label);
     continue;
   }
   if (needle === "başarı payı" || needle === "platform fee") {

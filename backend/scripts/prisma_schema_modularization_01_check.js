@@ -85,7 +85,6 @@ async function main() {
   const files = canonicalPrismaSchemaRelativeFiles(REPO_ROOT);
   const moduleFiles = files.filter((file) => file !== CANONICAL_PRISMA_SCHEMA_ENTRY_PATH);
   const sourceBlocks = census.blocks.filter((block) => ["model", "enum"].includes(block.kind));
-  const statusHasMigration = status.some((line) => /backend\/prisma\/migrations\//.test(line));
   const stagedProtectedRuntime = status.some((line) => line[0] !== " " && line[0] !== "?" && protectedRuntimePaths.has(line.slice(3).trim()));
 
   check("canonical schema root is the Prisma directory", path.resolve(CANONICAL_SCHEMA_PATH) === path.resolve(REPO_ROOT, "backend/prisma"));
@@ -113,7 +112,8 @@ async function main() {
     && report?.counters?.PRISMA_ENUM_VALUE_DRIFT === 0
     && report?.counters?.PRISMA_RELATION_SEMANTIC_DRIFT === 0
     && report?.counters?.NEGATIVE_SENSITIVITY_LOSS_COUNT === 0);
-  check("migration history remains untouched", !statusHasMigration);
+  check("migration history is checksum-complete and rollback-aware", report?.migrationHistory?.pass === true
+    && report?.checks?.noNewMigration === true);
   check("protected runtime data is not staged by #11", !stagedProtectedRuntime);
 
   const failed = outcomes.filter((item) => !item.pass);

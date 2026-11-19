@@ -10,8 +10,10 @@ import { apiOr404Fallback } from "../utils/apiFallback";
 import { getShiftRoutePreview } from "../utils/shiftRoutePreview";
 import StopTimeline from "./StopTimeline";
 import { openFullRouteNavigation } from "../utils/navigation";
+import { getEffectiveRouteMetrics } from "../utils/routePreviewSummary";
 
 function routeSourceLabel(source) {
+  if (String(source || "").toUpperCase() === "SNAPSHOT") return "Kaydedilmiş rota";
   if (String(source || "").toUpperCase() === "LEARNED") return "Öğrenilmiş rota";
   return "Tahmini";
 }
@@ -209,6 +211,10 @@ function scrollToStopRow(stopId) {
     () => buildRouteQuality(effSummary, effSource, stopPts, effPeople),
     [effSummary, effSource, stopPts, effPeople]
   );
+  const routeMetrics = useMemo(
+    () => getEffectiveRouteMetrics(effSummary, effSource),
+    [effSummary, effSource]
+  );
   const allStopCountsZero = useMemo(
     () => (stopPts || []).every((s) => Math.max(0, Number(s?.count || 0)) === 0),
     [stopPts]
@@ -304,8 +310,8 @@ function scrollToStopRow(stopId) {
               <div>Durak (toplanma konumu hariç): <b>{routeQuality.stopCountWithoutHub}</b></div>
               <div>Durak (toplanma konumu dahil): <b>{routeQuality.stopCountWithHub}</b></div>
               <div>{organizationLikePreview ? "Tahmini kişi" : "Kişi"}: <b>{effectiveRequiredPax || Number(stopPts.reduce((sum, s) => sum + Number(s.count ?? 0), 0))}</b></div>
-              <div>KM (tahmini): <b>{Number(effSummary?.distanceKmEstimated || 0).toFixed(2)}</b></div>
-              <div>Süre (tahmini): <b>{Number(effSummary?.durationMinEstimated || 0)}</b> dk</div>
+              <div>KM ({routeMetrics.label}): <b>{routeMetrics.distanceKm == null ? "Henüz hesaplanmadı" : Number(routeMetrics.distanceKm).toFixed(2)}</b>{routeMetrics.distanceKm == null ? null : " km"}</div>
+              <div>Süre ({routeMetrics.label}): <b>{routeMetrics.durationMin == null ? "Henüz hesaplanmadı" : Number(routeMetrics.durationMin).toFixed(1)}</b>{routeMetrics.durationMin == null ? null : " dk"}</div>
 
               {effSummary?.distanceKmLearned != null ? (
                 <>

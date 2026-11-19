@@ -280,6 +280,40 @@ function buildIssues() {
 
 function baseNormalizedInput(input = {}, issues = null) {
   const sink = issues || buildIssues();
+  const roomCostLedgerInputs = Array.isArray(input.roomCostLedgerInputs)
+    ? input.roomCostLedgerInputs.map((item, index) => ({
+      entryId: item?.entryId ?? null,
+      componentKey: compactText(item?.componentKey, "other_direct_cost"),
+      categoryKey: compactText(item?.categoryKey, "OTHER"),
+      recordKind: compactText(item?.recordKind, "ACTUAL").toUpperCase(),
+      lifecycle: compactText(item?.lifecycle, "CONFIRMED").toUpperCase(),
+      sourceType: compactText(item?.sourceType, ""),
+      amountMinor: parseMinor(item?.amountMinor, `roomCostLedgerInputs[${index}].amountMinor`, sink),
+      grossAmountMinor: parseMinor(item?.grossAmountMinor ?? item?.amountMinor, `roomCostLedgerInputs[${index}].grossAmountMinor`, sink),
+      currencyCode: normalizeCurrencyCode(item?.currencyCode),
+      vatMode: compactText(item?.vatMode, "UNKNOWN").toUpperCase(),
+      vatClassification: compactText(item?.vatClassification, "UNKNOWN").toUpperCase(),
+      vatDeductibility: compactText(item?.vatDeductibility, "UNKNOWN").toUpperCase(),
+      vatAmountMinor: parseMinor(item?.vatAmountMinor, `roomCostLedgerInputs[${index}].vatAmountMinor`, sink),
+      vatEvidenceRef: compactText(item?.vatEvidenceRef, ""),
+      vatClassificationReason: compactText(item?.vatClassificationReason, ""),
+      netEligible: item?.netEligible !== false
+        && compactText(item?.vatMode, "UNKNOWN").toUpperCase() !== "UNKNOWN"
+        && compactText(item?.vatClassification, "UNKNOWN").toUpperCase() !== "UNKNOWN",
+      sourceRef: compactText(item?.sourceRef, ""),
+      vehicleId: parseWholeNumber(item?.vehicleId, `roomCostLedgerInputs[${index}].vehicleId`, sink),
+      driverId: parseWholeNumber(item?.driverId, `roomCostLedgerInputs[${index}].driverId`, sink),
+      shiftId: parseWholeNumber(item?.shiftId, `roomCostLedgerInputs[${index}].shiftId`, sink),
+      agreementId: parseWholeNumber(item?.agreementId, `roomCostLedgerInputs[${index}].agreementId`, sink),
+      occurrenceKind: compactText(item?.occurrenceKind, ""),
+      allocation: compactText(item?.allocation, ""),
+      allocationQuantity: compactText(item?.allocationQuantity, ""),
+      allocationUnit: compactText(item?.allocationUnit, ""),
+      allocationUnitRateMinor: parseMinor(item?.allocationUnitRateMinor, `roomCostLedgerInputs[${index}].allocationUnitRateMinor`, sink),
+      periodStart: compactText(item?.periodStart, ""),
+      periodEnd: compactText(item?.periodEnd, ""),
+    }))
+    : [];
   const out = {
     calculationId: compactText(input.calculationId, ""),
     sourceType: compactText(input.sourceType, ""),
@@ -354,6 +388,7 @@ function baseNormalizedInput(input = {}, issues = null) {
     includeExternalPreviewAdjustments: Boolean(input.includeExternalPreviewAdjustments),
     zeroFuelVehicle: Boolean(input.zeroFuelVehicle),
     fuelType: compactText(input.fuelType, ""),
+    roomCostLedgerInputs,
   };
 
   const currencyCandidates = [out.currencyCode, out.fuelCurrencyCode].filter(Boolean);

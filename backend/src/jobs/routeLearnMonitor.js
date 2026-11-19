@@ -1,7 +1,7 @@
 // backend/src/jobs/routeLearnMonitor.js
 // ✅ M19: Learn route polyline from completed shifts (OSRM match -> canonical polyline)
 
-import { prisma } from "../prisma.js";
+import { workerPrisma } from "../prisma.js";
 import { ENV } from "../env.js";
 import { computeRouteKey, stringifyPolyline, median, pickCanonicalSample, downsamplePoints } from "../services/routeLearning.js";
 import { osrmMatch } from "../services/osrmMatch.js";
@@ -28,6 +28,8 @@ function hubFrom({ shift, agreement, room }) {
  * @param {{ intervalMs?: number, maxPerTick?: number }} opts
  */
 export function startRouteLearnMonitor(_io, opts = {}) {
+  const db = opts.prismaClient || workerPrisma;
+  if (!db) return () => {};
   const intervalMs = Number(opts.intervalMs || ENV.ROUTE_LEARN_INTERVAL_MS || 30000);
   const maxPerTick = Number(opts.maxPerTick || 10);
 
@@ -47,7 +49,7 @@ export function startRouteLearnMonitor(_io, opts = {}) {
 
     try {
       // Find recently completed shifts without a learn sample yet
-      const shifts = await prisma.shift.findMany({
+      const shifts = await db.shift.findMany({
         where: {
           status: "DONE",
           vehicleId: { not: null },
@@ -80,7 +82,7 @@ export function startRouteLearnMonitor(_io, opts = {}) {
         });
 
         // GPS points for this shift
-        const gps = await prisma.gpsPoint.findMany({
+        const gps = await db.gpsPoint.findMany({
           where: {
             vehicleId: s.vehicleId,
             at: { gte: s.startAt, lte: completedAt },
@@ -109,7 +111,7 @@ export function startRouteLearnMonitor(_io, opts = {}) {
         const qualityScore = Number(match.confidence || 0.5);
 
         // Persist sample (unique by shiftId)
-        await prisma.routeLearnSample.create({
+        await db.routeLearnSample.create({
           data: {
             routeKey,
             shiftId: s.id,
@@ -124,7 +126,7 @@ export function startRouteLearnMonitor(_io, opts = {}) {
 
         // Update learned aggregate (keep last N)
         const maxN = Math.max(5, Number(ENV.ROUTE_LEARN_MAX_SAMPLES || 20));
-        const samples = await prisma.routeLearnSample.findMany({
+        const samples = await db.routeLearnSample.findMany({
           where: { routeKey },
           orderBy: { createdAt: "desc" },
           take: maxN + 20, // fetch extra for cleanup
@@ -134,7 +136,7 @@ export function startRouteLearnMonitor(_io, opts = {}) {
         if (samples.length > maxN) {
           const delIds = samples.slice(maxN).map((x) => x.id);
           if (delIds.length) {
-            await prisma.routeLearnSample.deleteMany({ where: { id: { in: delIds } } });
+          await db.routeLearnSample.deleteMany({ where: { id: { in: delIds } } });
           }
           // rebuild samples list
           const kept = samples.slice(0, maxN);
@@ -147,7 +149,7 @@ export function startRouteLearnMonitor(_io, opts = {}) {
         const canonical = pickCanonicalSample(samples);
 
         if (canonical) {
-          await prisma.routeLearned.upsert({
+          await db.routeLearned.upsert({
             where: { routeKey },
             create: {
               routeKey,

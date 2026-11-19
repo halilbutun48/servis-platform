@@ -167,7 +167,7 @@ export default function AccountingExportPanel({ scope = "COMPANY", me = null, pr
           Dönem: <b>{periodLabel}</b> • Kapsam: <b>{scopeLabel}</b> • Kayıt: <b>{recordCount}</b> • Durum: <b>{statusLabel(status)}</b>
         </div>
         <div className="muted" style={{ marginTop: 6, lineHeight: 1.5 }}>
-          Önizleme / dry-run. Dosya oluşturma yalnızca bu kontrolden sonra kullanıcı onayıyla yapılır.
+          Dosya oluşturmadan yapılan kontrol. Dosya yalnızca bu kontrolden sonra kullanıcı onayıyla hazırlanır.
         </div>
       </div>
 

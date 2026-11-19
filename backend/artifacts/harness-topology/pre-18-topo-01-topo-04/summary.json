@@ -1,0 +1,45 @@
+{
+  "provenanceSha256": "305daaba156e02c9e6bcfb86b985788026ad4742a9a4c4788502e595f1671ba5",
+  "provenanceSummary": {
+    "provenanceConclusionCounts": {
+      "MANUAL_CANONICAL_USE_PROVEN": 4,
+      "MANUAL_USE_POSSIBLE_NOT_PROVEN": 0,
+      "PROVEN_ACTIVE": 224,
+      "PROVEN_COMPATIBILITY": 44,
+      "PROVEN_HISTORICAL": 99,
+      "PROVEN_ORPHAN": 0,
+      "PROVEN_SUPERSEDED": 0,
+      "PROVEN_WRAPPER": 67,
+      "UNKNOWN_REQUIRES_PROOF": 0
+    },
+    "provenRetainCount": 438,
+    "provenSupersededOrOrphanCount": 0,
+    "totalReviewRecordCount": 438,
+    "unresolvedRecordCount": 0
+  },
+  "registryVersion": "PRE_18_TOPO_01_TOPO_04_V1",
+  "topologySha256": "215dacfb803dbaf9f1100f3fe30ec21239aa523f23067e452112e3081a2036d0",
+  "topologySummary": {
+    "ciEntrypointCount": 9,
+    "packageAliasEntryCount": 21,
+    "packageAliasGroupCount": 13,
+    "packageCommandCount": 486,
+    "relevantIgnoredScriptCount": 0,
+    "totalScriptCount": 1048,
+    "trackedScriptCount": 910,
+    "untrackedScriptCount": 138
+  },
+  "validation": {
+    "behavioralAuthorityChanged": false,
+    "brokenPackageScriptTargetCount": 0,
+    "brokenPackageScriptTargets": [],
+    "ciEntrypointNotCanonicalCount": 0,
+    "duplicateProvenanceRecordCount": 0,
+    "duplicateScriptPathCount": 0,
+    "invalidConclusionCount": 0,
+    "invalidScriptShapeCount": 0,
+    "provenanceRecordWithoutCohortCount": 0,
+    "schemaValid": true,
+    "unsafeUnprovenRemovalCount": 0
+  }
+}
