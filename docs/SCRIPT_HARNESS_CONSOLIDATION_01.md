@@ -6,9 +6,9 @@ Repo: `servis-platform`
 ## 1) Kısa Özet
 
 - Toplam package script entry: `511`
-- Toplam executable tracked file: `2230`
-- Combined registry row: `2741`
-- Root/backend/web/mobile package dağılımı: root `315`, backend `1617`, web `302`, mobile `201`
+- Toplam executable tracked file: `2232`
+- Combined registry row: `2743`
+- Root/backend/web/mobile package dağılımı: root `315`, backend `1618`, web `303`, mobile `201`
 - Tools executable dağılımı: tools `306`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `1731`
+- NEEDS_REVIEW: `1733`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `559`
+- Eski sistem term eşleşmesi: `560`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 1731 |
+| NEEDS_REVIEW | 1733 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -1913,6 +1913,7 @@ Repo: `servis-platform`
 | helpComposer.continuation338.test.js | backend/src/ai/chat/helpComposer.continuation338.test.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-CONTINUATION-338-TEST |  | Owner or chain unclear |  |
 | helpComposer.georeviewTargetScope.test.js | backend/src/ai/chat/helpComposer.georeviewTargetScope.test.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-GEOREVIEW-TARGET-SCOPE-TEST |  | Owner or chain unclear |  |
 | helpComposer.js | backend/src/ai/chat/helpComposer.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER |  | Owner or chain unclear |  |
+| helpComposerContext.js | backend/src/ai/chat/helpComposerContext.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-CONTEXT |  | Owner or chain unclear |  |
 | helpComposerEntityRuntime.js | backend/src/ai/chat/helpComposerEntityRuntime.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-ENTITY-RUNTIME |  | Owner or chain unclear |  |
 | helpComposerSafeReplies.js | backend/src/ai/chat/helpComposerSafeReplies.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-SAFE-REPLIES |  | Owner or chain unclear |  |
 | helpComposerSelectedRuntime.continuation202.test.js | backend/src/ai/chat/helpComposerSelectedRuntime.continuation202.test.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-SELECTED-RUNTIME-CONTINUATION-202-TEST |  | Owner or chain unclear |  |
@@ -2509,6 +2510,7 @@ Repo: `servis-platform`
 | roomAgreementDisplay.js | web/src/panels/room/roomAgreementDisplay.js | web |  | review | NEEDS_REVIEW |  | ROOM-AGREEMENT-DISPLAY |  | Owner or chain unclear |  |
 | roomAgreementDisplay.test.js | web/src/panels/room/roomAgreementDisplay.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-AGREEMENT-DISPLAY-TEST |  | Owner or chain unclear |  |
 | roomAgreementsPanelHelpers.js | web/src/panels/room/roomAgreementsPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | ROOM-AGREEMENTS-PANEL-HELPERS |  | Owner or chain unclear |  |
+| roomAgreementsPendingSectionSupport.js | web/src/panels/room/roomAgreementsPendingSectionSupport.js | web |  | review | NEEDS_REVIEW |  | ROOM-AGREEMENTS-PENDING-SECTION-SUPPORT |  | Owner or chain unclear |  |
 | roomAgreementsSelectionPersistence.continuation220.test.js | web/src/panels/room/roomAgreementsSelectionPersistence.continuation220.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-AGREEMENTS-SELECTION-PERSISTENCE-CONTINUATION-220-TEST |  | Owner or chain unclear |  |
 | roomCounterValidation.continuation176.test.js | web/src/panels/room/roomCounterValidation.continuation176.test.js | web |  | review | NEEDS_REVIEW |  | ROOM-COUNTER-VALIDATION-CONTINUATION-176-TEST |  | Owner or chain unclear |  |
 | roomCounterValidation.js | web/src/panels/room/roomCounterValidation.js | web |  | review | NEEDS_REVIEW |  | ROOM-COUNTER-VALIDATION |  | Owner or chain unclear |  |
