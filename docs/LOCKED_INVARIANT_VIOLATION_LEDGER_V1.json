@@ -1,7 +1,7 @@
 {
   "ledgerId": "LOCKED_INVARIANT_VIOLATION_LEDGER_V1",
-  "generatedAt": "2026-11-20T00:42:16.279Z",
-  "runtimeBuildIdentity": "branch=;head=2e070a6a3d9d51c4753f8b3c4c9a8b5d1fda24ec;phase=M18_PRODUCT_ACCEPTANCE",
+  "generatedAt": "2026-11-20T01:13:53.601Z",
+  "runtimeBuildIdentity": "branch=;head=31598bbe7d8eaee18ac90fcfda36324022a4788e;phase=M18_PRODUCT_ACCEPTANCE",
   "currentSourceIdentity": {
     "authority": "existing current-head/current-closure identity owners",
     "algorithm": "RAW_SHA256_PER_FILE",
@@ -9234,7 +9234,7 @@
   },
   "committedHeadIdentity": {
     "branch": "",
-    "head": "2e070a6a3d9d51c4753f8b3c4c9a8b5d1fda24ec",
+    "head": "31598bbe7d8eaee18ac90fcfda36324022a4788e",
     "closureChecksRemainMandatory": true,
     "note": "Current-source proof records deterministic working-tree identities; committed-head/tag/push/remote-parity checks remain separate closure phases."
   },
