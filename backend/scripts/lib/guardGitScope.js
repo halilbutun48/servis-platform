@@ -537,7 +537,7 @@ const APP_JSX_ROLE_TENANT_SCOPE_ENTRIES = Object.freeze([
     path: "web/src/App.jsx",
     // PRE-#18 keeps App as the exact, content-pinned consumer of the
     // canonical roleNavigation route/tenant owner.
-    sha256: "1AEEF8F9A4195024E1AB6EA50BF72DDBEA8006226EA4E4E05924739CD8472B52",
+    sha256: "A5F9CED7F2A68A745AD04BAC75F350585C3B8F37204A03116D0E75435EE14D82",
   }),
 ]);
 

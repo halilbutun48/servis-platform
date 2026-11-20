@@ -52,7 +52,7 @@ const DEMO_USERS = {
   company: { identifier: "company@demo.com", password: "demo123" },
   school: { identifier: "school@demo.com", password: "demo123" },
   organization: { identifier: "organization@demo.com", password: "demo123" },
-  driver: { identifier: "driver@demo.com", password: "demo123" },
+  driver: { identifier: "driver@demo.com", password: process.env.DRIVER_DEMO_PIN || "demo123" },
   personel: { identifier: "personel@demo.com", password: "demo123" },
   parent: { identifier: "parent@demo.com", password: "demo123" },
 };

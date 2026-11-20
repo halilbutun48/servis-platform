@@ -1,7 +1,7 @@
 {
   "ledgerId": "LOCKED_INVARIANT_VIOLATION_LEDGER_V1",
-  "generatedAt": "2026-11-19T21:38:53.728Z",
-  "runtimeBuildIdentity": "branch=;head=5745a5d1266b45b5006d44ed771cafd5ce10bcc5;phase=M18_PRODUCT_ACCEPTANCE",
+  "generatedAt": "2026-11-20T00:42:16.279Z",
+  "runtimeBuildIdentity": "branch=;head=2e070a6a3d9d51c4753f8b3c4c9a8b5d1fda24ec;phase=M18_PRODUCT_ACCEPTANCE",
   "currentSourceIdentity": {
     "authority": "existing current-head/current-closure identity owners",
     "algorithm": "RAW_SHA256_PER_FILE",
@@ -671,16 +671,16 @@
       },
       {
         "path": "backend/scripts/database_migration_baseline_and_live_adoption_01.mjs",
-        "bytes": 48380,
-        "rawSha256": "D0492DFF48309A28F6AAFF728A2A2D58AD2B419148D9DA523512475D04BC8344",
+        "bytes": 50135,
+        "rawSha256": "A68A3F42B86C4550F993D25AEDA4BE09B832B8A21CA61A5A617DA7C8F2BE95F4",
         "authority": [
           "CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF"
         ]
       },
       {
         "path": "backend/scripts/database_migration_baseline_and_live_adoption_01_check.js",
-        "bytes": 9572,
-        "rawSha256": "4DFC8A46D6E5B9A02DA42FEA2AB7C2A3F795FE7D25972C97A24B50672B45CDA5",
+        "bytes": 10297,
+        "rawSha256": "37A33AB3DC21F52ECF98FCA4C1F22C195210A41C6ADBD5651C9BC696F9D64EEB",
         "authority": [
           "CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF"
         ]
@@ -808,7 +808,7 @@
       {
         "path": "backend/scripts/lib/currentHeadScopePolicy.js",
         "bytes": 15494,
-        "rawSha256": "B10085A7460E3FF4FE82D173B0CBA59717CB8734DAAF35D5FEA78B58FF5F9921",
+        "rawSha256": "B2BFFF96BC38915D3B40DB1B1C75FD202434470E72179CB252116ACA7C73582A",
         "authority": [
           "CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF"
         ]
@@ -3072,7 +3072,7 @@
       {
         "path": "backend/scripts/security_kvkk_final_01_check.js",
         "bytes": 91466,
-        "rawSha256": "51B8373C20CF822E1809E3E5DDC478C6EABFF35BCD50B42A0317E8BC1BABFF71",
+        "rawSha256": "321684560A976ED227CF8F054F4353CA984478DAA933E17F25D28B933DE0542E",
         "authority": [
           "CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF"
         ]
@@ -3271,8 +3271,8 @@
       },
       {
         "path": "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
-        "bytes": 46917,
-        "rawSha256": "CD6B0748CAB27A33EE1A887472D26849B89F77D3C4B6874359F5C4BA86954288",
+        "bytes": 46948,
+        "rawSha256": "DD8179C7AB5D0717B6C045D40C6E7CF489CCA5C329A06B5403E4F090B27E7255",
         "authority": [
           "CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF"
         ]
@@ -3770,8 +3770,8 @@
       },
       {
         "path": "backend/src/ai/chat/helpComposerContext.js",
-        "bytes": 54896,
-        "rawSha256": "AB328613D1708585D5977222B0A12A6557A335694E4BE09D5F8C0C872DC0954A",
+        "bytes": 54874,
+        "rawSha256": "C24FB47462FB5CD6B129C2C01F6D73B6B880287F82CDF8A7A09C2B4FDC19D93F",
         "authority": [
           "CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF"
         ]
@@ -7752,8 +7752,8 @@
       },
       {
         "path": "web/src/panels/room/roomAgreementDetailSurface.jsx",
-        "bytes": 2897,
-        "rawSha256": "B3C75CB790AD44C3C43B2FD039178E9CC1F84A0DF5D9680214AB9F6E7A80C8D4",
+        "bytes": 2896,
+        "rawSha256": "D72ED0881EB452B722D7D6DB9B5CEDA0CB2B877E8BC009625EEE8FB6B3A8C19D",
         "authority": [
           "CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES"
         ]
@@ -7784,16 +7784,16 @@
       },
       {
         "path": "web/src/panels/room/roomAgreementsOtherSection.jsx",
-        "bytes": 5102,
-        "rawSha256": "80E5106FD1C86488DCF809703CCAE40898B3A4257B1CA37BDB6688AEE217E036",
+        "bytes": 5101,
+        "rawSha256": "55FAC6D937201018AAC72CD89C8DE0E1ED1323FFF146BD8EDBA4F49A222ED25E",
         "authority": [
           "CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES"
         ]
       },
       {
         "path": "web/src/panels/room/roomAgreementsPanelHeader.jsx",
-        "bytes": 5567,
-        "rawSha256": "28325486298BD5D1043A0620D462986414104D4FD4CA98B9FAB1C64043FAA5DD",
+        "bytes": 5566,
+        "rawSha256": "03B8D7D014B7FF36E26A00D1959FDF5C7763BD871D70CFEA42BC2AE598B37402",
         "authority": [
           "CURRENT_CLOSURE_PRODUCT_SOURCE_ENTRIES"
         ]
@@ -9234,7 +9234,7 @@
   },
   "committedHeadIdentity": {
     "branch": "",
-    "head": "5745a5d1266b45b5006d44ed771cafd5ce10bcc5",
+    "head": "2e070a6a3d9d51c4753f8b3c4c9a8b5d1fda24ec",
     "closureChecksRemainMandatory": true,
     "note": "Current-source proof records deterministic working-tree identities; committed-head/tag/push/remote-parity checks remain separate closure phases."
   },
